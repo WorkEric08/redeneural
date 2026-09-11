@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="theme-color" content="#0a1226" />
+    <meta
+      name="description"
+      content="Seu palácio mental: conceitos viram neurônios dentro de livros e se conectam sozinhos por significado."
+    />
+    <title>Palácio Mental</title>
+    <script>
+      // CLAUDE.md §10: capturar o evento antes do bundle React carregar.
+      window.__deferredInstallPrompt = null
+      window.addEventListener('beforeinstallprompt', (e) => {
+        e.preventDefault()
+        window.__deferredInstallPrompt = e
+      })
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

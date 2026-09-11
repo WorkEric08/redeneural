@@ -1,0 +1,5 @@
+export * from './config'
+export * from './vetores'
+export * from './fusao'
+export * from './grafo'
+export * from './incremental'

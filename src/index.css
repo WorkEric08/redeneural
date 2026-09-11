@@ -1,0 +1,147 @@
+@import 'tailwindcss';
+@import 'tw-animate-css';
+
+@custom-variant dark (&:is(.dark *));
+
+/* ---------------------------------------------------------------------------
+ * Encadernação — o design system do Palácio Mental.
+ * Ver CLAUDE.md, seção "Direção visual (Fase 6)".
+ *
+ * Duas regras sustentam tudo:
+ *   1. O fundo é azul-marinho profundo, nunca preto puro — preto não tem
+ *      profundidade e apaga o ouro.
+ *   2. O ouro é LUZ, não folha. É a fresta da porta. E significa uma coisa só:
+ *      a conexão que atravessa livros. Ação primária usa papel, nunca ouro.
+ *
+ * Acabamento (textura, bloom, transições) fica para a passada final —
+ * decisão do usuário: o sistema funcionando primeiro.
+ * ------------------------------------------------------------------------ */
+
+:root {
+  /* --- dia: a mesma sala com a persiana aberta --- */
+  --sala: oklch(0.96 0.008 250);
+  --parede: oklch(0.99 0.004 250);
+  --estante: oklch(1 0 0);
+  --papel: oklch(0.24 0.03 265);
+  --poeira: oklch(0.52 0.03 265);
+  --linha: oklch(0.88 0.014 255);
+  --ouro: oklch(0.62 0.11 78);
+  --ouro-luz: oklch(0.62 0.11 78 / 0.16);
+
+  /* Uma lombada é sempre um objeto escuro, mesmo numa sala clara — é para onde a
+     luz lava a cor do pano, e é o que faz a gravação em ouro continuar legível. */
+  --lavagem: oklch(0.3 0.035 262);
+  --ouro-gravado: oklch(0.82 0.13 82);
+
+  /* Cores de lombada: pano de encadernação. Espalhadas pelo círculo cromático,
+     fugindo da faixa do ouro (~78) para que nenhum livro pareça uma conexão. */
+  --lombada-1: oklch(0.55 0.16 285);
+  --lombada-2: oklch(0.55 0.1 185);
+  --lombada-3: oklch(0.57 0.14 42);
+  --lombada-4: oklch(0.56 0.13 245);
+  --lombada-5: oklch(0.55 0.15 330);
+  --lombada-6: oklch(0.56 0.12 145);
+
+  --destructive: oklch(0.55 0.2 25);
+
+  --radius: 0.625rem;
+
+  /* Tipografia: pilha do sistema por enquanto — zero bytes, zero CDN.
+     Literata e Source Sans entram auto-hospedadas na passada final. */
+  --fonte-titulo: ui-serif, Georgia, 'Iowan Old Style', 'Times New Roman', serif;
+  --fonte-texto: ui-sans-serif, system-ui, 'Segoe UI', Roboto, sans-serif;
+  --fonte-dado: ui-monospace, 'Cascadia Mono', 'Segoe UI Mono', Menlo, monospace;
+}
+
+/* Sem escolha explícita, o sistema decide — e o padrão do produto é a noite. */
+@media (prefers-color-scheme: dark) {
+  :root:not(.claro) {
+    --sala: oklch(0.16 0.032 262);
+    --parede: oklch(0.21 0.042 262);
+    --estante: oklch(0.25 0.048 262);
+    --papel: oklch(0.94 0.008 85);
+    --poeira: oklch(0.66 0.028 262);
+    --linha: oklch(0.32 0.045 262);
+    --ouro: oklch(0.84 0.13 82);
+    --ouro-luz: oklch(0.84 0.13 82 / 0.22);
+    --lavagem: var(--sala);
+    --ouro-gravado: oklch(0.84 0.13 82);
+
+    --lombada-1: oklch(0.62 0.17 285);
+    --lombada-2: oklch(0.63 0.11 185);
+    --lombada-3: oklch(0.64 0.15 42);
+    --lombada-4: oklch(0.63 0.14 245);
+    --lombada-5: oklch(0.62 0.16 330);
+    --lombada-6: oklch(0.63 0.13 145);
+
+    --destructive: oklch(0.68 0.19 25);
+  }
+}
+
+.escuro {
+  --sala: oklch(0.16 0.032 262);
+  --parede: oklch(0.21 0.042 262);
+  --estante: oklch(0.25 0.048 262);
+  --papel: oklch(0.94 0.008 85);
+  --poeira: oklch(0.66 0.028 262);
+  --linha: oklch(0.32 0.045 262);
+  --ouro: oklch(0.84 0.13 82);
+  --ouro-luz: oklch(0.84 0.13 82 / 0.22);
+  --lavagem: var(--sala);
+  --ouro-gravado: oklch(0.84 0.13 82);
+
+  --lombada-1: oklch(0.62 0.17 285);
+  --lombada-2: oklch(0.63 0.11 185);
+  --lombada-3: oklch(0.64 0.15 42);
+  --lombada-4: oklch(0.63 0.14 245);
+  --lombada-5: oklch(0.62 0.16 330);
+  --lombada-6: oklch(0.63 0.13 145);
+
+  --destructive: oklch(0.68 0.19 25);
+}
+
+@theme inline {
+  --color-sala: var(--sala);
+  --color-parede: var(--parede);
+  --color-estante: var(--estante);
+  --color-papel: var(--papel);
+  --color-poeira: var(--poeira);
+  --color-linha: var(--linha);
+  --color-ouro: var(--ouro);
+  --color-ouro-luz: var(--ouro-luz);
+  --color-ouro-gravado: var(--ouro-gravado);
+  --color-destructive: var(--destructive);
+
+  --font-titulo: var(--fonte-titulo);
+  --font-texto: var(--fonte-texto);
+  --font-dado: var(--fonte-dado);
+
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+}
+
+@layer base {
+  * {
+    border-color: var(--linha);
+  }
+
+  html {
+    color-scheme: light dark;
+  }
+
+  body {
+    background: var(--sala);
+    color: var(--papel);
+    font-family: var(--fonte-texto);
+    -webkit-tap-highlight-color: transparent;
+    overscroll-behavior-y: none;
+  }
+
+  /* O foco nunca é dourado: ouro está reservado para conexão entre livros. */
+  :focus-visible {
+    outline: 2px solid color-mix(in oklab, var(--papel) 60%, transparent);
+    outline-offset: 2px;
+  }
+}
