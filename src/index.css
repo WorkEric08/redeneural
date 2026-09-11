@@ -272,13 +272,6 @@
   .animar-achado {
     animation: achado 360ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
   }
-
-  /* A fresta da porta pulsa como chama, não pisca como led — só existe
-     enquanto a cena da porta está montada (poucos segundos, uma vez por
-     abertura do app), então não é o "laço eterno" que a Rede evita. */
-  .animar-luz-da-porta {
-    animation: luz-da-porta 3200ms ease-in-out infinite;
-  }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -317,4 +310,484 @@
     outline: 2px solid color-mix(in oklab, var(--papel) 60%, transparent);
     outline-offset: 2px;
   }
+}
+
+/* ---------------------------------------------------------------------------
+ * A porta de entrada — a sala antes da sala.
+ *
+ * Desenhada em CSS, não como imagem: a folha gira sobre a dobradiça e a luz
+ * cresce pela fresta quando a pessoa entra, coisa que um .png não faz. E no
+ * APK cada MB já está comprometido com o modelo.
+ *
+ * A cena é sempre noturna, nos dois temas — chega-se ao palácio à noite, e a
+ * sala só assume o tema escolhido depois que a porta abre. Por isso as cores
+ * daqui são locais, e não os tokens globais.
+ *
+ * A luz vem de dentro, pela direita. Isso decide todo o resto: realce nas
+ * bordas direitas das molduras, sombra nas esquerdas, e a poça no assoalho
+ * saindo do vão.
+ * ------------------------------------------------------------------------ */
+
+.porta-cena {
+  --pt-noite: oklch(0.11 0.035 265);
+  --pt-parede: oklch(0.2 0.072 265);
+  --pt-moldura: oklch(0.26 0.078 265);
+  --pt-folha: oklch(0.235 0.085 266);
+  --pt-assoalho: oklch(0.175 0.045 263);
+  --pt-nucleo: oklch(0.98 0.05 95);
+  --pt-luz: oklch(0.88 0.16 88);
+  --pt-quente: oklch(0.74 0.17 70);
+
+  /* O tamanho da porta manda na cena inteira. */
+  --pt-altura: min(66vh, 560px);
+  --pt-largura: min(56vw, calc(var(--pt-altura) * 0.46));
+  --pt-chao: 16%;
+
+  position: fixed;
+  inset: 0;
+  display: block;
+  overflow: hidden;
+  cursor: pointer;
+  background: var(--pt-noite);
+  transform-origin: 50% 50%;
+  /* Sem `fill-mode` na animação de acender: com ele, o valor animado venceria
+     a transição de saída e a cena nunca sumiria. */
+  animation: porta-acender 900ms ease-out;
+  transition:
+    opacity 300ms ease-in 520ms,
+    transform 840ms cubic-bezier(0.5, 0, 0.75, 1);
+}
+
+.porta-cena[data-abrindo='true'] {
+  opacity: 0;
+  transform: scale(1.3);
+}
+
+@keyframes porta-acender {
+  from {
+    opacity: 0;
+  }
+}
+
+/* --- a parede ------------------------------------------------------------ */
+
+.porta-parede {
+  position: absolute;
+  inset: 0 0 var(--pt-chao) 0;
+  background: linear-gradient(
+    180deg,
+    var(--pt-noite) 0%,
+    color-mix(in oklab, var(--pt-parede) 62%, var(--pt-noite)) 46%,
+    var(--pt-parede) 100%
+  );
+}
+
+/* O friso que corta a parede na altura do lambril. */
+.porta-parede::after {
+  content: '';
+  position: absolute;
+  right: 0;
+  bottom: 27%;
+  left: 0;
+  height: 2px;
+  background: linear-gradient(
+    180deg,
+    color-mix(in oklab, var(--pt-moldura) 88%, white) 0%,
+    color-mix(in oklab, var(--pt-noite) 70%, black) 100%
+  );
+  opacity: 0.55;
+}
+
+/* O lambril corre pela parede inteira e some atrás do batente. Feito de
+   gradiente repetido, e não de duas placas posicionadas: numa tela larga as
+   placas viravam dois retângulos ilhados com parede nua entre eles. Quase
+   invisível de propósito — é a mesma parede, traída só pela moldura. */
+.porta-lambril {
+  position: absolute;
+  right: 0;
+  bottom: 4%;
+  left: 0;
+  height: 19%;
+  background-color: color-mix(in oklab, var(--pt-parede) 97%, white);
+  background-image:
+    repeating-linear-gradient(
+      90deg,
+      transparent 0 24px,
+      rgb(0 0 0 / 0.5) 24px 25px,
+      rgb(255 255 255 / 0.05) 25px 26px,
+      transparent 26px 214px,
+      rgb(0 0 0 / 0.5) 214px 215px,
+      rgb(255 255 255 / 0.05) 215px 216px,
+      transparent 216px 240px
+    ),
+    linear-gradient(
+      180deg,
+      rgb(0 0 0 / 0.45) 0 1px,
+      rgb(255 255 255 / 0.05) 1px 2px,
+      transparent 2px calc(100% - 2px),
+      rgb(0 0 0 / 0.45) calc(100% - 2px) calc(100% - 1px),
+      rgb(255 255 255 / 0.04) calc(100% - 1px) 100%
+    );
+}
+
+/* --- o assoalho ---------------------------------------------------------- */
+
+.porta-assoalho {
+  position: absolute;
+  inset: auto 0 0 0;
+  height: var(--pt-chao);
+  background-color: var(--pt-assoalho);
+  /* As juntas se afastam para baixo: é o que dá perspectiva sem 3D, que numa
+     WebView custa camada de composição por um ganho que ninguém vê. */
+  background-image:
+    repeating-linear-gradient(90deg, rgb(0 0 0 / 0.13) 0 1px, transparent 1px 61%),
+    linear-gradient(
+      180deg,
+      transparent 0 6%,
+      rgb(0 0 0 / 0.62) 6% 6.9%,
+      transparent 6.9% 17%,
+      rgb(0 0 0 / 0.58) 17% 18.1%,
+      transparent 18.1% 31%,
+      rgb(0 0 0 / 0.54) 31% 32.3%,
+      transparent 32.3% 49%,
+      rgb(0 0 0 / 0.5) 49% 50.5%,
+      transparent 50.5% 71%,
+      rgb(0 0 0 / 0.46) 71% 72.8%,
+      transparent 72.8% 100%
+    ),
+    linear-gradient(
+      180deg,
+      color-mix(in oklab, var(--pt-assoalho) 78%, white) 0%,
+      var(--pt-assoalho) 42%,
+      color-mix(in oklab, var(--pt-assoalho) 82%, black) 100%
+    );
+}
+
+/* --- o vão, a folha e o batente ------------------------------------------ */
+
+.porta-conjunto {
+  position: absolute;
+  bottom: var(--pt-chao);
+  left: 50%;
+  width: var(--pt-largura);
+  height: var(--pt-altura);
+  transform: translateX(-50%);
+}
+
+/* O outro lado: o quarto aceso de onde vem a luz. Quase branco junto da
+   fresta e caindo para âmbar ao fundo — é o pedaço claro que se vê pela
+   abertura, não uma parede laranja. */
+.porta-vao {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(
+    115% 110% at 104% 50%,
+    var(--pt-nucleo) 0%,
+    var(--pt-nucleo) 7%,
+    var(--pt-luz) 17%,
+    var(--pt-quente) 44%,
+    color-mix(in oklab, var(--pt-quente) 28%, black) 100%
+  );
+}
+
+/* A folha é um pouco menor que o vão: é daí que sai a fresta, e não do
+   ângulo — em 6° de giro a abertura teria meio pixel.
+ *
+ * A perspectiva mora aqui, no transform da própria folha, e não em
+ * `perspective` + `preserve-3d` no pai: com preserve-3d o vão vira um plano
+ * opaco em z=0 que corta a folha girada, e a luz vaza do lado errado. */
+.porta-folha {
+  position: absolute;
+  /* Folga embaixo e em cima também: na referência a luz passa por baixo da
+     porta, e é esse fio horizontal que faz a folha ter espessura. */
+  bottom: 0.7%;
+  left: 0;
+  width: 98.2%;
+  height: 98.2%;
+  transform-origin: left center;
+  transform: perspective(1100px) rotateY(-6deg);
+  border-radius: 1px 2px 2px 1px;
+  background: linear-gradient(
+    94deg,
+    color-mix(in oklab, var(--pt-folha) 62%, black) 0%,
+    var(--pt-folha) 52%,
+    color-mix(in oklab, var(--pt-folha) 94%, black) 88%,
+    color-mix(in oklab, var(--pt-folha) 70%, var(--pt-quente)) 98.5%,
+    color-mix(in oklab, var(--pt-folha) 40%, var(--pt-luz)) 100%
+  );
+  box-shadow:
+    inset -2px 0 10px -2px color-mix(in oklab, var(--pt-luz) 70%, transparent),
+    inset 24px 0 40px -26px rgb(0 0 0 / 0.85),
+    3px 0 34px 6px rgb(0 0 0 / 0.5);
+  transition: transform 840ms cubic-bezier(0.42, 0, 0.18, 1);
+}
+
+.porta-cena[data-abrindo='true'] .porta-folha {
+  transform: perspective(1100px) rotateY(-76deg);
+}
+
+/* O caixilho é um campo saliente cercado por um sulco: sulco escuro em volta,
+   bisel claro na direita e embaixo (a luz vem da direita), escuro em cima e à
+   esquerda. É o bisel que dá relevo — sem ele a folha vira um retângulo azul
+   com linhas desenhadas. */
+.porta-caixilho {
+  position: absolute;
+  right: 10%;
+  left: 12%;
+  border-radius: 1px;
+  background: linear-gradient(
+    100deg,
+    rgb(0 0 0 / 0.3) 0%,
+    rgb(0 0 0 / 0.08) 45%,
+    transparent 72%,
+    color-mix(in oklab, var(--pt-luz) 13%, transparent) 100%
+  );
+  box-shadow:
+    0 0 0 1px rgb(0 0 0 / 0.62),
+    inset 3px 3px 4px -2px rgb(0 0 0 / 0.85),
+    inset -3px -3px 4px -2px color-mix(in oklab, var(--pt-luz) 32%, transparent),
+    1px 1px 0 rgb(255 255 255 / 0.05);
+}
+
+/* A segunda moldura, por dentro — é ela que faz o caixilho parecer entalhado
+   e não um retângulo pintado. */
+.porta-caixilho::after {
+  content: '';
+  position: absolute;
+  inset: 7px;
+  border-radius: 1px;
+  box-shadow:
+    0 0 0 1px rgb(0 0 0 / 0.45),
+    inset -1px -1px 0 color-mix(in oklab, var(--pt-luz) 22%, transparent),
+    inset 1px 1px 0 rgb(0 0 0 / 0.55);
+}
+
+.porta-caixilho--topo {
+  top: 5%;
+  height: 40%;
+}
+
+.porta-caixilho--meio {
+  top: 48.5%;
+  height: 8%;
+}
+
+.porta-caixilho--base {
+  top: 60%;
+  height: 34%;
+}
+
+.porta-macaneta {
+  position: absolute;
+  top: 52%;
+  right: 4%;
+  width: 13%;
+  height: 4px;
+  border-radius: 999px;
+  background: linear-gradient(180deg, oklch(0.88 0.09 84), oklch(0.52 0.08 70));
+  box-shadow: 0 0 12px 1px color-mix(in oklab, var(--pt-luz) 55%, transparent);
+}
+
+.porta-macaneta::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  right: -3px;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: linear-gradient(180deg, oklch(0.82 0.08 82), oklch(0.45 0.07 68));
+  transform: translateY(-50%);
+}
+
+.porta-fechadura {
+  position: absolute;
+  top: 57.5%;
+  right: 6.5%;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: linear-gradient(180deg, oklch(0.7 0.08 78), oklch(0.4 0.06 66));
+  box-shadow: 0 0 8px color-mix(in oklab, var(--pt-luz) 45%, transparent);
+}
+
+.porta-umbral {
+  position: absolute;
+  background: linear-gradient(
+    90deg,
+    color-mix(in oklab, var(--pt-moldura) 62%, black) 0%,
+    var(--pt-moldura) 55%,
+    color-mix(in oklab, var(--pt-moldura) 88%, black) 100%
+  );
+  box-shadow:
+    inset 1px 0 0 rgb(255 255 255 / 0.05),
+    inset -1px 0 0 rgb(0 0 0 / 0.55),
+    inset 5px 0 0 -4px rgb(0 0 0 / 0.45),
+    inset -6px 0 0 -5px rgb(255 255 255 / 0.045);
+}
+
+.porta-umbral--esq {
+  top: -3.8%;
+  bottom: 0;
+  left: -9%;
+  width: 9%;
+}
+
+/* A ombreira da direita encosta na fresta: é a peça mais iluminada da cena. */
+.porta-umbral--dir {
+  top: -3.8%;
+  right: -9%;
+  bottom: 0;
+  width: 9%;
+  background: linear-gradient(
+    90deg,
+    color-mix(in oklab, var(--pt-moldura) 55%, var(--pt-quente)) 0%,
+    var(--pt-moldura) 48%,
+    color-mix(in oklab, var(--pt-moldura) 78%, black) 100%
+  );
+}
+
+.porta-umbral--verga {
+  top: -3.8%;
+  right: -9%;
+  left: -9%;
+  height: 3.8%;
+  background: linear-gradient(
+    180deg,
+    color-mix(in oklab, var(--pt-moldura) 82%, black) 0%,
+    var(--pt-moldura) 60%,
+    color-mix(in oklab, var(--pt-moldura) 58%, black) 100%
+  );
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.05),
+    inset 0 -1px 0 rgb(0 0 0 / 0.55),
+    inset 0 -6px 0 -5px rgb(255 255 255 / 0.04);
+}
+
+/* Os soco das ombreiras: o bloco onde a moldura encontra o assoalho. */
+.porta-soco {
+  position: absolute;
+  bottom: 0;
+  height: 7%;
+  width: 11%;
+  background: linear-gradient(
+    90deg,
+    color-mix(in oklab, var(--pt-moldura) 58%, black) 0%,
+    color-mix(in oklab, var(--pt-moldura) 104%, white) 60%,
+    color-mix(in oklab, var(--pt-moldura) 80%, black) 100%
+  );
+  box-shadow:
+    0 0 0 1px rgb(0 0 0 / 0.45),
+    inset 0 1px 0 rgb(255 255 255 / 0.06);
+}
+
+.porta-soco--esq {
+  left: -10%;
+}
+
+.porta-soco--dir {
+  right: -10%;
+}
+
+/* --- a luz --------------------------------------------------------------- */
+
+/* O halo largo: a luz que lava a parede e a moldura em volta do vão. Fraco de
+   propósito — o que dá a impressão de brilho é o contraste com a sala escura,
+   não a quantidade de tinta amarela. */
+.porta-aura {
+  position: absolute;
+  inset: -26% -46% -20% 52%;
+  pointer-events: none;
+  background: radial-gradient(
+    closest-side,
+    color-mix(in oklab, var(--pt-quente) 22%, transparent) 0%,
+    transparent 100%
+  );
+  filter: blur(26px);
+  transition: opacity 700ms ease-out;
+}
+
+/* O núcleo da fresta, onde a luz é quase branca. Pulsa como chama, não pisca
+   como led — e some junto com a cena, então não é o laço eterno que a Rede
+   evita por bateria. */
+.porta-brilho {
+  position: absolute;
+  top: -2%;
+  right: -4%;
+  bottom: -1.5%;
+  left: 91%;
+  pointer-events: none;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    color-mix(in oklab, var(--pt-quente) 40%, transparent) 46%,
+    color-mix(in oklab, var(--pt-nucleo) 88%, transparent) 72%,
+    color-mix(in oklab, var(--pt-luz) 26%, transparent) 100%
+  );
+  filter: blur(7px);
+  transform-origin: 76% center;
+  animation: luz-da-porta 3600ms ease-in-out infinite;
+  transition: transform 840ms cubic-bezier(0.42, 0, 0.18, 1);
+}
+
+.porta-cena[data-abrindo='true'] .porta-brilho {
+  transform: scaleX(9);
+}
+
+/* A poça no assoalho: a luz sai do vão e abre em leque na direção de quem
+   olha. Dois gradientes em vez de um recorte em polígono — luz no assoalho não
+   tem aresta, e um clip-path deixava um triângulo de papel colado no chão. */
+.porta-derrame {
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  width: min(140vw, 820px);
+  /* Quase presa ao assoalho: a luz que subia pela folha apagava justamente o
+     contraste que faz a fresta brilhar. Os 3% que passam da soleira são o
+     quicar da luz na base da porta. */
+  height: calc(var(--pt-chao) + 3%);
+  pointer-events: none;
+  background:
+    radial-gradient(
+      24% 72% at 50% 6%,
+      color-mix(in oklab, var(--pt-nucleo) 62%, transparent) 0%,
+      color-mix(in oklab, var(--pt-luz) 42%, transparent) 38%,
+      transparent 100%
+    ),
+    radial-gradient(
+      68% 130% at 50% -6%,
+      color-mix(in oklab, var(--pt-quente) 40%, transparent) 0%,
+      color-mix(in oklab, var(--pt-quente) 14%, transparent) 48%,
+      transparent 82%
+    );
+  filter: blur(14px);
+  transform: translateX(-33%);
+  transform-origin: 50% 0;
+  transition: transform 840ms ease-out;
+}
+
+.porta-cena[data-abrindo='true'] .porta-derrame {
+  transform: translateX(-33%) scale(1.6);
+}
+
+.porta-vinheta {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(118% 80% at 50% 52%, transparent 28%, rgb(0 0 0 / 0.66) 100%);
+}
+
+.porta-convite {
+  position: absolute;
+  right: 0;
+  bottom: 6%;
+  left: 0;
+  text-align: center;
+  font-family: var(--fonte-texto);
+  font-size: 0.78rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: color-mix(in oklab, var(--pt-luz) 50%, transparent);
+  /* Entra depois da cena: o primeiro instante é só a sala. */
+  animation: entrada 900ms ease-out 1100ms both;
 }

@@ -7,13 +7,18 @@ interface Props {
 /**
  * A porta de entrada — pura atmosfera, sem lógica de domínio nenhuma. Aparece
  * uma vez por carregamento do app, na frente de qualquer rota; tocar (ou
- * Enter/Espaço — é um <button>) abre a fresta e revela o palácio por trás.
+ * Enter/Espaço — é um <button>) abre a folha e revela o palácio.
  *
- * Duração da animação e o `setTimeout` andam juntos de propósito: o pai só
- * desmonta a porta quando a transição CSS termina, senão a estante apareceria
- * de golpe por baixo antes da porta acabar de abrir.
+ * A cena inteira é CSS (ver `.porta-cena` em index.css): parede com lambril,
+ * batente, folha de três caixilhos, assoalho e a luz vazando pela fresta. O
+ * `setTimeout` acompanha a duração da transição — o pai só desmonta quando a
+ * folha terminou de girar, senão a estante apareceria de golpe por baixo.
+ *
+ * Os elementos são <span> e não <div> porque o conteúdo de um <button> só
+ * aceita conteúdo de frase; posicionados em absolute, viram bloco do mesmo
+ * jeito.
  */
-const DURACAO_ABERTURA_MS = 650
+const DURACAO_ABERTURA_MS = 840
 
 export function Porta({ onEntrar }: Props) {
   const [abrindo, setAbrindo] = useState(false)
@@ -21,36 +26,45 @@ export function Porta({ onEntrar }: Props) {
   return (
     <button
       type="button"
+      aria-label="Entrar no palácio"
+      className="porta-cena"
+      data-abrindo={abrindo}
       onClick={() => {
+        if (abrindo) return
         setAbrindo(true)
         setTimeout(onEntrar, DURACAO_ABERTURA_MS)
       }}
-      aria-label="Entrar no palácio"
-      className={`bg-sala fixed inset-0 z-50 flex items-center justify-center overflow-hidden transition-opacity duration-[650ms] ease-in ${
-        abrindo ? 'opacity-0' : 'opacity-100'
-      }`}
     >
-      <div
-        className="bg-estante relative h-[68vh] w-56 max-w-[68vw] rounded-[2px] shadow-[inset_6px_0_18px_rgb(0_0_0/0.45)] transition-transform duration-[650ms] ease-in"
-        style={{
-          transformOrigin: 'left center',
-          transform: abrindo ? 'perspective(1400px) rotateY(-52deg) translateX(-8px)' : 'none',
-        }}
-      >
-        {/* A fresta: luz quente vazando pela borda oposta à dobradiça — a
-            referência visual do projeto (ver CLAUDE.md, "Direção visual"). */}
-        <div
-          aria-hidden
-          className="animar-luz-da-porta absolute top-0 right-0 h-full w-3"
-          style={{
-            background: 'linear-gradient(90deg, transparent, oklch(0.95 0.05 85))',
-            boxShadow:
-              '0 0 40px 14px oklch(0.84 0.13 82 / 0.55), 0 0 100px 46px oklch(0.84 0.13 82 / 0.22)',
-          }}
-        />
-      </div>
+      <span className="porta-parede" aria-hidden>
+        <span className="porta-lambril" />
+      </span>
 
-      <p className="text-poeira absolute bottom-[14%] text-sm tracking-wide">Toque para entrar</p>
+      <span className="porta-assoalho" aria-hidden />
+
+      <span className="porta-conjunto" aria-hidden>
+        <span className="porta-vao" />
+
+        <span className="porta-folha">
+          <span className="porta-caixilho porta-caixilho--topo" />
+          <span className="porta-caixilho porta-caixilho--meio" />
+          <span className="porta-caixilho porta-caixilho--base" />
+          <span className="porta-macaneta" />
+          <span className="porta-fechadura" />
+        </span>
+
+        <span className="porta-umbral porta-umbral--esq" />
+        <span className="porta-umbral porta-umbral--dir" />
+        <span className="porta-umbral porta-umbral--verga" />
+        <span className="porta-soco porta-soco--esq" />
+        <span className="porta-soco porta-soco--dir" />
+
+        <span className="porta-aura" />
+        <span className="porta-brilho" />
+      </span>
+
+      <span className="porta-derrame" aria-hidden />
+      <span className="porta-vinheta" aria-hidden />
+      <span className="porta-convite">Toque para entrar</span>
     </button>
   )
 }
