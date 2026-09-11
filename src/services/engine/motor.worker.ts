@@ -24,7 +24,6 @@ import {
   type ResultadoDeEscrita,
 } from '@/core'
 import { seedPalacio } from '@/features/palacio/seed'
-import { criarRerankDesligado } from '@/services/inferencia/rerankDesligado'
 import { criarTransformersEmbedding } from '@/services/inferencia/transformersEmbedding'
 import { palacioRepo } from '@/services/repo/dexieRepo'
 
@@ -45,15 +44,15 @@ const embedding = criarTransformersEmbedding({
   },
 })
 
-const rerank = criarRerankDesligado()
-
 /**
- * A degradação elegante, escrita como código e não como comentário: se o
- * reranker não estiver disponível, o motor roda só com o embedding.
+ * v1 roda só com embedding — decisão do "Ajuste de escopo" (11/09/2026): com
+ * neurônios de texto longo o embedding já carrega sinal suficiente, e o
+ * reranker (`RerankProvider`, `rerankDesligado.ts`) fica reservado para
+ * reativar depois se aparecer falso positivo real no uso. `construirGrafo` e
+ * `recalcularVizinhanca` continuam aceitando `PontuarPar` de propósito — é o
+ * que torna a reativação uma troca desta constante, não uma refatoração.
  */
-const pontuar: PontuarPar = rerank.available()
-  ? (a, b) => rerank.score(a.texto, b.texto)
-  : SEM_RERANK
+const pontuar: PontuarPar = SEM_RERANK
 
 /**
  * Quando vale a pena refazer o palácio inteiro em vez de só a vizinhança.

@@ -60,16 +60,13 @@ export function Formulario({
       </label>
 
       <label className="flex flex-col gap-1.5">
-        <span className="text-poeira text-xs tracking-wide uppercase">Conceito</span>
+        <span className="text-poeira text-xs tracking-wide uppercase">Título</span>
         <input
           value={titulo}
           onChange={(e) => {
             setTitulo(e.target.value)
           }}
-          placeholder="Neuroplasticidade"
-          // A tela inteira existe para este campo: abrir o teclado direto poupa um
-          // toque em todo neurônio criado no celular.
-          autoFocus
+          placeholder="Um título curto para achar isto depois"
           className="border-linha bg-parede font-titulo h-12 rounded-lg border px-3 text-lg"
         />
       </label>
@@ -81,13 +78,15 @@ export function Formulario({
           onChange={(e) => {
             setConteudo(e.target.value)
           }}
-          placeholder="O que é, por que importa, o que você entendeu."
-          rows={7}
+          placeholder="Um roteiro, um pensamento desenvolvido — o que vier."
+          rows={14}
+          // A tela existe para este campo agora: abrir o teclado direto nele
+          // poupa um toque em todo neurônio criado no celular.
+          autoFocus
           className="border-linha bg-parede rounded-lg border px-3 py-2.5 leading-relaxed"
         />
         <span className="text-poeira text-xs">
-          Quanto mais você escrever com suas palavras, melhores as conexões — é esse texto que o
-          modelo lê.
+          Escreva livre e à vontade — é esse texto que o modelo lê para achar as conexões.
         </span>
       </label>
 

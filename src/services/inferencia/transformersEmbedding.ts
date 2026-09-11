@@ -19,6 +19,20 @@ const DIM = 384
 const PREFIXO = 'query: '
 
 /**
+ * Truncamento simples.
+ *
+ * Neurônios viraram texto livre e potencialmente longo (um roteiro, um
+ * pensamento desenvolvido), mas o e5 tem um limite prático de ~512 tokens e
+ * corta o final em silêncio se deixarmos passar disso. Em vez de chunking
+ * (fatiar e combinar embeddings — fica para depois, só se sentirmos ideia de
+ * meio/fim de texto "esquecida" nas conexões), v1 usa só os primeiros ~2500
+ * caracteres: a essência de um pensamento costuma aparecer no começo.
+ *
+ * Mora aqui e não no núcleo porque é detalhe deste modelo, como o prefixo do e5.
+ */
+const LIMITE_CARACTERES = 2500
+
+/**
  * Tira o runtime ONNX do CDN.
  *
  * Por padrão o transformers.js aponta `wasmPaths` para o jsdelivr, então a
@@ -112,7 +126,8 @@ export function criarTransformersEmbedding(opcoes: OpcoesEmbedding = {}): Embedd
 
     async embed(text: string): Promise<Float32Array> {
       const extrator = await carregar()
-      const saida = await extrator(PREFIXO + text, { pooling: 'mean', normalize: true })
+      const truncado = text.slice(0, LIMITE_CARACTERES)
+      const saida = await extrator(PREFIXO + truncado, { pooling: 'mean', normalize: true })
 
       const vetor = saida.data as Float32Array
       if (vetor.length !== DIM) {
