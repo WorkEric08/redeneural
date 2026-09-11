@@ -12,7 +12,7 @@ export default function Novo() {
   const livroSugerido = busca.get('livro') ?? undefined
 
   return (
-    <div className="flex flex-col gap-5">
+    <div className="animar-entrada flex flex-col gap-5">
       <header>
         <h1 className="font-titulo text-xl font-semibold tracking-tight">Novo neurônio</h1>
         <p className="text-poeira text-sm">As conexões nascem sozinhas. Você só escreve.</p>

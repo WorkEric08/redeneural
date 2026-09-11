@@ -36,7 +36,7 @@ export function Lombada({ item }: { item: LivroNaEstante }) {
 
       {item.saindo > 0 && (
         <span
-          className="bg-ouro-gravado absolute top-1.5 left-1/2 size-1 -translate-x-1/2 rounded-full"
+          className="bg-ouro-gravado brilho-ouro absolute top-1.5 left-1/2 size-1 -translate-x-1/2 rounded-full"
           aria-hidden
         />
       )}

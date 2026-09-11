@@ -24,7 +24,7 @@ export default function Ajustes() {
   const semVetor = neuronios.filter((n) => n.processando).length
 
   return (
-    <div className="flex flex-col gap-8">
+    <div className="animar-entrada flex flex-col gap-8">
       <header>
         <h1 className="font-titulo text-xl font-semibold tracking-tight">Ajustes</h1>
         <p className="text-poeira text-sm">
@@ -36,11 +36,15 @@ export default function Ajustes() {
       </header>
 
       {erro && (
-        <p className="text-destructive border-destructive/40 rounded-lg border p-3 text-sm">
+        <p className="text-destructive border-destructive/40 bg-parede sombra-superficie rounded-lg border p-3 text-sm">
           {erro}
         </p>
       )}
-      {aviso && <p className="border-linha text-poeira rounded-lg border p-3 text-sm">{aviso}</p>}
+      {aviso && (
+        <p className="border-linha bg-parede text-poeira sombra-superficie rounded-lg border p-3 text-sm">
+          {aviso}
+        </p>
+      )}
 
       <section className="flex flex-col gap-3">
         <div>
@@ -55,12 +59,12 @@ export default function Ajustes() {
           <button
             onClick={() => void exportar()}
             disabled={ocupado || !carregado}
-            className="border-linha h-12 rounded-lg border px-4 text-sm disabled:opacity-50"
+            className="border-linha h-12 rounded-lg border px-4 text-sm transition-transform active:scale-[0.98] disabled:opacity-50 disabled:active:scale-100"
           >
             Exportar
           </button>
 
-          <label className="border-linha flex h-12 cursor-pointer items-center rounded-lg border px-4 text-sm has-disabled:opacity-50">
+          <label className="border-linha flex h-12 cursor-pointer items-center rounded-lg border px-4 text-sm transition-transform active:scale-[0.98] has-disabled:opacity-50">
             Importar
             <input
               type="file"

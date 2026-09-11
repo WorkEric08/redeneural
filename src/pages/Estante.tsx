@@ -9,8 +9,8 @@ import { usePalacio } from '@/store/palacio'
 /**
  * A estante: seus livros vistos de fora.
  *
- * Sóbria de propósito — textura, luz e a porta de entrada ficam para a passada
- * final de acabamento. O que precisa estar certo aqui é a informação.
+ * A porta de entrada ainda fica para depois — o resto do acabamento
+ * (madeira, ouro como luz) já chegou aqui.
  */
 export default function Estante() {
   const { livros, neuronios, conexoes, carregado, erro } = usePalacio()
@@ -22,7 +22,7 @@ export default function Estante() {
   const douradas = useMemo(() => conexoes.filter((c) => c.cross).length, [conexoes])
 
   return (
-    <div className="flex flex-col gap-8">
+    <div className="animar-entrada flex flex-col gap-8">
       <header className="flex flex-col gap-1">
         <h1 className="font-titulo text-2xl font-semibold tracking-tight">Palácio Mental</h1>
         <p className="text-poeira text-sm">
@@ -39,11 +39,13 @@ export default function Estante() {
       )}
 
       <section className="flex flex-col gap-3">
-        {/* A base da estante é uma linha só: a madeira entra no acabamento. */}
-        <div className="border-linha flex items-end gap-1.5 overflow-x-auto border-b pb-0">
-          {estante.map((item) => (
-            <Lombada key={item.livro.id} item={item} />
-          ))}
+        <div className="flex flex-col">
+          <div className="flex items-end gap-1.5 overflow-x-auto">
+            {estante.map((item) => (
+              <Lombada key={item.livro.id} item={item} />
+            ))}
+          </div>
+          <div className="prateleira h-2 shrink-0 rounded-b-[2px]" aria-hidden />
         </div>
 
         <p className="text-poeira text-xs">
@@ -51,7 +53,7 @@ export default function Estante() {
           {douradas > 0 && (
             <>
               {' '}
-              O ponto <span className="text-ouro">dourado</span> marca livro com fio saindo para
+              O ponto <span className="text-ouro brilho-ouro-texto-sm">dourado</span> marca livro com fio saindo para
               outro — {douradas} no palácio.
             </>
           )}
@@ -61,12 +63,12 @@ export default function Estante() {
       {conexoes.length > 0 && (
         <Link
           to="/rede"
-          className="border-linha flex items-center justify-between rounded-lg border px-3 py-3 text-sm"
+          className="border-linha bg-parede sombra-superficie flex items-center justify-between rounded-lg border px-3 py-3 text-sm transition-transform active:scale-[0.98]"
         >
           <span>Ver a rede do palácio</span>
           <span className="text-poeira text-xs">
             {contar(conexoes.length, 'fio', 'fios')} ·{' '}
-            <span className="text-ouro">{contar(douradas, 'ponte', 'pontes')}</span>
+            <span className="text-ouro brilho-ouro-texto-sm">{contar(douradas, 'ponte', 'pontes')}</span>
           </span>
         </Link>
       )}
@@ -87,7 +89,9 @@ export default function Estante() {
                 </span>
                 <span className="text-poeira font-dado shrink-0 text-xs tabular-nums">
                   {item.neuronios}
-                  {item.saindo > 0 && <span className="text-ouro"> · {item.saindo} ↗</span>}
+                  {item.saindo > 0 && (
+                    <span className="text-ouro brilho-ouro-texto-sm"> · {item.saindo} ↗</span>
+                  )}
                 </span>
               </Link>
             </li>

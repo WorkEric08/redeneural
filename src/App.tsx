@@ -1,9 +1,10 @@
 import { Plus } from 'lucide-react'
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { Link, Outlet, useLocation } from 'react-router-dom'
 
 import type { ProgressoDoMotor } from '@/core'
 import { Navegacao } from '@/components/Navegacao'
+import { Porta } from '@/components/Porta'
 import { usePalacio } from '@/store/palacio'
 
 /** Rotas onde escrever seria estranho: já se está escrevendo, ou a tela é a escrita. */
@@ -14,12 +15,19 @@ export default function App() {
   const carregar = usePalacio((s) => s.carregar)
   const progresso = usePalacio((s) => s.progresso)
   const { pathname } = useLocation()
+  // Pura atmosfera: uma vez por carregamento do app, não por rota — ver
+  // CLAUDE.md, "A porta de entrada".
+  const [naPorta, setNaPorta] = useState(true)
 
   useEffect(() => {
     void carregar()
   }, [carregar])
 
   const mostrarCriar = !SEM_BOTAO_DE_CRIAR.includes(pathname) && !pathname.endsWith('/editar')
+
+  if (naPorta) {
+    return <Porta onEntrar={() => setNaPorta(false)} />
+  }
 
   return (
     <div className="min-h-dvh lg:pl-52">
@@ -34,7 +42,7 @@ export default function App() {
         <Link
           to="/novo"
           aria-label="Novo neurônio"
-          className="bg-papel text-sala fixed right-4 bottom-20 z-30 flex size-14 items-center justify-center rounded-full shadow-lg lg:bottom-6"
+          className="bg-papel text-sala sombra-flutuante fixed right-4 bottom-20 z-30 flex size-14 items-center justify-center rounded-full transition-transform active:scale-95 lg:bottom-6"
           style={{ marginBottom: 'env(safe-area-inset-bottom)' }}
         >
           <Plus size={24} aria-hidden />

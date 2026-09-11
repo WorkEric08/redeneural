@@ -30,7 +30,7 @@ export default function Rede() {
   const livroDoEscolhido = livros.find((l) => l.id === escolhido?.livroId)
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="animar-entrada flex flex-col gap-4">
       <header className="flex flex-col gap-1">
         <Link to="/" className="text-poeira w-fit py-1 text-sm">
           ← Estante
@@ -40,7 +40,9 @@ export default function Rede() {
           {carregado
             ? `${contar(neuronios.length, 'neurônio', 'neurônios')} · ${contar(conexoes.length, 'conexão', 'conexões')} · `
             : 'Abrindo…'}
-          {carregado && <span className="text-ouro">{contar(douradas, 'ponte', 'pontes')}</span>}
+          {carregado && (
+            <span className="text-ouro brilho-ouro-texto-sm">{contar(douradas, 'ponte', 'pontes')}</span>
+          )}
         </p>
       </header>
 

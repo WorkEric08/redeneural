@@ -40,7 +40,7 @@ export default function Livro() {
   )
 
   return (
-    <div className="flex flex-col gap-8">
+    <div className="animar-entrada flex flex-col gap-8">
       <header className="flex flex-col gap-3">
         <Voltar />
         <div className="flex items-center gap-3">
@@ -54,7 +54,10 @@ export default function Livro() {
             <p className="text-poeira text-sm">
               {contar(meus.length, 'neurônio', 'neurônios')}
               {saindo > 0 && (
-                <span className="text-ouro"> · {contar(saindo, 'fio saindo', 'fios saindo')}</span>
+                <span className="text-ouro brilho-ouro-texto-sm">
+                  {' '}
+                  · {contar(saindo, 'fio saindo', 'fios saindo')}
+                </span>
               )}
             </p>
           </div>

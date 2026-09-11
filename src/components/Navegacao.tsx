@@ -19,7 +19,7 @@ export function Navegacao() {
   return (
     <nav
       aria-label="Principal"
-      className="border-linha bg-parede/95 fixed inset-x-0 bottom-0 z-20 border-t backdrop-blur lg:inset-y-0 lg:right-auto lg:w-52 lg:border-t-0 lg:border-r"
+      className="border-linha bg-parede/95 fixed inset-x-0 bottom-0 z-20 border-t shadow-[0_-2px_12px_rgb(0_0_0/0.08)] backdrop-blur lg:inset-y-0 lg:right-auto lg:w-52 lg:border-t-0 lg:border-r lg:shadow-[2px_0_12px_rgb(0_0_0/0.08)]"
       style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
     >
       <ul className="mx-auto flex max-w-2xl lg:mt-6 lg:flex-col lg:gap-1 lg:px-3">

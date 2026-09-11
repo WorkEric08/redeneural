@@ -49,7 +49,7 @@ export function Formulario({
           onChange={(e) => {
             setLivroEscolhido(e.target.value)
           }}
-          className="border-linha bg-parede h-12 rounded-lg border px-3"
+          className="border-linha bg-parede sombra-campo h-12 rounded-lg border px-3"
         >
           {livros.map((l) => (
             <option key={l.id} value={l.id}>
@@ -67,7 +67,7 @@ export function Formulario({
             setTitulo(e.target.value)
           }}
           placeholder="Um título curto para achar isto depois"
-          className="border-linha bg-parede font-titulo h-12 rounded-lg border px-3 text-lg"
+          className="border-linha bg-parede sombra-campo font-titulo h-12 rounded-lg border px-3 text-lg"
         />
       </label>
 
@@ -83,7 +83,7 @@ export function Formulario({
           // A tela existe para este campo agora: abrir o teclado direto nele
           // poupa um toque em todo neurônio criado no celular.
           autoFocus
-          className="border-linha bg-parede rounded-lg border px-3 py-2.5 leading-relaxed"
+          className="border-linha bg-parede sombra-campo rounded-lg border px-3 py-2.5 leading-relaxed"
         />
         <span className="text-poeira text-xs">
           Escreva livre e à vontade — é esse texto que o modelo lê para achar as conexões.
@@ -94,7 +94,7 @@ export function Formulario({
         <button
           type="submit"
           disabled={!podeEnviar}
-          className="bg-papel text-sala h-12 flex-1 rounded-lg font-semibold disabled:opacity-50"
+          className="bg-papel text-sala sombra-superficie h-12 flex-1 rounded-lg font-semibold transition-transform active:scale-[0.98] disabled:opacity-50 disabled:active:scale-100"
         >
           {ocupado ? 'Processando…' : rotuloDeEnvio}
         </button>
@@ -102,7 +102,7 @@ export function Formulario({
           type="button"
           onClick={onCancelar}
           disabled={ocupado}
-          className="border-linha h-12 rounded-lg border px-4 text-sm disabled:opacity-50"
+          className="border-linha h-12 rounded-lg border px-4 text-sm transition-transform active:scale-[0.98] disabled:opacity-50 disabled:active:scale-100"
         >
           Cancelar
         </button>

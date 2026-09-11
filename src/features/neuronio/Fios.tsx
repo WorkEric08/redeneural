@@ -49,6 +49,7 @@ export function Fio({ score, cross }: { score: number; cross: boolean }) {
         strokeLinecap="round"
         strokeDasharray={score === 0 ? '2 3' : undefined}
         opacity={score === 0 ? 0.45 : 0.35 + score * 0.6}
+        style={cross ? { filter: 'drop-shadow(0 0 3px var(--ouro-luz))' } : undefined}
       />
     </svg>
   )

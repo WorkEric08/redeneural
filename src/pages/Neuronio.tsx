@@ -44,7 +44,7 @@ export default function Neuronio() {
   const acabouDeNascer = busca.get('nasceu') === '1'
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="animar-entrada flex flex-col gap-6">
       <header className="flex flex-col gap-3">
         {livro && (
           <Link
@@ -84,7 +84,7 @@ export default function Neuronio() {
       <footer className="flex gap-2 pt-2">
         <Link
           to={`/neuronio/${neuronio.id}/editar`}
-          className="border-linha flex h-11 flex-1 items-center justify-center rounded-lg border text-sm"
+          className="border-linha flex h-11 flex-1 items-center justify-center rounded-lg border text-sm transition-transform active:scale-[0.98]"
         >
           Editar
         </Link>
@@ -112,7 +112,7 @@ export default function Neuronio() {
 function Nasceu({ vizinhos }: { vizinhos: readonly VizinhoDoNeuronio[] }) {
   if (vizinhos.length === 0) {
     return (
-      <p className="border-linha text-poeira rounded-lg border p-3 text-sm">
+      <p className="border-linha bg-parede text-poeira sombra-superficie rounded-lg border p-3 text-sm">
         Nasceu sozinho por enquanto. Assim que houver algo parecido no palácio, o fio aparece.
       </p>
     )
@@ -120,12 +120,19 @@ function Nasceu({ vizinhos }: { vizinhos: readonly VizinhoDoNeuronio[] }) {
 
   const pontes = vizinhos.filter((v) => v.conexao.cross)
   const dentro = vizinhos.filter((v) => !v.conexao.cross)
+  const achado = pontes.length > 0
 
   return (
-    <div className="border-ouro/40 bg-ouro-luz flex flex-col gap-2 rounded-lg border p-3">
+    <div
+      className={
+        achado
+          ? 'border-ouro/40 bg-ouro-luz brilho-ouro animar-achado flex flex-col gap-2 rounded-lg border p-3'
+          : 'border-linha bg-parede sombra-superficie flex flex-col gap-2 rounded-lg border p-3'
+      }
+    >
       {pontes.length > 0 && (
         <p className="text-sm">
-          <span className="text-ouro font-semibold">
+          <span className="text-ouro brilho-ouro-texto font-semibold">
             {pontes.length === 1 ? 'Achou uma ponte' : `Achou ${String(pontes.length)} pontes`}
           </span>{' '}
           — {listar(pontes.map((p) => `${p.outroTitulo}, em ${p.outroLivro}`))}.
