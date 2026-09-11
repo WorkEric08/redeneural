@@ -1,7 +1,7 @@
 import { useMemo } from 'react'
 import { Link } from 'react-router-dom'
 
-import { Lombada } from '@/features/estante/Lombada'
+import { Movel } from '@/features/estante/Movel'
 import { montarEstante } from '@/features/estante/resumo'
 import { contar } from '@/lib/plural'
 import { usePalacio } from '@/store/palacio'
@@ -39,22 +39,15 @@ export default function Estante() {
       )}
 
       <section className="flex flex-col gap-3">
-        <div className="flex flex-col">
-          <div className="flex items-end gap-1.5 overflow-x-auto">
-            {estante.map((item) => (
-              <Lombada key={item.livro.id} item={item} />
-            ))}
-          </div>
-          <div className="prateleira h-2 shrink-0 rounded-b-[2px]" aria-hidden />
-        </div>
+        <Movel estante={estante} />
 
         <p className="text-poeira text-xs">
           A altura da lombada é a quantidade de neurônios.
           {douradas > 0 && (
             <>
               {' '}
-              O ponto <span className="text-ouro brilho-ouro-texto-sm">dourado</span> marca livro com fio saindo para
-              outro — {douradas} no palácio.
+              O ponto <span className="text-ouro brilho-ouro-texto-sm">dourado</span> marca livro
+              com fio saindo para outro — {douradas} no palácio.
             </>
           )}
         </p>
@@ -68,7 +61,9 @@ export default function Estante() {
           <span>Ver a rede do palácio</span>
           <span className="text-poeira text-xs">
             {contar(conexoes.length, 'fio', 'fios')} ·{' '}
-            <span className="text-ouro brilho-ouro-texto-sm">{contar(douradas, 'ponte', 'pontes')}</span>
+            <span className="text-ouro brilho-ouro-texto-sm">
+              {contar(douradas, 'ponte', 'pontes')}
+            </span>
           </span>
         </Link>
       )}

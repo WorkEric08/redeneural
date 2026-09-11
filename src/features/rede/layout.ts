@@ -1,4 +1,5 @@
 import type { Conexao, Id, Livro, NeuronioNaTela } from '@/core'
+import { semente } from '@/lib/semente'
 
 /**
  * Onde cada neurônio fica na rede.
@@ -74,23 +75,6 @@ export function dimensionar(
     raioDoLivro,
     raioDoPalacio: Math.max(raioDoLivro * 1.5, circunferencia / (2 * Math.PI)),
   }
-}
-
-/** FNV-1a. Só precisa ser estável e bem espalhado — não é criptografia. */
-function embaralhar(texto: string): number {
-  let h = 0x811c9dc5
-  for (let i = 0; i < texto.length; i++) {
-    h ^= texto.charCodeAt(i)
-    h = Math.imul(h, 0x01000193)
-  }
-  return h >>> 0
-}
-
-/** Dois números em [0,1) a partir do id — é a semente do lugar de cada neurônio. */
-function semente(id: string): [number, number] {
-  const a = embaralhar(id)
-  const b = embaralhar(`${id}#2`)
-  return [a / 0xffffffff, b / 0xffffffff]
 }
 
 export function montarMapa(
