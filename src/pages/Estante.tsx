@@ -22,34 +22,20 @@ export default function Estante() {
   const douradas = useMemo(() => conexoes.filter((c) => c.cross).length, [conexoes])
 
   return (
-    <div className="animar-entrada flex flex-col gap-8">
-      <header className="flex flex-col gap-1">
-        <h1 className="font-titulo text-2xl font-semibold tracking-tight">Palácio Mental</h1>
-        <p className="text-poeira text-sm">
-          {carregado
-            ? `${contar(livros.length, 'livro', 'livros')} · ${contar(neuronios.length, 'neurônio', 'neurônios')} · ${contar(conexoes.length, 'conexão', 'conexões')}`
-            : 'Abrindo o palácio…'}
-        </p>
-      </header>
-
+    <div className="animar-entrada flex flex-col gap-5">
       {erro && (
-        <p className="text-destructive border-destructive/40 rounded-lg border p-3 text-sm">
+        <p className="text-destructive border-destructive/40 bg-parede sombra-superficie rounded-lg border p-3 text-sm">
           {erro}
         </p>
       )}
 
-      <section className="flex flex-col gap-3">
+      <section className="flex flex-col gap-2">
         <Movel estante={estante} />
 
         <p className="text-poeira text-xs">
-          A altura da lombada é a quantidade de neurônios.
-          {douradas > 0 && (
-            <>
-              {' '}
-              O ponto <span className="text-ouro brilho-ouro-texto-sm">dourado</span> marca livro
-              com fio saindo para outro — {douradas} no palácio.
-            </>
-          )}
+          {carregado
+            ? `${contar(livros.length, 'livro', 'livros')} · ${contar(neuronios.length, 'neurônio', 'neurônios')} · ${contar(conexoes.length, 'conexão', 'conexões')}`
+            : 'Abrindo o palácio…'}
         </p>
       </section>
 

@@ -2,8 +2,8 @@ import { Link } from 'react-router-dom'
 
 import type { LivroNaEstante } from './resumo'
 
-const ALTURA_MINIMA = 84
-const ALTURA_MAXIMA = 126
+const ALTURA_MINIMA = 58
+const ALTURA_MAXIMA = 86
 
 /**
  * Um livro visto de fora.

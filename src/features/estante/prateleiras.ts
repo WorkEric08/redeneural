@@ -95,7 +95,9 @@ function montarEnfeites(prateleira: number): Enfeite[] {
       largura: deitado ? Math.round(32 + a * 24) : Math.round(15 + a * 26),
       // Altura puxada para cima: numa estante cheia quase todo livro chega
       // perto da tábua de cima, e vão vazio demais lê como buraco, não como ar.
-      altura: deitado ? Math.round(11 + b * 8) : Math.round(90 + b * 36),
+      // Mesmo teto dos livros de verdade (ver Lombada.tsx) — um enfeite maior
+      // que o maior livro possível ia parecer erro, não decoração.
+      altura: deitado ? Math.round(7 + b * 6) : Math.round(60 + b * 24),
       luz: sorteio(chave, 3),
       filete: sorteio(chave, 4) > 0.72,
       etiqueta: !deitado && sorteio(chave, 8) > 0.8,

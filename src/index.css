@@ -350,7 +350,10 @@
    estante cheia — daí o recorte no vão em vez de respiro dos dois lados. */
 .movel-fila {
   display: flex;
-  height: 132px;
+  /* Casa com o teto de altura da lombada (ver Lombada.tsx) mais a folga da
+     penumbra: no celular, é a estante inteira que precisa caber na tela sem
+     rolar — regra 1 do CLAUDE.md antes da estética da referência. */
+  height: 92px;
   align-items: flex-end;
   gap: 1px;
   padding-left: 26px;
@@ -364,7 +367,7 @@
   top: 0;
   right: 0;
   left: 0;
-  height: 46px;
+  height: 30px;
   pointer-events: none;
   background: linear-gradient(
     180deg,
@@ -547,12 +550,12 @@
 
 .lombada-titulo {
   position: absolute;
-  inset: 10px 0 12px 0;
+  inset: 6px 0 8px 0;
   display: block;
   margin: auto;
   overflow: hidden;
   width: fit-content;
-  padding-block: 5px;
+  padding-block: 4px;
   border-top: 1px solid color-mix(in oklab, var(--ouro-gravado) 45%, transparent);
   border-bottom: 1px solid color-mix(in oklab, var(--ouro-gravado) 45%, transparent);
   font-family: var(--fonte-titulo);
