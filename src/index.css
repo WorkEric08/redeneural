@@ -368,6 +368,14 @@ img {
   --mv-corpo: color-mix(in oklab, var(--estante) 78%, black);
   --mv-fundo: color-mix(in oklab, var(--sala) 76%, black);
 
+  /* Quantas prateleiras o móvel tem hoje — Movel.tsx escreve o número. */
+  --mv-prateleiras: 4;
+  /* O que na tela não é prateleira: o respiro de cima, a linha de contagem
+     embaixo e a folga para o botão de criar não cobrir o assoalho. */
+  --mv-fora: 144px;
+  /* A cornija e o assoalho, que não crescem com a fileira. */
+  --mv-bordas: 39px;
+
   position: relative;
   overflow: hidden;
   border-radius: 3px;
@@ -402,10 +410,23 @@ img {
    estante cheia — daí o recorte no vão em vez de respiro dos dois lados. */
 .movel-fila {
   display: flex;
-  /* Casa com o teto de altura da lombada (ver Lombada.tsx) mais a folga da
-     penumbra: no celular, é a estante inteira que precisa caber na tela sem
-     rolar — regra 1 do CLAUDE.md antes da estética da referência. */
-  height: 92px;
+  /* A estante se mede pela tela.
+   *
+   * A fileira sai da altura que sobra no viewport dividida pelas prateleiras,
+   * em vez de um número calibrado para o menor celular: no 320x568 aperta até
+   * o piso e a estante ainda cabe inteira sem rolar (regra 1 do CLAUDE.md), num
+   * telefone grande volta a ter porte de biblioteca. O teto existe porque
+   * lombada não precisa crescer para sempre — depois de um tamanho ela vira
+   * cartaz, não livro. As alturas do que fica na fileira são todas em %
+   * (ver Lombada.tsx e prateleiras.ts), então acompanham sozinhas. */
+  height: clamp(
+    92px,
+    calc(
+      (100dvh - var(--mv-fora) - env(safe-area-inset-bottom) - var(--mv-bordas)) /
+        var(--mv-prateleiras) - 7px
+    ),
+    132px
+  );
   align-items: flex-end;
   gap: 1px;
   padding-left: 26px;
@@ -419,7 +440,9 @@ img {
   top: 0;
   right: 0;
   left: 0;
-  height: 30px;
+  /* Em % porque a fileira agora muda de altura: a sombra da tábua de cima cai
+     sempre sobre o mesmo terço do livro. */
+  height: 32%;
   pointer-events: none;
   background: linear-gradient(
     180deg,
@@ -1109,4 +1132,205 @@ img {
   color: color-mix(in oklab, var(--pt-luz) 50%, transparent);
   /* Entra depois da cena: o primeiro instante é só a sala. */
   animation: entrada 900ms ease-out 1100ms both;
+}
+
+/* ---------------------------------------------------------------------------
+ * O dial — o botão de criar que também é a navegação, abaixo de 1024 px.
+ *
+ * Transferido da referência que o usuário passou: anel escuro de cunhas em
+ * volta de um botão serrilhado, a cunha escolhida hachurada, e um fio fino
+ * saindo dela até o nome da opção. Adaptado a três destinos e ao canto de baixo
+ * à direita, que é onde o polegar já estava — por isso o arco ocupa só o que
+ * sobra, de quase-esquerda a quase-cima (a matemática está em lib/dial.ts).
+ *
+ * Duas trocas conscientes em relação à imagem:
+ *   1. O halo do botão é de papel, não quente. Ouro aqui significa uma coisa
+ *      só — conexão que atravessa livros —, e um dial dourado roubaria isso.
+ *   2. O anel é um objeto escuro nos dois temas, como a lombada: é o que faz o
+ *      ícone claro continuar legível quando a sala está clara.
+ * ------------------------------------------------------------------------ */
+
+.dial {
+  /* Um ponto, não uma caixa: é o centro do botão, e tudo pendura a partir dele.
+     44 px da direita e 52 px do fundo é o centro de um botão de 56 px que mora
+     a 16 px da borda direita e 24 px do rodapé. */
+  position: fixed;
+  right: 44px;
+  bottom: calc(52px + env(safe-area-inset-bottom));
+  z-index: 40;
+  width: 0;
+  height: 0;
+
+  --dial-corpo: oklch(0.19 0.04 262);
+  --dial-tinta: oklch(0.93 0.008 262);
+}
+
+.dial-veu {
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+  background: color-mix(in oklab, var(--sala) 55%, transparent);
+  backdrop-filter: blur(2px);
+  animation: dial-surgir 160ms ease-out both;
+}
+
+@keyframes dial-surgir {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes dial-abrir {
+  from {
+    opacity: 0;
+    transform: scale(0.82);
+  }
+}
+
+.dial-anel {
+  position: absolute;
+  top: 0;
+  left: 0;
+  /* Cresce a partir do botão, que é de onde o gesto nasceu. */
+  transform-origin: 0 0;
+  animation: dial-abrir 180ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+.dial-anel > svg {
+  position: absolute;
+  top: -150px;
+  left: -150px;
+  pointer-events: none;
+}
+
+.dial-setor {
+  fill: color-mix(in oklab, var(--dial-corpo) 94%, transparent);
+  stroke: rgb(255 255 255 / 0.07);
+  stroke-width: 1;
+}
+
+/* A cunha escolhida: hachura diagonal e uma borda mais clara, como na
+   referência. É o único jeito de ler "este aqui" sem cor de destaque. */
+.dial-setor--ativo {
+  fill: url(#dial-hachura);
+  stroke: rgb(255 255 255 / 0.24);
+}
+
+.dial-hachura-fundo {
+  fill: oklch(0.3 0.05 262);
+}
+
+.dial-hachura-risco {
+  stroke: rgb(255 255 255 / 0.14);
+  stroke-width: 1.6;
+}
+
+.dial-fio {
+  fill: none;
+  stroke: color-mix(in oklab, var(--dial-tinta) 42%, transparent);
+  stroke-width: 1;
+}
+
+.dial-cunha {
+  position: absolute;
+  display: grid;
+  width: 52px;
+  height: 52px;
+  place-items: center;
+  border-radius: 50%;
+  color: color-mix(in oklab, var(--dial-tinta) 58%, transparent);
+  transition:
+    color 120ms ease,
+    transform 120ms ease;
+}
+
+.dial-cunha--ativa {
+  color: var(--dial-tinta);
+  transform: scale(1.1);
+}
+
+.dial-rotulo {
+  position: absolute;
+  padding: 7px 12px;
+  border-radius: 9px;
+  background: color-mix(in oklab, var(--dial-corpo) 90%, transparent);
+  box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.06);
+  color: color-mix(in oklab, var(--dial-tinta) 42%, transparent);
+  font-size: 0.86rem;
+  white-space: nowrap;
+  transform: translateY(-50%);
+  transition:
+    color 120ms ease,
+    background-color 120ms ease;
+}
+
+.dial-rotulo--ativo {
+  background: color-mix(in oklab, white 7%, var(--dial-corpo));
+  box-shadow:
+    inset 0 0 0 1px rgb(255 255 255 / 0.16),
+    0 6px 18px rgb(0 0 0 / 0.4);
+  color: var(--dial-tinta);
+}
+
+/* --- o botão: o metal serrilhado da referência --------------------------- */
+
+.dial-botao {
+  position: absolute;
+  top: -28px;
+  left: -28px;
+  display: grid;
+  width: 56px;
+  height: 56px;
+  place-items: center;
+  border-radius: 50%;
+  /* As ranhuras da borda. Cônico repetido em vez de imagem: é a mesma decisão
+     do móvel e da porta — acompanha o tema e não custa byte de rede. */
+  background: repeating-conic-gradient(
+    from 0deg,
+    color-mix(in oklab, var(--papel) 72%, black) 0deg 1.1deg,
+    color-mix(in oklab, var(--papel) 84%, white) 1.1deg 3.4deg
+  );
+  box-shadow:
+    0 2px 6px rgb(0 0 0 / 0.22),
+    0 10px 26px rgb(0 0 0 / 0.3);
+  color: var(--sala);
+  /* O arrasto pertence ao dial: sem isto a WebView começa a rolar a página e
+     cancela o gesto no meio. */
+  touch-action: none;
+  transition:
+    transform 140ms ease,
+    box-shadow 220ms ease;
+}
+
+/* A face abaulada, por dentro do serrilhado. */
+.dial-botao::before {
+  content: '';
+  position: absolute;
+  inset: 4px;
+  border-radius: 50%;
+  background: radial-gradient(
+    118% 118% at 32% 22%,
+    color-mix(in oklab, var(--papel) 82%, white) 0%,
+    var(--papel) 54%,
+    color-mix(in oklab, var(--papel) 88%, black) 100%
+  );
+  box-shadow:
+    inset 0 0 0 1px color-mix(in oklab, var(--papel) 74%, black),
+    inset 0 1px 1px rgb(255 255 255 / 0.4);
+}
+
+.dial-botao > svg {
+  position: relative;
+}
+
+.dial-botao:active {
+  transform: scale(0.95);
+}
+
+/* Aberto, o botão acende — em luz de papel, nunca em ouro. */
+.dial-botao[data-aberto='true'] {
+  box-shadow:
+    0 2px 6px rgb(0 0 0 / 0.22),
+    0 10px 26px rgb(0 0 0 / 0.3),
+    0 0 26px 6px color-mix(in oklab, var(--papel) 30%, transparent);
 }

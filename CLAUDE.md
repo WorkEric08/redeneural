@@ -766,10 +766,10 @@ mudar. Os dois caminhos usam o mesmo formulário e o mesmo otimismo.
 
 ### Navegação
 
-Barra embaixo até 1024 px, coluna fixa à esquerda a partir daí, FAB para criar —
-conforme o mestre. **Divergência:** no tablet o mestre pede drawer; com três destinos
-um menu que precisa ser aberto esconde o que já cabia na tela, então a barra
-continua embaixo até 1024 px.
+Coluna fixa à esquerda a partir de 1024 px, conforme o mestre. Abaixo disso a barra
+de baixo **deixou de existir** em 12/09/2026: quem navega é o dial, na seção a
+seguir. O botão de criar continua sendo o botão de criar — ele é que passou a ser
+também a navegação.
 
 ### A porta de entrada não foi feita
 
@@ -813,6 +813,76 @@ Junto foram embora o texto que a WebView inflava sozinha
 automático no campo de título e o atraso de 300 ms do duplo toque
 (`touch-action: manipulation`, que é também a metade que funciona no iOS, onde
 `user-scalable=no` é ignorado de propósito).
+
+## O dial — o botão que também navega (12/09/2026)
+
+Pedido do usuário a partir de uma referência visual: segurar o botão de criar abre
+os destinos em volta do polegar, e a barra de baixo some por não ter mais serventia.
+
+**Isso diverge do mestre §6**, que pede bottom nav no celular, e da decisão da
+Fase 8 que a implementou. Apontado antes de executar; decidido assim: o dial vale
+**só abaixo de 1024 px**. No desktop a coluna fixa fica, porque segurar o botão do
+mouse não é gesto que alguém faça por conta própria e lá sobra espaço de lado.
+
+### O gesto
+
+| Ação                                 | O que acontece                                     |
+| ------------------------------------ | -------------------------------------------------- |
+| Toque curto                          | Cria um neurônio, como sempre                      |
+| Segurar 380 ms                       | O anel abre sob o dedo                             |
+| Arrastar até a cunha e soltar        | Navega — um movimento só                           |
+| Soltar no centro                     | O anel fica aberto; escolher vira um segundo toque |
+| Soltar fora do arco, Esc, tocar fora | Fecha sem navegar                                  |
+
+O segundo caminho existe porque o primeiro não perdoa o dedo que erra. Ambos estão
+verificados com toque de verdade (eventos de toque pelo CDP, não o mouse fingindo
+de dedo), nos dois temas.
+
+**Três destinos, não dois.** Sem a barra, Ajustes ficava sem saída — aquela tela
+não tem link de voltar. A Estante entrou no anel junto com Rede e Ajustes.
+
+**O botão aparece em toda rota menos `/novo` e `/editar`**, onde a tela já é a
+escrita e o "Cancelar" é a saída. Antes ele também sumia em `/ajustes`; não pode
+mais, porque agora é a única saída de lá.
+
+### O que veio da referência e o que não veio
+
+Vieram o anel escuro de cunhas, o botão serrilhado no centro, a cunha escolhida
+hachurada e o fio fino ligando-a ao nome da opção.
+
+**Não veio o halo quente.** Na imagem o botão acende em laranja; aqui ouro
+significa uma coisa só — conexão que atravessa livros —, e um dial dourado
+roubaria esse significado. A luz do botão é de papel.
+
+**O anel é um objeto escuro nos dois temas**, como a lombada e pela mesma razão: é
+o que mantém o ícone claro legível quando a sala está clara.
+
+O arco ocupa só o quadrante que sobra acima e à esquerda do botão (75°–195°) — é
+onde o polegar alcança sem tapar o que está escolhendo. A matemática mora em
+`lib/dial.ts`, pura e testada; o componente só desenha e escuta o dedo.
+
+## A estante se mede pela tela (12/09/2026)
+
+A fileira do móvel deixou de ser um número fixo — 92 px, calibrados para um
+320×568 — e passou a sair da altura do viewport dividida pelas prateleiras que
+existem:
+
+```
+clamp(92px, (100dvh − 144px − safe-area − 39px) / --mv-prateleiras − 7px, 132px)
+```
+
+O piso é o que cabe no menor celular comum. O teto, 132 px, é a altura que a
+estante tinha **antes** de o fix de 11/09 apertá-la para caber junto com a barra:
+num telefone de 844 px ela volta inteira a esse tamanho, que é o "maior para
+baixo" que o espaço da barra liberou.
+
+Por isso as alturas de lombada e de enfeite viraram **%** da fileira (63–93,5% e
+65–91%): são as mesmas proporções de antes, agora acompanhando sozinhas. E o
+número de prateleiras é a única coisa que o componente precisa contar para a
+folha (`--mv-prateleiras`).
+
+Verificado sem rolagem em 320×568, 390×844, 768×1024 e 1440×900, nos dois temas.
+O bundle principal ficou em 117 KB gzipped, contra o teto de 200 KB do mestre.
 
 ## Empacotamento Android (Fase 9)
 

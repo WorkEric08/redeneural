@@ -2,8 +2,13 @@ import { Link } from 'react-router-dom'
 
 import type { LivroNaEstante } from './resumo'
 
-const ALTURA_MINIMA = 58
-const ALTURA_MAXIMA = 86
+/**
+ * Em % da fileira, não em pixels: a fileira agora cresce com a tela (ver
+ * .movel-fila), e a proporção entre livro e prateleira é que tem de ficar de
+ * pé. São os mesmos 58..86 px sobre a fileira de 92 px de antes.
+ */
+const ALTURA_MINIMA = 63
+const ALTURA_MAXIMA = 93.5
 
 /**
  * Um livro visto de fora.
@@ -26,7 +31,7 @@ export function Lombada({ item, largura }: { item: LivroNaEstante; largura: numb
         // backgroundColor, não background: o atalho apagaria as nervuras e as
         // quinas, que moram em background-image na classe.
         backgroundColor: `color-mix(in oklab, ${item.livro.cor} 58%, var(--lavagem))`,
-        height: `${String(Math.round(altura))}px`,
+        height: `${String(Math.round(altura * 10) / 10)}%`,
         width: `${String(largura)}px`,
       }}
       className="lombada lombada--livro"

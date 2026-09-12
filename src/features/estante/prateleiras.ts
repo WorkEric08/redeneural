@@ -41,6 +41,7 @@ export interface LombadaNaPrateleira {
 export interface Enfeite {
   chave: string
   largura: number
+  /** Em % da fileira, como a lombada de verdade — ver .movel-fila. */
   altura: number
   /** 0..1 — quanto da luz da sala chega neste livro. */
   luz: number
@@ -84,6 +85,10 @@ export function montarPrateleiras(estante: readonly LivroNaEstante[]): Prateleir
   }))
 }
 
+function arredondar(valor: number): number {
+  return Math.round(valor * 10) / 10
+}
+
 function montarEnfeites(prateleira: number): Enfeite[] {
   return Array.from({ length: ENFEITES_POR_PRATELEIRA }, (_, i) => {
     const chave = `e${String(prateleira)}-${String(i)}`
@@ -96,8 +101,10 @@ function montarEnfeites(prateleira: number): Enfeite[] {
       // Altura puxada para cima: numa estante cheia quase todo livro chega
       // perto da tábua de cima, e vão vazio demais lê como buraco, não como ar.
       // Mesmo teto dos livros de verdade (ver Lombada.tsx) — um enfeite maior
-      // que o maior livro possível ia parecer erro, não decoração.
-      altura: deitado ? Math.round(7 + b * 6) : Math.round(60 + b * 24),
+      // que o maior livro possível ia parecer erro, não decoração. Em % da
+      // fileira, que agora se mede pela tela: são os mesmos 7..13 e 60..84 px
+      // sobre a fileira de 92 px de antes.
+      altura: deitado ? arredondar(7.6 + b * 6.5) : arredondar(65 + b * 26),
       luz: sorteio(chave, 3),
       filete: sorteio(chave, 4) > 0.72,
       etiqueta: !deitado && sorteio(chave, 8) > 0.8,

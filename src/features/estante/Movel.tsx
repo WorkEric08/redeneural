@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { useMemo, type CSSProperties } from 'react'
 
 import { Lombada } from './Lombada'
 import { montarPrateleiras, type Enfeite } from './prateleiras'
@@ -19,7 +19,9 @@ export function Movel({ estante }: { estante: readonly LivroNaEstante[] }) {
   const prateleiras = useMemo(() => montarPrateleiras(estante), [estante])
 
   return (
-    <div className="movel">
+    // O número de prateleiras é o divisor de que a folha precisa para a estante
+    // se medir pela tela (ver .movel-fila em index.css).
+    <div className="movel" style={{ '--mv-prateleiras': prateleiras.length } as CSSProperties}>
       <span className="movel-cornija" aria-hidden />
 
       <div className="movel-corpo">
@@ -61,7 +63,7 @@ function LombadaDeEnfeite({ enfeite }: { enfeite: Enfeite }) {
         // que com muito menos luz chegando: 8..38% contra os 58% de um livro
         // seu. É o que faz os seus saltarem no meio deles.
         backgroundColor: `color-mix(in oklab, var(--lombada-${String(enfeite.pano)}) ${String(Math.round(8 + enfeite.luz * 30))}%, var(--lavagem))`,
-        height: `${String(enfeite.altura)}px`,
+        height: `${String(enfeite.altura)}%`,
         width: `${String(enfeite.largura)}px`,
         transform:
           enfeite.inclinacao === 0 ? undefined : `rotate(${String(enfeite.inclinacao)}deg)`,

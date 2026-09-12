@@ -1,14 +1,18 @@
-import { Plus } from 'lucide-react'
 import { useEffect, useState } from 'react'
-import { Link, Outlet, useLocation } from 'react-router-dom'
+import { Outlet, useLocation } from 'react-router-dom'
 
 import type { ProgressoDoMotor } from '@/core'
+import { Dial } from '@/components/Dial'
 import { Navegacao } from '@/components/Navegacao'
 import { Porta } from '@/components/Porta'
 import { usePalacio } from '@/store/palacio'
 
-/** Rotas onde escrever seria estranho: já se está escrevendo, ou a tela é a escrita. */
-const SEM_BOTAO_DE_CRIAR = ['/novo', '/ajustes']
+/**
+ * Rotas onde o botão não aparece: a tela já é a escrita, e o "Cancelar" dela é
+ * a saída. Em toda outra o botão precisa existir — abaixo de 1024 px ele não é
+ * só criar, é a navegação inteira (ver Dial.tsx).
+ */
+const SEM_BOTAO_DE_CRIAR = ['/novo']
 
 /** O casco: carrega o palácio uma vez e emoldura a página da vez. */
 export default function App() {
@@ -33,21 +37,13 @@ export default function App() {
     <div className="min-h-dvh lg:pl-52">
       {progresso && <Progresso progresso={progresso} />}
 
-      {/* O respiro embaixo é da barra de navegação, que é fixa. */}
-      <main className="mx-auto w-full max-w-2xl px-4 pt-6 pb-32 lg:pb-16">
+      {/* O respiro embaixo já não é de barra nenhuma: é para o botão flutuante
+          não cobrir a última linha da página. */}
+      <main className="mx-auto w-full max-w-2xl px-4 pt-6 pb-24 lg:pb-16">
         <Outlet />
       </main>
 
-      {mostrarCriar && (
-        <Link
-          to="/novo"
-          aria-label="Novo neurônio"
-          className="bg-papel text-sala sombra-flutuante fixed right-4 bottom-20 z-30 flex size-14 items-center justify-center rounded-full transition-transform active:scale-95 lg:bottom-6"
-          style={{ marginBottom: 'env(safe-area-inset-bottom)' }}
-        >
-          <Plus size={24} aria-hidden />
-        </Link>
-      )}
+      {mostrarCriar && <Dial />}
 
       <Navegacao />
     </div>
