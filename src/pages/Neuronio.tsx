@@ -61,7 +61,7 @@ export default function Neuronio() {
         )}
 
         <div>
-          <h1 className="font-titulo text-2xl leading-tight font-semibold tracking-tight">
+          <h1 className="texto-do-usuario font-titulo text-2xl leading-tight font-semibold tracking-tight">
             {neuronio.titulo}
           </h1>
           {neuronio.processando && <p className="text-poeira text-sm">procurando conexões…</p>}
@@ -71,7 +71,9 @@ export default function Neuronio() {
       {acabouDeNascer && !neuronio.processando && <Nasceu vizinhos={meus} />}
 
       {neuronio.conteudo && (
-        <p className="text-base leading-relaxed whitespace-pre-wrap">{neuronio.conteudo}</p>
+        <p className="texto-do-usuario text-base leading-relaxed whitespace-pre-wrap">
+          {neuronio.conteudo}
+        </p>
       )}
 
       <section className="flex flex-col gap-2">

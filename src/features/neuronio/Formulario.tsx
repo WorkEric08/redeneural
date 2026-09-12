@@ -67,6 +67,8 @@ export function Formulario({
             setTitulo(e.target.value)
           }}
           placeholder="Um título curto para achar isto depois"
+          // A lista de preenchimento do navegador é coisa de formulário web.
+          autoComplete="off"
           className="border-linha bg-parede sombra-campo font-titulo h-12 rounded-lg border px-3 text-lg"
         />
       </label>

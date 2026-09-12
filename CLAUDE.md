@@ -777,6 +777,43 @@ Ela está no plano desta fase, mas é **pura atmosfera** — não faz nada funci
 decisão de estética por último, construí-la sóbria agora seria construir algo para
 jogar fora. Ela entra na passada de acabamento, junto com a luz da fresta.
 
+## É um app, não uma página
+
+Decidido em 12/09/2026, depois de o menu do Chrome — "copiar endereço do link",
+"abrir no navegador Chrome" — aparecer num toque longo sobre o botão de criar.
+Um app não faz isso, e cada gesto desses entrega que por baixo havia um site.
+
+Três respostas fecham o escopo:
+
+- **Seleção só onde o texto é da pessoa.** Campos sempre; e na tela do neurônio
+  o título e o conteúdo (`.texto-do-usuario`), onde segurar o dedo copia, como
+  em app de notas. O resto — rótulos, contagens, nomes de livro, a lista do
+  livro aberto — é mobília, e mobília não se seleciona.
+- **Zoom da página travado** (`user-scalable=no`). A pinça da Rede é do canvas e
+  continua. Custo assumido: some o zoom do navegador como saída de
+  acessibilidade. O público é uma pessoa só (ver "Público-alvo"), e foi ela que
+  decidiu; contraste e alvo de toque continuam valendo.
+- **Só no toque.** A chave é `@media (pointer: coarse)`, e
+  `services/native/gestos.ts` usa a mesma. No desktop seleção e botão direito
+  ficam inteiros: ali a mesma tela é bancada de trabalho.
+
+**O que não tem CSS:** no Android o menu de contexto só some recusando o evento
+`contextmenu` — `-webkit-touch-callout` é só do WebKit. Daí o módulo em
+`services/native/`, pelo mesmo critério de `arquivos.ts`: existe porque o
+ambiente é uma WebView, não porque o palácio precisa dele. A consulta ao
+ponteiro é feita a cada toque longo, não uma vez no início — um tablet ganha e
+perde teclado.
+
+**O que estava escondido:** `overscroll-behavior` vivia no `body`, mas o Chrome
+do Android lê a do elemento raiz. Era por isso que puxar de cima ainda
+recarregava mesmo com a regra escrita.
+
+Junto foram embora o texto que a WebView inflava sozinha
+(`text-size-adjust: 100%`), arrastar link e imagem, a lista de preenchimento
+automático no campo de título e o atraso de 300 ms do duplo toque
+(`touch-action: manipulation`, que é também a metade que funciona no iOS, onde
+`user-scalable=no` é ignorado de propósito).
+
 ## Empacotamento Android (Fase 9)
 
 O projeto nativo existe em `android/` (`npx cap add android`), com `@capacitor/filesystem`

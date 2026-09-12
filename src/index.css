@@ -278,6 +278,14 @@
 
   html {
     color-scheme: light dark;
+    /* Puxar de cima não recarrega, e a rolagem não quica nem acende brilho no
+       fim: o Chrome do Android lê isto do elemento raiz, não do body — era por
+       isso que o gesto de recarregar sobrevivia. */
+    overscroll-behavior: none;
+    /* A WebView aumenta o texto de páginas por conta própria. Num app, isso é a
+       tipografia mudando de tamanho sozinha. */
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
   }
 
   body {
@@ -289,13 +297,57 @@
     color: var(--papel);
     font-family: var(--fonte-texto);
     -webkit-tap-highlight-color: transparent;
-    overscroll-behavior-y: none;
+    /* Sem zoom por duplo toque — e junto vai o atraso de 300 ms que o navegador
+       guarda esperando o segundo toque. É também a metade que funciona no iOS,
+       onde `user-scalable=no` é ignorado de propósito. */
+    touch-action: manipulation;
   }
 
   /* O foco nunca é dourado: ouro está reservado para conexão entre livros. */
   :focus-visible {
     outline: 2px solid color-mix(in oklab, var(--papel) 60%, transparent);
     outline-offset: 2px;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+ * É um app, não uma página.
+ *
+ * Tudo aqui apaga um gesto que só existe porque por baixo há um navegador:
+ * arrastar um link para outra janela, selecionar a legenda de um botão, o balão
+ * de "copiar / abrir" do toque longo. Nada disso pertence a um app.
+ *
+ * A chave é `pointer: coarse` — vale onde quem aponta é o dedo. No desktop a
+ * seleção e o botão direito continuam inteiros, porque ali a mesma tela é
+ * bancada de trabalho. `services/native/gestos.ts` usa a mesma chave para o
+ * menu de contexto, que não tem CSS no Android.
+ * ------------------------------------------------------------------------ */
+
+/* Arrastar um link ou uma imagem para fora é gesto de navegador, não de app. */
+a,
+img {
+  -webkit-user-drag: none;
+}
+
+@media (pointer: coarse) {
+  :root {
+    -webkit-user-select: none;
+    user-select: none;
+    /* O balão do toque longo no iOS. No Android quem faz isto é o `contextmenu`
+       recusado em services/native/gestos.ts — lá não existe propriedade. */
+    -webkit-touch-callout: none;
+  }
+
+  /* A exceção, e é uma só: o texto que a pessoa escreveu continua sendo dela.
+     Segurar o dedo sobre ele copia, como em qualquer app de notas. O resto da
+     tela — rótulos, contagens, nomes de livro — é mobília, e mobília não se
+     seleciona. */
+  input,
+  textarea,
+  .texto-do-usuario {
+    -webkit-user-select: text;
+    user-select: text;
+    -webkit-touch-callout: default;
   }
 }
 
