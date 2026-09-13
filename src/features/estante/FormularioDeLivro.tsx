@@ -49,7 +49,6 @@ export function FormularioDeLivro({
               setTitulo(evento.target.value)
             }}
             maxLength={120}
-            autoFocus
             autoComplete="off"
             enterKeyHint="done"
             placeholder="Uma área do que você sabe"

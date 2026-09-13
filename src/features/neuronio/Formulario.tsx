@@ -82,9 +82,6 @@ export function Formulario({
           }}
           placeholder="Um roteiro, um pensamento desenvolvido — o que vier."
           rows={14}
-          // A tela existe para este campo agora: abrir o teclado direto nele
-          // poupa um toque em todo neurônio criado no celular.
-          autoFocus
           className="border-linha bg-parede sombra-campo rounded-lg border px-3 py-2.5 leading-relaxed"
         />
         <span className="text-poeira text-xs">
