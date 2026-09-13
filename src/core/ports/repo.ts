@@ -16,11 +16,18 @@ export interface PalacioRepo {
   /** Apaga o livro, seus neurônios e toda aresta que os tocava. */
   deleteLivro(id: Id): Promise<void>
   /**
-   * Regrava a `ordem` de todos os livros numa transação só: `ids` é a estante
-   * inteira, do primeiro ao último. Uma lista que não bate com os livros
-   * gravados é recusada — gravar metade deixaria dois livros no mesmo lugar.
+   * Move um livro para `(prateleira, posicao)`, empurrando quem estava naquela
+   * posição em diante — só a prateleira de origem e a de destino são tocadas,
+   * nunca a estante inteira.
    */
-  reordenarLivros(ids: readonly Id[]): Promise<void>
+  moverLivro(id: Id, prateleira: number, posicao: number): Promise<void>
+  /** Quantas prateleiras a estante tem hoje. Default 4 se nunca foi definida. */
+  getQuantidadeDePrateleiras(): Promise<number>
+  /**
+   * Grava quantas prateleiras a estante tem. Recusa diminuir se sobrar livro
+   * numa prateleira que deixaria de existir — nunca perder livro por engano.
+   */
+  definirQuantidadeDePrateleiras(quantidade: number): Promise<void>
 
   listNeuronios(livroId?: Id): Promise<Neuronio[]>
   getNeuronio(id: Id): Promise<Neuronio | undefined>

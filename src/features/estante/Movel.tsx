@@ -14,9 +14,12 @@ interface Props {
   /** O livro do painel aberto — espiando, no menu, sendo editado ou apagado. */
   selecionadoId: string | null
   chegandoId: string | null
+  /** Quantas prateleiras o móvel tem — gravado, ajustável em Ajustes. */
+  quantidadeDePrateleiras: number
   onEspiar: (livroId: string) => void
   onAcoes: (livroId: string) => void
-  onTrocar: (a: string, b: string) => void
+  /** Move o livro para `(prateleira, posicao)` — mesma assinatura da store. */
+  onMover: (livroId: string, prateleira: number, posicao: number) => void
   onNovo: (prateleira: number) => void
 }
 
@@ -35,16 +38,29 @@ export function Movel({
   pontes,
   selecionadoId,
   chegandoId,
+  quantidadeDePrateleiras,
   onEspiar,
   onAcoes,
-  onTrocar,
+  onMover,
   onNovo,
 }: Props) {
-  const prateleiras = useMemo(() => montarPrateleiras(estante), [estante])
+  const prateleiras = useMemo(
+    () => montarPrateleiras(estante, quantidadeDePrateleiras),
+    [estante, quantidadeDePrateleiras],
+  )
   const { gesto, manipular, registrarFantasma } = useManipularLivros({
     onEspiar,
     onAcoes,
-    onTrocar,
+    // A folga entre o livro sob o dedo e a posição final: o hook só sabe qual
+    // livro está embaixo do dedo e em qual prateleira — quem sabe a lista
+    // ordenada daquela prateleira é este componente.
+    onMover: (livroId, prateleira, antesDe) => {
+      const lista = (prateleiras[prateleira]?.livros ?? [])
+        .map(({ item }) => item.livro.id)
+        .filter((id) => id !== livroId)
+      const posicao = antesDe === null ? lista.length : lista.indexOf(antesDe)
+      onMover(livroId, prateleira, posicao === -1 ? lista.length : posicao)
+    },
   })
 
   // Quem está na mão manda: segurar outro livro com um painel aberto acende as
@@ -70,7 +86,17 @@ export function Movel({
 
       <div className="movel-corpo">
         {prateleiras.map((p, indice) => (
-          <div className="movel-vao" key={p.chave}>
+          <div
+            className="movel-vao"
+            key={p.chave}
+            data-prateleira={indice}
+            data-alvo-vazio={
+              (gesto.fase === 'arrastando' &&
+                gesto.alvoPrateleira === indice &&
+                gesto.alvoId === null) ||
+              undefined
+            }
+          >
             {/* Fica atrás da fileira; as lombadas de enfeite deixam o toque
                 passar até ele, e os livros de verdade, não. Um botão só por
                 prateleira, e não um por lombada escura: é o que o teclado e o

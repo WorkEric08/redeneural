@@ -25,7 +25,8 @@ export interface RespostasDoMotor {
   criarLivro: Livro[]
   editarLivro: Livro[]
   apagarLivro: EstadoDoPalacio
-  reordenarLivros: Livro[]
+  moverLivro: Livro[]
+  definirQuantidadeDePrateleiras: number
   exportar: string
   importar: EstadoDoPalacio
 }
@@ -41,7 +42,8 @@ export type ParaMotor =
   | { req: number; tipo: 'criarLivro'; input: CriarLivroInput }
   | { req: number; tipo: 'editarLivro'; input: EditarLivroInput }
   | { req: number; tipo: 'apagarLivro'; livroId: Id }
-  | { req: number; tipo: 'reordenarLivros'; ids: Id[] }
+  | { req: number; tipo: 'moverLivro'; id: Id; prateleira: number; posicao: number }
+  | { req: number; tipo: 'definirQuantidadeDePrateleiras'; quantidade: number }
   | { req: number; tipo: 'exportar' }
   | { req: number; tipo: 'importar'; json: string }
 

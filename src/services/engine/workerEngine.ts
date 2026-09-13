@@ -93,8 +93,14 @@ export function criarWorkerEngine(): ConnectionEngine {
     apagarLivro: (livroId: Id): Promise<EstadoDoPalacio> =>
       pedir<'apagarLivro'>({ tipo: 'apagarLivro', livroId }),
 
-    reordenarLivros: (ids: readonly Id[]): Promise<Livro[]> =>
-      pedir<'reordenarLivros'>({ tipo: 'reordenarLivros', ids: [...ids] }),
+    moverLivro: (id: Id, prateleira: number, posicao: number): Promise<Livro[]> =>
+      pedir<'moverLivro'>({ tipo: 'moverLivro', id, prateleira, posicao }),
+
+    definirQuantidadeDePrateleiras: (quantidade: number): Promise<number> =>
+      pedir<'definirQuantidadeDePrateleiras'>({
+        tipo: 'definirQuantidadeDePrateleiras',
+        quantidade,
+      }),
 
     exportar: (): Promise<string> => pedir<'exportar'>({ tipo: 'exportar' }),
 

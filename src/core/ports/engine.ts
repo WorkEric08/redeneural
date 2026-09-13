@@ -21,11 +21,8 @@ export interface CriarLivroInput {
   id: Id
   titulo: string
   cor: string
-  /**
-   * Onde o livro entra na ordem da estante. Quem escolhe é a tela, porque só ela
-   * sabe em que prateleira a pessoa tocou — ver `posicaoParaNovoLivro`.
-   */
-  posicao: number
+  /** Em qual prateleira a pessoa tocou "criar" — o livro nasce no fim dela. */
+  prateleira: number
 }
 
 export interface EditarLivroInput {
@@ -38,6 +35,8 @@ export interface EstadoDoPalacio {
   livros: Livro[]
   neuronios: NeuronioNaTela[]
   conexoes: Conexao[]
+  /** Quantas prateleiras a estante tem — gravado, ajustável em Ajustes. */
+  quantidadeDePrateleiras: number
 }
 
 export interface ResultadoDeEscrita {
@@ -86,8 +85,17 @@ export interface ConnectionEngine {
    * vizinho que tinha.
    */
   apagarLivro(id: Id): Promise<EstadoDoPalacio>
-  /** Grava a estante inteira de uma vez: `ids` do primeiro ao último livro. */
-  reordenarLivros(ids: readonly Id[]): Promise<Livro[]>
+  /**
+   * Move um livro para `(prateleira, posicao)`, empurrando quem estava ali em
+   * diante — a "bandeja de apps do Android". Soltar numa prateleira vazia (ou
+   * depois do último livro dela) não mexe em mais nada.
+   */
+  moverLivro(id: Id, prateleira: number, posicao: number): Promise<Livro[]>
+  /**
+   * Quantas prateleiras a estante tem. Recusa diminuir se sobrar livro numa
+   * prateleira que deixaria de existir — mova os livros antes.
+   */
+  definirQuantidadeDePrateleiras(quantidade: number): Promise<number>
 
   /**
    * O palácio inteiro como texto JSON, pronto para virar arquivo.

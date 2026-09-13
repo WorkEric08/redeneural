@@ -10,12 +10,12 @@ import {
 /**
  * O livro como objeto na mão.
  *
- * | Gesto                         | O que faz                                   |
- * | ----------------------------- | ------------------------------------------- |
- * | Tocar                         | Espia (o painel puxa o livro para fora)     |
- * | Segurar                       | Ergue o livro e acende as pontes dele       |
- * | Segurar e soltar parado       | Abre o menu do livro                        |
- * | Segurar, arrastar e soltar    | Troca de lugar com o livro embaixo do dedo  |
+ * | Gesto                         | O que faz                                        |
+ * | ----------------------------- | ------------------------------------------------- |
+ * | Tocar                         | Espia (o painel puxa o livro para fora)          |
+ * | Segurar                       | Ergue o livro e acende as pontes dele            |
+ * | Segurar e soltar parado       | Abre o menu do livro                             |
+ * | Segurar, arrastar e soltar    | Move para onde soltou — empurra quem já está lá  |
  *
  * Tocar é o `click` nativo, e não o `pointerup`: é o que Enter e Espaço também
  * disparam, então o teclado ganha o mesmo "espiar" sem código a mais. Quando o
@@ -40,7 +40,14 @@ export type FaseDoGesto = 'parado' | 'erguido' | 'arrastando'
 export interface Gesto {
   fase: FaseDoGesto
   livroId: string | null
+  /** O livro embaixo do dedo — é antes dele que o que está na mão vai entrar. */
   alvoId: string | null
+  /**
+   * Em qual prateleira o dedo está, quando não há um livro embaixo dele — soltar
+   * aí manda o livro para o fim daquela prateleira, sem mexer em mais nada.
+   * `null` fora de qualquer prateleira: soltar ali não move nada.
+   */
+  alvoPrateleira: number | null
   /** Onde o livro estava na tela quando saiu da prateleira: é de lá que o fantasma parte. */
   origem: DOMRect | null
 }
@@ -67,22 +74,50 @@ interface Toque {
 interface Opcoes {
   onEspiar: (livroId: string) => void
   onAcoes: (livroId: string) => void
-  onTrocar: (a: string, b: string) => void
+  /**
+   * Soltou arrastando: `alvoId` é o livro embaixo do dedo (entra antes dele),
+   * ou `null` quando soltou em área vazia de `alvoPrateleira` (vai para o fim).
+   */
+  onMover: (livroId: string, alvoPrateleira: number, alvoId: string | null) => void
 }
 
-const PARADO: Gesto = { fase: 'parado', livroId: null, alvoId: null, origem: null }
+const PARADO: Gesto = {
+  fase: 'parado',
+  livroId: null,
+  alvoId: null,
+  alvoPrateleira: null,
+  origem: null,
+}
 
-function livroEmbaixo(x: number, y: number, exceto: string): string | null {
+interface Alvo {
+  prateleira: number | null
+  livroId: string | null
+}
+
+function alvoNaEstante(x: number, y: number, exceto: string): Alvo {
   for (const dx of [0, -FOLGA_DO_ALVO, FOLGA_DO_ALVO]) {
     for (const elemento of document.elementsFromPoint(x + dx, y)) {
-      const id = elemento.closest<HTMLElement>('[data-livro-id]')?.dataset['livroId']
-      if (id && id !== exceto) return id
+      const livro = elemento.closest<HTMLElement>('[data-livro-id]')
+      const id = livro?.dataset['livroId']
+      if (!id || id === exceto) continue
+
+      const vao = livro.closest<HTMLElement>('[data-prateleira]')
+      const prateleira = vao?.dataset['prateleira']
+      return { prateleira: prateleira === undefined ? null : Number(prateleira), livroId: id }
     }
   }
-  return null
+
+  // Nenhum livro sob o dedo: ainda pode estar sobre a área vazia de uma
+  // prateleira (ou uma prateleira sem livro nenhum).
+  for (const elemento of document.elementsFromPoint(x, y)) {
+    const vao = elemento.closest<HTMLElement>('[data-prateleira]')
+    if (vao) return { prateleira: Number(vao.dataset['prateleira']), livroId: null }
+  }
+
+  return { prateleira: null, livroId: null }
 }
 
-export function useManipularLivros({ onEspiar, onAcoes, onTrocar }: Opcoes) {
+export function useManipularLivros({ onEspiar, onAcoes, onMover }: Opcoes) {
   const [gesto, setGesto] = useState<Gesto>(PARADO)
 
   // Os eventos leem o gesto no mesmo instante em que ele muda; o estado do React
@@ -142,7 +177,7 @@ export function useManipularLivros({ onEspiar, onAcoes, onTrocar }: Opcoes) {
         relogio.current = window.setTimeout(() => {
           relogio.current = null
           engoleOClique.current = true
-          mudar({ fase: 'erguido', livroId, alvoId: null, origem: caixa })
+          mudar({ fase: 'erguido', livroId, alvoId: null, alvoPrateleira: null, origem: caixa })
         }, ESPERA)
       },
 
@@ -171,9 +206,18 @@ export function useManipularLivros({ onEspiar, onAcoes, onTrocar }: Opcoes) {
 
         if (fase === 'erguido' && !longe) return
 
-        const alvoId = livroEmbaixo(evento.clientX, evento.clientY, t.livroId)
-        if (fase !== 'arrastando' || alvoId !== agora.current.alvoId) {
-          mudar({ ...agora.current, fase: 'arrastando', alvoId })
+        const alvo = alvoNaEstante(evento.clientX, evento.clientY, t.livroId)
+        if (
+          fase !== 'arrastando' ||
+          alvo.livroId !== agora.current.alvoId ||
+          alvo.prateleira !== agora.current.alvoPrateleira
+        ) {
+          mudar({
+            ...agora.current,
+            fase: 'arrastando',
+            alvoId: alvo.livroId,
+            alvoPrateleira: alvo.prateleira,
+          })
         }
       },
 
@@ -182,12 +226,14 @@ export function useManipularLivros({ onEspiar, onAcoes, onTrocar }: Opcoes) {
         if (!t || evento.pointerId !== t.pointerId) return
 
         pararORelogio()
-        const { fase, alvoId } = agora.current
+        const { fase, alvoId, alvoPrateleira } = agora.current
         toque.current = null
         mudar(PARADO)
 
         if (fase === 'erguido') onAcoes(t.livroId)
-        else if (fase === 'arrastando' && alvoId) onTrocar(t.livroId, alvoId)
+        else if (fase === 'arrastando' && alvoPrateleira !== null) {
+          onMover(t.livroId, alvoPrateleira, alvoId)
+        }
       },
 
       onPointerCancel() {

@@ -496,6 +496,15 @@ img {
   isolation: isolate;
 }
 
+/* Soltar aqui move o livro sem empurrar nenhum outro — prateleira vazia, ou
+   depois do último livro dela. Mais discreto que o anel de "alvo" de um livro
+   (`.lombada--livro[data-alvo]`): aqui é a fileira inteira que aceita o
+   solto, não um lugar preciso. */
+.movel-vao[data-alvo-vazio] .movel-fila {
+  border-radius: 2px;
+  box-shadow: inset 0 0 0 2px color-mix(in oklab, var(--papel) 45%, transparent);
+}
+
 /* O vão inteiro é o botão de criar livro, atrás da fileira (ver Movel.tsx). As
    lombadas de enfeite não recebem toque, então tocar numa delas é tocar nele. */
 .movel-criar {

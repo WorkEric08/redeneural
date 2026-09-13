@@ -1,23 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { aplicarOrdem, inserirNaOrdem, trocarNaOrdem } from './ordem'
-
-describe('trocarNaOrdem', () => {
-  it('troca só os dois, e o resto fica onde estava', () => {
-    expect(trocarNaOrdem(['a', 'b', 'c', 'd'], 'a', 'c')).toEqual(['c', 'b', 'a', 'd'])
-  })
-
-  it('não inventa troca com livro que não está na estante', () => {
-    expect(trocarNaOrdem(['a', 'b'], 'a', 'fantasma')).toEqual(['a', 'b'])
-    expect(trocarNaOrdem(['a', 'b'], 'a', 'a')).toEqual(['a', 'b'])
-  })
-
-  it('não mexe na lista de entrada', () => {
-    const ids = ['a', 'b']
-    trocarNaOrdem(ids, 'a', 'b')
-    expect(ids).toEqual(['a', 'b'])
-  })
-})
+import { inserirNaOrdem, moverLivroNaEstante } from './ordem'
 
 describe('inserirNaOrdem', () => {
   it('empurra quem estava da posição em diante', () => {
@@ -34,20 +17,54 @@ describe('inserirNaOrdem', () => {
   })
 })
 
-describe('aplicarOrdem', () => {
-  const livro = (id: string, ordem: number) => ({ id, ordem })
+describe('moverLivroNaEstante', () => {
+  interface L {
+    id: string
+    prateleira: number
+    ordem: number
+  }
 
-  it('cada livro passa a valer o próprio índice na lista', () => {
-    const livros = [livro('a', 0), livro('b', 1), livro('c', 2)]
-    expect(aplicarOrdem(livros, ['c', 'a', 'b'])).toEqual([
-      livro('c', 0),
-      livro('a', 1),
-      livro('b', 2),
-    ])
+  const l = (id: string, prateleira: number, ordem: number): L => ({ id, prateleira, ordem })
+
+  function posicoes(livros: readonly L[]): Record<string, [number, number]> {
+    return Object.fromEntries(livros.map((x) => [x.id, [x.prateleira, x.ordem]]))
+  }
+
+  it('dentro da mesma prateleira, empurra quem está na posição em diante', () => {
+    const estante = [l('a', 0, 0), l('b', 0, 1), l('c', 0, 2)]
+    const depois = moverLivroNaEstante(estante, 'c', 0, 0)
+
+    expect(posicoes(depois)).toEqual({ c: [0, 0], a: [0, 1], b: [0, 2] })
   })
 
-  it('quem ficou fora da lista vai para o fim em vez de sumir', () => {
-    const livros = [livro('a', 0), livro('b', 1), livro('c', 2)]
-    expect(aplicarOrdem(livros, ['b']).map((l) => l.id)).toEqual(['b', 'a', 'c'])
+  it('move para outra prateleira: fecha o buraco na origem e empurra no destino', () => {
+    const estante = [l('a', 0, 0), l('b', 0, 1), l('x', 1, 0), l('y', 1, 1)]
+    const depois = moverLivroNaEstante(estante, 'a', 1, 1)
+
+    expect(posicoes(depois)).toEqual({
+      b: [0, 0], // fechou o buraco que 'a' deixou
+      x: [1, 0],
+      a: [1, 1], // entrou antes de 'y'
+      y: [1, 2],
+    })
+  })
+
+  it('soltar numa prateleira vazia não mexe em mais ninguém', () => {
+    const estante = [l('a', 0, 0), l('b', 0, 1)]
+    const depois = moverLivroNaEstante(estante, 'a', 3, 0)
+
+    expect(posicoes(depois)).toEqual({ b: [0, 0], a: [3, 0] })
+  })
+
+  it('mover o próprio livro para o fim onde já está é idempotente', () => {
+    const estante = [l('a', 0, 0), l('b', 0, 1)]
+    const depois = moverLivroNaEstante(estante, 'b', 0, 1)
+
+    expect(posicoes(depois)).toEqual({ a: [0, 0], b: [0, 1] })
+  })
+
+  it('id inexistente não muda nada', () => {
+    const estante = [l('a', 0, 0)]
+    expect(moverLivroNaEstante(estante, 'fantasma', 0, 0)).toEqual(estante)
   })
 })

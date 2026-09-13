@@ -3,7 +3,6 @@ import {
   arestaParaConexao,
   construirGrafo,
   estadoDosVizinhos,
-  inserirNaOrdem,
   nosDeNeuronios,
   novoLivro,
   novoNeuronio,
@@ -74,13 +73,14 @@ const pontuar: PontuarPar = SEM_RERANK
 const CRESCIMENTO_ATE_REPROCESSAR = 1.5
 
 async function estadoAtual(): Promise<EstadoDoPalacio> {
-  const [livros, neuronios, conexoes] = await Promise.all([
+  const [livros, neuronios, conexoes, quantidadeDePrateleiras] = await Promise.all([
     repo.listLivros(),
     repo.listNeuronios(),
     repo.listConexoes(),
+    repo.getQuantidadeDePrateleiras(),
   ])
 
-  return { livros, neuronios: neuronios.map(paraTela), conexoes }
+  return { livros, neuronios: neuronios.map(paraTela), conexoes, quantidadeDePrateleiras }
 }
 
 /** Calcula e grava o embedding que faltava. Devolve o neurônio já com vetor. */
@@ -192,11 +192,11 @@ async function apagarNeuronio(id: Id): Promise<EstadoDoPalacio> {
 }
 
 async function criarLivro(input: CriarLivroInput): Promise<Livro[]> {
-  const antes = (await repo.listLivros()).map((l) => l.id)
-  const livro = novoLivro(input, new Date())
+  // Nasce sempre no fim da prateleira tocada — não mexe em mais nenhum livro.
+  const daPrateleira = (await repo.listLivros()).filter((l) => l.prateleira === input.prateleira)
+  const livro = novoLivro(input, new Date(), daPrateleira.length)
 
   await repo.upsertLivro(livro)
-  await repo.reordenarLivros(inserirNaOrdem(antes, livro.id, input.posicao))
   return repo.listLivros()
 }
 
@@ -217,6 +217,11 @@ async function apagarLivro(id: Id): Promise<EstadoDoPalacio> {
   const tinhaNeuronios = (await repo.listNeuronios(id)).length > 0
   await repo.deleteLivro(id)
   return tinhaNeuronios ? reprocessarTudo() : estadoAtual()
+}
+
+async function moverLivro(id: Id, prateleira: number, posicao: number): Promise<Livro[]> {
+  await repo.moverLivro(id, prateleira, posicao)
+  return repo.listLivros()
 }
 
 async function importar(json: string): Promise<EstadoDoPalacio> {
@@ -268,9 +273,16 @@ async function responder(msg: ParaMotor): Promise<DoMotor> {
       case 'apagarLivro':
         return { req: msg.req, ok: true, dados: await apagarLivro(msg.livroId) }
 
-      case 'reordenarLivros':
-        await repo.reordenarLivros(msg.ids)
-        return { req: msg.req, ok: true, dados: await repo.listLivros() }
+      case 'moverLivro':
+        return {
+          req: msg.req,
+          ok: true,
+          dados: await moverLivro(msg.id, msg.prateleira, msg.posicao),
+        }
+
+      case 'definirQuantidadeDePrateleiras':
+        await repo.definirQuantidadeDePrateleiras(msg.quantidade)
+        return { req: msg.req, ok: true, dados: msg.quantidade }
 
       case 'exportar':
         return { req: msg.req, ok: true, dados: JSON.stringify(await repo.exportAll()) }

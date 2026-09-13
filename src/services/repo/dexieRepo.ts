@@ -6,12 +6,45 @@ import {
   conexaoToSnapshot,
   livroFromSnapshot,
   livroToSnapshot,
+  moverLivroNaEstante,
+  MINIMO_DE_PRATELEIRAS,
   neuronioFromSnapshot,
   neuronioToSnapshot,
+  posicoesAntigas,
 } from '@/core'
-import { db as defaultDb, type PalacioDB } from '@/services/db'
+import {
+  db as defaultDb,
+  type PalacioDB,
+  type PerfilGravado,
+  type PreferenciasGravadas,
+} from '@/services/db'
 
 import { conexaoSchema, livroSchema, neuronioSchema, snapshotSchema } from './schemas'
+
+/**
+ * Reagrupa por prateleira depois de uma fusão de import: os livros de
+ * `primeiro` (o arquivo) entram primeiro em cada prateleira deles, na ordem
+ * que já tinham; os de `depois` (quem só existia aqui) vão para o fim da
+ * própria prateleira, também na ordem que já tinham. `ordem` sai densa,
+ * 0..N-1, por prateleira.
+ */
+function juntarPorPrateleira(primeiro: readonly Livro[], depois: readonly Livro[]): Livro[] {
+  const porPrateleira = new Map<number, Livro[]>()
+  const empilhar = (l: Livro): void => {
+    const lista = porPrateleira.get(l.prateleira) ?? []
+    lista.push(l)
+    porPrateleira.set(l.prateleira, lista)
+  }
+
+  const porOrdem = (a: Livro, b: Livro): number => a.prateleira - b.prateleira || a.ordem - b.ordem
+
+  for (const l of [...primeiro].sort(porOrdem)) empilhar(l)
+  for (const l of [...depois].sort(porOrdem)) empilhar(l)
+
+  return [...porPrateleira.entries()].flatMap(([prateleira, lista]) =>
+    lista.map((l, ordem) => ({ ...l, prateleira, ordem })),
+  )
+}
 
 /**
  * Implementação IndexedDB da porta `PalacioRepo`.
@@ -30,7 +63,10 @@ export function createDexieRepo(db: PalacioDB = defaultDb): PalacioRepo {
 
   return {
     async listLivros() {
-      return db.livros.orderBy('ordem').toArray()
+      // `ordem` é denso só dentro de cada prateleira agora — a ordem de leitura
+      // da estante inteira é prateleira, e dentro dela, ordem.
+      const todos = await db.livros.toArray()
+      return todos.sort((a, b) => a.prateleira - b.prateleira || a.ordem - b.ordem)
     },
 
     async getLivro(id) {
@@ -52,20 +88,43 @@ export function createDexieRepo(db: PalacioDB = defaultDb): PalacioRepo {
       })
     },
 
-    async reordenarLivros(ids) {
+    async moverLivro(id, prateleira, posicao) {
       await db.transaction('rw', db.livros, async () => {
-        const gravados = await db.livros.toCollection().primaryKeys()
-        const pedidos = new Set(ids)
+        const todos = await db.livros.toArray()
+        if (!todos.some((l) => l.id === id)) {
+          throw new Error(`moverLivro: livro ${id} não existe`)
+        }
 
-        if (pedidos.size !== ids.length || gravados.length !== ids.length) {
+        const depois = moverLivroNaEstante(todos, id, prateleira, posicao)
+        const mudou = depois.filter((l, i) => {
+          const antes = todos[i]
+          return antes && (antes.prateleira !== l.prateleira || antes.ordem !== l.ordem)
+        })
+
+        await Promise.all(
+          mudou.map((l) => db.livros.update(l.id, { prateleira: l.prateleira, ordem: l.ordem })),
+        )
+      })
+    },
+
+    async getQuantidadeDePrateleiras() {
+      const gravado = (await db.meta.get('preferencias')) as PreferenciasGravadas | undefined
+      return gravado?.quantidadeDePrateleiras ?? MINIMO_DE_PRATELEIRAS
+    },
+
+    async definirQuantidadeDePrateleiras(quantidade) {
+      await db.transaction('rw', db.livros, db.meta, async () => {
+        const ocupada = await db.livros.where('prateleira').aboveOrEqual(quantidade).count()
+        if (ocupada > 0) {
           throw new Error(
-            `reordenarLivros recebeu ${String(ids.length)} ids para ${String(gravados.length)} livros`,
+            `ainda há livro na prateleira ${String(quantidade)} ou depois — mova antes de diminuir`,
           )
         }
-        const faltando = gravados.find((id) => !pedidos.has(id))
-        if (faltando) throw new Error(`reordenarLivros não recebeu o livro ${faltando}`)
-
-        await Promise.all(ids.map((id, ordem) => db.livros.update(id, { ordem })))
+        const preferencias: PreferenciasGravadas = {
+          chave: 'preferencias',
+          quantidadeDePrateleiras: quantidade,
+        }
+        await db.meta.put(preferencias)
       })
     },
 
@@ -151,7 +210,7 @@ export function createDexieRepo(db: PalacioDB = defaultDb): PalacioRepo {
     },
 
     async getPerfil() {
-      const gravado = await db.meta.get('perfil')
+      const gravado = (await db.meta.get('perfil')) as PerfilGravado | undefined
       if (!gravado) return undefined
 
       return {
@@ -162,14 +221,15 @@ export function createDexieRepo(db: PalacioDB = defaultDb): PalacioRepo {
     },
 
     async setPerfil(p, neuronios) {
-      await db.meta.put({
+      const perfil: PerfilGravado = {
         chave: 'perfil',
         centroide: p.centroide,
         escalaEmb: p.escalaEmb,
         limiares: new Map(p.limiarPorNo),
         neuronios,
         atualizadoEm: new Date(),
-      })
+      }
+      await db.meta.put(perfil)
     },
 
     async exportAll(): Promise<PalacioSnapshot> {
@@ -194,19 +254,32 @@ export function createDexieRepo(db: PalacioDB = defaultDb): PalacioRepo {
     async importAll(s: PalacioSnapshot) {
       const parsed = snapshotSchema.parse(s)
 
-      // A ordem do arquivo vence para os livros que vieram nele: um backup tem
-      // que devolver a estante arrumada como estava — é o mesmo "o arquivo
-      // vence" que já vale para título e cor. Arquivo de antes da estante
-      // guardar ordem cai na ordem que se via naquela época: `createdAt`,
-      // desempatado pelo id.
-      const livros = [...parsed.livros]
-        .sort(
-          (a, b) =>
-            (a.ordem ?? 0) - (b.ordem ?? 0) ||
-            a.createdAt.localeCompare(b.createdAt) ||
-            (a.id < b.id ? -1 : a.id > b.id ? 1 : 0),
+      // Backup de antes da Fase 10 não tinha prateleira gravada: reconstrói com
+      // a mesma distribuição automática que valia então — a ordem do arquivo
+      // vence, na mesma sequência (`ordem`, `createdAt`, desempate pelo id) que
+      // já reconstruía a ordem de backups de antes de a estante guardá-la.
+      const temPosicaoPropria = parsed.livros.every((l) => l.prateleira !== undefined)
+      const posicoes = temPosicaoPropria
+        ? null
+        : posicoesAntigas(
+            [...parsed.livros]
+              .sort(
+                (a, b) =>
+                  (a.ordem ?? 0) - (b.ordem ?? 0) ||
+                  a.createdAt.localeCompare(b.createdAt) ||
+                  (a.id < b.id ? -1 : a.id > b.id ? 1 : 0),
+              )
+              .map((l) => l.id),
+          )
+
+      const livros = parsed.livros.map((l) => {
+        const posicao = posicoes?.get(l.id)
+        return livroFromSnapshot(
+          l,
+          posicao?.prateleira ?? l.prateleira ?? 0,
+          posicao?.ordem ?? l.ordem ?? 0,
         )
-        .map((l, ordem) => livroFromSnapshot(l, ordem))
+      })
       const neuronios = parsed.neuronios.map(neuronioFromSnapshot)
       const conexoes = parsed.conexoes.map(conexaoFromSnapshot)
 
@@ -227,16 +300,28 @@ export function createDexieRepo(db: PalacioDB = defaultDb): PalacioRepo {
       }
 
       // bulkPut por id: reimportar o mesmo snapshot não duplica nada.
-      await db.transaction('rw', db.livros, db.neuronios, db.conexoes, async () => {
-        // Quem só existe aqui vai para depois dos livros do arquivo, na ordem em
-        // que já estava.
-        const soAqui = (await db.livros.orderBy('ordem').toArray())
-          .filter((l) => !livroIds.has(l.id))
-          .map((l, i) => ({ ...l, ordem: livros.length + i }))
+      await db.transaction('rw', db.livros, db.neuronios, db.conexoes, db.meta, async () => {
+        // Quem só existe aqui vai para o fim da própria prateleira, na ordem em
+        // que já estava — o mesmo "arquivo vence" de título e cor, agora por
+        // prateleira em vez da estante inteira.
+        const soAqui = (await db.livros.toArray()).filter((l) => !livroIds.has(l.id))
+        const unidos = juntarPorPrateleira(livros, soAqui)
 
-        await db.livros.bulkPut([...livros, ...soAqui])
+        await db.livros.bulkPut(unidos)
         await db.neuronios.bulkPut(neuronios)
         await db.conexoes.bulkPut(conexoes)
+
+        // Um backup de um palácio com mais prateleiras não pode esconder livro
+        // numa prateleira que este aparelho ainda não tem.
+        const maiorPrateleira = Math.max(-1, ...unidos.map((l) => l.prateleira)) + 1
+        const atual = (await db.meta.get('preferencias')) as PreferenciasGravadas | undefined
+        if (maiorPrateleira > (atual?.quantidadeDePrateleiras ?? MINIMO_DE_PRATELEIRAS)) {
+          const preferencias: PreferenciasGravadas = {
+            chave: 'preferencias',
+            quantidadeDePrateleiras: maiorPrateleira,
+          }
+          await db.meta.put(preferencias)
+        }
       })
     },
 

@@ -3,7 +3,6 @@ import { useEffect, useMemo, useState } from 'react'
 import { Movel } from '@/features/estante/Movel'
 import { PaineisDaEstante } from '@/features/estante/Paineis'
 import { panoSugerido } from '@/features/estante/panos'
-import { posicaoParaNovoLivro } from '@/features/estante/prateleiras'
 import { montarEstante, pontesEntreLivros } from '@/features/estante/resumo'
 import { usePainel } from '@/features/estante/usePainel'
 import { useTravarRolagem } from '@/hooks/useTravarRolagem'
@@ -28,7 +27,8 @@ export default function Estante() {
     conexoes,
     carregado,
     ocupado,
-    trocarLivros,
+    quantidadeDePrateleiras,
+    moverLivro,
     criarLivro,
     editarLivro,
     apagarLivro,
@@ -68,14 +68,15 @@ export default function Estante() {
           pontes={pontes}
           selecionadoId={selecionadoId}
           chegandoId={chegandoId}
+          quantidadeDePrateleiras={quantidadeDePrateleiras}
           onEspiar={(livroId) => {
             abrir({ tipo: 'espiar', livroId })
           }}
           onAcoes={(livroId) => {
             abrir({ tipo: 'acoes', livroId })
           }}
-          onTrocar={(a, b) => {
-            void trocarLivros(a, b)
+          onMover={(livroId, prateleira, posicao) => {
+            void moverLivro(livroId, prateleira, posicao)
           }}
           onNovo={(prateleira) => {
             abrir({ tipo: 'novo', prateleira })
@@ -99,7 +100,7 @@ export default function Estante() {
         onFechar={fechar}
         onTrocarPainel={trocar}
         onCriar={async (novo, prateleira) => {
-          const id = await criarLivro(novo, posicaoParaNovoLivro(livros.length, prateleira))
+          const id = await criarLivro(novo, prateleira)
           if (id) setChegandoId(id)
           return id !== null
         }}

@@ -15,11 +15,19 @@ export interface Livro {
   /** Cor da lombada, em hex (#rrggbb). */
   cor: string
   /**
-   * Lugar na estante: 0 é o primeiro livro da primeira prateleira.
+   * Em qual prateleira o livro mora — gravado, e não calculado (desde a Fase
+   * 10). Antes disso a prateleira era 100% derivada da posição na estante
+   * inteira; virou campo próprio para permitir prateleira manual e soltar um
+   * livro numa prateleira vazia sem redistribuir as outras.
+   */
+  prateleira: number
+  /**
+   * Lugar DENTRO da prateleira: 0 é o primeiro livro daquela prateleira.
    *
    * Gravado, e não derivado de nada, porque quem decide é a pessoa arrastando
    * o livro — e um palácio da memória precisa devolver cada coisa no canto em
-   * que foi deixada.
+   * que foi deixada. Denso por prateleira (0..N-1 daquela prateleira, não da
+   * estante inteira).
    */
   ordem: number
   createdAt: Date
@@ -88,6 +96,13 @@ export interface LivroSnapshot {
    * `createdAt` — ver `importAll`.
    */
   ordem?: number | undefined
+  /**
+   * Ausente em backups anteriores à Fase 10 (13-14/09/2026), quando a
+   * prateleira ainda não era gravada. O import reconstrói prateleira e ordem
+   * daquela época com a mesma distribuição automática que valia então — ver
+   * `estanteAntiga.ts` e `importAll`.
+   */
+  prateleira?: number | undefined
   createdAt: string
 }
 

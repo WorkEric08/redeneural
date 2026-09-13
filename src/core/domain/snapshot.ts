@@ -25,21 +25,23 @@ export function livroToSnapshot(l: Livro): LivroSnapshot {
     id: l.id,
     titulo: l.titulo,
     cor: l.cor,
+    prateleira: l.prateleira,
     ordem: l.ordem,
     createdAt: toIso(l.createdAt),
   }
 }
 
 /**
- * A `ordem` vem de fora, e não do arquivo: o lugar de um livro só faz sentido
- * junto com os livros que já estão na estante de destino, e quem enxerga os dois
- * lados é o import.
+ * `prateleira`/`ordem` vêm de fora, e não do arquivo: o lugar de um livro só
+ * faz sentido junto com os livros que já estão na estante de destino, e quem
+ * enxerga os dois lados é o import.
  */
-export function livroFromSnapshot(s: LivroSnapshot, ordem: number): Livro {
+export function livroFromSnapshot(s: LivroSnapshot, prateleira: number, ordem: number): Livro {
   return {
     id: s.id,
     titulo: s.titulo,
     cor: s.cor,
+    prateleira,
     ordem,
     createdAt: fromIso(s.createdAt, `livro ${s.id}.createdAt`),
   }

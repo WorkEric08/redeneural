@@ -26,8 +26,8 @@ beforeEach(() => {
   repo = createDexieRepo(createDb(`palacio-test-${nth}`))
 })
 
-function livro(id: string, titulo: string, ordem = 0): Livro {
-  return { id, titulo, cor: '#6d5bd0', ordem, createdAt: T0 }
+function livro(id: string, titulo: string, ordem = 0, prateleira = 0): Livro {
+  return { id, titulo, cor: '#6d5bd0', prateleira, ordem, createdAt: T0 }
 }
 
 function neuronio(id: string, livroId: string, embedding: Float32Array | null = null): Neuronio {
@@ -278,7 +278,7 @@ describe('seed', () => {
 describe('ordem da estante', () => {
   const ids = async (): Promise<string[]> => (await repo.listLivros()).map((l) => l.id)
 
-  it('lista na ordem da estante, não na de criação', async () => {
+  it('lista por prateleira, e dentro dela por ordem — não pela de criação', async () => {
     await repo.upsertLivro(livro('l1', 'Psicologia', 2))
     await repo.upsertLivro(livro('l2', 'Música', 0))
     await repo.upsertLivro(livro('l3', 'Programação', 1))
@@ -286,10 +286,18 @@ describe('ordem da estante', () => {
     expect(await ids()).toEqual(['l2', 'l3', 'l1'])
   })
 
-  it('reordenar grava a estante inteira de uma vez', async () => {
+  it('lista prateleira por prateleira, mesmo fora de ordem de criação', async () => {
+    await repo.upsertLivro(livro('l1', 'Psicologia', 0, 1))
+    await repo.upsertLivro(livro('l2', 'Música', 0, 0))
+    await repo.upsertLivro(livro('l3', 'Programação', 1, 0))
+
+    expect(await ids()).toEqual(['l2', 'l3', 'l1'])
+  })
+
+  it('mover empurra quem está na posição em diante, dentro da prateleira', async () => {
     for (const [i, id] of ['l1', 'l2', 'l3'].entries()) await repo.upsertLivro(livro(id, id, i))
 
-    await repo.reordenarLivros(['l3', 'l1', 'l2'])
+    await repo.moverLivro('l3', 0, 0)
 
     expect((await repo.listLivros()).map((l) => [l.id, l.ordem])).toEqual([
       ['l3', 0],
@@ -298,21 +306,56 @@ describe('ordem da estante', () => {
     ])
   })
 
-  // Gravar uma lista pela metade deixaria dois livros no mesmo lugar.
-  it('recusa lista que não bate com a estante gravada, sem mexer em nada', async () => {
-    for (const [i, id] of ['l1', 'l2', 'l3'].entries()) await repo.upsertLivro(livro(id, id, i))
+  it('mover para outra prateleira não mexe em livro de uma terceira', async () => {
+    await repo.upsertLivro(livro('a', 'a', 0, 0))
+    await repo.upsertLivro(livro('b', 'b', 1, 0))
+    await repo.upsertLivro(livro('x', 'x', 0, 2))
 
-    await expect(repo.reordenarLivros(['l2', 'l1'])).rejects.toThrow()
-    await expect(repo.reordenarLivros(['l2', 'l1', 'l1'])).rejects.toThrow()
-    await expect(repo.reordenarLivros(['l2', 'l1', 'fantasma'])).rejects.toThrow(/l3/)
+    await repo.moverLivro('a', 5, 0)
 
-    expect(await ids()).toEqual(['l1', 'l2', 'l3'])
+    const porId = new Map((await repo.listLivros()).map((l) => [l.id, [l.prateleira, l.ordem]]))
+    expect(porId.get('a')).toEqual([5, 0])
+    expect(porId.get('b')).toEqual([0, 0]) // fechou o buraco que 'a' deixou
+    expect(porId.get('x')).toEqual([2, 0]) // outra prateleira, intocada
+  })
+
+  it('recusa mover livro que não existe', async () => {
+    await expect(repo.moverLivro('fantasma', 0, 0)).rejects.toThrow(/fantasma/)
+  })
+})
+
+describe('quantidade de prateleiras', () => {
+  it('4 por padrão, quando nunca foi definida', async () => {
+    expect(await repo.getQuantidadeDePrateleiras()).toBe(4)
+  })
+
+  it('grava e devolve o que foi definido', async () => {
+    await repo.definirQuantidadeDePrateleiras(6)
+    expect(await repo.getQuantidadeDePrateleiras()).toBe(6)
+  })
+
+  // Diminuir sem mover os livros antes perderia livro de vista: a prateleira
+  // deixaria de existir na tela, mas ele continuaria gravado nela.
+  it('recusa diminuir se sobrar livro numa prateleira que deixaria de existir', async () => {
+    await repo.upsertLivro(livro('l1', 'Psicologia', 0, 2))
+
+    await expect(repo.definirQuantidadeDePrateleiras(2)).rejects.toThrow()
+    expect(await repo.getQuantidadeDePrateleiras()).toBe(4)
+  })
+
+  it('aceita diminuir quando nenhum livro fica para trás', async () => {
+    await repo.upsertLivro(livro('l1', 'Psicologia', 0, 1))
+
+    await repo.definirQuantidadeDePrateleiras(2)
+    expect(await repo.getQuantidadeDePrateleiras()).toBe(2)
   })
 })
 
 describe('migração para a v3', () => {
   // É o que acontece no aparelho de quem já usava o app: o banco abre em v2, com
-  // livros sem `ordem`, e nenhum deles pode mudar de lugar na tela.
+  // livros sem `ordem`, e nenhum deles pode mudar de lugar na tela. Como
+  // `createDb` já define até a v4, a migração passa pelas duas em sequência —
+  // por isso o teste também confere prateleira/quantidade, e não só ordem.
   it('dá a cada livro antigo a posição que ele tinha na estante', async () => {
     const nome = `palacio-migracao-${String(nth)}`
 
@@ -323,7 +366,7 @@ describe('migração para a v3', () => {
       conexoes: 'id, aId, bId, updatedAt',
     })
     antigo.version(2).stores({ meta: 'chave' })
-    await antigo.table<Omit<Livro, 'ordem'>, string>('livros').bulkPut([
+    await antigo.table<Omit<Livro, 'ordem' | 'prateleira'>, string>('livros').bulkPut([
       { id: 'b5fd', titulo: 'Programação', cor: '#3e9a93', createdAt: T0 },
       { id: '382f', titulo: 'Psicologia', cor: '#7b6ae0', createdAt: T0 },
       { id: '8ef8', titulo: 'Música', cor: '#c8734a', createdAt: T0 },
@@ -333,12 +376,57 @@ describe('migração para a v3', () => {
 
     const migrado = createDexieRepo(createDb(nome))
 
-    // A tela ordenava por `createdAt` e o IndexedDB desempatava pelo id.
-    expect((await migrado.listLivros()).map((l) => [l.titulo, l.ordem])).toEqual([
-      ['O mais antigo', 0],
-      ['Psicologia', 1],
-      ['Música', 2],
-      ['Programação', 3],
+    // A tela ordenava por `createdAt` e o IndexedDB desempatava pelo id. Com só
+    // 4 livros, a distribuição antiga dava uma prateleira para cada um.
+    expect((await migrado.listLivros()).map((l) => [l.titulo, l.prateleira, l.ordem])).toEqual([
+      ['O mais antigo', 0, 0],
+      ['Psicologia', 1, 0],
+      ['Música', 2, 0],
+      ['Programação', 3, 0],
     ])
+    expect(await migrado.getQuantidadeDePrateleiras()).toBe(4)
+  })
+})
+
+describe('migração para a v4', () => {
+  // Parte de um banco já em v3 (com `ordem`, sem `prateleira`) — o estado de
+  // quem atualizou o app entre a Fase 9 e a Fase 10.
+  it('agrupa os livros antigos pela mesma distribuição automática de antes', async () => {
+    const nome = `palacio-migracao-v4-${String(nth)}`
+
+    const antigo = new Dexie(nome)
+    antigo.version(1).stores({
+      livros: 'id, createdAt',
+      neuronios: 'id, livroId, updatedAt',
+      conexoes: 'id, aId, bId, updatedAt',
+    })
+    antigo.version(2).stores({ meta: 'chave' })
+    antigo.version(3).stores({ livros: 'id, createdAt, ordem' })
+    // 7 livros: a distribuição antiga dá 4 prateleiras, 2 por prateleira (a
+    // última com sobra), então o teste exercita mais de um livro por prateleira.
+    await antigo.table<Omit<Livro, 'prateleira'>, string>('livros').bulkPut(
+      Array.from({ length: 7 }, (_, i) => ({
+        id: `l${String(i)}`,
+        titulo: `Livro ${String(i)}`,
+        cor: '#6d5bd0',
+        ordem: i,
+        createdAt: T0,
+      })),
+    )
+    antigo.close()
+
+    const migrado = createDexieRepo(createDb(nome))
+    const livros = await migrado.listLivros()
+
+    expect(livros.map((l) => [l.prateleira, l.ordem])).toEqual([
+      [0, 0],
+      [0, 1],
+      [1, 0],
+      [1, 1],
+      [2, 0],
+      [2, 1],
+      [3, 0],
+    ])
+    expect(await migrado.getQuantidadeDePrateleiras()).toBe(4)
   })
 })

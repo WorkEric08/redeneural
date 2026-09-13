@@ -26,9 +26,9 @@ import { createDexieRepo } from './dexieRepo'
 const T0 = new Date('2026-01-01T12:00:00.000Z')
 
 const LIVROS: Livro[] = [
-  { id: 'psi', titulo: 'Psicologia', cor: '#6d5bd0', ordem: 0, createdAt: T0 },
-  { id: 'prog', titulo: 'Programação', cor: '#2f7a6f', ordem: 1, createdAt: T0 },
-  { id: 'mus', titulo: 'Música', cor: '#b4553a', ordem: 2, createdAt: T0 },
+  { id: 'psi', titulo: 'Psicologia', cor: '#6d5bd0', prateleira: 0, ordem: 0, createdAt: T0 },
+  { id: 'prog', titulo: 'Programação', cor: '#2f7a6f', prateleira: 0, ordem: 1, createdAt: T0 },
+  { id: 'mus', titulo: 'Música', cor: '#b4553a', prateleira: 0, ordem: 2, createdAt: T0 },
 ]
 
 /** Os nós do motor viram neurônios de verdade, com vetor e tudo. */
@@ -149,6 +149,7 @@ describe('exportar num navegador e importar noutro', () => {
       id: 'meu',
       titulo: 'Meu livro',
       cor: '#123456',
+      prateleira: 0,
       ordem: 0,
       createdAt: T0,
     })
@@ -202,7 +203,8 @@ describe('a ordem da estante no backup', () => {
 
   it('um backup devolve a estante arrumada como estava', async () => {
     const origem = await palacioPovoado()
-    await origem.reordenarLivros(['mus', 'psi', 'prog'])
+    // Leva 'mus' para o início: psi(0),prog(1),mus(2) → mus,psi,prog.
+    await origem.moverLivro('mus', 0, 0)
     const snapshot = await origem.exportAll()
 
     const destino = repoVazio()
@@ -239,6 +241,7 @@ describe('a ordem da estante no backup', () => {
       id: 'meu',
       titulo: 'Meu livro',
       cor: '#123456',
+      prateleira: 0,
       ordem: 0,
       createdAt: T0,
     })

@@ -10,15 +10,16 @@ import type { LivroNaEstante } from './resumo'
  * a cada sessão não serve de palácio da memória. Toda variação — largura da
  * lombada, inclinação, altura dos enfeites — sai da semente do id.
  *
+ * Desde a Fase 10, a prateleira de um livro é **gravada** (`Livro.prateleira`),
+ * não mais calculada aqui — isto só agrupa quem já sabe onde mora. A
+ * distribuição automática de antes fica congelada em `estanteAntiga.ts`, só
+ * para migração e import de backups antigos.
+ *
  * Os **enfeites** são a parte da biblioteca que ainda não foi escrita: lombadas
  * escuras, sem título, sem toque, que só existem para o móvel ter a densidade
  * de uma estante de verdade. A luz não as alcança — quem ela alcança são os
  * seus livros, e é isso que os faz saltar no meio delas.
  */
-
-const LIVROS_POR_PRATELEIRA = 6
-const MINIMO_DE_PRATELEIRAS = 4
-const MAXIMO_DE_PRATELEIRAS = 14
 
 /** Enfeites por prateleira: o bastante para transbordar a mais larga e ser cortado. */
 const ENFEITES_POR_PRATELEIRA = 26
@@ -63,47 +64,34 @@ export interface Prateleira {
   enfeites: Enfeite[]
 }
 
-/** Quantas prateleiras o móvel tem e quantos livros vão em cada uma. */
-function distribuicao(total: number): { quantas: number; porPrateleira: number } {
-  const quantas = Math.min(
-    MAXIMO_DE_PRATELEIRAS,
-    Math.max(MINIMO_DE_PRATELEIRAS, Math.ceil(total / LIVROS_POR_PRATELEIRA)),
-  )
-
-  // Os livros se espalham pelo móvel em vez de se amontoarem nas primeiras
-  // prateleiras: uma estante com tudo numa fila e o resto vazio não é estante.
-  // Com muitos livros, cada prateleira acomoda mais, em vez de o excesso cair
-  // fora do móvel.
-  const porPrateleira = Math.max(1, Math.ceil(total / quantas))
-
-  return { quantas, porPrateleira }
+/** Livros já existentes naquela prateleira — um livro novo nasce depois deles. */
+export function posicaoParaNovoLivro(
+  livros: readonly { prateleira: number }[],
+  prateleira: number,
+): number {
+  return livros.filter((l) => l.prateleira === prateleira).length
 }
 
-/**
- * Em que posição da ordem entra um livro criado na prateleira em que a pessoa
- * tocou, para ele nascer ali.
- *
- * Os livros se espalham sozinhos pelo móvel, então a conta é feita com a
- * estante já contando o livro novo: ele entra no fim daquela prateleira, e quem
- * vinha depois anda para a seguinte. Num palácio pequeno demais para aquela
- * prateleira ter livro — com um livro só, a terceira ainda não recebe nenhum —,
- * ele nasce na última prateleira ocupada, que é o mais perto possível.
- */
-export function posicaoParaNovoLivro(totalAtual: number, prateleira: number): number {
-  const { quantas, porPrateleira } = distribuicao(totalAtual + 1)
-  const alvo = Math.min(Math.max(0, Math.trunc(prateleira)), quantas - 1)
-  return Math.min((alvo + 1) * porPrateleira - 1, totalAtual)
-}
+export function montarPrateleiras(
+  estante: readonly LivroNaEstante[],
+  quantidadeDePrateleiras: number,
+): Prateleira[] {
+  const porPrateleira = new Map<number, LivroNaEstante[]>()
+  for (const item of estante) {
+    const lista = porPrateleira.get(item.livro.prateleira)
+    if (lista) lista.push(item)
+    else porPrateleira.set(item.livro.prateleira, [item])
+  }
 
-export function montarPrateleiras(estante: readonly LivroNaEstante[]): Prateleira[] {
-  const { quantas, porPrateleira } = distribuicao(estante.length)
-
-  return Array.from({ length: quantas }, (_, i) => ({
+  return Array.from({ length: quantidadeDePrateleiras }, (_, i) => ({
     chave: `p${String(i)}`,
-    livros: estante.slice(i * porPrateleira, (i + 1) * porPrateleira).map((item) => {
-      const [a] = semente(item.livro.id)
-      return { item, largura: Math.round(30 + a * 16) }
-    }),
+    livros: (porPrateleira.get(i) ?? [])
+      .slice()
+      .sort((a, b) => a.livro.ordem - b.livro.ordem)
+      .map((item) => {
+        const [a] = semente(item.livro.id)
+        return { item, largura: Math.round(30 + a * 16) }
+      }),
     enfeites: montarEnfeites(i),
   }))
 }

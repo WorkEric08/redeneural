@@ -12,6 +12,7 @@ export const livroSchema = z.object({
   id,
   titulo: z.string().trim().min(1).max(120),
   cor: hexColor,
+  prateleira: ordem,
   ordem,
   createdAt: z.date(),
 })
@@ -61,6 +62,8 @@ export const snapshotSchema = z.object({
       cor: hexColor,
       // Opcional: backup de antes de 12/09/2026 não tinha ordem de estante.
       ordem: ordem.optional(),
+      // Opcional: backup de antes da Fase 10 (13-14/09/2026) não tinha prateleira.
+      prateleira: ordem.optional(),
       createdAt: isoDate,
     }),
   ),

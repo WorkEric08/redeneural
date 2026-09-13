@@ -1,10 +1,9 @@
 import { create } from 'zustand'
 
 import {
-  aplicarOrdem,
-  inserirNaOrdem,
+  MINIMO_DE_PRATELEIRAS,
+  moverLivroNaEstante,
   novoLivro,
-  trocarNaOrdem,
   type Conexao,
   type Livro,
   type NeuronioNaTela,
@@ -29,6 +28,7 @@ interface PalacioStore {
   livros: Livro[]
   neuronios: NeuronioNaTela[]
   conexoes: Conexao[]
+  quantidadeDePrateleiras: number
 
   carregado: boolean
   ocupado: boolean
@@ -44,11 +44,13 @@ interface PalacioStore {
   apagarNeuronio: (id: string) => Promise<boolean>
   reprocessarTudo: () => Promise<void>
   /** Devolve o id do livro criado, ou null se o motor não conseguiu. */
-  criarLivro: (novo: NovoLivro, posicao: number) => Promise<string | null>
+  criarLivro: (novo: NovoLivro, prateleira: number) => Promise<string | null>
   editarLivro: (id: string, mudancas: NovoLivro) => Promise<boolean>
   apagarLivro: (id: string) => Promise<boolean>
-  /** Os dois livros trocam de lugar na estante; nenhum outro se mexe. */
-  trocarLivros: (a: string, b: string) => Promise<void>
+  /** Move o livro para `(prateleira, posicao)`, empurrando quem já está lá. */
+  moverLivro: (id: string, prateleira: number, posicao: number) => Promise<void>
+  /** Recusa diminuir se sobrar livro numa prateleira que deixaria de existir. */
+  definirQuantidadeDePrateleiras: (quantidade: number) => Promise<void>
   exportar: () => Promise<void>
   importar: (arquivo: File) => Promise<void>
   /** O aviso flutuante some — pelo tempo ou pelo toque. */
@@ -68,6 +70,7 @@ export const usePalacio = create<PalacioStore>()((set, get) => {
     livros: [],
     neuronios: [],
     conexoes: [],
+    quantidadeDePrateleiras: MINIMO_DE_PRATELEIRAS,
     carregado: false,
     ocupado: false,
     progresso: null,
@@ -183,24 +186,16 @@ export const usePalacio = create<PalacioStore>()((set, get) => {
       }
     },
 
-    async criarLivro(novo, posicao): Promise<string | null> {
+    async criarLivro(novo, prateleira): Promise<string | null> {
       const antes = get().livros
-      const input = { id: newId(), ...novo, posicao }
-      const provisorio = novoLivro(input, new Date())
+      const input = { id: newId(), ...novo, prateleira }
+      // Nasce no fim da prateleira tocada — não desloca nenhum outro livro.
+      const ordem = antes.filter((l) => l.prateleira === prateleira).length
+      const provisorio = novoLivro(input, new Date(), ordem)
 
       // Otimista, como o neurônio: o livro já está na prateleira quando o painel
       // fecha, em vez de aparecer um instante depois.
-      set({
-        livros: aplicarOrdem(
-          [...antes, provisorio],
-          inserirNaOrdem(
-            antes.map((l) => l.id),
-            provisorio.id,
-            posicao,
-          ),
-        ),
-        erro: null,
-      })
+      set({ livros: [...antes, provisorio], erro: null })
 
       try {
         set({ livros: await engine.criarLivro(input) })
@@ -245,22 +240,28 @@ export const usePalacio = create<PalacioStore>()((set, get) => {
       }
     },
 
-    async trocarLivros(a, b) {
+    async moverLivro(id, prateleira, posicao) {
       const antes = get().livros
-      const ids = trocarNaOrdem(
-        antes.map((l) => l.id),
-        a,
-        b,
-      )
 
       // Otimista: quem solta o livro tem que vê-lo já no lugar novo. Esperar o
       // banco faria o livro voltar à origem e só depois pular — parece erro.
-      set({ livros: aplicarOrdem(antes, ids), erro: null })
+      set({ livros: moverLivroNaEstante(antes, id, prateleira, posicao), erro: null })
 
       try {
-        set({ livros: await engine.reordenarLivros(ids) })
+        set({ livros: await engine.moverLivro(id, prateleira, posicao) })
       } catch (e) {
         set({ livros: antes, erro: mensagem(e) })
+      }
+    },
+
+    async definirQuantidadeDePrateleiras(quantidade) {
+      const antes = get().quantidadeDePrateleiras
+      set({ quantidadeDePrateleiras: quantidade, erro: null })
+
+      try {
+        set({ quantidadeDePrateleiras: await engine.definirQuantidadeDePrateleiras(quantidade) })
+      } catch (e) {
+        set({ quantidadeDePrateleiras: antes, erro: mensagem(e) })
       }
     },
 

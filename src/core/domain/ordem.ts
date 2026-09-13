@@ -1,24 +1,14 @@
 import type { Id } from './types'
 
 /**
- * A ordem da estante, como lista de ids do primeiro ao último livro.
+ * A ordem da estante, como lista de ids do primeiro ao último livro de uma
+ * prateleira.
  *
- * Puras de propósito: a store usa para mostrar a troca antes de o banco
- * confirmar, e o worker usa para gravar — os dois precisam chegar exatamente na
- * mesma lista, ou a estante pisca para um lado e volta para o outro.
+ * Puras de propósito: a store usa para mostrar o movimento antes de o banco
+ * confirmar, e o repositório usa para gravar — os dois precisam chegar
+ * exatamente na mesma lista, ou a estante pisca para um lado e volta para o
+ * outro.
  */
-
-/** Os dois livros trocam de lugar; nenhum outro se mexe. */
-export function trocarNaOrdem(ids: readonly Id[], a: Id, b: Id): Id[] {
-  const i = ids.indexOf(a)
-  const j = ids.indexOf(b)
-  const nova = [...ids]
-  if (i === -1 || j === -1 || i === j) return nova
-
-  nova[i] = b
-  nova[j] = a
-  return nova
-}
 
 /**
  * Põe `id` na posição pedida e empurra quem estava dali em diante. Uma posição
@@ -31,19 +21,43 @@ export function inserirNaOrdem(ids: readonly Id[], id: Id, posicao: number): Id[
 }
 
 /**
- * Reescreve `ordem` a partir da lista: cada livro passa a valer o próprio
- * índice. Quem não está na lista vai para o fim, na ordem em que já estava —
- * perder um livro da estante por causa de uma lista incompleta seria pior do
- * que deixá-lo no fim.
+ * Move um livro para `(prateleira, posicao)` — a "bandeja de apps do Android":
+ * empurra quem está naquela posição em diante (`inserirNaOrdem` já faz isso),
+ * fechando o buraco que ele deixa na prateleira de origem. Soltar numa
+ * prateleira vazia (ou depois do último livro dela) não empurra nada, porque
+ * a posição pedida já é o fim da lista.
+ *
+ * Só livros de UMA prateleira por vez são tocados de cada lado — mover nunca
+ * redistribui a estante inteira.
  */
-export function aplicarOrdem<T extends { id: Id; ordem: number }>(
+export function moverLivroNaEstante<T extends { id: Id; ordem: number; prateleira: number }>(
   livros: readonly T[],
-  ids: readonly Id[],
+  id: Id,
+  prateleiraDestino: number,
+  posicao: number,
 ): T[] {
-  const posicao = new Map(ids.map((id, i) => [id, i]))
-  const dentro = livros.filter((l) => posicao.has(l.id))
-  const fora = livros.filter((l) => !posicao.has(l.id)).sort((a, b) => a.ordem - b.ordem)
+  const movido = livros.find((l) => l.id === id)
+  if (!movido) return [...livros]
 
-  dentro.sort((a, b) => (posicao.get(a.id) ?? 0) - (posicao.get(b.id) ?? 0))
-  return [...dentro, ...fora].map((l, ordem) => ({ ...l, ordem }))
+  const naPrateleira = (p: number): Id[] =>
+    livros
+      .filter((l) => l.prateleira === p && l.id !== id)
+      .sort((a, b) => a.ordem - b.ordem)
+      .map((l) => l.id)
+
+  const novaOrdem = new Map<Id, number>()
+  inserirNaOrdem(naPrateleira(prateleiraDestino), id, posicao).forEach((lid, i) => {
+    novaOrdem.set(lid, i)
+  })
+  if (movido.prateleira !== prateleiraDestino) {
+    naPrateleira(movido.prateleira).forEach((lid, i) => {
+      novaOrdem.set(lid, i)
+    })
+  }
+
+  return livros.map((l) => {
+    if (l.id === id) return { ...l, prateleira: prateleiraDestino, ordem: novaOrdem.get(id) ?? 0 }
+    const ordem = novaOrdem.get(l.id)
+    return ordem === undefined ? l : { ...l, ordem }
+  })
 }

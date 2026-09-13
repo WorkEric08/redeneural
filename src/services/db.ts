@@ -1,6 +1,12 @@
 import Dexie, { type EntityTable } from 'dexie'
 
-import type { Conexao, Livro, Neuronio } from '@/core'
+import {
+  distribuicaoAntiga,
+  posicoesAntigas,
+  type Conexao,
+  type Livro,
+  type Neuronio,
+} from '@/core'
 
 export const DB_NAME = 'palacio-mental'
 
@@ -20,11 +26,19 @@ export interface PerfilGravado {
   atualizadoEm: Date
 }
 
+/** Preferências simples do palácio — hoje só a quantidade de prateleiras (Fase 10). */
+export interface PreferenciasGravadas {
+  chave: 'preferencias'
+  quantidadeDePrateleiras: number
+}
+
+export type MetaGravada = PerfilGravado | PreferenciasGravadas
+
 export type PalacioDB = Dexie & {
   livros: EntityTable<Livro, 'id'>
   neuronios: EntityTable<Neuronio, 'id'>
   conexoes: EntityTable<Conexao, 'id'>
-  meta: EntityTable<PerfilGravado, 'chave'>
+  meta: EntityTable<MetaGravada, 'chave'>
 }
 
 /**
@@ -60,6 +74,37 @@ export function createDb(name: string = DB_NAME): PalacioDB {
       const livros = tx.table<Omit<Livro, 'ordem'> & { ordem?: number }, string>('livros')
       const antigos = await livros.orderBy('createdAt').toArray()
       await livros.bulkPut(antigos.map((l, ordem) => ({ ...l, ordem })))
+    })
+
+  // v4 (Fase 10): a prateleira passa a ser gravada, não mais calculada a cada
+  // render. Quem já tinha livros recebe a prateleira/ordem que a distribuição
+  // automática de então calculava — `posicoesAntigas`, congelada em
+  // `estanteAntiga.ts` só para isto — e nenhum livro muda de lugar. A
+  // quantidade de prateleiras vira preferência gravada, igual ao que a
+  // distribuição de então calculava para este tanto de livro.
+  db.version(4)
+    .stores({
+      livros: 'id, createdAt, ordem, prateleira',
+    })
+    .upgrade(async (tx) => {
+      const livros = tx.table<Livro & { prateleira?: number }, string>('livros')
+      const antigos = await livros.orderBy('ordem').toArray()
+      const posicoes = posicoesAntigas(antigos.map((l) => l.id))
+
+      await livros.bulkPut(
+        antigos.map((l) => ({ ...l, ...(posicoes.get(l.id) ?? { prateleira: 0, ordem: 0 }) })),
+      )
+
+      if (antigos.length > 0) {
+        // O mesmo `quantas` que a distribuição automática mostrava para este
+        // tanto de livro — inclui prateleiras vazias de sobra (mínimo 4), não
+        // só as que já tinham livro, senão o móvel encolheria na migração.
+        const meta = tx.table<MetaGravada, string>('meta')
+        await meta.put({
+          chave: 'preferencias',
+          quantidadeDePrateleiras: distribuicaoAntiga(antigos.length).quantas,
+        })
+      }
     })
 
   return db

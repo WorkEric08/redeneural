@@ -1,6 +1,7 @@
-import { Download, RefreshCw, Upload } from 'lucide-react'
+import { Download, Minus, Plus, RefreshCw, Rows3, Upload } from 'lucide-react'
 import type { ReactNode } from 'react'
 
+import { botao } from '@/components/botao'
 import { BarraDeTopo } from '@/components/BarraDeTopo'
 import { EtiquetaProcessando } from '@/components/EtiquetaProcessando'
 import { usePalacio } from '@/store/palacio'
@@ -14,8 +15,18 @@ import { usePalacio } from '@/store/palacio'
  * caixa no meio da tela que empurra tudo para baixo.
  */
 export default function Ajustes() {
-  const { livros, neuronios, conexoes, carregado, ocupado, reprocessarTudo, exportar, importar } =
-    usePalacio()
+  const {
+    livros,
+    neuronios,
+    conexoes,
+    carregado,
+    ocupado,
+    quantidadeDePrateleiras,
+    definirQuantidadeDePrateleiras,
+    reprocessarTudo,
+    exportar,
+    importar,
+  } = usePalacio()
 
   const semVetor = neuronios.filter((n) => n.processando).length
   const travado = ocupado || !carregado
@@ -42,6 +53,44 @@ export default function Ajustes() {
               <EtiquetaProcessando texto={`${String(semVetor)} sem processar`} />
             </p>
           )}
+        </section>
+
+        <section>
+          <h2 className="rotulo-de-secao">Estante</h2>
+          <div className="cartao">
+            <div className="linha-de-lista">
+              <Icone>
+                <Rows3 size={18} aria-hidden />
+              </Icone>
+              <Texto titulo="Prateleiras">Quantas fileiras o móvel tem.</Texto>
+              <div className="flex shrink-0 items-center gap-2">
+                <button
+                  type="button"
+                  aria-label="Menos uma prateleira"
+                  className={botao({ tipo: 'secundario', tamanho: 'icone' })}
+                  disabled={travado || quantidadeDePrateleiras <= 1}
+                  onClick={() => void definirQuantidadeDePrateleiras(quantidadeDePrateleiras - 1)}
+                >
+                  <Minus size={16} aria-hidden />
+                </button>
+                <span className="font-dado w-5 text-center text-sm tabular-nums">
+                  {quantidadeDePrateleiras}
+                </span>
+                <button
+                  type="button"
+                  aria-label="Mais uma prateleira"
+                  className={botao({ tipo: 'secundario', tamanho: 'icone' })}
+                  disabled={travado}
+                  onClick={() => void definirQuantidadeDePrateleiras(quantidadeDePrateleiras + 1)}
+                >
+                  <Plus size={16} aria-hidden />
+                </button>
+              </div>
+            </div>
+          </div>
+          <p className="text-poeira px-1 pt-2.5 text-xs leading-relaxed">
+            Diminuir é recusado se ainda sobrar livro nas prateleiras removidas — mova-os antes.
+          </p>
         </section>
 
         <section>
