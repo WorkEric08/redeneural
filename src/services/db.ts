@@ -4,6 +4,7 @@ import {
   distribuicaoAntiga,
   posicoesAntigas,
   type Conexao,
+  type EtiquetaDePrateleira,
   type Livro,
   type Neuronio,
 } from '@/core'
@@ -39,6 +40,7 @@ export type PalacioDB = Dexie & {
   neuronios: EntityTable<Neuronio, 'id'>
   conexoes: EntityTable<Conexao, 'id'>
   meta: EntityTable<MetaGravada, 'chave'>
+  etiquetas: EntityTable<EtiquetaDePrateleira, 'prateleira'>
 }
 
 /**
@@ -106,6 +108,12 @@ export function createDb(name: string = DB_NAME): PalacioDB {
         })
       }
     })
+
+  // v5 (Fase 15): nome de prateleira, puramente visual — tabela nova, sem
+  // migração de dado nenhum (mesmo padrão de `meta` na v2).
+  db.version(5).stores({
+    etiquetas: 'prateleira',
+  })
 
   return db
 }

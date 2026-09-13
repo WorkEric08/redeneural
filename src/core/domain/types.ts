@@ -40,6 +40,16 @@ export interface Livro {
   createdAt: Date
 }
 
+/**
+ * O nome de uma prateleira — puramente visual. Não é um livro: não tem
+ * neurônio, não entra no grafo, não participa da ordem dos livros. Uma
+ * prateleira sem etiqueta simplesmente não tem registro aqui.
+ */
+export interface EtiquetaDePrateleira {
+  prateleira: number
+  texto: string
+}
+
 /** Um conceito dentro de um livro. */
 export interface Neuronio {
   id: Id
@@ -91,6 +101,12 @@ export interface PalacioSnapshot {
   livros: LivroSnapshot[]
   neuronios: NeuronioSnapshot[]
   conexoes: ConexaoSnapshot[]
+  /**
+   * Ausente em backups de antes da Fase 15 — o import trata como `[]`. Uma
+   * etiqueta do arquivo vence a que já existia na mesma prateleira; etiqueta
+   * que só existe aqui não é apagada.
+   */
+  etiquetas?: EtiquetaDePrateleira[] | undefined
 }
 
 export interface LivroSnapshot {

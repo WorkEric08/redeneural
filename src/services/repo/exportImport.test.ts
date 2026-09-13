@@ -252,3 +252,56 @@ describe('a ordem da estante no backup', () => {
     expect(await ids(destino)).toEqual(['psi', 'prog', 'mus', 'meu'])
   })
 })
+
+describe('etiquetas no backup', () => {
+  it('exporta e importa a etiqueta de uma prateleira', async () => {
+    const origem = await palacioPovoado()
+    await origem.definirEtiqueta(0, 'Trabalho')
+    const snapshot = await origem.exportAll()
+
+    const destino = repoVazio()
+    await destino.importAll(JSON.parse(JSON.stringify(snapshot)) as typeof snapshot)
+
+    expect(await destino.listEtiquetas()).toEqual([{ prateleira: 0, texto: 'Trabalho' }])
+  })
+
+  it('a etiqueta do arquivo vence a que já existia na mesma prateleira', async () => {
+    const origem = await palacioPovoado()
+    await origem.definirEtiqueta(0, 'Trabalho')
+
+    const destino = repoVazio()
+    await destino.definirEtiqueta(0, 'Nome antigo')
+    await destino.importAll(await origem.exportAll())
+
+    expect(await destino.listEtiquetas()).toEqual([{ prateleira: 0, texto: 'Trabalho' }])
+  })
+
+  it('etiqueta que só existe aqui não é apagada pelo import', async () => {
+    const origem = await palacioPovoado()
+    const destino = repoVazio()
+    await destino.definirEtiqueta(2, 'Só aqui')
+
+    await destino.importAll(await origem.exportAll())
+
+    expect(await destino.listEtiquetas()).toEqual([{ prateleira: 2, texto: 'Só aqui' }])
+  })
+
+  // Backup de antes da Fase 15 não tinha o campo — não pode quebrar o import.
+  it('backup sem etiquetas importa normalmente, sem etiqueta nenhuma', async () => {
+    const origem = await palacioPovoado()
+    const snapshot = await origem.exportAll()
+    const antigo = {
+      version: snapshot.version,
+      exportedAt: snapshot.exportedAt,
+      livros: snapshot.livros,
+      neuronios: snapshot.neuronios,
+      conexoes: snapshot.conexoes,
+    }
+
+    const destino = repoVazio()
+    await destino.importAll(antigo)
+
+    expect(await destino.listEtiquetas()).toEqual([])
+    expect(await destino.listLivros()).toHaveLength(LIVROS.length)
+  })
+})

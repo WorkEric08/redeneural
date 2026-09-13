@@ -17,6 +17,7 @@ import {
   type CriterioDeOrdenacao,
   type EditarLivroInput,
   type EstadoDoPalacio,
+  type EtiquetaDePrateleira,
   type Id,
   type Livro,
   type Neuronio,
@@ -75,14 +76,21 @@ const pontuar: PontuarPar = SEM_RERANK
 const CRESCIMENTO_ATE_REPROCESSAR = 1.5
 
 async function estadoAtual(): Promise<EstadoDoPalacio> {
-  const [livros, neuronios, conexoes, quantidadeDePrateleiras] = await Promise.all([
+  const [livros, neuronios, conexoes, quantidadeDePrateleiras, etiquetas] = await Promise.all([
     repo.listLivros(),
     repo.listNeuronios(),
     repo.listConexoes(),
     repo.getQuantidadeDePrateleiras(),
+    repo.listEtiquetas(),
   ])
 
-  return { livros, neuronios: neuronios.map(paraTela), conexoes, quantidadeDePrateleiras }
+  return {
+    livros,
+    neuronios: neuronios.map(paraTela),
+    conexoes,
+    quantidadeDePrateleiras,
+    etiquetas,
+  }
 }
 
 /** Calcula e grava o embedding que faltava. Devolve o neurônio já com vetor. */
@@ -232,6 +240,11 @@ async function ordenarEstante(criterio: CriterioDeOrdenacao): Promise<Livro[]> {
   return repo.listLivros()
 }
 
+async function definirEtiqueta(prateleira: number, texto: string): Promise<EtiquetaDePrateleira[]> {
+  await repo.definirEtiqueta(prateleira, texto)
+  return repo.listEtiquetas()
+}
+
 async function importar(json: string): Promise<EstadoDoPalacio> {
   let bruto: unknown
   try {
@@ -294,6 +307,13 @@ async function responder(msg: ParaMotor): Promise<DoMotor> {
 
       case 'ordenarEstante':
         return { req: msg.req, ok: true, dados: await ordenarEstante(msg.criterio) }
+
+      case 'definirEtiqueta':
+        return {
+          req: msg.req,
+          ok: true,
+          dados: await definirEtiqueta(msg.prateleira, msg.texto),
+        }
 
       case 'exportar':
         return { req: msg.req, ok: true, dados: JSON.stringify(await repo.exportAll()) }

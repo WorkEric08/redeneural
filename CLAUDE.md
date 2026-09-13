@@ -1378,6 +1378,47 @@ e desliga o modo; "Cancelar" sai sem mexer em nada. Nos dois temas, mobile
 continuam limpos — a interação em si foi verificada no navegador, não em
 teste automatizado, mesmo padrão do resto do gesto de arrastar.
 
+## Nome de prateleira (Fase 15, 13/09/2026)
+
+Quinta das 9 melhorias aprovadas depois da Fase 10, e a primeira que cria uma
+entidade nova no banco. Pedido original: "um marcador que você arrasta pra
+estante para separar seções por tema." Antes de desenhar, perguntei ao
+usuário o que o marcador separa de verdade — prateleiras (já manuais desde a
+Fase 10) ou livros dentro da mesma prateleira — porque as duas leituras
+pedem implementações muito diferentes. Ele escolheu a mais simples: **nome
+de prateleira**, não um objeto arrastável entre livros.
+
+**O que é:** cada prateleira pode ganhar um texto opcional (ex. "Trabalho"),
+puramente visual — não é um livro, não tem neurônio, não entra no grafo, não
+participa da ordem. Editado por toque, não por arrasto: um selo pequeno
+(ícone de etiqueta, ou o próprio texto quando já tem um) no canto superior
+esquerdo de cada prateleira, acima da sombra da tábua de cima para não sumir
+nela.
+
+**Modelo de dados, o mais simples que dava:** tabela nova `etiquetas`,
+chave primária o próprio número da prateleira — não precisa de `id` nem
+`createdAt`, porque só existe uma etiqueta por prateleira e ela não é um
+"registro" no sentido de `Livro`/`Neurônio`, é mais parecida com a
+preferência de `meta.preferencias` da Fase 10. Texto vazio apaga a linha em
+vez de gravar string vazia. Dexie v5, tabela nova sem migração nenhuma —
+mesmo padrão da v2 (`meta`).
+
+**Export/import:** etiqueta entra no backup (a etiqueta do arquivo vence a
+que já existia na mesma prateleira; uma etiqueta que só existe aqui não é
+apagada — o mesmo "funde" de sempre). Backup de antes desta fase não tem o
+campo; o schema trata como `[]`.
+
+**Gotcha de nome:** já existia uma classe `.lombada--etiqueta` — o adorno de
+papel colado numa lombada de enfeite, sem relação nenhuma com isto. A classe
+nova chama `.movel-nome` de propósito, para não colidir o conceito.
+
+Verificado com toque de verdade: nomear, reabrir (o campo vem preenchido),
+renomear, remover, e confirmar que tocar um livro de verdade continua
+abrindo o espiar normalmente — o selo é um botão de verdade, não rouba o
+toque de mais nada. Nos dois temas, 320/412/1440 px, sem rolagem horizontal.
+191 testes (12 novos: repositório e export/import de etiquetas), typecheck
+e lint limpos.
+
 ## Fases
 
 0. ✅ Esqueleto (Vite/React/TS/Tailwind/PWA/Capacitor)
@@ -1394,4 +1435,5 @@ teste automatizado, mesmo padrão do resto do gesto de arrastar.
 11. ✅ Modo organizar — 1ª das 9 melhorias
 12. ✅ Busca global — 2ª das 9
 13. ✅ Ordenar com um toque — 3ª das 9
-14. ✅ Seleção múltipla — 4ª das 9; próxima é divisores/etiquetas visuais
+14. ✅ Seleção múltipla — 4ª das 9
+15. ✅ Nome de prateleira — 5ª das 9; próxima é textura/emblema na lombada

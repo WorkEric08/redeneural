@@ -6,6 +6,7 @@ import type {
   EditarLivroInput,
   EditarNeuronioInput,
   EstadoDoPalacio,
+  EtiquetaDePrateleira,
   Id,
   Livro,
   ProgressoDoMotor,
@@ -105,6 +106,9 @@ export function criarWorkerEngine(): ConnectionEngine {
 
     ordenarEstante: (criterio: CriterioDeOrdenacao): Promise<Livro[]> =>
       pedir<'ordenarEstante'>({ tipo: 'ordenarEstante', criterio }),
+
+    definirEtiqueta: (prateleira: number, texto: string): Promise<EtiquetaDePrateleira[]> =>
+      pedir<'definirEtiqueta'>({ tipo: 'definirEtiqueta', prateleira, texto }),
 
     exportar: (): Promise<string> => pedir<'exportar'>({ tipo: 'exportar' }),
 

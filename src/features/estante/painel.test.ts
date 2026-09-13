@@ -13,6 +13,7 @@ describe('painel da estante na URL', () => {
       { tipo: 'apagar', livroId: 'abc' },
       { tipo: 'novo', prateleira: 0 },
       { tipo: 'novo', prateleira: 3 },
+      { tipo: 'etiqueta', prateleira: 2 },
       { tipo: 'ordenar' },
     ]
 
@@ -29,5 +30,6 @@ describe('painel da estante na URL', () => {
     expect(ler('?novo=abc')).toBeNull()
     expect(ler('?novo=-1')).toBeNull()
     expect(ler('?novo=1.5')).toBeNull()
+    expect(ler('?etiqueta=abc')).toBeNull()
   })
 })

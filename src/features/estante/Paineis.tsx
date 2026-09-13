@@ -6,7 +6,7 @@ import { botao } from '@/components/botao'
 import { Confirmacao } from '@/components/Confirmacao'
 import { EtiquetaProcessando } from '@/components/EtiquetaProcessando'
 import { Folha } from '@/components/Folha'
-import type { CriterioDeOrdenacao, Id, Livro, NeuronioNaTela } from '@/core'
+import type { CriterioDeOrdenacao, EtiquetaDePrateleira, Id, Livro, NeuronioNaTela } from '@/core'
 import { contar } from '@/lib/plural'
 import type { NovoLivro } from '@/store/palacio'
 
@@ -19,6 +19,7 @@ interface Props {
   livros: readonly Livro[]
   neuronios: readonly NeuronioNaTela[]
   pontes: ReadonlyMap<Id, ReadonlyMap<Id, number>>
+  etiquetas: readonly EtiquetaDePrateleira[]
   ocupado: boolean
   panoSugerido: string
   onFechar: () => void
@@ -28,6 +29,7 @@ interface Props {
   onApagar: (livroId: string) => Promise<boolean>
   onOrdenar: (criterio: CriterioDeOrdenacao) => void
   onIniciarSelecao: (livroId: string) => void
+  onDefinirEtiqueta: (prateleira: number, texto: string) => void
 }
 
 /** Quantos neurônios o espiar lista antes de mandar abrir o livro. */
@@ -51,6 +53,7 @@ function rotuloDo(painel: Painel | null, livros: readonly Livro[]): string {
   if (!painel) return ''
   if (painel.tipo === 'novo') return 'Um livro novo'
   if (painel.tipo === 'ordenar') return 'Ordenar a estante'
+  if (painel.tipo === 'etiqueta') return `Nomear prateleira ${String(painel.prateleira + 1)}`
 
   const titulo = livros.find((l) => l.id === painel.livroId)?.titulo ?? 'livro'
   const acao = { espiar: 'Espiar', acoes: 'Ações de', editar: 'Editar', apagar: 'Apagar' }
@@ -82,6 +85,9 @@ function Conteudo(props: Props & { painel: Painel }) {
   }
 
   if (painel.tipo === 'ordenar') return <Ordenar {...props} />
+  if (painel.tipo === 'etiqueta') {
+    return <EditarEtiqueta {...props} prateleira={painel.prateleira} />
+  }
 
   // Apagar guarda o livro que abriu: quando o apagar termina, a store já não o
   // tem, e o painel ainda está na tela o instante que leva para fechar.
@@ -252,6 +258,68 @@ function Ordenar({ onOrdenar, onFechar }: Props) {
         ))}
       </ul>
     </div>
+  )
+}
+
+/**
+ * O nome de uma prateleira — puramente visual, não mexe em livro nenhum. Um
+ * campo só, porque é só isso que existe: texto e prateleira.
+ */
+function EditarEtiqueta({
+  prateleira,
+  etiquetas,
+  onDefinirEtiqueta,
+  onFechar,
+}: Props & { prateleira: number }) {
+  const atual = etiquetas.find((e) => e.prateleira === prateleira)?.texto ?? ''
+  const [texto, setTexto] = useState(atual)
+
+  return (
+    <form
+      className="flex flex-col gap-6"
+      onSubmit={(evento) => {
+        evento.preventDefault()
+        onDefinirEtiqueta(prateleira, texto)
+        onFechar()
+      }}
+    >
+      <header className="flex flex-col gap-1">
+        <h2 className="font-titulo text-xl font-semibold tracking-tight">
+          Nomear prateleira {prateleira + 1}
+        </h2>
+        <p className="text-poeira text-sm">Só um lembrete visual — não muda nada nos livros.</p>
+      </header>
+
+      <input
+        value={texto}
+        onChange={(evento) => {
+          setTexto(evento.target.value)
+        }}
+        maxLength={60}
+        autoComplete="off"
+        enterKeyHint="done"
+        placeholder="Ex.: Trabalho"
+        className="campo font-titulo h-13 px-4 text-lg"
+      />
+
+      <div className="flex gap-3">
+        {atual !== '' && (
+          <button
+            type="button"
+            className={botao({ tipo: 'secundario' })}
+            onClick={() => {
+              onDefinirEtiqueta(prateleira, '')
+              onFechar()
+            }}
+          >
+            Remover
+          </button>
+        )}
+        <button type="submit" className={botao({ tipo: 'primario', largo: true })}>
+          Salvar
+        </button>
+      </div>
+    </form>
   )
 }
 

@@ -1,5 +1,5 @@
 import type { NeuronioNaTela } from '../domain/tela'
-import type { Conexao, CriterioDeOrdenacao, Id, Livro } from '../domain/types'
+import type { Conexao, CriterioDeOrdenacao, EtiquetaDePrateleira, Id, Livro } from '../domain/types'
 
 export interface CriarNeuronioInput {
   /**
@@ -37,6 +37,8 @@ export interface EstadoDoPalacio {
   conexoes: Conexao[]
   /** Quantas prateleiras a estante tem — gravado, ajustável em Ajustes. */
   quantidadeDePrateleiras: number
+  /** Nomes de prateleira — puramente visual, uma por prateleira no máximo. */
+  etiquetas: EtiquetaDePrateleira[]
 }
 
 export interface ResultadoDeEscrita {
@@ -101,6 +103,8 @@ export interface ConnectionEngine {
    * padrão. Nunca muda quem está em qual prateleira, só a ordem dentro dela.
    */
   ordenarEstante(criterio: CriterioDeOrdenacao): Promise<Livro[]>
+  /** Texto vazio apaga a etiqueta daquela prateleira. Devolve todas as que sobraram. */
+  definirEtiqueta(prateleira: number, texto: string): Promise<EtiquetaDePrateleira[]>
 
   /**
    * O palácio inteiro como texto JSON, pronto para virar arquivo.

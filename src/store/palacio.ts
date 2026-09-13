@@ -6,6 +6,7 @@ import {
   novoLivro,
   type Conexao,
   type CriterioDeOrdenacao,
+  type EtiquetaDePrateleira,
   type Livro,
   type NeuronioNaTela,
   type ProgressoDoMotor,
@@ -31,6 +32,7 @@ interface PalacioStore {
   neuronios: NeuronioNaTela[]
   conexoes: Conexao[]
   quantidadeDePrateleiras: number
+  etiquetas: EtiquetaDePrateleira[]
 
   carregado: boolean
   ocupado: boolean
@@ -61,6 +63,8 @@ interface PalacioStore {
   definirQuantidadeDePrateleiras: (quantidade: number) => Promise<void>
   /** Atalho de um toque: reordena cada prateleira, sem mudar quem está em qual. */
   ordenarEstante: (criterio: CriterioDeOrdenacao) => Promise<void>
+  /** Texto vazio apaga a etiqueta daquela prateleira. */
+  definirEtiqueta: (prateleira: number, texto: string) => Promise<void>
   exportar: () => Promise<void>
   importar: (arquivo: File) => Promise<void>
   /** O aviso flutuante some — pelo tempo ou pelo toque. */
@@ -81,6 +85,7 @@ export const usePalacio = create<PalacioStore>()((set, get) => {
     neuronios: [],
     conexoes: [],
     quantidadeDePrateleiras: MINIMO_DE_PRATELEIRAS,
+    etiquetas: [],
     carregado: false,
     ocupado: false,
     progresso: null,
@@ -305,6 +310,20 @@ export const usePalacio = create<PalacioStore>()((set, get) => {
         set({ livros: await engine.ordenarEstante(criterio) })
       } catch (e) {
         set({ livros: antes, erro: mensagem(e) })
+      }
+    },
+
+    async definirEtiqueta(prateleira, texto) {
+      const antes = get().etiquetas
+      const limpo = texto.trim()
+      const otimista = antes.filter((e) => e.prateleira !== prateleira)
+      if (limpo !== '') otimista.push({ prateleira, texto: limpo })
+      set({ etiquetas: otimista, erro: null })
+
+      try {
+        set({ etiquetas: await engine.definirEtiqueta(prateleira, texto) })
+      } catch (e) {
+        set({ etiquetas: antes, erro: mensagem(e) })
       }
     },
 

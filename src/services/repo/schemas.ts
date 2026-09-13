@@ -17,6 +17,11 @@ export const livroSchema = z.object({
   createdAt: z.date(),
 })
 
+export const etiquetaSchema = z.object({
+  prateleira: ordem,
+  texto: z.string().trim().min(1).max(60),
+})
+
 export const neuronioSchema = z.object({
   id,
   livroId: id,
@@ -92,4 +97,6 @@ export const snapshotSchema = z.object({
       updatedAt: isoDate,
     }),
   ),
+  // Ausente em backup de antes da Fase 15 — trata como estante sem etiqueta nenhuma.
+  etiquetas: z.array(etiquetaSchema).optional().default([]),
 })

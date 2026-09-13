@@ -19,7 +19,13 @@ import {
   type PreferenciasGravadas,
 } from '@/services/db'
 
-import { conexaoSchema, livroSchema, neuronioSchema, snapshotSchema } from './schemas'
+import {
+  conexaoSchema,
+  etiquetaSchema,
+  livroSchema,
+  neuronioSchema,
+  snapshotSchema,
+} from './schemas'
 
 /**
  * Reagrupa por prateleira depois de uma fusão de import: os livros de
@@ -135,6 +141,19 @@ export function createDexieRepo(db: PalacioDB = defaultDb): PalacioRepo {
       })
     },
 
+    async listEtiquetas() {
+      return db.etiquetas.toArray()
+    },
+
+    async definirEtiqueta(prateleira, texto) {
+      const limpo = texto.trim()
+      if (limpo === '') {
+        await db.etiquetas.delete(prateleira)
+        return
+      }
+      await db.etiquetas.put(etiquetaSchema.parse({ prateleira, texto: limpo }))
+    },
+
     async listNeuronios(livroId) {
       if (livroId === undefined) return db.neuronios.toArray()
       return db.neuronios.where('livroId').equals(livroId).toArray()
@@ -240,13 +259,19 @@ export function createDexieRepo(db: PalacioDB = defaultDb): PalacioRepo {
     },
 
     async exportAll(): Promise<PalacioSnapshot> {
-      const [livros, neuronios, conexoes] = await db.transaction(
+      const [livros, neuronios, conexoes, etiquetas] = await db.transaction(
         'r',
         db.livros,
         db.neuronios,
         db.conexoes,
+        db.etiquetas,
         async () =>
-          Promise.all([db.livros.toArray(), db.neuronios.toArray(), db.conexoes.toArray()]),
+          Promise.all([
+            db.livros.toArray(),
+            db.neuronios.toArray(),
+            db.conexoes.toArray(),
+            db.etiquetas.toArray(),
+          ]),
       )
 
       return {
@@ -255,6 +280,7 @@ export function createDexieRepo(db: PalacioDB = defaultDb): PalacioRepo {
         livros: livros.map(livroToSnapshot),
         neuronios: neuronios.map(neuronioToSnapshot),
         conexoes: conexoes.map(conexaoToSnapshot),
+        etiquetas,
       }
     },
 
@@ -307,40 +333,60 @@ export function createDexieRepo(db: PalacioDB = defaultDb): PalacioRepo {
       }
 
       // bulkPut por id: reimportar o mesmo snapshot não duplica nada.
-      await db.transaction('rw', db.livros, db.neuronios, db.conexoes, db.meta, async () => {
-        // Quem só existe aqui vai para o fim da própria prateleira, na ordem em
-        // que já estava — o mesmo "arquivo vence" de título e cor, agora por
-        // prateleira em vez da estante inteira.
-        const soAqui = (await db.livros.toArray()).filter((l) => !livroIds.has(l.id))
-        const unidos = juntarPorPrateleira(livros, soAqui)
+      await db.transaction(
+        'rw',
+        db.livros,
+        db.neuronios,
+        db.conexoes,
+        db.meta,
+        db.etiquetas,
+        async () => {
+          // Quem só existe aqui vai para o fim da própria prateleira, na ordem em
+          // que já estava — o mesmo "arquivo vence" de título e cor, agora por
+          // prateleira em vez da estante inteira.
+          const soAqui = (await db.livros.toArray()).filter((l) => !livroIds.has(l.id))
+          const unidos = juntarPorPrateleira(livros, soAqui)
 
-        await db.livros.bulkPut(unidos)
-        await db.neuronios.bulkPut(neuronios)
-        await db.conexoes.bulkPut(conexoes)
+          await db.livros.bulkPut(unidos)
+          await db.neuronios.bulkPut(neuronios)
+          await db.conexoes.bulkPut(conexoes)
+          // A etiqueta do arquivo vence a que já existia na mesma prateleira;
+          // etiqueta que só existe aqui não é apagada.
+          await db.etiquetas.bulkPut(parsed.etiquetas)
 
-        // Um backup de um palácio com mais prateleiras não pode esconder livro
-        // numa prateleira que este aparelho ainda não tem.
-        const maiorPrateleira = Math.max(-1, ...unidos.map((l) => l.prateleira)) + 1
-        const atual = (await db.meta.get('preferencias')) as PreferenciasGravadas | undefined
-        if (maiorPrateleira > (atual?.quantidadeDePrateleiras ?? MINIMO_DE_PRATELEIRAS)) {
-          const preferencias: PreferenciasGravadas = {
-            chave: 'preferencias',
-            quantidadeDePrateleiras: maiorPrateleira,
+          // Um backup de um palácio com mais prateleiras não pode esconder livro
+          // numa prateleira que este aparelho ainda não tem.
+          const maiorPrateleira = Math.max(-1, ...unidos.map((l) => l.prateleira)) + 1
+          const atual = (await db.meta.get('preferencias')) as PreferenciasGravadas | undefined
+          if (maiorPrateleira > (atual?.quantidadeDePrateleiras ?? MINIMO_DE_PRATELEIRAS)) {
+            const preferencias: PreferenciasGravadas = {
+              chave: 'preferencias',
+              quantidadeDePrateleiras: maiorPrateleira,
+            }
+            await db.meta.put(preferencias)
           }
-          await db.meta.put(preferencias)
-        }
-      })
+        },
+      )
     },
 
     async clear() {
-      await db.transaction('rw', db.livros, db.neuronios, db.conexoes, db.meta, async () => {
-        await Promise.all([
-          db.livros.clear(),
-          db.neuronios.clear(),
-          db.conexoes.clear(),
-          db.meta.clear(),
-        ])
-      })
+      await db.transaction(
+        'rw',
+        db.livros,
+        db.neuronios,
+        db.conexoes,
+        db.meta,
+        db.etiquetas,
+        async () => {
+          await Promise.all([
+            db.livros.clear(),
+            db.neuronios.clear(),
+            db.conexoes.clear(),
+            db.meta.clear(),
+            db.etiquetas.clear(),
+          ])
+        },
+      )
     },
   }
 }

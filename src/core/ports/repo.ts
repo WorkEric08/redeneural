@@ -1,4 +1,11 @@
-import type { Conexao, Id, Livro, Neuronio, PalacioSnapshot } from '../domain/types'
+import type {
+  Conexao,
+  EtiquetaDePrateleira,
+  Id,
+  Livro,
+  Neuronio,
+  PalacioSnapshot,
+} from '../domain/types'
 import type { PerfilDoPalacio } from '../motor/grafo'
 import type { MarcaPerdida } from '../motor/incremental'
 
@@ -34,6 +41,9 @@ export interface PalacioRepo {
    * numa prateleira que deixaria de existir — nunca perder livro por engano.
    */
   definirQuantidadeDePrateleiras(quantidade: number): Promise<void>
+  listEtiquetas(): Promise<EtiquetaDePrateleira[]>
+  /** Texto vazio apaga a etiqueta daquela prateleira. */
+  definirEtiqueta(prateleira: number, texto: string): Promise<void>
 
   listNeuronios(livroId?: Id): Promise<Neuronio[]>
   getNeuronio(id: Id): Promise<Neuronio | undefined>

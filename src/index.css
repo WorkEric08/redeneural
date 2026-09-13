@@ -505,6 +505,32 @@ img {
   box-shadow: inset 0 0 0 2px color-mix(in oklab, var(--papel) 45%, transparent);
 }
 
+/* O nome da prateleira — puramente visual (Fase 15), não confundir com
+   `.lombada--etiqueta`, que é o adorno de papel de um livro de enfeite. Fica
+   acima da penumbra (z-index 2) para não sumir na sombra da tábua de cima. */
+.movel-nome {
+  position: absolute;
+  top: 4px;
+  left: 30px;
+  z-index: 3;
+  max-width: calc(100% - 60px);
+  overflow: hidden;
+  padding: 2px 9px;
+  border-radius: 999px;
+  background: color-mix(in oklab, var(--sala) 60%, transparent);
+  color: var(--papel);
+  font-size: 0.65rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  opacity: 0.75;
+}
+
+/* Sem nome ainda: só o ícone, mais apagado — é convite, não conteúdo. */
+.movel-nome[data-vazio] {
+  padding: 3px;
+  opacity: 0.4;
+}
+
 /* O vão inteiro é o botão de criar livro, atrás da fileira (ver Movel.tsx). As
    lombadas de enfeite não recebem toque, então tocar numa delas é tocar nele. */
 .movel-criar {

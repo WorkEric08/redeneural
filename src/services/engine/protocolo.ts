@@ -5,6 +5,7 @@ import type {
   EditarLivroInput,
   EditarNeuronioInput,
   EstadoDoPalacio,
+  EtiquetaDePrateleira,
   Id,
   Livro,
   ProgressoDoMotor,
@@ -29,6 +30,7 @@ export interface RespostasDoMotor {
   moverLivro: Livro[]
   definirQuantidadeDePrateleiras: number
   ordenarEstante: Livro[]
+  definirEtiqueta: EtiquetaDePrateleira[]
   exportar: string
   importar: EstadoDoPalacio
 }
@@ -47,6 +49,7 @@ export type ParaMotor =
   | { req: number; tipo: 'moverLivro'; id: Id; prateleira: number; posicao: number }
   | { req: number; tipo: 'definirQuantidadeDePrateleiras'; quantidade: number }
   | { req: number; tipo: 'ordenarEstante'; criterio: CriterioDeOrdenacao }
+  | { req: number; tipo: 'definirEtiqueta'; prateleira: number; texto: string }
   | { req: number; tipo: 'exportar' }
   | { req: number; tipo: 'importar'; json: string }
 

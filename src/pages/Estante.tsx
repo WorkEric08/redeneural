@@ -37,6 +37,8 @@ export default function Estante() {
     apagarLivro,
     ordenarEstante,
     moverVariosLivros,
+    etiquetas,
+    definirEtiqueta,
   } = usePalacio()
   const { painel, abrir, trocar, fechar } = usePainel()
   const [chegandoId, setChegandoId] = useState<string | null>(null)
@@ -54,6 +56,10 @@ export default function Estante() {
     [livros, neuronios, conexoes],
   )
   const pontes = useMemo(() => pontesEntreLivros(neuronios, conexoes), [neuronios, conexoes])
+  const etiquetasPorPrateleira = useMemo(
+    () => new Map(etiquetas.map((e) => [e.prateleira, e.texto])),
+    [etiquetas],
+  )
 
   useEffect(() => {
     if (chegandoId === null) return
@@ -66,7 +72,9 @@ export default function Estante() {
   }, [chegandoId])
 
   const selecionadoId =
-    painel && painel.tipo !== 'novo' && painel.tipo !== 'ordenar' ? painel.livroId : null
+    painel && painel.tipo !== 'novo' && painel.tipo !== 'ordenar' && painel.tipo !== 'etiqueta'
+      ? painel.livroId
+      : null
 
   function alternarSelecao(livroId: string): void {
     setSelecionados((atual) => {
@@ -94,6 +102,7 @@ export default function Estante() {
           quantidadeDePrateleiras={quantidadeDePrateleiras}
           organizando={organizando}
           selecionados={selecionados}
+          etiquetas={etiquetasPorPrateleira}
           onEspiar={(livroId) => {
             abrir({ tipo: 'espiar', livroId })
           }}
@@ -105,6 +114,9 @@ export default function Estante() {
             void moverVariosLivros([...selecionados], prateleira).then(() => {
               setSelecionados(new Set())
             })
+          }}
+          onEditarEtiqueta={(prateleira) => {
+            abrir({ tipo: 'etiqueta', prateleira })
           }}
           onMover={(livroId, prateleira, posicao) => {
             void moverLivro(livroId, prateleira, posicao)
@@ -181,6 +193,7 @@ export default function Estante() {
         livros={livros}
         neuronios={neuronios}
         pontes={pontes}
+        etiquetas={etiquetas}
         ocupado={ocupado}
         panoSugerido={panoSugerido(livros)}
         onFechar={fechar}
@@ -198,6 +211,9 @@ export default function Estante() {
         onIniciarSelecao={(livroId) => {
           setOrganizando(false)
           setSelecionados(new Set([livroId]))
+        }}
+        onDefinirEtiqueta={(prateleira, texto) => {
+          void definirEtiqueta(prateleira, texto)
         }}
       />
     </div>
