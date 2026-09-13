@@ -6,11 +6,12 @@ import { botao } from '@/components/botao'
 import { Confirmacao } from '@/components/Confirmacao'
 import { EtiquetaProcessando } from '@/components/EtiquetaProcessando'
 import { Folha } from '@/components/Folha'
-import type { Id, Livro, NeuronioNaTela } from '@/core'
+import type { CriterioDeOrdenacao, Id, Livro, NeuronioNaTela } from '@/core'
 import { contar } from '@/lib/plural'
 import type { NovoLivro } from '@/store/palacio'
 
 import { FormularioDeLivro } from './FormularioDeLivro'
+import { CRITERIOS } from './ordenar'
 import type { Painel } from './painel'
 
 interface Props {
@@ -25,6 +26,7 @@ interface Props {
   onCriar: (novo: NovoLivro, prateleira: number) => Promise<boolean>
   onEditar: (livroId: string, dados: NovoLivro) => Promise<boolean>
   onApagar: (livroId: string) => Promise<boolean>
+  onOrdenar: (criterio: CriterioDeOrdenacao) => void
 }
 
 /** Quantos neurônios o espiar lista antes de mandar abrir o livro. */
@@ -47,6 +49,7 @@ export function PaineisDaEstante(props: Props) {
 function rotuloDo(painel: Painel | null, livros: readonly Livro[]): string {
   if (!painel) return ''
   if (painel.tipo === 'novo') return 'Um livro novo'
+  if (painel.tipo === 'ordenar') return 'Ordenar a estante'
 
   const titulo = livros.find((l) => l.id === painel.livroId)?.titulo ?? 'livro'
   const acao = { espiar: 'Espiar', acoes: 'Ações de', editar: 'Editar', apagar: 'Apagar' }
@@ -76,6 +79,8 @@ function Conteudo(props: Props & { painel: Painel }) {
       </div>
     )
   }
+
+  if (painel.tipo === 'ordenar') return <Ordenar {...props} />
 
   // Apagar guarda o livro que abriu: quando o apagar termina, a store já não o
   // tem, e o painel ainda está na tela o instante que leva para fechar.
@@ -210,6 +215,41 @@ function Espiar({ livro, livros, neuronios, pontes }: Props & { livro: Livro }) 
       <Link to={`/livro/${livro.id}`} replace className={botao({ tipo: 'primario', largo: true })}>
         Abrir o livro
       </Link>
+    </div>
+  )
+}
+
+/**
+ * Um atalho de um toque — não muda o padrão. Reordena cada prateleira pelo
+ * critério escolhido, sem mudar quem está em qual; mover à mão continua
+ * funcionando normalmente depois.
+ */
+function Ordenar({ onOrdenar, onFechar }: Props) {
+  return (
+    <div className="flex flex-col gap-5">
+      <header className="flex flex-col gap-1">
+        <h2 className="font-titulo text-xl font-semibold tracking-tight">Ordenar a estante</h2>
+        <p className="text-poeira text-sm">
+          Reordena os livros dentro de cada prateleira. Arrastar à mão continua funcionando depois.
+        </p>
+      </header>
+
+      <ul className="cartao flex flex-col">
+        {CRITERIOS.map(({ criterio, rotulo }) => (
+          <li key={criterio} className="linha-de-lista p-0">
+            <button
+              type="button"
+              className="flex min-h-14 w-full items-center px-4 text-left"
+              onClick={() => {
+                onOrdenar(criterio)
+                onFechar()
+              }}
+            >
+              {rotulo}
+            </button>
+          </li>
+        ))}
+      </ul>
     </div>
   )
 }

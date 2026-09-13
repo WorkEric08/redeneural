@@ -21,6 +21,12 @@ export interface PalacioRepo {
    * nunca a estante inteira.
    */
   moverLivro(id: Id, prateleira: number, posicao: number): Promise<void>
+  /**
+   * Regrava só `ordem` dos livros informados — nunca `prateleira`. É o que a
+   * ordenação automática usa: reordena dentro de cada prateleira sem mudar
+   * quem está em qual.
+   */
+  definirOrdens(mudancas: readonly { id: Id; ordem: number }[]): Promise<void>
   /** Quantas prateleiras a estante tem hoje. Default 4 se nunca foi definida. */
   getQuantidadeDePrateleiras(): Promise<number>
   /**

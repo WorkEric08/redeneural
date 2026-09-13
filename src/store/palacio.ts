@@ -5,10 +5,12 @@ import {
   moverLivroNaEstante,
   novoLivro,
   type Conexao,
+  type CriterioDeOrdenacao,
   type Livro,
   type NeuronioNaTela,
   type ProgressoDoMotor,
 } from '@/core'
+import { aplicarMudancasDeOrdem, ordenarPorCriterio } from '@/features/estante/ordenar'
 import { newId } from '@/lib/id'
 import { engine } from '@/services/engine/workerEngine'
 import { lerTexto, nomeDoBackup, salvarTexto } from '@/services/native/arquivos'
@@ -51,6 +53,8 @@ interface PalacioStore {
   moverLivro: (id: string, prateleira: number, posicao: number) => Promise<void>
   /** Recusa diminuir se sobrar livro numa prateleira que deixaria de existir. */
   definirQuantidadeDePrateleiras: (quantidade: number) => Promise<void>
+  /** Atalho de um toque: reordena cada prateleira, sem mudar quem está em qual. */
+  ordenarEstante: (criterio: CriterioDeOrdenacao) => Promise<void>
   exportar: () => Promise<void>
   importar: (arquivo: File) => Promise<void>
   /** O aviso flutuante some — pelo tempo ou pelo toque. */
@@ -262,6 +266,20 @@ export const usePalacio = create<PalacioStore>()((set, get) => {
         set({ quantidadeDePrateleiras: await engine.definirQuantidadeDePrateleiras(quantidade) })
       } catch (e) {
         set({ quantidadeDePrateleiras: antes, erro: mensagem(e) })
+      }
+    },
+
+    async ordenarEstante(criterio) {
+      const antes = get().livros
+      // Otimista com a mesma função pura que o worker usa: a tela reordena na
+      // hora, e o motor só confirma.
+      const mudancas = ordenarPorCriterio(antes, get().neuronios, criterio)
+      set({ livros: aplicarMudancasDeOrdem(antes, mudancas), erro: null })
+
+      try {
+        set({ livros: await engine.ordenarEstante(criterio) })
+      } catch (e) {
+        set({ livros: antes, erro: mensagem(e) })
       }
     },
 

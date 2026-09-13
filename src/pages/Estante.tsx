@@ -1,4 +1,4 @@
-import { Grip, Search } from 'lucide-react'
+import { ArrowDownAZ, Grip, Search } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 
@@ -35,6 +35,7 @@ export default function Estante() {
     criarLivro,
     editarLivro,
     apagarLivro,
+    ordenarEstante,
   } = usePalacio()
   const { painel, abrir, trocar, fechar } = usePainel()
   const [chegandoId, setChegandoId] = useState<string | null>(null)
@@ -59,7 +60,8 @@ export default function Estante() {
     }
   }, [chegandoId])
 
-  const selecionadoId = painel && painel.tipo !== 'novo' ? painel.livroId : null
+  const selecionadoId =
+    painel && painel.tipo !== 'novo' && painel.tipo !== 'ordenar' ? painel.livroId : null
 
   return (
     <div className="animar-entrada flex flex-col gap-5">
@@ -114,6 +116,16 @@ export default function Estante() {
           >
             <Search size={18} aria-hidden />
           </Link>
+          <button
+            type="button"
+            aria-label="Ordenar a estante"
+            className={botao({ tipo: 'secundario', tamanho: 'icone' })}
+            onClick={() => {
+              abrir({ tipo: 'ordenar' })
+            }}
+          >
+            <ArrowDownAZ size={18} aria-hidden />
+          </button>
           <p className="text-poeira min-w-0 flex-1 truncate text-xs">
             {carregado
               ? `${contar(livros.length, 'livro', 'livros')} · ${contar(neuronios.length, 'neurônio', 'neurônios')} · ${contar(conexoes.length, 'conexão', 'conexões')}`
@@ -138,6 +150,9 @@ export default function Estante() {
         }}
         onEditar={editarLivro}
         onApagar={apagarLivro}
+        onOrdenar={(criterio) => {
+          void ordenarEstante(criterio)
+        }}
       />
     </div>
   )

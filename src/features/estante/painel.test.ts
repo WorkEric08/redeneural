@@ -13,6 +13,7 @@ describe('painel da estante na URL', () => {
       { tipo: 'apagar', livroId: 'abc' },
       { tipo: 'novo', prateleira: 0 },
       { tipo: 'novo', prateleira: 3 },
+      { tipo: 'ordenar' },
     ]
 
     for (const p of paineis) expect(ler(buscaDoPainel(p))).toEqual(p)

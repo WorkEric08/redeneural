@@ -1,5 +1,5 @@
 import type { NeuronioNaTela } from '../domain/tela'
-import type { Conexao, Id, Livro } from '../domain/types'
+import type { Conexao, CriterioDeOrdenacao, Id, Livro } from '../domain/types'
 
 export interface CriarNeuronioInput {
   /**
@@ -96,6 +96,11 @@ export interface ConnectionEngine {
    * prateleira que deixaria de existir — mova os livros antes.
    */
   definirQuantidadeDePrateleiras(quantidade: number): Promise<number>
+  /**
+   * Reordena cada prateleira pelo critério escolhido — um atalho, não o
+   * padrão. Nunca muda quem está em qual prateleira, só a ordem dentro dela.
+   */
+  ordenarEstante(criterio: CriterioDeOrdenacao): Promise<Livro[]>
 
   /**
    * O palácio inteiro como texto JSON, pronto para virar arquivo.

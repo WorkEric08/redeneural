@@ -14,6 +14,7 @@ import {
   textoDoNeuronio,
   type CriarLivroInput,
   type CriarNeuronioInput,
+  type CriterioDeOrdenacao,
   type EditarLivroInput,
   type EstadoDoPalacio,
   type Id,
@@ -27,6 +28,7 @@ import {
   type ProgressoDoMotor,
   type ResultadoDeEscrita,
 } from '@/core'
+import { ordenarPorCriterio } from '@/features/estante/ordenar'
 import { seedPalacio } from '@/features/palacio/seed'
 import { criarTransformersEmbedding } from '@/services/inferencia/transformersEmbedding'
 import { palacioRepo } from '@/services/repo/dexieRepo'
@@ -224,6 +226,12 @@ async function moverLivro(id: Id, prateleira: number, posicao: number): Promise<
   return repo.listLivros()
 }
 
+async function ordenarEstante(criterio: CriterioDeOrdenacao): Promise<Livro[]> {
+  const [livros, neuronios] = await Promise.all([repo.listLivros(), repo.listNeuronios()])
+  await repo.definirOrdens(ordenarPorCriterio(livros, neuronios, criterio))
+  return repo.listLivros()
+}
+
 async function importar(json: string): Promise<EstadoDoPalacio> {
   let bruto: unknown
   try {
@@ -283,6 +291,9 @@ async function responder(msg: ParaMotor): Promise<DoMotor> {
       case 'definirQuantidadeDePrateleiras':
         await repo.definirQuantidadeDePrateleiras(msg.quantidade)
         return { req: msg.req, ok: true, dados: msg.quantidade }
+
+      case 'ordenarEstante':
+        return { req: msg.req, ok: true, dados: await ordenarEstante(msg.criterio) }
 
       case 'exportar':
         return { req: msg.req, ok: true, dados: JSON.stringify(await repo.exportAll()) }

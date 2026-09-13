@@ -2,6 +2,7 @@ import type {
   ConnectionEngine,
   CriarLivroInput,
   CriarNeuronioInput,
+  CriterioDeOrdenacao,
   EditarLivroInput,
   EditarNeuronioInput,
   EstadoDoPalacio,
@@ -101,6 +102,9 @@ export function criarWorkerEngine(): ConnectionEngine {
         tipo: 'definirQuantidadeDePrateleiras',
         quantidade,
       }),
+
+    ordenarEstante: (criterio: CriterioDeOrdenacao): Promise<Livro[]> =>
+      pedir<'ordenarEstante'>({ tipo: 'ordenarEstante', criterio }),
 
     exportar: (): Promise<string> => pedir<'exportar'>({ tipo: 'exportar' }),
 

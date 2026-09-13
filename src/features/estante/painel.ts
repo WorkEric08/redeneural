@@ -10,7 +10,10 @@
 
 export type TipoComLivro = 'espiar' | 'acoes' | 'editar' | 'apagar'
 
-export type Painel = { tipo: TipoComLivro; livroId: string } | { tipo: 'novo'; prateleira: number }
+export type Painel =
+  | { tipo: TipoComLivro; livroId: string }
+  | { tipo: 'novo'; prateleira: number }
+  | { tipo: 'ordenar' }
 
 const COM_LIVRO: readonly TipoComLivro[] = ['espiar', 'acoes', 'editar', 'apagar']
 
@@ -21,13 +24,18 @@ export function lerPainel(busca: URLSearchParams): Painel | null {
   }
 
   const novo = busca.get('novo')
-  if (novo === null || novo === '') return null
+  if (novo !== null && novo !== '') {
+    const prateleira = Number(novo)
+    if (Number.isInteger(prateleira) && prateleira >= 0) return { tipo: 'novo', prateleira }
+  }
 
-  const prateleira = Number(novo)
-  return Number.isInteger(prateleira) && prateleira >= 0 ? { tipo: 'novo', prateleira } : null
+  if (busca.get('ordenar') !== null) return { tipo: 'ordenar' }
+
+  return null
 }
 
 export function buscaDoPainel(painel: Painel): string {
+  if (painel.tipo === 'ordenar') return `?${new URLSearchParams({ ordenar: '1' }).toString()}`
   const valor = painel.tipo === 'novo' ? String(painel.prateleira) : painel.livroId
   return `?${new URLSearchParams({ [painel.tipo]: valor }).toString()}`
 }

@@ -1301,6 +1301,43 @@ alcançável nas 4 telas com barra de topo + na estante, nos dois temas e em
 mobile/desktop. 173 testes (9 novos, de `buscar.ts`), typecheck e lint
 limpos.
 
+## Ordenar com um toque (Fase 13, 13/09/2026)
+
+Terceira das 9 melhorias aprovadas depois da Fase 10. Pedido original:
+"ordenação automática de um clique (por nome, data, nº de neurônios) como
+atalho, mantendo o manual como padrão."
+
+**O que é:** o mesmo ícone de "ordenar" (ao lado de organizar/buscar, na
+fileira de baixo da estante) abre uma folha com três critérios — Nome (A→Z),
+Mais recente primeiro, Mais neurônios primeiro. Escolher um reordena cada
+prateleira **dentro dela mesma**, na hora.
+
+**"Mantendo o manual como padrão" significou, na prática:** ordenar nunca
+muda `Livro.prateleira`, só `Livro.ordem` — nenhum livro troca de prateleira.
+Depois de ordenar, arrastar continua funcionando exatamente como antes
+(`moverLivro`), porque a ordenação automática não é um modo, é só uma
+reescrita pontual de `ordem`. `ordenarPorCriterio` (`features/estante/
+ordenar.ts`) é pura e devolve só quem mudou — mesmo espírito de
+`moverLivroNaEstante`.
+
+**Onde a persistência entra:** um repositório novo e pequeno,
+`definirOrdens(mudancas)` — regrava só `ordem` dos livros informados, nunca
+`prateleira`. Não precisou da validação de permutação completa que
+`reordenarLivros` tinha antes da Fase 10: como `prateleira` nunca muda aqui,
+não existe como perder um livro de vista.
+
+**Por que o painel foi para o mesmo sistema de `Painel` da estante, e não um
+componente à parte:** `{ tipo: 'ordenar' }` entrou na mesma união que já
+tinha `'novo'` (sem `livroId`) — reaproveita a folha, a URL como fonte de
+verdade (`?ordenar=1`) e o botão voltar fechando o menu, em vez de inventar
+um segundo mecanismo de diálogo só para isto.
+
+Verificado com toque de verdade: juntar dois livros numa prateleira (modo
+organizar), ordenar por nome, e ver a prateleira trocar de ordem sem sair do
+lugar; sobrevive a recarregar; layout de três ícones sem rolagem horizontal
+em 320/412/1440 px, dois temas. 179 testes (6 novos, de `ordenar.ts`),
+typecheck e lint limpos.
+
 ## Fases
 
 0. ✅ Esqueleto (Vite/React/TS/Tailwind/PWA/Capacitor)
@@ -1315,4 +1352,5 @@ limpos.
 9. 🟡 Empacotamento Android — **falta compilar e instalar o APK** (sem JDK/SDK aqui)
 10. ✅ Estante: fundação de prateleiras manuais + arrastar como bandeja — base para as 9 melhorias de estante aprovadas (ver memória de projeto)
 11. ✅ Modo organizar — 1ª das 9 melhorias
-12. ✅ Busca global — 2ª das 9; próxima é ordenar com um toque
+12. ✅ Busca global — 2ª das 9
+13. ✅ Ordenar com um toque — 3ª das 9; próxima é seleção múltipla

@@ -8,6 +8,13 @@
 
 export type Id = string
 
+/**
+ * Critério da ordenação automática da estante — um atalho de um toque, não o
+ * padrão. O manual (`Livro.ordem`, `moverLivro`) continua sendo como a
+ * estante se organiza; isto só reordena de uma vez o que já está aí.
+ */
+export type CriterioDeOrdenacao = 'nome' | 'criacao' | 'neuronios'
+
 /** Uma área de conhecimento. Visualmente, uma lombada na estante. */
 export interface Livro {
   id: Id
