@@ -19,7 +19,6 @@ export default function Estante() {
     () => montarEstante(livros, neuronios, conexoes),
     [livros, neuronios, conexoes],
   )
-  const douradas = useMemo(() => conexoes.filter((c) => c.cross).length, [conexoes])
 
   return (
     <div className="animar-entrada flex flex-col gap-5">
@@ -29,30 +28,13 @@ export default function Estante() {
         </p>
       )}
 
-      <section className="flex flex-col gap-2">
-        <Movel estante={estante} />
+      <Movel estante={estante} />
 
-        <p className="text-poeira text-xs">
-          {carregado
-            ? `${contar(livros.length, 'livro', 'livros')} · ${contar(neuronios.length, 'neurônio', 'neurônios')} · ${contar(conexoes.length, 'conexão', 'conexões')}`
-            : 'Abrindo o palácio…'}
-        </p>
-      </section>
-
-      {conexoes.length > 0 && (
-        <Link
-          to="/rede"
-          className="border-linha bg-parede sombra-superficie flex items-center justify-between rounded-lg border px-3 py-3 text-sm transition-transform active:scale-[0.98]"
-        >
-          <span>Ver a rede do palácio</span>
-          <span className="text-poeira text-xs">
-            {contar(conexoes.length, 'fio', 'fios')} ·{' '}
-            <span className="text-ouro brilho-ouro-texto-sm">
-              {contar(douradas, 'ponte', 'pontes')}
-            </span>
-          </span>
-        </Link>
-      )}
+      <p className="text-poeira text-xs">
+        {carregado
+          ? `${contar(livros.length, 'livro', 'livros')} · ${contar(neuronios.length, 'neurônio', 'neurônios')} · ${contar(conexoes.length, 'conexão', 'conexões')}`
+          : 'Abrindo o palácio…'}
+      </p>
 
       <section className="flex flex-col">
         <h2 className="text-poeira mb-2 text-xs tracking-wide uppercase">Livros</h2>
