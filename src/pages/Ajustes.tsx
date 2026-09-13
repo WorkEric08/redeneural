@@ -1,5 +1,6 @@
-import { Download, Minus, Plus, RefreshCw, Rows3, Upload } from 'lucide-react'
+import { Download, Minus, Plus, RefreshCw, Rows3, Search, Upload } from 'lucide-react'
 import type { ReactNode } from 'react'
+import { Link } from 'react-router-dom'
 
 import { botao } from '@/components/botao'
 import { BarraDeTopo } from '@/components/BarraDeTopo'
@@ -33,7 +34,19 @@ export default function Ajustes() {
 
   return (
     <div className="flex flex-col">
-      <BarraDeTopo voltarPara="/" titulo="Ajustes" />
+      <BarraDeTopo
+        voltarPara="/"
+        titulo="Ajustes"
+        acoes={
+          <Link
+            to="/busca"
+            aria-label="Buscar"
+            className={botao({ tipo: 'fantasma', tamanho: 'icone' })}
+          >
+            <Search size={20} aria-hidden />
+          </Link>
+        }
+      />
 
       <div className="animar-entrada flex flex-col gap-7 pt-5">
         <section>

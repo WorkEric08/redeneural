@@ -1,4 +1,4 @@
-import { PencilLine, Sparkles, Trash2 } from 'lucide-react'
+import { PencilLine, Search, Sparkles, Trash2 } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { Link, useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 
@@ -55,7 +55,19 @@ export default function Neuronio() {
   if (!neuronio) {
     return (
       <div className="flex flex-col">
-        <BarraDeTopo voltarPara="/" titulo="Neurônio" />
+        <BarraDeTopo
+          voltarPara="/"
+          titulo="Neurônio"
+          acoes={
+            <Link
+              to="/busca"
+              aria-label="Buscar"
+              className={botao({ tipo: 'fantasma', tamanho: 'icone' })}
+            >
+              <Search size={20} aria-hidden />
+            </Link>
+          }
+        />
         <p className="text-poeira pt-6 text-sm">
           {carregado ? 'Este neurônio não existe mais.' : 'Abrindo…'}
         </p>
@@ -130,6 +142,13 @@ export default function Neuronio() {
         }
         acoes={
           <>
+            <Link
+              to="/busca"
+              aria-label="Buscar"
+              className={botao({ tipo: 'fantasma', tamanho: 'icone' })}
+            >
+              <Search size={20} aria-hidden />
+            </Link>
             <Link
               to={`/neuronio/${neuronio.id}/editar`}
               aria-label="Editar"

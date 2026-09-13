@@ -1,5 +1,6 @@
-import { Grip } from 'lucide-react'
+import { Grip, Search } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
+import { Link } from 'react-router-dom'
 
 import { botao } from '@/components/botao'
 import { Movel } from '@/features/estante/Movel'
@@ -91,11 +92,10 @@ export default function Estante() {
         />
 
         <div className="mt-auto flex h-14 items-center gap-3">
-          {/* Liga/desliga o arrastar — segurar continua erguendo o livro e
-              acendendo as pontes dele mesmo desligado; só soltar em outro
-              lugar da estante exige o modo ligado. À esquerda de propósito:
-              o botão de criar (Dial) mora fixo no canto inferior direito, e
-              um botão novo ali ficaria atrás dele, inalcançável. */}
+          {/* Os dois botões vêm antes do texto, e não depois: o botão de criar
+              (Dial) mora fixo no canto inferior direito, e um botão colocado
+              depois de um `flex-1` acaba empurrado até lá — ficaria atrás
+              dele, inalcançável (aconteceu com o de organizar). */}
           <button
             type="button"
             aria-pressed={organizando}
@@ -107,6 +107,13 @@ export default function Estante() {
           >
             <Grip size={18} aria-hidden />
           </button>
+          <Link
+            to="/busca"
+            aria-label="Buscar"
+            className={botao({ tipo: 'secundario', tamanho: 'icone' })}
+          >
+            <Search size={18} aria-hidden />
+          </Link>
           <p className="text-poeira min-w-0 flex-1 truncate text-xs">
             {carregado
               ? `${contar(livros.length, 'livro', 'livros')} · ${contar(neuronios.length, 'neurônio', 'neurônios')} · ${contar(conexoes.length, 'conexão', 'conexões')}`

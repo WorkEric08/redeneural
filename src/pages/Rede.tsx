@@ -1,4 +1,4 @@
-import { Maximize2, Waypoints } from 'lucide-react'
+import { Maximize2, Search, Waypoints } from 'lucide-react'
 import { useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 
@@ -34,7 +34,19 @@ export default function Rede() {
 
   return (
     <div className="flex flex-col">
-      <BarraDeTopo voltarPara="/" titulo="Rede do palácio" />
+      <BarraDeTopo
+        voltarPara="/"
+        titulo="Rede do palácio"
+        acoes={
+          <Link
+            to="/busca"
+            aria-label="Buscar"
+            className={botao({ tipo: 'fantasma', tamanho: 'icone' })}
+          >
+            <Search size={20} aria-hidden />
+          </Link>
+        }
+      />
 
       <div className="animar-entrada flex flex-col gap-4 pt-5">
         <p className="text-poeira px-1 text-sm">

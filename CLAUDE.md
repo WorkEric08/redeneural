@@ -1264,6 +1264,43 @@ dois temas, 320/412/1440 px. 164 testes, typecheck e lint continuam limpos
 (mudança pequena o bastante para não precisar de teste novo — coberta pela
 verificação manual, como o resto do gesto de arrastar já era).
 
+## Busca global (Fase 12, 13/09/2026)
+
+Segunda das 9 melhorias aprovadas depois da Fase 10. Pedido original: "achar
+um neurônio ou livro direto, sem procurar visualmente na estante."
+
+**O que é:** uma tela nova (`/busca`), com um campo de texto que filtra livros
+(pelo título) e neurônios (pelo título ou pelo conteúdo) sobre o que a store
+já tem em memória — sem índice, sem lib de busca, sem tocar o banco.
+`buscar.ts` (`src/features/busca/`) é puro e despe qualquer acento antes de
+comparar (`normalize('NFD')` seguido de remover os acentos combinantes que
+sobram, via uma faixa Unicode em regex), então "pratica" acha "prática". Resultado por título vem antes de resultado só por conteúdo, e
+neste último caso mostra o trecho em volta do termo — é o que explica por que
+aquele neurônio apareceu.
+
+**Onde o ícone mora:** na barra de topo de toda tela que já tem uma (Rede,
+Livro, Neurônio, Ajustes — usa o `acoes` que `BarraDeTopo` já aceitava). A
+estante é a única tela sem barra de topo; ali o ícone entrou na fileira de
+baixo, ao lado do de modo organizar.
+
+**Por que não foi para o Dial:** o Dial já tem 3 destinos ocupando um arco de
+120° bem justo — a matemática (`setores(n)`, `RAIO_MEIO`) mostra que um 4º
+setor deixaria os botões se sobrepondo (corda entre centros ≈ 39px contra um
+botão de 52px). Mexer numa interação tão ajustada por uma funcionalidade que
+já tem lugar natural na barra de topo não valia o risco.
+
+**Gotcha, de novo o mesmo:** a primeira versão do ícone na estante foi
+colocada depois do texto da contagem (`flex-1`) e ficou atrás do botão de
+criar, igual ao que já tinha acontecido com o modo organizar — mesma causa,
+mesma correção (os dois botões vêm antes do texto, não depois).
+
+Verificado com Playwright: busca sem acento encontra conteúdo acentuado,
+título vem antes de conteúdo, "nada encontrado" aparece quando não bate nada,
+clicar num resultado navega para o neurônio/livro certo, ícone presente e
+alcançável nas 4 telas com barra de topo + na estante, nos dois temas e em
+mobile/desktop. 173 testes (9 novos, de `buscar.ts`), typecheck e lint
+limpos.
+
 ## Fases
 
 0. ✅ Esqueleto (Vite/React/TS/Tailwind/PWA/Capacitor)
@@ -1277,4 +1314,5 @@ verificação manual, como o resto do gesto de arrastar já era).
 8. 🟡 Criação, edição e navegação — **a porta ficou para a passada de acabamento**
 9. 🟡 Empacotamento Android — **falta compilar e instalar o APK** (sem JDK/SDK aqui)
 10. ✅ Estante: fundação de prateleiras manuais + arrastar como bandeja — base para as 9 melhorias de estante aprovadas (ver memória de projeto)
-11. ✅ Modo organizar — 1ª das 9 melhorias; próxima é busca global
+11. ✅ Modo organizar — 1ª das 9 melhorias
+12. ✅ Busca global — 2ª das 9; próxima é ordenar com um toque

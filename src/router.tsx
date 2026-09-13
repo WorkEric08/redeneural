@@ -2,6 +2,7 @@ import { createBrowserRouter } from 'react-router-dom'
 
 import App from '@/App'
 import Ajustes from '@/pages/Ajustes'
+import Busca from '@/pages/Busca'
 import Editar from '@/pages/Editar'
 import Estante from '@/pages/Estante'
 import Livro from '@/pages/Livro'
@@ -28,6 +29,7 @@ export const router = createBrowserRouter([
       { path: 'neuronio/:neuronioId', element: <Neuronio /> },
       { path: 'neuronio/:neuronioId/editar', element: <Editar /> },
       { path: 'ajustes', element: <Ajustes /> },
+      { path: 'busca', element: <Busca /> },
     ],
   },
 ])

@@ -1,4 +1,4 @@
-import { BookOpen } from 'lucide-react'
+import { BookOpen, Search } from 'lucide-react'
 import { useMemo } from 'react'
 import { Link, useParams } from 'react-router-dom'
 
@@ -32,7 +32,19 @@ export default function Livro() {
   if (!livro) {
     return (
       <div className="flex flex-col">
-        <BarraDeTopo voltarPara="/" titulo="Livro" />
+        <BarraDeTopo
+          voltarPara="/"
+          titulo="Livro"
+          acoes={
+            <Link
+              to="/busca"
+              aria-label="Buscar"
+              className={botao({ tipo: 'fantasma', tamanho: 'icone' })}
+            >
+              <Search size={20} aria-hidden />
+            </Link>
+          }
+        />
         <p className="text-poeira pt-6 text-sm">
           {carregado ? 'Este livro não está mais na estante.' : 'Abrindo o livro…'}
         </p>
@@ -58,6 +70,15 @@ export default function Livro() {
             />
             <span className="truncate">{livro.titulo}</span>
           </>
+        }
+        acoes={
+          <Link
+            to="/busca"
+            aria-label="Buscar"
+            className={botao({ tipo: 'fantasma', tamanho: 'icone' })}
+          >
+            <Search size={20} aria-hidden />
+          </Link>
         }
       />
 
