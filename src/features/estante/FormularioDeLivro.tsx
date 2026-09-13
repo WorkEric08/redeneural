@@ -1,5 +1,6 @@
 import { useState } from 'react'
 
+import { botao } from '@/components/botao'
 import type { NovoLivro } from '@/store/palacio'
 
 import { PANOS, pano } from './panos'
@@ -34,15 +35,15 @@ export function FormularioDeLivro({
 
   return (
     <form
-      className="flex flex-col gap-5"
+      className="flex flex-col gap-6"
       onSubmit={(evento) => {
         evento.preventDefault()
         if (podeEnviar) onEnviar({ titulo: titulo.trim(), cor })
       }}
     >
       <div className="flex items-end gap-4">
-        <label className="flex min-w-0 flex-1 flex-col gap-1.5">
-          <span className="text-poeira text-xs tracking-wide uppercase">Nome</span>
+        <label className="flex min-w-0 flex-1 flex-col">
+          <span className="rotulo-de-secao">Nome</span>
           <input
             value={titulo}
             onChange={(evento) => {
@@ -52,17 +53,17 @@ export function FormularioDeLivro({
             autoComplete="off"
             enterKeyHint="done"
             placeholder="Uma área do que você sabe"
-            className="border-linha bg-sala sombra-campo font-titulo h-12 rounded-lg border px-3 text-lg"
+            className="campo font-titulo h-13 px-4 text-lg"
           />
         </label>
 
-        <span aria-hidden className="lombada lombada--amostra" style={pano(cor)}>
+        <span aria-hidden className="lombada lombada--amostra cores-de-antes" style={pano(cor)}>
           <span className="lombada-titulo">{titulo.trim() || '…'}</span>
         </span>
       </div>
 
       <fieldset className="flex flex-col">
-        <legend className="text-poeira mb-2 text-xs tracking-wide uppercase">Pano</legend>
+        <legend className="rotulo-de-secao">Pano</legend>
         <div className="grid grid-cols-4 gap-x-2 gap-y-3">
           {PANOS.map((p) => (
             <label key={p.cor} className="pano-opcao">
@@ -83,20 +84,20 @@ export function FormularioDeLivro({
         </div>
       </fieldset>
 
-      <div className="flex gap-2">
-        <button
-          type="submit"
-          disabled={!podeEnviar}
-          className="bg-papel text-sala sombra-superficie h-12 flex-1 rounded-lg font-semibold transition-transform active:scale-[0.98] disabled:opacity-50 disabled:active:scale-100"
-        >
-          {rotuloDeEnvio}
-        </button>
+      <div className="grid grid-cols-2 gap-3">
         <button
           type="button"
           onClick={onCancelar}
-          className="border-linha h-12 rounded-lg border px-4 text-sm transition-transform active:scale-[0.98]"
+          className={botao({ tipo: 'secundario', largo: true })}
         >
           Cancelar
+        </button>
+        <button
+          type="submit"
+          disabled={!podeEnviar}
+          className={botao({ tipo: 'primario', largo: true })}
+        >
+          {rotuloDeEnvio}
         </button>
       </div>
     </form>

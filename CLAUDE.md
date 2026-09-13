@@ -842,11 +842,12 @@ verificados com toque de verdade (eventos de toque pelo CDP, não o mouse fingin
 de dedo), nos dois temas.
 
 **Três destinos, não dois.** Sem a barra, Ajustes ficava sem saída — aquela tela
-não tem link de voltar. A Estante entrou no anel junto com Rede e Ajustes.
+não tinha link de voltar (a barra de topo só veio em 13/09). A Estante entrou no
+anel junto com Rede e Ajustes.
 
 **O botão aparece em toda rota menos `/novo` e `/editar`**, onde a tela já é a
-escrita e o "Cancelar" é a saída. Antes ele também sumia em `/ajustes`; não pode
-mais, porque agora é a única saída de lá.
+escrita e o X da barra de topo é a saída. Antes ele também sumia em `/ajustes`;
+não pode mais, porque o anel é a navegação de lá.
 
 ### O que veio da referência e o que não veio
 
@@ -979,6 +980,104 @@ Verificado com toque de verdade (CDP) em 412×892, tema escuro: 24 conferências
 tocar, voltar, segurar, menu, arrastar e trocar, troca que sobrevive a recarregar,
 criar na prateleira tocada, renomear, apagar — mais capturas em 320, 360 (claro),
 768 e 1440. Bundle principal: 121 KB gzipped.
+
+## A paleta e a interface (13/09/2026)
+
+Pedido do usuário: melhorar UI, UX e design de tudo **menos a estante e o
+retângulo da Rede**, que vão ser trabalhados à parte, seguindo uma paleta que ele
+passou — com **Silver Lake Blue e Platinum nos textos**.
+
+### A paleta
+
+A imagem de referência trazia os HEX errados (o de Rich Black é um rosa); os
+valores saem do RGB dela, que é o que bate com as amostras.
+
+| Papel (token)                      | Noite                                           | Dia (derivado)                      |
+| ---------------------------------- | ----------------------------------------------- | ----------------------------------- |
+| `--sala` (fundo)                   | Rich Black `#0d1b2a`                            | Platinum `#e5e7e6`                  |
+| `--parede` (superfície)            | `#192438` — Oxford Blue 15% mais perto do fundo | `#f6f7f7`                           |
+| `--realce` (escolhido, sob o dedo) | YInMn Blue 45% sobre a parede                   | Silver Lake Blue 24% sobre a parede |
+| `--linha` (bordas)                 | YInMn Blue 60%                                  | Silver Lake Blue 45%                |
+| `--papel` (texto principal)        | Platinum                                        | Rich Black                          |
+| `--poeira` (texto secundário)      | Silver Lake Blue                                | YInMn Blue                          |
+
+- **À noite a paleta entra como veio**, e o texto é exatamente o pedido. De dia
+  (escolha do usuário: "claro derivado da paleta") os papéis invertem, porque
+  Silver Lake Blue e Platinum não se leem sobre fundo claro.
+- **Oxford Blue puro não serviu de superfície:** Silver Lake Blue sobre ele dá
+  4,45:1. Puxado 15% para o Rich Black dá 4,57:1, sem diferença que se veja.
+- Contraste medido com os tokens resolvidos pelo navegador: texto principal
+  12,5–16:1; secundário 4,57–6,6:1; ouro 4,9:1 de dia (era 2,97:1) e 9,5:1 à
+  noite; vermelho de perigo 4,9–6,2:1.
+- **Ouro continua sendo só a ponte** (escolha do usuário). Foco, botão e
+  escolhido usam realce e Platinum.
+- **O aviso flutuante é o inverso da sala de dia** (Oxford Blue e Platinum): um
+  aviso claro sumia entre os cartões claros.
+
+### O que não mudou, e como isso está garantido
+
+- **A estante e o retângulo da Rede ficaram com as cores de antes.**
+  `.cores-de-antes` (em `index.css`) devolve os tokens antigos ao `.movel`, ao
+  fantasma do arrasto, à lombada de amostra do formulário e ao retângulo do
+  canvas (que lê as cores do próprio elemento). Comparação pixel a pixel antes e
+  depois, nos dois temas: **zero pixels diferentes dentro da estante**; no
+  retângulo muda só a última fileira da borda de baixo, que cai em fração de
+  pixel e se mistura com o fundo da página — que mudou de cor.
+- **A porta não foi tocada** (escolha do usuário): ela só lê as variáveis `--pt-*`.
+
+### As quatro mudanças de uso (escolhidas pelo usuário)
+
+| Mudança                            | Como ficou                                                                                                                                                                             |
+| ---------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Barra de topo nas telas internas   | `BarraDeTopo`: voltar ou fechar, título, ações. Voltar é o histórico, o mesmo do botão do Android; a saída fixa só vale quando o app abriu direto na tela. Presa no alto, com desfoque |
+| Confirmar antes de apagar neurônio | Lixeira na barra → folha em `?apagar=1` (`Confirmacao`). Voltar fecha a pergunta; confirmar apaga e volta **duas** casas, para o voltar seguinte não cair no neurônio que não existe   |
+| Aviso flutuante (snackbar)         | `Aviso`: o erro e o aviso da store saíram das caixas no meio das telas. Popover, na camada do topo — aparece por cima de uma folha aberta. Some em 3,5 s (erro: 6 s) ou no toque       |
+| Salvar fixo embaixo no formulário  | `.barra-de-acao` presa no pé no celular; do tablet em diante, botão no fim do formulário (§6). O "Cancelar" saiu: fechar é o X da barra                                                |
+
+Detalhes que não são óbvios:
+
+- **`interactive-widget=resizes-content` no viewport.** Sem isso o teclado cobre
+  o botão preso no pé; com isso o teclado encolhe a tela, que é o que a WebView
+  do APK já faz sozinha. Efeito esperado, ainda não visto num aparelho (o
+  navegador de teste não tem teclado): com uma folha aberta e o teclado à
+  mostra, a estante atrás dela também encolhe, porque se mede por `dvh`.
+- **Popover acima de diálogo modal é inerte.** O aviso aparece por cima da
+  folha, mas o toque passa através dele — por isso ele some sozinho.
+- **O foco automático da folha continuava lá desde 12/09.** Tirar o `autoFocus`
+  do campo não bastou: `showModal()` foca a primeira coisa focável, e num painel
+  com campo isso abre o teclado. No próprio `<dialog>` o Chrome ignora
+  `autofocus`; num descendente, respeita — então ele vai no `.folha-corpo`.
+- **O apagado continua desenhado** o instante entre o motor responder e a
+  navegação sair da tela; senão piscaria "não existe mais" sob a folha.
+- **Salvar a edição volta uma casa** em vez de empilhar a mesma tela de novo.
+- Na barra de topo, fundo e linha são o `fill` de um `border-image` com outset:
+  assim atravessam a tela do desktop em vez de terminar na coluna do conteúdo, e
+  outset é tinta — não cria rolagem lateral.
+- Ancestral com animação de entrada vira raiz do desfoque da barra. Por isso
+  `.animar-entrada` fica no conteúdo, abaixo dela.
+- `theme-color` é noite enquanto a porta está na tela (ela é noite nos dois
+  temas) e depois segue o tema: `App.tsx` tira a meta da porta.
+
+### Peças
+
+`components/botao.ts` (classes de botão para `<button>` e `<Link>`),
+`BarraDeTopo`, `Confirmacao`, `Aviso` e `EtiquetaProcessando`. Em `index.css`,
+dentro de `@layer components` para que um utilitário consiga ajustá-las:
+`.cartao`, `.linha-de-lista`, `.campo`, `.chip`, `.rotulo-de-secao`,
+`.barra-de-topo`, `.barra-de-acao`, `.aviso` e `.faixa-rolavel`.
+
+**`botao` é uma função de mapas, não `cva` + `cn`.** Nenhum dos dois estava no
+bundle (o `cn` do shadcn nunca tinha sido importado), e juntos custavam 11,7 KB
+gzipped. Nenhuma variante aqui briga com outra classe; o ligado usa
+`aria-pressed:`.
+
+Também mudou: o espiar lista até 6 neurônios e diz quantos faltam; o cartão do
+neurônio escolhido na Rede abre o neurônio (antes, o livro); na tela do neurônio,
+o título da barra leva ao livro.
+
+Verificado com toque de verdade (CDP): 26 conferências dos fluxos novos, as 24 da
+estante e as 8 da folha de novo, e nenhuma rolagem lateral em 320, 768, 1024 e
+1440 px, nos dois temas. Bundle principal: 124 KB gzipped (121,5 antes).
 
 ## Empacotamento Android (Fase 9)
 

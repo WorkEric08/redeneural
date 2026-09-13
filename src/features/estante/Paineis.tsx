@@ -1,7 +1,10 @@
-import { PencilLine, Plus, Trash2 } from 'lucide-react'
+import { ChevronRight, PencilLine, Plus, Trash2 } from 'lucide-react'
 import { useState, type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 
+import { botao } from '@/components/botao'
+import { Confirmacao } from '@/components/Confirmacao'
+import { EtiquetaProcessando } from '@/components/EtiquetaProcessando'
 import { Folha } from '@/components/Folha'
 import type { Id, Livro, NeuronioNaTela } from '@/core'
 import { contar } from '@/lib/plural'
@@ -23,6 +26,9 @@ interface Props {
   onEditar: (livroId: string, dados: NovoLivro) => Promise<boolean>
   onApagar: (livroId: string) => Promise<boolean>
 }
+
+/** Quantos neurônios o espiar lista antes de mandar abrir o livro. */
+const NEURONIOS_NO_ESPIAR = 6
 
 /**
  * Os painéis que a estante abre. Um de cada vez, na mesma folha: trocar do menu
@@ -52,8 +58,8 @@ function Conteudo(props: Props & { painel: Painel }) {
 
   if (painel.tipo === 'novo') {
     return (
-      <div className="flex flex-col gap-5">
-        <header>
+      <div className="flex flex-col gap-6">
+        <header className="flex flex-col gap-1">
           <h2 className="font-titulo text-xl font-semibold tracking-tight">Um livro novo</h2>
           <p className="text-poeira text-sm">Dê um nome à área. Os neurônios vêm depois.</p>
         </header>
@@ -82,7 +88,7 @@ function Conteudo(props: Props & { painel: Painel }) {
   if (painel.tipo === 'acoes') return <Acoes {...props} livro={livro} />
 
   return (
-    <div className="flex flex-col gap-5">
+    <div className="flex flex-col gap-6">
       <Cabecalho livro={livro}>Renomear e trocar o pano</Cabecalho>
       <FormularioDeLivro
         inicial={{ titulo: livro.titulo, cor: livro.cor }}
@@ -102,7 +108,7 @@ function Cabecalho({ livro, children }: { livro: Livro; children?: ReactNode }) 
   return (
     <header className="flex items-center gap-3">
       <span
-        className="h-10 w-1.5 shrink-0 rounded-[1px]"
+        className="h-10 w-1.5 shrink-0 rounded-full"
         style={{ background: livro.cor }}
         aria-hidden
       />
@@ -128,6 +134,7 @@ function Espiar({ livro, livros, neuronios, pontes }: Props & { livro: Livro }) 
     .filter((p): p is { outro: Livro; quantas: number } => p.outro !== undefined)
     .sort((a, b) => b.quantas - a.quantas)
   const totalDePontes = ligacoes.reduce((soma, p) => soma + p.quantas, 0)
+  const aMais = dele.length - NEURONIOS_NO_ESPIAR
 
   return (
     <div className="flex flex-col gap-5">
@@ -144,40 +151,51 @@ function Espiar({ livro, livros, neuronios, pontes }: Props & { livro: Livro }) 
       </Cabecalho>
 
       {dele.length === 0 ? (
-        <p className="text-poeira text-sm">
-          Ainda vazio.{' '}
-          <Link to={`/novo?livro=${livro.id}`} replace className="text-papel underline">
+        <div className="cartao flex flex-col items-start gap-3 px-4 py-4">
+          <p className="text-poeira text-sm">Ainda vazio.</p>
+          <Link
+            to={`/novo?livro=${livro.id}`}
+            replace
+            className={botao({ tipo: 'secundario', tamanho: 'pequeno' })}
+          >
+            <Plus size={16} aria-hidden />
             Escrever o primeiro neurônio
           </Link>
-        </p>
+        </div>
       ) : (
-        <ul className="divide-linha flex flex-col divide-y">
-          {dele.map((n) => (
-            <li key={n.id}>
+        <ul className="cartao flex flex-col">
+          {dele.slice(0, NEURONIOS_NO_ESPIAR).map((n) => (
+            <li key={n.id} className="linha-de-lista min-h-12 p-0">
               <Link
                 to={`/neuronio/${n.id}`}
                 replace
-                className="flex items-baseline gap-2 py-2.5 text-sm"
+                className="flex min-h-12 w-full items-center gap-3 px-4 py-2 text-sm"
               >
                 <span className="min-w-0 flex-1 truncate">{n.titulo}</span>
-                {n.processando && <span className="text-poeira text-xs">processando…</span>}
+                {n.processando && <EtiquetaProcessando />}
+                <ChevronRight size={16} aria-hidden className="text-poeira shrink-0" />
               </Link>
             </li>
           ))}
+          {aMais > 0 && (
+            <li className="linha-de-lista text-poeira min-h-11 py-2 text-xs">
+              e mais {contar(aMais, 'neurônio', 'neurônios')} dentro do livro
+            </li>
+          )}
         </ul>
       )}
 
       {ligacoes.length > 0 && (
-        <section className="flex flex-col gap-2">
-          <h3 className="text-poeira text-xs tracking-wide uppercase">Pontes com</h3>
+        <section>
+          <h3 className="rotulo-de-secao">Pontes com</h3>
           <ul className="flex flex-wrap gap-2">
             {ligacoes.map(({ outro, quantas }) => (
               <li
                 key={outro.id}
-                className="border-ouro/30 flex items-center gap-2 rounded-full border py-1 pr-3 pl-2 text-sm"
+                className="border-ouro/35 flex h-9 items-center gap-2 rounded-full border pr-3 pl-2.5 text-sm"
               >
                 <span
-                  className="h-3.5 w-1 rounded-[1px]"
+                  className="size-2 shrink-0 rounded-full"
                   style={{ background: outro.cor }}
                   aria-hidden
                 />
@@ -189,11 +207,7 @@ function Espiar({ livro, livros, neuronios, pontes }: Props & { livro: Livro }) 
         </section>
       )}
 
-      <Link
-        to={`/livro/${livro.id}`}
-        replace
-        className="bg-papel text-sala sombra-superficie flex h-12 items-center justify-center rounded-lg font-semibold transition-transform active:scale-[0.98]"
-      >
+      <Link to={`/livro/${livro.id}`} replace className={botao({ tipo: 'primario', largo: true })}>
         Abrir o livro
       </Link>
     </div>
@@ -202,44 +216,46 @@ function Espiar({ livro, livros, neuronios, pontes }: Props & { livro: Livro }) 
 
 function Acoes({ livro, neuronios, ocupado, onTrocarPainel }: Props & { livro: Livro }) {
   const quantos = neuronios.filter((n) => n.livroId === livro.id).length
-  const acao =
-    'flex h-12 w-full items-center gap-3 rounded-lg px-3 text-left text-sm transition-colors active:bg-estante disabled:opacity-50'
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-5">
       <Cabecalho livro={livro}>{contar(quantos, 'neurônio', 'neurônios')}</Cabecalho>
 
-      <ul className="-mx-3 flex flex-col">
-        <li>
+      <ul className="cartao flex flex-col">
+        <li className="linha-de-lista p-0">
           <button
             type="button"
-            className={acao}
+            className="flex min-h-14 w-full items-center gap-3.5 px-4 text-left"
             onClick={() => {
               onTrocarPainel({ tipo: 'editar', livroId: livro.id })
             }}
           >
-            <PencilLine size={18} aria-hidden className="text-poeira" />
+            <PencilLine size={19} aria-hidden className="text-poeira" />
             Renomear e trocar o pano
           </button>
         </li>
-        <li>
-          <Link to={`/novo?livro=${livro.id}`} replace className={acao}>
-            <Plus size={18} aria-hidden className="text-poeira" />
+        <li className="linha-de-lista p-0">
+          <Link
+            to={`/novo?livro=${livro.id}`}
+            replace
+            className="flex min-h-14 w-full items-center gap-3.5 px-4"
+          >
+            <Plus size={19} aria-hidden className="text-poeira" />
             Novo neurônio neste livro
           </Link>
         </li>
-        <li>
+        <li className="linha-de-lista p-0">
           {/* Apagar durante um processamento deixaria o motor gravando o vetor de
               um neurônio cujo livro já não existe. */}
           <button
             type="button"
-            className={`${acao} text-destructive`}
+            className="text-destructive flex min-h-14 w-full items-center gap-3.5 px-4 text-left disabled:opacity-50"
             disabled={ocupado}
             onClick={() => {
               onTrocarPainel({ tipo: 'apagar', livroId: livro.id })
             }}
           >
-            <Trash2 size={18} aria-hidden />
+            <Trash2 size={19} aria-hidden />
             Apagar livro
           </button>
         </li>
@@ -262,43 +278,27 @@ function Apagar({
   if (!livro) return <Sumiu onFechar={onFechar} />
 
   return (
-    <div className="flex flex-col gap-5">
-      <header className="flex flex-col gap-1.5">
-        <h2 className="font-titulo text-xl font-semibold tracking-tight">
-          {quantos > 0
-            ? `Apagar ${livro.titulo} e ${contar(quantos, 'neurônio', 'neurônios')} dentro?`
-            : `Apagar ${livro.titulo}?`}
-        </h2>
-        <p className="text-poeira text-sm">
-          {quantos > 0
-            ? `Os fios que saem ${quantos === 1 ? 'dele' : 'deles'} vão junto, e o palácio refaz as conexões. Não dá para desfazer.`
-            : 'O livro está vazio. Não dá para desfazer.'}
-        </p>
-      </header>
-
-      <div className="flex gap-2">
-        <button
-          type="button"
-          disabled={ocupado}
-          className="bg-destructive text-sala h-12 flex-1 rounded-lg font-semibold transition-transform active:scale-[0.98] disabled:opacity-60"
-          onClick={() => {
-            void onApagar(livro.id).then((ok) => {
-              if (ok) onFechar()
-            })
-          }}
-        >
-          {ocupado ? 'Apagando…' : 'Apagar'}
-        </button>
-        <button
-          type="button"
-          disabled={ocupado}
-          onClick={onFechar}
-          className="border-linha h-12 rounded-lg border px-4 text-sm disabled:opacity-50"
-        >
-          Cancelar
-        </button>
-      </div>
-    </div>
+    <Confirmacao
+      titulo={
+        quantos > 0
+          ? `Apagar ${livro.titulo} e ${contar(quantos, 'neurônio', 'neurônios')} dentro?`
+          : `Apagar ${livro.titulo}?`
+      }
+      explicacao={
+        quantos > 0
+          ? `Os fios que saem ${quantos === 1 ? 'dele' : 'deles'} vão junto, e o palácio refaz as conexões. Não dá para desfazer.`
+          : 'O livro está vazio. Não dá para desfazer.'
+      }
+      rotulo="Apagar"
+      rotuloOcupado="Apagando…"
+      ocupado={ocupado}
+      onCancelar={onFechar}
+      onConfirmar={() => {
+        void onApagar(livro.id).then((ok) => {
+          if (ok) onFechar()
+        })
+      }}
+    />
   )
 }
 
@@ -309,7 +309,7 @@ function Sumiu({ onFechar }: { onFechar: () => void }) {
       <button
         type="button"
         onClick={onFechar}
-        className="border-linha h-12 rounded-lg border px-4 text-sm"
+        className={botao({ tipo: 'secundario', largo: true })}
       >
         Fechar
       </button>

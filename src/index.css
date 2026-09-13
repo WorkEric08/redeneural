@@ -77,15 +77,34 @@
  * ------------------------------------------------------------------------ */
 
 :root {
-  /* --- dia: a mesma sala com a persiana aberta --- */
-  --sala: oklch(0.96 0.008 250);
-  --parede: oklch(0.99 0.004 250);
+  /* A paleta do usuário (13/09/2026). Os HEX impressos na imagem de referência
+     vieram trocados — o de Rich Black é um rosa —; estes saem do RGB dela, que é
+     o que bate com as amostras. */
+  --paleta-rich-black: #0d1b2a;
+  --paleta-oxford-blue: #1b263b;
+  --paleta-yinmn-blue: #415a77;
+  --paleta-silver-lake: #778da9;
+  --paleta-platinum: #e5e7e6;
+
+  /* --- dia: a mesma paleta com os papéis invertidos ---
+     Texto em Platinum e Silver Lake Blue só se lê sobre fundo escuro; aqui o
+     Platinum vira a sala, o Rich Black e o YInMn Blue viram texto (14:1 e
+     5,7:1), e o Silver Lake Blue fica nas bordas. */
+  --sala: var(--paleta-platinum);
+  --parede: #f6f7f7;
+  --realce: color-mix(in oklab, var(--paleta-silver-lake) 24%, var(--parede));
+  --papel: var(--paleta-rich-black);
+  --poeira: var(--paleta-yinmn-blue);
+  --linha: color-mix(in oklab, var(--paleta-silver-lake) 45%, transparent);
+  /* O ouro de antes dava 2,97:1 como texto sobre sala clara — ilegível. Este
+     passa de 4,9:1 e continua lendo como ouro. */
+  --ouro: oklch(0.5 0.1 75);
+  --ouro-luz: oklch(0.62 0.11 78 / 0.2);
   --estante: oklch(1 0 0);
-  --papel: oklch(0.24 0.03 265);
-  --poeira: oklch(0.52 0.03 265);
-  --linha: oklch(0.88 0.014 255);
-  --ouro: oklch(0.62 0.11 78);
-  --ouro-luz: oklch(0.62 0.11 78 / 0.16);
+  --sombra-cartao: 0 1px 2px rgb(13 27 42 / 0.05), 0 6px 20px rgb(13 27 42 / 0.06);
+  /* O aviso flutuante é o inverso da sala: escuro no dia, para não sumir entre
+     cartões claros. À noite ele é só a superfície mais clara. */
+  --aviso-fundo: var(--paleta-oxford-blue);
 
   /* Uma lombada é sempre um objeto escuro, mesmo numa sala clara — é para onde a
      luz lava a cor do pano, e é o que faz a gravação em ouro continuar legível. */
@@ -101,7 +120,8 @@
   --lombada-5: oklch(0.55 0.15 330);
   --lombada-6: oklch(0.56 0.12 145);
 
-  --destructive: oklch(0.55 0.2 25);
+  /* 4,33:1 antes; 5,3:1 agora. */
+  --destructive: oklch(0.5 0.19 25);
 
   --radius: 0.625rem;
 
@@ -113,18 +133,30 @@
   --fonte-dado: ui-monospace, 'Cascadia Mono', 'Segoe UI Mono', Menlo, monospace;
 }
 
-/* Sem escolha explícita, o sistema decide — e o padrão do produto é a noite. */
+/* Sem escolha explícita, o sistema decide — e o padrão do produto é a noite.
+
+   Noite, com a paleta aplicada como veio: Rich Black é a sala, Oxford Blue as
+   superfícies, YInMn Blue as bordas e o selecionado, Silver Lake Blue o texto
+   secundário e Platinum o principal. */
 @media (prefers-color-scheme: dark) {
   :root:not(.claro) {
-    --sala: oklch(0.16 0.032 262);
-    --parede: oklch(0.21 0.042 262);
+    --sala: var(--paleta-rich-black);
+    /* Oxford Blue puxado 15% para o Rich Black: é o que põe o Silver Lake Blue
+       acima de 4,5:1 sobre as superfícies (4,57 contra 4,45), sem diferença que
+       se veja. */
+    --parede: #192438;
+    --realce: color-mix(in oklab, var(--paleta-yinmn-blue) 45%, var(--parede));
     --estante: oklch(0.25 0.048 262);
-    --papel: oklch(0.94 0.008 85);
-    --poeira: oklch(0.66 0.028 262);
-    --linha: oklch(0.32 0.045 262);
+    --sombra-cartao: none;
+    --aviso-fundo: var(--realce);
+    --papel: var(--paleta-platinum);
+    --poeira: var(--paleta-silver-lake);
+    --linha: color-mix(in oklab, var(--paleta-yinmn-blue) 60%, transparent);
     --ouro: oklch(0.84 0.13 82);
     --ouro-luz: oklch(0.84 0.13 82 / 0.22);
-    --lavagem: var(--sala);
+    /* O valor da sala de antes, e não `var(--sala)`: a lavagem é da estante, que
+       ficou com as cores de antes (ver `.cores-de-antes`). */
+    --lavagem: oklch(0.16 0.032 262);
     --ouro-gravado: oklch(0.84 0.13 82);
 
     --lombada-1: oklch(0.62 0.17 285);
@@ -139,15 +171,18 @@
 }
 
 .escuro {
-  --sala: oklch(0.16 0.032 262);
-  --parede: oklch(0.21 0.042 262);
+  --sala: var(--paleta-rich-black);
+  --parede: #192438;
+  --realce: color-mix(in oklab, var(--paleta-yinmn-blue) 45%, var(--parede));
   --estante: oklch(0.25 0.048 262);
-  --papel: oklch(0.94 0.008 85);
-  --poeira: oklch(0.66 0.028 262);
-  --linha: oklch(0.32 0.045 262);
+  --sombra-cartao: none;
+  --aviso-fundo: var(--realce);
+  --papel: var(--paleta-platinum);
+  --poeira: var(--paleta-silver-lake);
+  --linha: color-mix(in oklab, var(--paleta-yinmn-blue) 60%, transparent);
   --ouro: oklch(0.84 0.13 82);
   --ouro-luz: oklch(0.84 0.13 82 / 0.22);
-  --lavagem: var(--sala);
+  --lavagem: oklch(0.16 0.032 262);
   --ouro-gravado: oklch(0.84 0.13 82);
 
   --lombada-1: oklch(0.62 0.17 285);
@@ -160,9 +195,52 @@
   --destructive: oklch(0.68 0.19 25);
 }
 
+/* Congeladas até serem refeitas (pedido do usuário, 13/09/2026): a estante — com
+   a lombada de amostra e o fantasma do arrasto — e o retângulo da Rede. Eles
+   leem os mesmos tokens do resto do app, então os valores de antes da paleta
+   ficam presos aqui: mudar o app não pode mudá-los por tabela. */
+.cores-de-antes {
+  --sala: oklch(0.96 0.008 250);
+  --parede: oklch(0.99 0.004 250);
+  --estante: oklch(1 0 0);
+  --papel: oklch(0.24 0.03 265);
+  --poeira: oklch(0.52 0.03 265);
+  --linha: oklch(0.88 0.014 255);
+  --ouro: oklch(0.62 0.11 78);
+  --ouro-luz: oklch(0.62 0.11 78 / 0.16);
+  --lavagem: oklch(0.3 0.035 262);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not(.claro) .cores-de-antes {
+    --sala: oklch(0.16 0.032 262);
+    --parede: oklch(0.21 0.042 262);
+    --estante: oklch(0.25 0.048 262);
+    --papel: oklch(0.94 0.008 85);
+    --poeira: oklch(0.66 0.028 262);
+    --linha: oklch(0.32 0.045 262);
+    --ouro: oklch(0.84 0.13 82);
+    --ouro-luz: oklch(0.84 0.13 82 / 0.22);
+    --lavagem: oklch(0.16 0.032 262);
+  }
+}
+
+.escuro .cores-de-antes {
+  --sala: oklch(0.16 0.032 262);
+  --parede: oklch(0.21 0.042 262);
+  --estante: oklch(0.25 0.048 262);
+  --papel: oklch(0.94 0.008 85);
+  --poeira: oklch(0.66 0.028 262);
+  --linha: oklch(0.32 0.045 262);
+  --ouro: oklch(0.84 0.13 82);
+  --ouro-luz: oklch(0.84 0.13 82 / 0.22);
+  --lavagem: oklch(0.16 0.032 262);
+}
+
 @theme inline {
   --color-sala: var(--sala);
   --color-parede: var(--parede);
+  --color-realce: var(--realce);
   --color-estante: var(--estante);
   --color-papel: var(--papel);
   --color-poeira: var(--poeira);
@@ -200,25 +278,6 @@
      onde um blur largo vira neblina em vez de brilho. */
   .brilho-ouro-texto-sm {
     text-shadow: 0 0 4px var(--ouro-luz);
-  }
-
-  /* Profundidade: hierarquia entre superfície (cartão sobre a parede), campo
-     (recesso onde se digita) e flutuante (o que paira sobre tudo, FAB). Preto
-     translúcido funciona nos dois temas — é sombra, não pigmento do tema. */
-  .sombra-superficie {
-    box-shadow:
-      0 1px 2px rgb(0 0 0 / 0.06),
-      0 2px 8px rgb(0 0 0 / 0.1);
-  }
-
-  .sombra-campo {
-    box-shadow: inset 0 1px 3px rgb(0 0 0 / 0.1);
-  }
-
-  .sombra-flutuante {
-    box-shadow:
-      0 2px 6px rgb(0 0 0 / 0.12),
-      0 8px 24px rgb(0 0 0 / 0.2);
   }
 }
 
@@ -1367,8 +1426,10 @@ img {
   width: 0;
   height: 0;
 
-  --dial-corpo: oklch(0.19 0.04 262);
-  --dial-tinta: oklch(0.93 0.008 262);
+  /* Da paleta, nos dois temas: o anel é objeto escuro sempre (ver comentário do
+     bloco), então corpo Oxford Blue e tinta Platinum não trocam com o tema. */
+  --dial-corpo: var(--paleta-oxford-blue);
+  --dial-tinta: var(--paleta-platinum);
 }
 
 .dial-veu {
@@ -1423,7 +1484,7 @@ img {
 }
 
 .dial-hachura-fundo {
-  fill: oklch(0.3 0.05 262);
+  fill: var(--paleta-yinmn-blue);
 }
 
 .dial-hachura-risco {
@@ -1433,7 +1494,7 @@ img {
 
 .dial-fio {
   fill: none;
-  stroke: color-mix(in oklab, var(--dial-tinta) 42%, transparent);
+  stroke: var(--paleta-silver-lake);
   stroke-width: 1;
 }
 
@@ -1444,7 +1505,7 @@ img {
   height: 52px;
   place-items: center;
   border-radius: 50%;
-  color: color-mix(in oklab, var(--dial-tinta) 58%, transparent);
+  color: var(--paleta-silver-lake);
   transition:
     color 120ms ease,
     transform 120ms ease;
@@ -1461,7 +1522,9 @@ img {
   border-radius: 9px;
   background: color-mix(in oklab, var(--dial-corpo) 90%, transparent);
   box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.06);
-  color: color-mix(in oklab, var(--dial-tinta) 42%, transparent);
+  /* Texto em repouso é Silver Lake Blue, o escolhido é Platinum — a regra de
+     texto da paleta, em vez de Platinum translúcido. */
+  color: var(--paleta-silver-lake);
   font-size: 0.86rem;
   white-space: nowrap;
   transform: translateY(-50%);
@@ -1602,6 +1665,12 @@ img {
   box-shadow: 0 -10px 40px rgb(0 0 0 / 0.4);
 }
 
+/* Quem recebe o foco ao abrir é o corpo da folha (ver Folha.tsx): contornar o
+   painel inteiro não aponta nada, e o primeiro Tab já leva à primeira peça. */
+.folha-corpo:focus-visible {
+  outline: none;
+}
+
 .folha[open] {
   display: flex;
   flex-direction: column;
@@ -1692,5 +1761,262 @@ img {
   from {
     opacity: 0;
     transform: translateY(8px) scale(0.98);
+  }
+}
+
+/* ---------------------------------------------------------------------------
+ * A interface — tudo que não é estante, porta nem o retângulo da Rede.
+ *
+ * Três profundidades, todas da paleta: a sala (Rich Black), a superfície
+ * (Oxford Blue) e o realce (YInMn Blue), para o que está escolhido ou sob o
+ * dedo. No escuro quem dá profundidade é a cor mais clara, e não sombra —
+ * sombra some num fundo quase preto. No claro entram as duas.
+ *
+ * Em `@layer components`, e não soltas como a estante: CSS fora de camada vence
+ * qualquer utilitário do Tailwind, e aqui um `p-0` ou um `text-poeira` na mesma
+ * tag têm que conseguir ajustar a peça.
+ * ------------------------------------------------------------------------ */
+
+@layer components {
+  .rotulo-de-secao {
+    margin-bottom: 8px;
+    padding-inline: 4px;
+    color: var(--poeira);
+    font-size: 0.72rem;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .cartao {
+    overflow: hidden;
+    border: 1px solid var(--linha);
+    border-radius: 16px;
+    background: var(--parede);
+    box-shadow: var(--sombra-cartao);
+  }
+
+  /* Linha de lista num cartão: alvo de toque de 56 px, ícone à esquerda, texto no
+   meio, valor ou seta à direita. */
+  .linha-de-lista {
+    display: flex;
+    width: 100%;
+    min-height: 56px;
+    align-items: center;
+    gap: 14px;
+    padding: 10px 16px;
+    color: var(--papel);
+    text-align: left;
+    transition: background-color 120ms ease;
+  }
+
+  .linha-de-lista + .linha-de-lista {
+    border-top: 1px solid var(--linha);
+  }
+
+  .linha-de-lista:active {
+    background: var(--realce);
+  }
+
+  .linha-de-lista:focus-visible {
+    outline-offset: -3px;
+  }
+
+  .linha-de-lista:disabled,
+  .linha-de-lista:has(:disabled) {
+    opacity: 0.5;
+    pointer-events: none;
+  }
+
+  /* Dentro da folha a superfície já é a parede: cartão e campo descem um tom, para
+   continuarem sendo peças e não virarem a própria folha. */
+  .folha .cartao {
+    background: color-mix(in oklab, var(--sala) 55%, var(--parede));
+    box-shadow: none;
+  }
+
+  .folha .campo {
+    background: var(--sala);
+  }
+
+  /* Uma fileira que rola de lado — os livros do foco da Rede. Sem barra, como a
+   rolagem vertical no toque; a borda da tela é que diz que continua. */
+  .faixa-rolavel {
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scrollbar-width: none;
+  }
+
+  .faixa-rolavel::-webkit-scrollbar {
+    display: none;
+  }
+
+  @media (min-width: 768px) {
+    .faixa-rolavel {
+      overflow-x: visible;
+    }
+  }
+
+  /* Hover só onde existe mouse (CLAUDE.md §6: no toque, não usar). */
+  @media (hover: hover) {
+    .linha-de-lista:hover {
+      background: color-mix(in oklab, var(--realce) 60%, transparent);
+    }
+  }
+
+  .campo {
+    width: 100%;
+    border: 1px solid var(--linha);
+    border-radius: 12px;
+    background: var(--parede);
+    color: var(--papel);
+    transition:
+      border-color 150ms ease,
+      box-shadow 150ms ease;
+  }
+
+  .campo::placeholder {
+    color: var(--poeira);
+  }
+
+  /* O foco do campo é o anel da própria borda, em Silver Lake Blue — o contorno
+   genérico de `:focus-visible` desenharia uma segunda moldura por fora. */
+  .campo:focus,
+  .campo:focus-visible {
+    border-color: var(--paleta-silver-lake);
+    outline: none;
+    box-shadow: 0 0 0 3px color-mix(in oklab, var(--paleta-silver-lake) 28%, transparent);
+  }
+
+  .chip {
+    display: inline-flex;
+    height: 36px;
+    align-items: center;
+    gap: 8px;
+    padding-inline: 14px;
+    border: 1px solid var(--linha);
+    border-radius: 999px;
+    color: var(--poeira);
+    font-size: 0.8rem;
+    transition:
+      background-color 120ms ease,
+      border-color 120ms ease,
+      color 120ms ease;
+  }
+
+  .chip[aria-pressed='true'] {
+    border-color: transparent;
+    background: var(--realce);
+    color: var(--papel);
+  }
+
+  /* A barra de app das telas internas (BarraDeTopo.tsx). Translúcida e com
+   desfoque, como o fundo da folha: o que rola por baixo continua dizendo que
+   está ali. Sangra até a borda do celular por cima do respiro lateral. */
+  .barra-de-topo {
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    display: flex;
+    min-height: calc(56px + env(safe-area-inset-top));
+    align-items: center;
+    gap: 4px;
+    margin-inline: -16px;
+    padding: env(safe-area-inset-top) 8px 0;
+    /* Fundo e linha atravessam a tela inteira, e não só a coluna do conteúdo —
+       no desktop a barra virava uma faixa terminando no meio do nada. Por isso
+       o fundo é o `fill` de um `border-image` com outset, e não `background`:
+       outset é tinta, não caixa, e não cria rolagem lateral. A borda de 1 px
+       fica só para reservar o lugar da linha. */
+    border-bottom: 1px solid var(--linha);
+    border-image: linear-gradient(
+        to top,
+        var(--linha) 1px,
+        color-mix(in oklab, var(--sala) 84%, transparent) 1px
+      )
+      0 fill / 0 / 0 100vmax;
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+  }
+
+  .barra-de-topo-titulo {
+    display: flex;
+    min-width: 0;
+    flex: 1;
+    align-items: center;
+    gap: 10px;
+    padding-inline: 4px;
+    font-family: var(--fonte-titulo);
+    font-size: 1.05rem;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+  }
+
+  /* O botão primário do formulário preso no pé da tela do celular, sempre à mão.
+   Com o teclado aberto ele sobe junto, porque a viewport encolhe com o teclado
+   (`interactive-widget=resizes-content`, em index.html). Do tablet em diante
+   volta a ser um botão no fim do formulário, como o §6 pede. */
+  .barra-de-acao {
+    position: sticky;
+    bottom: 0;
+    z-index: 10;
+    margin-inline: -16px;
+    padding: 16px 16px calc(12px + env(safe-area-inset-bottom));
+    background: linear-gradient(to top, var(--sala) 70%, transparent);
+  }
+
+  @media (min-width: 768px) {
+    .barra-de-acao {
+      position: static;
+      margin-inline: 0;
+      padding: 8px 0 32px;
+      background: none;
+    }
+  }
+
+  /* Onde a barra fica presa, o cursor do texto não pode ser rolado para debaixo
+   dela: quem encontra o cursor ao digitar desconta essa faixa do pé da tela. */
+  @media (max-width: 767px) {
+    html:has(.barra-de-acao) {
+      scroll-padding-bottom: 96px;
+    }
+  }
+
+  /* O aviso flutuante (Aviso.tsx). Popover, e não uma div com z-index: com um
+   painel aberto, só o que está na camada do topo aparece por cima do fundo
+   desfocado, e um erro de "criar livro" nasce justamente com o painel aberto.
+   Mora acima do botão de criar. */
+  .aviso {
+    position: fixed;
+    inset: auto 16px calc(96px + env(safe-area-inset-bottom));
+    width: auto;
+    max-width: 440px;
+    margin: 0 auto;
+    padding: 14px 16px;
+    border: 1px solid var(--linha);
+    border-radius: 14px;
+    background: var(--aviso-fundo);
+    color: var(--paleta-platinum);
+    font-size: 0.9rem;
+    line-height: 1.4;
+    box-shadow: 0 16px 40px rgb(0 0 0 / 0.35);
+    animation: aviso-subir 240ms cubic-bezier(0.2, 0.8, 0.2, 1);
+  }
+
+  .aviso[data-tipo='erro'] {
+    border-color: color-mix(in oklab, var(--destructive) 70%, transparent);
+  }
+
+  @keyframes aviso-subir {
+    from {
+      opacity: 0;
+      transform: translateY(12px);
+    }
+  }
+
+  @media (min-width: 1024px) {
+    .aviso {
+      bottom: 24px;
+    }
   }
 }

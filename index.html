@@ -6,12 +6,20 @@
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <!-- `user-scalable=no`: acabam o zoom por duplo toque e a pinça na página
          inteira, os dois jeitos de desenquadrar o app sem querer. A pinça da Rede
-         é do canvas e continua. -->
+         é do canvas e continua.
+         `interactive-widget=resizes-content`: o teclado encolhe a tela em vez de
+         cobri-la, e o botão de salvar preso no pé sobe junto com ele — é o que a
+         WebView do APK já faz sozinha. -->
     <meta
       name="viewport"
-      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover, interactive-widget=resizes-content"
     />
-    <meta name="theme-color" content="#0a1226" />
+    <!-- A porta é noite nos dois temas: até entrar, a barra do sistema também é
+         (App.tsx tira a primeira meta ao passar por ela). Depois a barra segue a
+         sala — Rich Black no escuro, Platinum no claro. -->
+    <meta name="theme-color" content="#0d1b2a" id="cor-da-porta" />
+    <meta name="theme-color" media="(prefers-color-scheme: light)" content="#e5e7e6" />
+    <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#0d1b2a" />
     <meta
       name="description"
       content="Seu palácio mental: conceitos viram neurônios dentro de livros e se conectam sozinhos por significado."

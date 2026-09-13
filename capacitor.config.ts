@@ -6,7 +6,7 @@ const config: CapacitorConfig = {
   webDir: 'dist',
   android: {
     // A inferência roda em Worker/WASM; sem isso a WebView pode matar o processo em background.
-    backgroundColor: '#0a1226',
+    backgroundColor: '#0d1b2a',
   },
 }
 

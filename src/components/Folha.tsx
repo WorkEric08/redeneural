@@ -39,6 +39,7 @@ const DURACAO_DO_ARREMATE_MS = 190
  */
 export function Folha({ aberta, rotulo, onFechar, children }: Props) {
   const dialogo = useRef<HTMLDialogElement>(null)
+  const corpo = useRef<HTMLDivElement>(null)
   const arrasto = useRef<{
     pointerId: number
     y0: number
@@ -59,6 +60,14 @@ export function Folha({ aberta, rotulo, onFechar, children }: Props) {
   useEffect(() => {
     const d = dialogo.current
     if (!d) return
+
+    // `showModal` foca a primeira coisa focável lá dentro — num painel com
+    // campo, é o campo, e no celular isso abre o teclado sem a pessoa ter
+    // tocado nele. Um descendente com `autofocus` vence essa regra, então o
+    // foco vai para o corpo da folha e o teclado espera o toque. (No próprio
+    // <dialog> o Chrome ignora o atributo; e o React não o escreve fora de
+    // campo de formulário — daí o `setAttribute`.)
+    corpo.current?.setAttribute('autofocus', '')
 
     if (aberta && !d.open) d.showModal()
     if (!aberta && d.open) d.close()
@@ -134,7 +143,9 @@ export function Folha({ aberta, rotulo, onFechar, children }: Props) {
         <span className="folha-alca-barra" />
       </div>
 
-      <div className="folha-corpo">{children}</div>
+      <div ref={corpo} className="folha-corpo" tabIndex={-1}>
+        {children}
+      </div>
     </dialog>
   )
 }

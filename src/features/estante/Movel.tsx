@@ -62,7 +62,10 @@ export function Movel({
   return (
     // O número de prateleiras é o divisor de que a folha precisa para a estante
     // se medir pela tela (ver .movel-fila em index.css).
-    <div className="movel" style={{ '--mv-prateleiras': prateleiras.length } as CSSProperties}>
+    <div
+      className="movel cores-de-antes"
+      style={{ '--mv-prateleiras': prateleiras.length } as CSSProperties}
+    >
       <span className="movel-cornija" aria-hidden />
 
       <div className="movel-corpo">

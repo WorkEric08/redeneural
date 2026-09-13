@@ -21,22 +21,27 @@ export function Navegacao() {
   return (
     <nav
       aria-label="Principal"
-      className="border-linha bg-parede/95 fixed inset-y-0 left-0 z-20 hidden w-52 border-r shadow-[2px_0_12px_rgb(0_0_0/0.08)] backdrop-blur lg:block"
+      className="border-linha bg-parede fixed inset-y-0 left-0 z-20 hidden w-52 flex-col border-r lg:flex"
     >
-      <ul className="mt-6 flex flex-col gap-1 px-3">
+      <p className="font-titulo text-papel px-6 pt-7 pb-6 text-lg font-semibold tracking-tight">
+        Palácio Mental
+      </p>
+
+      <ul className="flex flex-col gap-1 px-3">
         {DESTINOS.map(({ para, rotulo, Icone, exato }) => (
           <li key={para}>
             <NavLink
               to={para}
               end={exato}
               className={({ isActive }) =>
-                [
-                  'flex h-11 items-center gap-3 rounded-lg px-3 text-sm',
-                  isActive ? 'text-papel bg-estante' : 'text-poeira',
-                ].join(' ')
+                `flex h-11 items-center gap-3 rounded-xl px-3 text-sm font-medium transition-colors ${
+                  isActive
+                    ? 'bg-realce text-papel'
+                    : 'text-poeira hover:bg-realce/60 hover:text-papel'
+                }`
               }
             >
-              <Icone size={20} aria-hidden />
+              <Icone size={19} aria-hidden />
               {rotulo}
             </NavLink>
           </li>

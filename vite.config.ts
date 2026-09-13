@@ -53,8 +53,9 @@ export default defineConfig({
         orientation: 'portrait',
         start_url: '/',
         scope: '/',
-        theme_color: '#0a1226',
-        background_color: '#0a1226',
+        // Rich Black, da paleta: é a sala no escuro e o que a porta tem em volta.
+        theme_color: '#0d1b2a',
+        background_color: '#0d1b2a',
         icons: [
           { src: '/logo-192.png', sizes: '192x192', type: 'image/png', purpose: 'any' },
           { src: '/logo-512.png', sizes: '512x512', type: 'image/png', purpose: 'any' },

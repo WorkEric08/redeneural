@@ -1,6 +1,9 @@
+import { Maximize2, Waypoints } from 'lucide-react'
 import { useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 
+import { BarraDeTopo } from '@/components/BarraDeTopo'
+import { botao } from '@/components/botao'
 import { grausDoMapa, montarMapa } from '@/features/rede/layout'
 import { Tela, type ControleDaTela } from '@/features/rede/Tela'
 import { contar } from '@/lib/plural'
@@ -30,13 +33,11 @@ export default function Rede() {
   const livroDoEscolhido = livros.find((l) => l.id === escolhido?.livroId)
 
   return (
-    <div className="animar-entrada flex flex-col gap-4">
-      <header className="flex flex-col gap-1">
-        <Link to="/" className="text-poeira w-fit py-1 text-sm">
-          ← Estante
-        </Link>
-        <h1 className="font-titulo text-xl font-semibold tracking-tight">Rede do palácio</h1>
-        <p className="text-poeira text-sm">
+    <div className="flex flex-col">
+      <BarraDeTopo voltarPara="/" titulo="Rede do palácio" />
+
+      <div className="animar-entrada flex flex-col gap-4 pt-5">
+        <p className="text-poeira px-1 text-sm">
           {carregado
             ? `${contar(neuronios.length, 'neurônio', 'neurônios')} · ${contar(conexoes.length, 'conexão', 'conexões')} · `
             : 'Abrindo…'}
@@ -46,104 +47,116 @@ export default function Rede() {
             </span>
           )}
         </p>
-      </header>
 
-      <div className="border-linha bg-sala h-[62vh] min-h-80 overflow-hidden rounded-xl border">
-        <Tela
-          cena={{ mapa, livros, neuronios, conexoes, graus, livroEmFoco, soAsPontes, selecionado }}
-          onSelecionar={setSelecionado}
-          controle={controle}
-        />
-      </div>
-
-      {escolhido ? (
-        <div className="border-linha flex flex-col gap-1 rounded-lg border p-3">
-          <p className="font-titulo font-semibold">{escolhido.titulo}</p>
-          <p className="text-poeira text-xs">
-            {livroDoEscolhido?.titulo} ·{' '}
-            {contar(graus.get(escolhido.id) ?? 0, 'conexão', 'conexões')}
-          </p>
-          {livroDoEscolhido && (
-            <Link
-              to={`/livro/${livroDoEscolhido.id}`}
-              className="text-poeira w-fit text-xs underline"
-            >
-              abrir o livro
-            </Link>
-          )}
-        </div>
-      ) : (
-        <p className="text-poeira text-xs">
-          Arraste para andar, pinça ou roda para aproximar. Toque num neurônio para saber quem é.
-        </p>
-      )}
-
-      <div className="flex flex-wrap items-center gap-2">
-        <button
-          onClick={() => {
-            setSoAsPontes((v) => !v)
-          }}
-          aria-pressed={soAsPontes}
-          className={
-            soAsPontes
-              ? 'bg-papel text-sala h-11 rounded-lg px-3 text-xs font-semibold'
-              : 'border-linha h-11 rounded-lg border px-3 text-xs'
-          }
-        >
-          Só as pontes
-        </button>
-
-        <button
-          onClick={() => {
-            controle.current?.enquadrar()
-          }}
-          className="border-linha h-11 rounded-lg border px-3 text-xs"
-        >
-          Enquadrar
-        </button>
-      </div>
-
-      <div className="flex flex-wrap items-center gap-2">
-        <span className="text-poeira text-xs">Foco:</span>
-        <button
-          onClick={() => {
-            setLivroEmFoco(null)
-          }}
-          aria-pressed={livroEmFoco === null}
-          className={
-            livroEmFoco === null
-              ? 'bg-papel text-sala h-9 rounded-full px-3 text-xs font-semibold'
-              : 'border-linha h-9 rounded-full border px-3 text-xs'
-          }
-        >
-          tudo
-        </button>
-
-        {livros.map((l) => (
-          <button
-            key={l.id}
-            onClick={() => {
-              setLivroEmFoco((atual) => (atual === l.id ? null : l.id))
+        {/* O retângulo fica como era, cores inclusive (`cores-de-antes`): ele
+            ainda vai ser trabalhado à parte. */}
+        <div className="cores-de-antes border-linha bg-sala h-[62vh] min-h-80 overflow-hidden rounded-xl border">
+          <Tela
+            cena={{
+              mapa,
+              livros,
+              neuronios,
+              conexoes,
+              graus,
+              livroEmFoco,
+              soAsPontes,
+              selecionado,
             }}
-            aria-pressed={livroEmFoco === l.id}
-            className="border-linha flex h-9 items-center gap-2 rounded-full border px-3 text-xs"
-            style={
-              livroEmFoco === l.id
-                ? {
-                    borderColor: l.cor,
-                    background: `color-mix(in oklab, ${l.cor} 22%, transparent)`,
-                  }
-                : undefined
-            }
-          >
+            onSelecionar={setSelecionado}
+            controle={controle}
+          />
+        </div>
+
+        {/* Mesma altura com e sem escolhido: tocar num neurônio não pode
+            empurrar os controles de baixo para fora do lugar do dedo. */}
+        {escolhido ? (
+          <div className="cartao flex min-h-[4.5rem] items-center gap-3 py-3 pr-3 pl-4">
             <span
-              className="size-2 shrink-0 rounded-full"
-              style={{ background: l.cor }}
+              className="h-9 w-1 shrink-0 rounded-full"
+              style={{ background: livroDoEscolhido?.cor }}
               aria-hidden
             />
-            {l.titulo}
+            <div className="min-w-0 flex-1">
+              <p className="font-titulo truncate font-semibold">{escolhido.titulo}</p>
+              <p className="text-poeira truncate text-xs">
+                {livroDoEscolhido?.titulo} ·{' '}
+                {contar(graus.get(escolhido.id) ?? 0, 'conexão', 'conexões')}
+              </p>
+            </div>
+            <Link
+              to={`/neuronio/${escolhido.id}`}
+              className={botao({ tipo: 'secundario', tamanho: 'pequeno' })}
+            >
+              Abrir
+            </Link>
+          </div>
+        ) : (
+          <p className="text-poeira flex min-h-[4.5rem] items-center px-1 text-sm leading-relaxed">
+            Arraste para andar, pinça ou roda para aproximar. Toque num neurônio para saber quem é.
+          </p>
+        )}
+
+        <div className="flex flex-wrap gap-2">
+          <button
+            type="button"
+            onClick={() => {
+              setSoAsPontes((v) => !v)
+            }}
+            aria-pressed={soAsPontes}
+            className={botao({ tipo: 'secundario', tamanho: 'pequeno' })}
+          >
+            {/* O ícone acende em ouro porque é o desenho da ponte — o botão em
+                si continua sem ouro. */}
+            <Waypoints size={16} aria-hidden className={soAsPontes ? 'text-ouro' : 'text-poeira'} />
+            Só as pontes
           </button>
-        ))}
+
+          <button
+            type="button"
+            onClick={() => {
+              controle.current?.enquadrar()
+            }}
+            className={botao({ tipo: 'secundario', tamanho: 'pequeno' })}
+          >
+            <Maximize2 size={16} aria-hidden className="text-poeira" />
+            Enquadrar
+          </button>
+        </div>
+
+        <section className="pt-2">
+          <h2 className="rotulo-de-secao">Foco</h2>
+          <div className="faixa-rolavel -mx-4 flex gap-2 px-4 md:mx-0 md:flex-wrap md:px-0">
+            <button
+              type="button"
+              onClick={() => {
+                setLivroEmFoco(null)
+              }}
+              aria-pressed={livroEmFoco === null}
+              className="chip shrink-0"
+            >
+              Tudo
+            </button>
+
+            {livros.map((l) => (
+              <button
+                key={l.id}
+                type="button"
+                onClick={() => {
+                  setLivroEmFoco((atual) => (atual === l.id ? null : l.id))
+                }}
+                aria-pressed={livroEmFoco === l.id}
+                className="chip shrink-0"
+              >
+                <span
+                  className="size-2 shrink-0 rounded-full"
+                  style={{ background: l.cor }}
+                  aria-hidden
+                />
+                {l.titulo}
+              </button>
+            ))}
+          </div>
+        </section>
       </div>
     </div>
   )

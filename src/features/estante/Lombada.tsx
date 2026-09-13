@@ -96,7 +96,7 @@ export function Fantasma({
     <span
       ref={registrar}
       aria-hidden
-      className="lombada lombada--fantasma"
+      className="lombada lombada--fantasma cores-de-antes"
       style={{
         ...pano(item.livro.cor),
         left: caixa.left,

@@ -40,7 +40,8 @@ interface PalacioStore {
   /** Devolve o id criado, ou null se o motor não conseguiu. */
   criarNeuronio: (novo: NovoNeuronio) => Promise<string | null>
   editarNeuronio: (id: string, mudancas: NovoNeuronio) => Promise<boolean>
-  apagarNeuronio: (id: string) => Promise<void>
+  /** `false` se o motor não conseguiu — quem confirmou fica onde está e lê o erro. */
+  apagarNeuronio: (id: string) => Promise<boolean>
   reprocessarTudo: () => Promise<void>
   /** Devolve o id do livro criado, ou null se o motor não conseguiu. */
   criarLivro: (novo: NovoLivro, posicao: number) => Promise<string | null>
@@ -50,6 +51,8 @@ interface PalacioStore {
   trocarLivros: (a: string, b: string) => Promise<void>
   exportar: () => Promise<void>
   importar: (arquivo: File) => Promise<void>
+  /** O aviso flutuante some — pelo tempo ou pelo toque. */
+  dispensarAvisos: () => void
 }
 
 function mensagem(e: unknown): string {
@@ -149,17 +152,23 @@ export const usePalacio = create<PalacioStore>()((set, get) => {
       }
     },
 
-    async apagarNeuronio(id) {
+    async apagarNeuronio(id): Promise<boolean> {
       set({ ocupado: true, erro: null })
 
       try {
         const { neuronios, conexoes } = await engine.apagarNeuronio(id)
         set({ neuronios, conexoes })
+        return true
       } catch (e) {
         set({ erro: mensagem(e) })
+        return false
       } finally {
         set({ ocupado: false, progresso: null })
       }
+    },
+
+    dispensarAvisos() {
+      set({ erro: null, aviso: null })
     },
 
     async reprocessarTudo() {

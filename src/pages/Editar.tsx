@@ -1,52 +1,58 @@
-import { useNavigate, useParams } from 'react-router-dom'
+import { useLocation, useNavigate, useParams } from 'react-router-dom'
 
+import { BarraDeTopo } from '@/components/BarraDeTopo'
 import { Formulario } from '@/features/neuronio/Formulario'
 import { usePalacio } from '@/store/palacio'
 
 export default function Editar() {
   const { neuronioId } = useParams()
+  const { key } = useLocation()
   const navegar = useNavigate()
-  const { livros, neuronios, ocupado, erro, editarNeuronio } = usePalacio()
+  const { livros, neuronios, carregado, ocupado, editarNeuronio } = usePalacio()
 
   const neuronio = neuronios.find((n) => n.id === neuronioId)
 
   if (!neuronio) {
-    return <p className="text-poeira text-sm">Este neurônio não existe mais.</p>
+    return (
+      <div className="flex flex-col">
+        <BarraDeTopo voltarPara="/" icone="fechar" titulo="Editar" />
+        <p className="text-poeira pt-6 text-sm">
+          {carregado ? 'Este neurônio não existe mais.' : 'Abrindo…'}
+        </p>
+      </div>
+    )
   }
 
   return (
-    <div className="animar-entrada flex flex-col gap-5">
-      <header>
-        <h1 className="font-titulo text-xl font-semibold tracking-tight">Editar</h1>
-        <p className="text-poeira text-sm">
+    <div className="flex min-h-dvh flex-col">
+      <BarraDeTopo voltarPara={`/neuronio/${neuronio.id}`} icone="fechar" titulo="Editar" />
+
+      <div className="animar-entrada flex flex-1 flex-col">
+        <p className="text-poeira px-1 pt-5 text-sm">
           Mudar o texto refaz o embedding — as conexões podem mudar.
         </p>
-      </header>
 
-      {erro && (
-        <p className="text-destructive border-destructive/40 rounded-lg border p-3 text-sm">
-          {erro}
-        </p>
-      )}
-
-      <Formulario
-        livros={livros}
-        inicial={{
-          livroId: neuronio.livroId,
-          titulo: neuronio.titulo,
-          conteudo: neuronio.conteudo,
-        }}
-        ocupado={ocupado}
-        rotuloDeEnvio="Salvar"
-        onCancelar={() => {
-          void navegar(-1)
-        }}
-        onEnviar={(dados) => {
-          void editarNeuronio(neuronio.id, dados).then((deuCerto) => {
-            if (deuCerto) void navegar(`/neuronio/${neuronio.id}`, { replace: true })
-          })
-        }}
-      />
+        <Formulario
+          livros={livros}
+          inicial={{
+            livroId: neuronio.livroId,
+            titulo: neuronio.titulo,
+            conteudo: neuronio.conteudo,
+          }}
+          ocupado={ocupado}
+          rotuloDeEnvio="Salvar"
+          onEnviar={(dados) => {
+            void editarNeuronio(neuronio.id, dados).then((deuCerto) => {
+              if (!deuCerto) return
+              // A tela do neurônio já está logo atrás no histórico: voltar para
+              // ela, e não empilhar outra igual — senão o voltar seguinte
+              // mostraria o mesmo neurônio duas vezes.
+              if (key === 'default') void navegar(`/neuronio/${neuronio.id}`, { replace: true })
+              else void navegar(-1)
+            })
+          }}
+        />
+      </div>
     </div>
   )
 }

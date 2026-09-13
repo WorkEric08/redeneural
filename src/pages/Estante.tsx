@@ -27,7 +27,6 @@ export default function Estante() {
     neuronios,
     conexoes,
     carregado,
-    erro,
     ocupado,
     trocarLivros,
     criarLivro,
@@ -57,12 +56,6 @@ export default function Estante() {
 
   return (
     <div className="animar-entrada flex flex-col gap-5">
-      {erro && (
-        <p className="text-destructive border-destructive/40 bg-parede sombra-superficie rounded-lg border p-3 text-sm">
-          {erro}
-        </p>
-      )}
-
       {/* A altura mínima é a tela inteira menos o respiro do topo (pt-6): o
           `mt-auto` empurra a contagem até a mesma altura do botão de criar
           (h-14, como .dial-botao).

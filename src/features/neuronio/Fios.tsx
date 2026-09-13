@@ -5,21 +5,38 @@ import type { VizinhoDoNeuronio } from '@/features/estante/resumo'
 /**
  * A lista de fios de um neurônio. Compartilhada entre o livro aberto e a tela
  * do próprio neurônio — é a mesma informação, e ela tem uma forma só.
+ *
+ * Cada fio é uma linha de toque inteira (44 px), não só o nome: o dedo não
+ * precisa acertar a palavra. A ponte leva o nome do livro do outro lado numa
+ * segunda linha, porque é isso que faz "atravessa livros" querer dizer algo.
  */
 export function Fios({ lista }: { lista: readonly VizinhoDoNeuronio[] }) {
   if (lista.length === 0) {
-    return <p className="text-poeira text-xs">Sem conexões ainda.</p>
+    return <p className="text-poeira px-2 py-3 text-sm">Sem conexões ainda.</p>
   }
 
   return (
-    <ul className="flex flex-col gap-1 pt-1">
+    <ul className="flex flex-col">
       {lista.map((v) => (
         <li key={v.conexao.id}>
-          <Link to={`/neuronio/${v.outroId}`} className="flex items-baseline gap-2 py-1 text-sm">
+          <Link
+            to={`/neuronio/${v.outroId}`}
+            className="active:bg-realce hover:bg-realce/60 flex min-h-11 items-center gap-3 rounded-lg px-2 py-2 transition-colors"
+          >
             <Fio score={v.conexao.score} cross={v.conexao.cross} />
-            <span className={v.conexao.cross ? 'text-ouro min-w-0 flex-1' : 'min-w-0 flex-1'}>
-              {v.outroTitulo}
-              {v.conexao.cross && <span className="text-poeira text-xs"> · {v.outroLivro}</span>}
+            <span className="min-w-0 flex-1">
+              <span
+                className={
+                  v.conexao.cross
+                    ? 'text-ouro brilho-ouro-texto-sm block truncate text-sm'
+                    : 'text-papel block truncate text-sm'
+                }
+              >
+                {v.outroTitulo}
+              </span>
+              {v.conexao.cross && (
+                <span className="text-poeira block truncate text-xs">em {v.outroLivro}</span>
+              )}
             </span>
             <span className="text-poeira font-dado shrink-0 text-xs tabular-nums">
               {v.conexao.score.toFixed(3)}
@@ -36,9 +53,9 @@ export function Fios({ lista }: { lista: readonly VizinhoDoNeuronio[] }) {
  * órfão" às vezes liga alguém ao menos ruim dos distantes, e tracejado diz "é o
  * mais perto que existe", não "é parentesco".
  */
-export function Fio({ score, cross }: { score: number; cross: boolean }) {
+function Fio({ score, cross }: { score: number; cross: boolean }) {
   return (
-    <svg width="26" height="12" viewBox="0 0 26 12" aria-hidden className="mt-1 shrink-0">
+    <svg width="26" height="12" viewBox="0 0 26 12" aria-hidden className="shrink-0">
       <line
         x1="1"
         y1="6"
