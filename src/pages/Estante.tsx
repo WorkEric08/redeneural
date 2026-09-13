@@ -28,13 +28,23 @@ export default function Estante() {
         </p>
       )}
 
-      <Movel estante={estante} />
+      {/* A altura mínima é a tela inteira menos o respiro do topo (pt-6): o
+          `mt-auto` empurra a contagem até a mesma altura do botão de criar
+          (h-14, como .dial-botao), e "Livros" só entra depois disso — pedindo
+          rolagem de verdade, em vez de ficar cortado na borda da tela.
 
-      <p className="text-poeira text-xs">
-        {carregado
-          ? `${contar(livros.length, 'livro', 'livros')} · ${contar(neuronios.length, 'neurônio', 'neurônios')} · ${contar(conexoes.length, 'conexão', 'conexões')}`
-          : 'Abrindo o palácio…'}
-      </p>
+          Só abaixo de 1024 px: no desktop não existe dial para alinhar (a
+          navegação é a coluna fixa — ver Dial.tsx), e forçar a mesma altura
+          ali empurraria "Livros" para baixo da dobra à toa. */}
+      <div className="flex min-h-[calc(100dvh_-_48px_-_env(safe-area-inset-bottom))] flex-col lg:min-h-0">
+        <Movel estante={estante} />
+
+        <p className="text-poeira mt-auto flex h-14 items-center text-xs">
+          {carregado
+            ? `${contar(livros.length, 'livro', 'livros')} · ${contar(neuronios.length, 'neurônio', 'neurônios')} · ${contar(conexoes.length, 'conexão', 'conexões')}`
+            : 'Abrindo o palácio…'}
+        </p>
+      </div>
 
       <section className="flex flex-col">
         <h2 className="text-poeira mb-2 text-xs tracking-wide uppercase">Livros</h2>
