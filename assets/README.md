@@ -15,5 +15,7 @@ Quando chegar a hora, coloque aqui:
 Enquanto isso, o app usa placeholders explícitos:
 
 - paleta neutra do shadcn/ui em `src/index.css` (bloco marcado como PLACEHOLDER)
-- ícones PWA gerados por `npm run icons` (`scripts/generate-icons.mjs`)
 - cores das lombadas dos livros no seed (`src/features/palacio/seed.ts`)
+
+`icon.png` chegou em 12/09/2026 (a porta dupla azul-marinho, ferragem dourada) e já
+está aplicado em `public/` (logo-192, logo-512, maskable, apple-touch-icon, favicon).

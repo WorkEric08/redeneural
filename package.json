@@ -13,7 +13,6 @@
     "typecheck": "tsc -b",
     "test": "vitest run",
     "test:watch": "vitest",
-    "icons": "node scripts/generate-icons.mjs",
     "dev:lan": "vite --host",
     "preview:lan": "vite preview --host",
     "spike": "node scripts/spike.mjs",

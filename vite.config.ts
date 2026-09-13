@@ -42,7 +42,7 @@ export default defineConfig({
     VitePWA({
       disable: paraAndroid,
       registerType: 'autoUpdate',
-      includeAssets: ['favicon.svg', 'apple-touch-icon.png'],
+      includeAssets: ['favicon.png', 'apple-touch-icon.png'],
       manifest: {
         name: 'Palácio Mental',
         short_name: 'Palácio',

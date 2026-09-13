@@ -26,7 +26,6 @@ npm run dev
 | `npm run typecheck`     | `tsc -b`                                                      |
 | `npm run lint`          | ESLint (inclui a regra que mantém `src/core` puro)            |
 | `npm run format`        | Prettier                                                      |
-| `npm run icons`         | Regera os ícones PWA placeholder                              |
 | `npm run build:android` | Build com o modelo embutido + `cap sync android`              |
 | `npm run modelo`        | Só baixa o modelo para `dist/modelos/`                        |
 
