@@ -140,7 +140,10 @@
    secundário e Platinum o principal. */
 @media (prefers-color-scheme: dark) {
   :root:not(.claro) {
-    --sala: var(--paleta-rich-black);
+    /* Mais escuro que o Rich Black puro da paleta — pedido do usuário
+       (13/09/2026): o azul-marinho de fundo estava lendo claro demais contra o
+       resto da tela. Ainda azul, nunca preto puro (regra do CLAUDE.md). */
+    --sala: color-mix(in oklab, var(--paleta-rich-black) 62%, black);
     /* Oxford Blue puxado 15% para o Rich Black: é o que põe o Silver Lake Blue
        acima de 4,5:1 sobre as superfícies (4,57 contra 4,45), sem diferença que
        se veja. */
@@ -171,7 +174,8 @@
 }
 
 .escuro {
-  --sala: var(--paleta-rich-black);
+  /* Ver comentário equivalente no bloco @media acima. */
+  --sala: color-mix(in oklab, var(--paleta-rich-black) 62%, black);
   --parede: #192438;
   --realce: color-mix(in oklab, var(--paleta-yinmn-blue) 45%, var(--parede));
   --estante: oklch(0.25 0.048 262);
