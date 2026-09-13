@@ -1591,25 +1591,49 @@ img {
   animation: folha-subir 260ms cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
+/* Soltar a alça liga esta transição (ver Folha.tsx); arrastar, não — puxar
+   segue o dedo quadro a quadro, sem atraso. Não briga com a animação de
+   abrir: `transform` de animação vence `transform` de transição na mesma
+   propriedade, e as duas nunca tocam o dedo na mesma janela de tempo. */
+.folha--solta {
+  transition: transform 220ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
 .folha::backdrop {
   background: rgb(4 8 20 / 0.55);
+  /* O mesmo desfoque atrás do dial (Dial.tsx) — aqui um pouco mais forte, por
+     ser modal cheio e não um véu de anel. `-webkit-` porque `::backdrop` é
+     onde o Safari mais atrasa o suporte sem prefixo. */
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
   animation: folha-escurecer 220ms ease-out;
+}
+
+/* A alça: fora de `.folha-corpo` de propósito, para continuar alcançável
+   mesmo com a lista rolada. O alvo de toque (44px) é bem maior que a barra
+   visível (4px) — arrastar uma tira fina é o tipo de coisa que erra sempre. */
+.folha-alca {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  height: 28px;
+  padding-block: 8px;
+  touch-action: none;
+  cursor: grab;
+}
+
+.folha-alca-barra {
+  width: 36px;
+  height: 4px;
+  border-radius: 999px;
+  background: var(--linha);
 }
 
 .folha-corpo {
   overflow-y: auto;
   overscroll-behavior: contain;
-  padding: 10px 20px calc(20px + env(safe-area-inset-bottom));
-}
-
-.folha-corpo::before {
-  content: '';
-  display: block;
-  width: 36px;
-  height: 4px;
-  margin: 0 auto 16px;
-  border-radius: 999px;
-  background: var(--linha);
+  padding: 0 20px calc(20px + env(safe-area-inset-bottom));
 }
 
 @keyframes folha-subir {
@@ -1641,7 +1665,8 @@ img {
     padding: 24px;
   }
 
-  .folha-corpo::before {
+  /* É diálogo centralizado aqui, não folha que se puxa. */
+  .folha-alca {
     display: none;
   }
 }
