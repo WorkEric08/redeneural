@@ -355,6 +355,23 @@ img {
     user-select: text;
     -webkit-touch-callout: default;
   }
+
+  /* A barra de rolagem também é traço de navegador: WebView e Chrome no
+     Android desenham uma faixa cinza na borda direita enquanto o dedo rola.
+     Continua rolando igual — some só o desenho da barra. No desktop ela
+     fica, porque ali é a régua de posição do mouse. */
+  html,
+  body,
+  .folha-corpo {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+
+  html::-webkit-scrollbar,
+  body::-webkit-scrollbar,
+  .folha-corpo::-webkit-scrollbar {
+    display: none;
+  }
 }
 
 /* ---------------------------------------------------------------------------
