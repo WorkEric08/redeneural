@@ -42,7 +42,12 @@ export default function App() {
   // - formulário não tem botão flutuante, e o pé dele é a barra de ação presa;
   // - o resto tem barra de topo em cima e precisa passar do botão flutuante
   //   embaixo.
-  const respiro = pathname === '/' ? 'pt-6 pb-6' : mostrarCriar ? 'pb-28 lg:pb-16' : 'pb-0'
+  const naEstante = pathname === '/'
+  // A estante ganha respiro mínimo no celular (pedido do usuário, 13/09/2026):
+  // topo e laterais caem para 5px abaixo de 1024px — onde a coluna de
+  // navegação já dá folga própria — mantendo os 24px/16px de antes no desktop.
+  const respiro = naEstante ? 'pt-[5px] pb-6 lg:pt-6' : mostrarCriar ? 'pb-28 lg:pb-16' : 'pb-0'
+  const horizontal = naEstante ? 'px-[5px] lg:px-4' : 'px-4'
 
   if (naPorta) {
     return <Porta onEntrar={() => setNaPorta(false)} />
@@ -52,7 +57,7 @@ export default function App() {
     <div className="min-h-dvh lg:pl-52">
       {progresso && <Progresso progresso={progresso} />}
 
-      <main className={`mx-auto w-full max-w-2xl px-4 ${respiro}`}>
+      <main className={`mx-auto w-full max-w-2xl ${horizontal} ${respiro}`}>
         <Outlet />
       </main>
 
