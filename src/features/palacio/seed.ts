@@ -17,10 +17,12 @@ const PSICOLOGIA = '382f8b34-7e8e-4074-ab84-ad134110b691'
 const PROGRAMACAO = 'b5fd3212-5d84-4311-af05-4c88dd388516'
 const MUSICA = '8ef85fba-622d-458c-825c-ce1c1fae647d'
 
+// A `ordem` repete a que a estante mostrava antes de guardar ordem — mesma data,
+// desempate pelo id —, para um aparelho novo e um migrado verem a mesma estante.
 export const SEED_LIVROS: Livro[] = [
-  { id: PSICOLOGIA, titulo: 'Psicologia', cor: '#7b6ae0', createdAt: T0 },
-  { id: PROGRAMACAO, titulo: 'Programação', cor: '#3e9a93', createdAt: T0 },
-  { id: MUSICA, titulo: 'Música', cor: '#c8734a', createdAt: T0 },
+  { id: PSICOLOGIA, titulo: 'Psicologia', cor: '#7b6ae0', ordem: 0, createdAt: T0 },
+  { id: PROGRAMACAO, titulo: 'Programação', cor: '#3e9a93', ordem: 2, createdAt: T0 },
+  { id: MUSICA, titulo: 'Música', cor: '#c8734a', ordem: 1, createdAt: T0 },
 ]
 
 function neuronio(id: string, livroId: string, titulo: string, conteudo: string): Neuronio {

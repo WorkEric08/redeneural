@@ -355,10 +355,13 @@ revisão. Não adiantar fases.
 ## Modelo de dados
 
 ```
-livros:     { id, titulo, cor, createdAt }
+livros:     { id, titulo, cor, ordem, createdAt }
 neuronios:  { id, livroId, titulo, conteudo, embedding: Float32Array | null, createdAt, updatedAt }
 conexoes:   { id, aId, bId, score, emb, rr, cross, mantidaPorA, mantidaPorB, updatedAt }
 ```
+
+- `livros.ordem` é o lugar na estante, gravado porque quem decide é a pessoa
+  arrastando o livro (desde 12/09/2026, Dexie v3 — ver "A estante na mão").
 
 - `embedding` é **`Float32Array` (BLOB), nunca array JSON** — ~1.5KB contra ~8KB por
   neurônio, e migra direto para SQLite depois. É `null` só enquanto a inferência não
@@ -883,6 +886,99 @@ folha (`--mv-prateleiras`).
 
 Verificado sem rolagem em 320×568, 390×844, 768×1024 e 1440×900, nos dois temas.
 O bundle principal ficou em 117 KB gzipped, contra o teto de 200 KB do mestre.
+
+## A estante na mão (12/09/2026)
+
+A estante deixou de ser vitrine: o livro é um objeto que se pega. Pedido do
+usuário, com as decisões dele:
+
+| Gesto                      | O que faz                                                                              |
+| -------------------------- | -------------------------------------------------------------------------------------- |
+| Tocar num livro            | Espia: o livro sai da prateleira e o painel mostra neurônios, pontes e "Abrir o livro" |
+| Segurar um livro           | Ergue o livro e **acende as pontes** dele em ouro                                      |
+| Segurar e soltar parado    | Menu: renomear e trocar o pano, novo neurônio aqui, apagar                             |
+| Segurar, arrastar e soltar | **Troca de lugar** com o livro de baixo; no vazio, ele volta                           |
+| Tocar numa lombada escura  | Cria um livro naquela prateleira                                                       |
+
+Abrir um livro passou a levar dois toques (espiar → abrir) — escolha consciente
+do usuário. Botão direito e a tecla de menu abrem o menu; Enter e Espaço espiam.
+
+### Ordem
+
+- **Troca, não inserção.** Os dois livros trocam de lugar e mais nenhum se mexe;
+  a distribuição pelas prateleiras continua automática.
+- **`ordem` é gravada** (Dexie v3). A migração dá aos livros existentes a ordem
+  que a tela mostrava até então — `createdAt`, desempatado pelo id —, então
+  ninguém vê livro mudar de lugar ao atualizar. O seed nasce na mesma ordem.
+- **Livro novo nasce na prateleira tocada** (`posicaoParaNovoLivro`). Como a
+  distribuição é automática, num palácio pequeno demais aquela prateleira ainda
+  não recebe livro, e ele nasce na última ocupada. Há teste de 0 a 60 livros.
+- **Backup leva a ordem.** No import, o arquivo vence para os livros que vieram
+  nele — o mesmo "arquivo vence" de título e cor, e é o que faz um backup devolver
+  a estante arrumada. Livro que só existe no aparelho vai para depois. Backup de
+  antes da ordem cai na ordem daquela época.
+- `reordenarLivros` recusa lista que não bate com a estante gravada: gravar
+  metade deixaria dois livros no mesmo lugar.
+- A Rede **não** acompanha a estante: posiciona os livros por `createdAt` (ver
+  "A rede"). Arrumar a estante não desmonta o mapa.
+
+### Livro: criar, editar, apagar
+
+- Criar e editar livro não mexem no grafo (`cross` depende do id, não da cor), e a
+  store é otimista. **Apagar apaga em cascata** (neurônios e fios), com
+  confirmação que diz quantos neurônios vão junto, e reprocessa — exceto livro
+  vazio, que não tem vizinho a perder.
+- **Panos**: 8 cores hex (`features/estante/panos.ts`), nenhuma na faixa do ouro.
+  O formulário sugere o primeiro pano sem uso e mostra a lombada sob a mesma
+  lavagem da estante, porque na prateleira nenhum pano aparece com a cor que tem.
+
+### Painéis na URL, não rotas
+
+Os painéis são bottom sheets (diálogo a partir de 768 px, conforme o §6) — mas
+moram na busca da URL (`?espiar=`, `?acoes=`, `?editar=`, `?apagar=`, `?novo=`).
+É o mesmo motivo que fez criar neurônio virar rota (ver "Criação e navegação"):
+**voltar tem que fechar o que está aberto**, e uma busca deixa a entrada no
+histórico sem desmontar a estante por baixo. Do menu para renomear ou apagar a
+troca é `replace`, para voltar cair na estante e não no menu.
+
+`<dialog>` nativo com `showModal`: fica na camada do topo, fora do `transform` de
+`.animar-entrada`, prende o foco e fecha no Esc, sem dependência.
+
+### Distância desbota, agora como comportamento
+
+A ideia guardada para a passada final virou regra: na prateleira a cor do pano
+chega lavada de luz; o livro **puxado para perto** (espiado, erguido, alvo) mostra
+a cor que tem. O fantasma do arrasto também.
+
+### Luz, rolagem e botão
+
+- **Sem luar no canto de cima à esquerda.** A luz cai de cima, por igual, e as
+  bordas afundam na penumbra; nenhum canto vale mais que outro numa estante que
+  se mexe.
+- **A estante não rola.** `useTravarRolagem` trava o `<html>`, e a página tem a
+  altura exata da tela: sem a folga de 96 px de baixo (`pb-6` só nesta rota),
+  que sobrava como rolagem.
+- **Botão +:** mesmo metal, acabamento novo. As ranhuras são degradê e não corte
+  seco (corte seco em 90 dentes numa roda de 56 px virava chuvisco em tela densa),
+  entraram o bisel e o sulco concêntrico da referência, e o + ficou mais grosso.
+
+### Detalhes que não são óbvios
+
+- Tocar é o `click` nativo; segurar e arrastar engolem o clique que vem no fim.
+- O `contextmenu` que o Android dispara no meio de um segurar é ignorado — senão
+  o menu abriria por cima de um livro que ainda vai ser arrastado.
+- O fantasma anda por `transform` direto no elemento, sem render do React, e mora
+  em portal no `body`: a fileira recorta (`overflow: hidden`) e o `transform` de
+  `.animar-entrada` desalinharia qualquer `position: fixed` lá dentro.
+- `.movel-vao` tem `isolation: isolate`: sem isso a fileira subiria por cima das
+  pilastras e os livros deixariam de sumir atrás da da direita.
+- Largar sobre um livro que também é ponte é o caso comum; o anel de alvo vence o
+  halo da ponte, que continua por fora.
+
+Verificado com toque de verdade (CDP) em 412×892, tema escuro: 24 conferências —
+tocar, voltar, segurar, menu, arrastar e trocar, troca que sobrevive a recarregar,
+criar na prateleira tocada, renomear, apagar — mais capturas em 320, 360 (claro),
+768 e 1440. Bundle principal: 121 KB gzipped.
 
 ## Empacotamento Android (Fase 9)
 

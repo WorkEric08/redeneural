@@ -7,6 +7,7 @@
  */
 import 'fake-indexeddb/auto'
 
+import Dexie from 'dexie'
 import { beforeEach, describe, expect, it } from 'vitest'
 
 import { conexaoId, type Conexao, type Livro, type Neuronio, type PalacioRepo } from '@/core'
@@ -25,8 +26,8 @@ beforeEach(() => {
   repo = createDexieRepo(createDb(`palacio-test-${nth}`))
 })
 
-function livro(id: string, titulo: string): Livro {
-  return { id, titulo, cor: '#6d5bd0', createdAt: T0 }
+function livro(id: string, titulo: string, ordem = 0): Livro {
+  return { id, titulo, cor: '#6d5bd0', ordem, createdAt: T0 }
 }
 
 function neuronio(id: string, livroId: string, embedding: Float32Array | null = null): Neuronio {
@@ -262,5 +263,82 @@ describe('seed', () => {
     expect(await repo.listLivros()).toHaveLength(SEED_LIVROS.length)
     expect(await repo.listNeuronios()).toHaveLength(SEED_NEURONIOS.length)
     expect((await repo.listNeuronios()).every((n) => n.embedding === null)).toBe(true)
+  })
+
+  it('nasce na mesma ordem que a estante mostrava antes de guardar ordem', async () => {
+    await seedPalacio(repo)
+    expect((await repo.listLivros()).map((l) => l.titulo)).toEqual([
+      'Psicologia',
+      'Música',
+      'Programação',
+    ])
+  })
+})
+
+describe('ordem da estante', () => {
+  const ids = async (): Promise<string[]> => (await repo.listLivros()).map((l) => l.id)
+
+  it('lista na ordem da estante, não na de criação', async () => {
+    await repo.upsertLivro(livro('l1', 'Psicologia', 2))
+    await repo.upsertLivro(livro('l2', 'Música', 0))
+    await repo.upsertLivro(livro('l3', 'Programação', 1))
+
+    expect(await ids()).toEqual(['l2', 'l3', 'l1'])
+  })
+
+  it('reordenar grava a estante inteira de uma vez', async () => {
+    for (const [i, id] of ['l1', 'l2', 'l3'].entries()) await repo.upsertLivro(livro(id, id, i))
+
+    await repo.reordenarLivros(['l3', 'l1', 'l2'])
+
+    expect((await repo.listLivros()).map((l) => [l.id, l.ordem])).toEqual([
+      ['l3', 0],
+      ['l1', 1],
+      ['l2', 2],
+    ])
+  })
+
+  // Gravar uma lista pela metade deixaria dois livros no mesmo lugar.
+  it('recusa lista que não bate com a estante gravada, sem mexer em nada', async () => {
+    for (const [i, id] of ['l1', 'l2', 'l3'].entries()) await repo.upsertLivro(livro(id, id, i))
+
+    await expect(repo.reordenarLivros(['l2', 'l1'])).rejects.toThrow()
+    await expect(repo.reordenarLivros(['l2', 'l1', 'l1'])).rejects.toThrow()
+    await expect(repo.reordenarLivros(['l2', 'l1', 'fantasma'])).rejects.toThrow(/l3/)
+
+    expect(await ids()).toEqual(['l1', 'l2', 'l3'])
+  })
+})
+
+describe('migração para a v3', () => {
+  // É o que acontece no aparelho de quem já usava o app: o banco abre em v2, com
+  // livros sem `ordem`, e nenhum deles pode mudar de lugar na tela.
+  it('dá a cada livro antigo a posição que ele tinha na estante', async () => {
+    const nome = `palacio-migracao-${String(nth)}`
+
+    const antigo = new Dexie(nome)
+    antigo.version(1).stores({
+      livros: 'id, createdAt',
+      neuronios: 'id, livroId, updatedAt',
+      conexoes: 'id, aId, bId, updatedAt',
+    })
+    antigo.version(2).stores({ meta: 'chave' })
+    await antigo.table<Omit<Livro, 'ordem'>, string>('livros').bulkPut([
+      { id: 'b5fd', titulo: 'Programação', cor: '#3e9a93', createdAt: T0 },
+      { id: '382f', titulo: 'Psicologia', cor: '#7b6ae0', createdAt: T0 },
+      { id: '8ef8', titulo: 'Música', cor: '#c8734a', createdAt: T0 },
+      { id: 'zzzz', titulo: 'O mais antigo', cor: '#6d5bd0', createdAt: new Date(0) },
+    ])
+    antigo.close()
+
+    const migrado = createDexieRepo(createDb(nome))
+
+    // A tela ordenava por `createdAt` e o IndexedDB desempatava pelo id.
+    expect((await migrado.listLivros()).map((l) => [l.titulo, l.ordem])).toEqual([
+      ['O mais antigo', 0],
+      ['Psicologia', 1],
+      ['Música', 2],
+      ['Programação', 3],
+    ])
   })
 })

@@ -1,9 +1,12 @@
 import type {
   ConnectionEngine,
+  CriarLivroInput,
   CriarNeuronioInput,
+  EditarLivroInput,
   EditarNeuronioInput,
   EstadoDoPalacio,
   Id,
+  Livro,
   ProgressoDoMotor,
   ResultadoDeEscrita,
 } from '@/core'
@@ -80,6 +83,18 @@ export function criarWorkerEngine(): ConnectionEngine {
 
     reprocessarTudo: (): Promise<EstadoDoPalacio> =>
       pedir<'reprocessarTudo'>({ tipo: 'reprocessarTudo' }),
+
+    criarLivro: (input: CriarLivroInput): Promise<Livro[]> =>
+      pedir<'criarLivro'>({ tipo: 'criarLivro', input }),
+
+    editarLivro: (input: EditarLivroInput): Promise<Livro[]> =>
+      pedir<'editarLivro'>({ tipo: 'editarLivro', input }),
+
+    apagarLivro: (livroId: Id): Promise<EstadoDoPalacio> =>
+      pedir<'apagarLivro'>({ tipo: 'apagarLivro', livroId }),
+
+    reordenarLivros: (ids: readonly Id[]): Promise<Livro[]> =>
+      pedir<'reordenarLivros'>({ tipo: 'reordenarLivros', ids: [...ids] }),
 
     exportar: (): Promise<string> => pedir<'exportar'>({ tipo: 'exportar' }),
 

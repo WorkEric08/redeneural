@@ -1,6 +1,15 @@
 import { create } from 'zustand'
 
-import type { Conexao, Livro, NeuronioNaTela, ProgressoDoMotor } from '@/core'
+import {
+  aplicarOrdem,
+  inserirNaOrdem,
+  novoLivro,
+  trocarNaOrdem,
+  type Conexao,
+  type Livro,
+  type NeuronioNaTela,
+  type ProgressoDoMotor,
+} from '@/core'
 import { newId } from '@/lib/id'
 import { engine } from '@/services/engine/workerEngine'
 import { lerTexto, nomeDoBackup, salvarTexto } from '@/services/native/arquivos'
@@ -9,6 +18,11 @@ export interface NovoNeuronio {
   livroId: string
   titulo: string
   conteudo: string
+}
+
+export interface NovoLivro {
+  titulo: string
+  cor: string
 }
 
 interface PalacioStore {
@@ -28,6 +42,12 @@ interface PalacioStore {
   editarNeuronio: (id: string, mudancas: NovoNeuronio) => Promise<boolean>
   apagarNeuronio: (id: string) => Promise<void>
   reprocessarTudo: () => Promise<void>
+  /** Devolve o id do livro criado, ou null se o motor não conseguiu. */
+  criarLivro: (novo: NovoLivro, posicao: number) => Promise<string | null>
+  editarLivro: (id: string, mudancas: NovoLivro) => Promise<boolean>
+  apagarLivro: (id: string) => Promise<boolean>
+  /** Os dois livros trocam de lugar na estante; nenhum outro se mexe. */
+  trocarLivros: (a: string, b: string) => Promise<void>
   exportar: () => Promise<void>
   importar: (arquivo: File) => Promise<void>
 }
@@ -151,6 +171,87 @@ export const usePalacio = create<PalacioStore>()((set, get) => {
         set({ erro: mensagem(e) })
       } finally {
         set({ ocupado: false, progresso: null })
+      }
+    },
+
+    async criarLivro(novo, posicao): Promise<string | null> {
+      const antes = get().livros
+      const input = { id: newId(), ...novo, posicao }
+      const provisorio = novoLivro(input, new Date())
+
+      // Otimista, como o neurônio: o livro já está na prateleira quando o painel
+      // fecha, em vez de aparecer um instante depois.
+      set({
+        livros: aplicarOrdem(
+          [...antes, provisorio],
+          inserirNaOrdem(
+            antes.map((l) => l.id),
+            provisorio.id,
+            posicao,
+          ),
+        ),
+        erro: null,
+      })
+
+      try {
+        set({ livros: await engine.criarLivro(input) })
+        return input.id
+      } catch (e) {
+        set({ livros: antes, erro: mensagem(e) })
+        return null
+      }
+    },
+
+    async editarLivro(id, mudancas): Promise<boolean> {
+      const antes = get().livros
+      set({
+        livros: antes.map((l) =>
+          l.id === id ? { ...l, titulo: mudancas.titulo.trim(), cor: mudancas.cor } : l,
+        ),
+        erro: null,
+      })
+
+      try {
+        set({ livros: await engine.editarLivro({ id, ...mudancas }) })
+        return true
+      } catch (e) {
+        set({ livros: antes, erro: mensagem(e) })
+        return false
+      }
+    },
+
+    // Sem otimismo aqui: apagar reprocessa o grafo, e a estante só pode perder o
+    // livro junto com os fios que saíam dele.
+    async apagarLivro(id): Promise<boolean> {
+      set({ ocupado: true, erro: null })
+
+      try {
+        set(await engine.apagarLivro(id))
+        return true
+      } catch (e) {
+        set({ erro: mensagem(e) })
+        return false
+      } finally {
+        set({ ocupado: false, progresso: null })
+      }
+    },
+
+    async trocarLivros(a, b) {
+      const antes = get().livros
+      const ids = trocarNaOrdem(
+        antes.map((l) => l.id),
+        a,
+        b,
+      )
+
+      // Otimista: quem solta o livro tem que vê-lo já no lugar novo. Esperar o
+      // banco faria o livro voltar à origem e só depois pular — parece erro.
+      set({ livros: aplicarOrdem(antes, ids), erro: null })
+
+      try {
+        set({ livros: await engine.reordenarLivros(ids) })
+      } catch (e) {
+        set({ livros: antes, erro: mensagem(e) })
       }
     },
 

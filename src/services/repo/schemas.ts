@@ -6,10 +6,13 @@ const id = z.string().min(1)
 const hexColor = z.string().regex(/^#[0-9a-fA-F]{6}$/, 'cor deve ser hex #rrggbb')
 const unitInterval = z.number().min(0).max(1)
 
+const ordem = z.number().int().min(0)
+
 export const livroSchema = z.object({
   id,
   titulo: z.string().trim().min(1).max(120),
   cor: hexColor,
+  ordem,
   createdAt: z.date(),
 })
 
@@ -51,7 +54,16 @@ const base64 = z.string().regex(/^[A-Za-z0-9+/]*={0,2}$/, 'base64 inválido')
 export const snapshotSchema = z.object({
   version: z.literal(1),
   exportedAt: isoDate,
-  livros: z.array(z.object({ id, titulo: z.string(), cor: hexColor, createdAt: isoDate })),
+  livros: z.array(
+    z.object({
+      id,
+      titulo: z.string(),
+      cor: hexColor,
+      // Opcional: backup de antes de 12/09/2026 não tinha ordem de estante.
+      ordem: ordem.optional(),
+      createdAt: isoDate,
+    }),
+  ),
   neuronios: z.array(
     z.object({
       id,

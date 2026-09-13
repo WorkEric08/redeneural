@@ -26,9 +26,9 @@ import { createDexieRepo } from './dexieRepo'
 const T0 = new Date('2026-01-01T12:00:00.000Z')
 
 const LIVROS: Livro[] = [
-  { id: 'psi', titulo: 'Psicologia', cor: '#6d5bd0', createdAt: T0 },
-  { id: 'prog', titulo: 'Programação', cor: '#2f7a6f', createdAt: T0 },
-  { id: 'mus', titulo: 'Música', cor: '#b4553a', createdAt: T0 },
+  { id: 'psi', titulo: 'Psicologia', cor: '#6d5bd0', ordem: 0, createdAt: T0 },
+  { id: 'prog', titulo: 'Programação', cor: '#2f7a6f', ordem: 1, createdAt: T0 },
+  { id: 'mus', titulo: 'Música', cor: '#b4553a', ordem: 2, createdAt: T0 },
 ]
 
 /** Os nós do motor viram neurônios de verdade, com vetor e tudo. */
@@ -145,7 +145,13 @@ describe('exportar num navegador e importar noutro', () => {
     const origem = await palacioPovoado()
     const destino = repoVazio()
 
-    await destino.upsertLivro({ id: 'meu', titulo: 'Meu livro', cor: '#123456', createdAt: T0 })
+    await destino.upsertLivro({
+      id: 'meu',
+      titulo: 'Meu livro',
+      cor: '#123456',
+      ordem: 0,
+      createdAt: T0,
+    })
     await destino.upsertNeuronio({
       id: 'meu-n1',
       livroId: 'meu',
@@ -187,5 +193,59 @@ describe('exportar num navegador e importar noutro', () => {
 
     await expect(destino.importAll(snapshot)).rejects.toThrow()
     expect(await destino.listNeuronios()).toHaveLength(0)
+  })
+})
+
+describe('a ordem da estante no backup', () => {
+  const ids = async (repo: PalacioRepo): Promise<string[]> =>
+    (await repo.listLivros()).map((l) => l.id)
+
+  it('um backup devolve a estante arrumada como estava', async () => {
+    const origem = await palacioPovoado()
+    await origem.reordenarLivros(['mus', 'psi', 'prog'])
+    const snapshot = await origem.exportAll()
+
+    const destino = repoVazio()
+    await destino.importAll(JSON.parse(JSON.stringify(snapshot)) as typeof snapshot)
+
+    expect(await ids(destino)).toEqual(['mus', 'psi', 'prog'])
+  })
+
+  // Backup feito antes de a estante guardar ordem não tem o campo. A estante que
+  // se via naquela época ordenava por `createdAt` e desempatava pelo id.
+  it('backup sem ordem entra na ordem que se via quando ele foi feito', async () => {
+    const origem = await palacioPovoado()
+    const snapshot = await origem.exportAll()
+    const antigo = {
+      ...snapshot,
+      livros: snapshot.livros.map((l) => ({
+        id: l.id,
+        titulo: l.titulo,
+        cor: l.cor,
+        createdAt: l.createdAt,
+      })),
+    }
+
+    const destino = repoVazio()
+    await destino.importAll(antigo)
+
+    expect(await ids(destino)).toEqual(['mus', 'prog', 'psi'])
+  })
+
+  it('funde: os livros do arquivo na ordem dele, e os que só existiam aqui depois', async () => {
+    const origem = await palacioPovoado()
+    const destino = repoVazio()
+    await destino.upsertLivro({
+      id: 'meu',
+      titulo: 'Meu livro',
+      cor: '#123456',
+      ordem: 0,
+      createdAt: T0,
+    })
+
+    await destino.importAll(await origem.exportAll())
+    await destino.importAll(await origem.exportAll())
+
+    expect(await ids(destino)).toEqual(['psi', 'prog', 'mus', 'meu'])
   })
 })

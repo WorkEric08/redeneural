@@ -1,23 +1,59 @@
-import { useMemo } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 
 import { Movel } from '@/features/estante/Movel'
-import { montarEstante } from '@/features/estante/resumo'
+import { PaineisDaEstante } from '@/features/estante/Paineis'
+import { panoSugerido } from '@/features/estante/panos'
+import { posicaoParaNovoLivro } from '@/features/estante/prateleiras'
+import { montarEstante, pontesEntreLivros } from '@/features/estante/resumo'
+import { usePainel } from '@/features/estante/usePainel'
+import { useTravarRolagem } from '@/hooks/useTravarRolagem'
 import { contar } from '@/lib/plural'
 import { usePalacio } from '@/store/palacio'
 
+/** O tempo que o livro recém-criado leva chegando à prateleira (ver `lombada-chegar`). */
+const CHEGADA_MS = 900
+
 /**
- * A estante: seus livros vistos de fora.
+ * A estante: seus livros vistos de fora — e na mão.
  *
- * A porta de entrada ainda fica para depois — o resto do acabamento
- * (madeira, ouro como luz) já chegou aqui.
+ * A tela inteira é o móvel, então não rola: tudo que ela tem para mostrar cabe
+ * nela, e arrastar um livro não pode disputar o dedo com a rolagem.
  */
 export default function Estante() {
-  const { livros, neuronios, conexoes, carregado, erro } = usePalacio()
+  useTravarRolagem()
+
+  const {
+    livros,
+    neuronios,
+    conexoes,
+    carregado,
+    erro,
+    ocupado,
+    trocarLivros,
+    criarLivro,
+    editarLivro,
+    apagarLivro,
+  } = usePalacio()
+  const { painel, abrir, trocar, fechar } = usePainel()
+  const [chegandoId, setChegandoId] = useState<string | null>(null)
 
   const estante = useMemo(
     () => montarEstante(livros, neuronios, conexoes),
     [livros, neuronios, conexoes],
   )
+  const pontes = useMemo(() => pontesEntreLivros(neuronios, conexoes), [neuronios, conexoes])
+
+  useEffect(() => {
+    if (chegandoId === null) return
+    const relogio = window.setTimeout(() => {
+      setChegandoId(null)
+    }, CHEGADA_MS)
+    return () => {
+      window.clearTimeout(relogio)
+    }
+  }, [chegandoId])
+
+  const selecionadoId = painel && painel.tipo !== 'novo' ? painel.livroId : null
 
   return (
     <div className="animar-entrada flex flex-col gap-5">
@@ -34,7 +70,24 @@ export default function Estante() {
           Só abaixo de 1024 px: no desktop não existe dial para alinhar (a
           navegação é a coluna fixa — ver Dial.tsx). */}
       <div className="flex min-h-[calc(100dvh_-_48px_-_env(safe-area-inset-bottom))] flex-col lg:min-h-0">
-        <Movel estante={estante} />
+        <Movel
+          estante={estante}
+          pontes={pontes}
+          selecionadoId={selecionadoId}
+          chegandoId={chegandoId}
+          onEspiar={(livroId) => {
+            abrir({ tipo: 'espiar', livroId })
+          }}
+          onAcoes={(livroId) => {
+            abrir({ tipo: 'acoes', livroId })
+          }}
+          onTrocar={(a, b) => {
+            void trocarLivros(a, b)
+          }}
+          onNovo={(prateleira) => {
+            abrir({ tipo: 'novo', prateleira })
+          }}
+        />
 
         <p className="text-poeira mt-auto flex h-14 items-center text-xs">
           {carregado
@@ -42,6 +95,24 @@ export default function Estante() {
             : 'Abrindo o palácio…'}
         </p>
       </div>
+
+      <PaineisDaEstante
+        painel={painel}
+        livros={livros}
+        neuronios={neuronios}
+        pontes={pontes}
+        ocupado={ocupado}
+        panoSugerido={panoSugerido(livros)}
+        onFechar={fechar}
+        onTrocarPainel={trocar}
+        onCriar={async (novo, prateleira) => {
+          const id = await criarLivro(novo, posicaoParaNovoLivro(livros.length, prateleira))
+          if (id) setChegandoId(id)
+          return id !== null
+        }}
+        onEditar={editarLivro}
+        onApagar={apagarLivro}
+      />
     </div>
   )
 }

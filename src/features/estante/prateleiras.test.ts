@@ -1,14 +1,14 @@
 import { describe, expect, it } from 'vitest'
 
-import type { Livro } from '@/core'
+import { inserirNaOrdem, type Livro } from '@/core'
 
-import { montarPrateleiras } from './prateleiras'
+import { montarPrateleiras, posicaoParaNovoLivro } from './prateleiras'
 import type { LivroNaEstante } from './resumo'
 
 const T0 = new Date('2026-01-01T12:00:00.000Z')
 
 function livro(id: string): LivroNaEstante {
-  const l: Livro = { id, titulo: `Livro ${id}`, cor: '#7b6ae0', createdAt: T0 }
+  const l: Livro = { id, titulo: `Livro ${id}`, cor: '#7b6ae0', ordem: 0, createdAt: T0 }
   return { livro: l, neuronios: 3, internas: 0, saindo: 0, altura: 0.5 }
 }
 
@@ -54,5 +54,40 @@ describe('montarPrateleiras', () => {
       ps.flatMap((p) => p.livros).find((l) => l.item.livro.id === 'psi')?.largura
 
     expect(largura(sozinho)).toBe(largura(acompanhado))
+  })
+})
+
+describe('posicaoParaNovoLivro', () => {
+  /** Em que prateleira o livro novo apareceu depois de entrar na posição calculada. */
+  function prateleiraDoNovo(total: number, tocada: number): { onde: number; ocupadas: number } {
+    const ids = Array.from({ length: total }, (_, i) => 'l' + String(i))
+    const ordem = inserirNaOrdem(ids, 'novo', posicaoParaNovoLivro(total, tocada))
+    const prateleiras = montarPrateleiras(ordem.map(livro))
+
+    return {
+      onde: prateleiras.findIndex((p) => p.livros.some((l) => l.item.livro.id === 'novo')),
+      ocupadas: prateleiras.filter((p) => p.livros.length > 0).length,
+    }
+  }
+
+  it('na estante de hoje, com três livros, nasce em qualquer prateleira tocada', () => {
+    for (const tocada of [0, 1, 2, 3]) {
+      expect(prateleiraDoNovo(3, tocada).onde).toBe(tocada)
+    }
+  })
+
+  // A garantia inteira: nasce onde tocou sempre que aquela prateleira recebe
+  // livro; quando ainda não recebe, nasce na última ocupada, o mais perto dali.
+  it('nasce onde tocou, ou o mais perto que a distribuição permite', () => {
+    for (let total = 0; total <= 60; total++) {
+      const prateleiras = montarPrateleiras(
+        Array.from({ length: total + 1 }, (_, i) => livro('x' + String(i))),
+      ).length
+
+      for (let tocada = 0; tocada < prateleiras; tocada++) {
+        const { onde, ocupadas } = prateleiraDoNovo(total, tocada)
+        expect(onde).toBe(Math.min(tocada, ocupadas - 1))
+      }
+    }
   })
 })

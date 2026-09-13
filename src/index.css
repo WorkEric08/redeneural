@@ -288,6 +288,12 @@
     text-size-adjust: 100%;
   }
 
+  /* A tela que cabe inteira não rola — hoje, a estante (useTravarRolagem). */
+  html.rolagem-travada,
+  html.rolagem-travada body {
+    overflow: hidden;
+  }
+
   body {
     /* Grão fino sobre a cor da sala — parede lambrilhada, não plástico liso.
        SVG inline (feTurbulence) em vez de imagem: bytes desprezíveis, e o
@@ -402,8 +408,25 @@ img {
   background: var(--mv-fundo);
 }
 
+/* `isolation`: os z-index de dentro (botão de criar, fileira, penumbra) ficam
+   presos ao vão. Sem isso a fileira subiria por cima das pilastras e do luar,
+   e os livros deixariam de sumir atrás da pilastra da direita. */
 .movel-vao {
   position: relative;
+  isolation: isolate;
+}
+
+/* O vão inteiro é o botão de criar livro, atrás da fileira (ver Movel.tsx). As
+   lombadas de enfeite não recebem toque, então tocar numa delas é tocar nele. */
+.movel-criar {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  width: 100%;
+}
+
+.movel-criar:focus-visible {
+  outline-offset: -4px;
 }
 
 /* Os livros encostam na pilastra da esquerda e somem atrás da direita, como em
@@ -427,10 +450,15 @@ img {
     ),
     132px
   );
+  position: relative;
+  z-index: 1;
   align-items: flex-end;
   gap: 1px;
   padding-left: 26px;
   overflow: hidden;
+  /* A fileira deixa o toque passar para o botão de criar; quem o recebe são só
+     os livros de verdade (.lombada--livro). */
+  pointer-events: none;
 }
 
 /* A sombra que a tábua de cima joga sobre o topo dos livros. É ela que dá
@@ -440,6 +468,7 @@ img {
   top: 0;
   right: 0;
   left: 0;
+  z-index: 2;
   /* Em % porque a fileira agora muda de altura: a sombra da tábua de cima cai
      sempre sobre o mesmo terço do livro. */
   height: 32%;
@@ -538,15 +567,18 @@ img {
   right: 0;
 }
 
-/* O luar entra por cima, pela esquerda, e o resto da sala cai na penumbra. */
+/* A luz da sala cai de cima, por igual, e as bordas afundam na penumbra.
+   Até 12/09/2026 o luar entrava pelo canto de cima à esquerda, como na
+   referência; saiu a pedido do usuário. Um canto aceso puxava o olho sempre
+   para o mesmo livro, e agora que a estante é mexida, nenhum lugar dela pode
+   valer mais que outro. */
 .movel-luar {
   position: absolute;
   inset: 0;
   pointer-events: none;
   background:
-    radial-gradient(78% 46% at 12% 2%, rgb(150 190 255 / 0.2) 0%, transparent 70%),
-    radial-gradient(120% 88% at 42% 34%, rgb(120 160 235 / 0.07) 0%, transparent 62%),
-    radial-gradient(124% 94% at 46% 44%, transparent 22%, rgb(0 0 0 / 0.6) 100%);
+    radial-gradient(130% 62% at 50% 0%, rgb(140 175 240 / 0.06) 0%, transparent 72%),
+    radial-gradient(126% 96% at 50% 48%, transparent 32%, rgb(0 0 0 / 0.5) 100%);
 }
 
 /* --- as lombadas --------------------------------------------------------- */
@@ -584,12 +616,169 @@ img {
 }
 
 .lombada--livro {
-  transition: transform 140ms ease;
+  /* O dedo é do livro: sem isto a WebView tenta rolar ou dar zoom no meio do
+     arrasto e cancela o gesto. A estante não rola mesmo (useTravarRolagem). */
+  touch-action: none;
+  pointer-events: auto;
+  background-color: var(--pano-lavado);
+  transition:
+    transform 160ms ease,
+    background-color 260ms ease,
+    box-shadow 260ms ease,
+    opacity 160ms ease;
 }
 
 .lombada--livro:active {
   /* O livro sai um dedo da estante — é o gesto de puxar, não de apertar. */
   transform: translateY(-3px);
+}
+
+/* Puxado para fora — espiando, com o menu aberto, na mão. Chegou perto, e de
+   perto a luz não lava mais: o pano aparece com a cor que tem. */
+.lombada--livro[data-estado='escolhido'],
+.lombada--livro[data-estado='erguido'] {
+  z-index: 2;
+  background-color: var(--pano);
+  box-shadow:
+    0 -2px 4px rgb(0 0 0 / 0.35),
+    0 12px 20px rgb(0 0 0 / 0.55);
+}
+
+.lombada--livro[data-estado='escolhido'] {
+  transform: translateY(-5px);
+}
+
+.lombada--livro[data-estado='erguido'] {
+  transform: translateY(-6px) scale(1.05);
+}
+
+/* O vão que o livro deixa enquanto viaja na mão. */
+.lombada--livro[data-estado='vazio'] {
+  opacity: 0.2;
+}
+
+/* A ponte. Ouro é luz (CLAUDE.md, "Direção visual"): o livro do outro lado do
+   fio acende, em vez de só mudar de cor — e significa exatamente o que o ouro
+   sempre significou. */
+.lombada--livro[data-ponte] {
+  z-index: 1;
+  box-shadow:
+    0 0 0 1px color-mix(in oklab, var(--ouro) 60%, transparent),
+    0 0 20px 4px color-mix(in oklab, var(--ouro) 36%, transparent),
+    0 -2px 4px rgb(0 0 0 / 0.35);
+  animation: ponte-acender 480ms ease-out;
+}
+
+@keyframes ponte-acender {
+  from {
+    box-shadow:
+      0 0 0 0 transparent,
+      0 0 0 0 transparent,
+      0 -2px 4px rgb(0 0 0 / 0.35);
+  }
+}
+
+/* Onde ele vai cair: o outro livro dá um passo à frente, em luz de papel. Ouro
+   aqui diria "ponte", e trocar de lugar não é ponte.
+
+   Vem depois da ponte de propósito: largar sobre um livro que também é ponte é
+   o caso comum (é justamente o que acende), e o anel de papel é a resposta ao
+   dedo — não pode ser apagado pelo halo. O halo continua, por fora. */
+.lombada--livro[data-alvo] {
+  z-index: 2;
+  transform: translateY(-5px);
+  background-color: var(--pano);
+  box-shadow:
+    0 0 0 2px color-mix(in oklab, var(--papel) 80%, transparent),
+    0 10px 18px rgb(0 0 0 / 0.5);
+}
+
+.lombada--livro[data-alvo][data-ponte] {
+  box-shadow:
+    0 0 0 2px color-mix(in oklab, var(--papel) 80%, transparent),
+    0 0 22px 5px color-mix(in oklab, var(--ouro) 36%, transparent),
+    0 10px 18px rgb(0 0 0 / 0.5);
+}
+
+/* Recém-criado: desce na prateleira em vez de só aparecer nela. */
+.lombada--livro[data-chegando] {
+  animation: lombada-chegar 900ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+@keyframes lombada-chegar {
+  0% {
+    opacity: 0;
+    transform: translateY(-22px) scale(1.08);
+    background-color: var(--pano);
+  }
+  45% {
+    opacity: 1;
+    transform: translateY(-6px) scale(1.04);
+    background-color: var(--pano);
+  }
+}
+
+/* O livro na mão, fora da estante (Fantasma, em Lombada.tsx). `rotate` e
+   `scale` soltos, e não dentro de `transform`: o `transform` é do dedo, escrito
+   a cada movimento. */
+.lombada--fantasma {
+  position: fixed;
+  z-index: 60;
+  pointer-events: none;
+  background-color: var(--pano);
+  transform-origin: 50% 85%;
+  rotate: -4deg;
+  scale: 1.08;
+  box-shadow:
+    0 20px 32px rgb(0 0 0 / 0.55),
+    0 4px 10px rgb(0 0 0 / 0.4);
+  will-change: transform;
+}
+
+/* A lombada de exemplo no formulário do livro: o pano sob a mesma lavagem da
+   estante. */
+.lombada--amostra {
+  display: block;
+  width: 38px;
+  height: 96px;
+  background-color: var(--pano-lavado);
+  box-shadow: 0 8px 16px rgb(0 0 0 / 0.35);
+  transition: background-color 200ms ease;
+}
+
+.pano-opcao {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+}
+
+.pano-amostra {
+  width: 100%;
+  max-width: 52px;
+  aspect-ratio: 1;
+  border-radius: 10px;
+  box-shadow: inset 0 0 0 1px rgb(0 0 0 / 0.25);
+  transition:
+    transform 140ms ease,
+    box-shadow 140ms ease;
+}
+
+.pano-opcao:has(:checked) .pano-amostra {
+  transform: scale(1.06);
+  box-shadow:
+    0 0 0 2px var(--parede),
+    0 0 0 4px var(--papel);
+}
+
+.pano-opcao:has(:checked) > span:last-child {
+  color: var(--papel);
+}
+
+.pano-opcao:has(:focus-visible) .pano-amostra {
+  outline: 2px solid color-mix(in oklab, var(--papel) 60%, transparent);
+  outline-offset: 6px;
 }
 
 /* Sem opacidade: quem escurece o enfeite é a lavagem da cor (ver Movel.tsx).
@@ -1274,7 +1463,14 @@ img {
 
 /* --- o botão: o metal serrilhado da referência --------------------------- */
 
+/* Tudo sai de `--papel` misturado com branco e preto: no tema escuro é metal
+   claro sobre a sala, no claro é metal escuro — nos dois, o volume vem da
+   mesma luz, que cai de cima, como a da estante. */
 .dial-botao {
+  --metal: var(--papel);
+  --metal-brilho: color-mix(in oklab, var(--metal) 80%, white);
+  --metal-sombra: color-mix(in oklab, var(--metal) 70%, black);
+
   position: absolute;
   top: -28px;
   left: -28px;
@@ -1283,16 +1479,21 @@ img {
   height: 56px;
   place-items: center;
   border-radius: 50%;
-  /* As ranhuras da borda. Cônico repetido em vez de imagem: é a mesma decisão
-     do móvel e da porta — acompanha o tema e não custa byte de rede. */
-  background: repeating-conic-gradient(
-    from 0deg,
-    color-mix(in oklab, var(--papel) 72%, black) 0deg 1.1deg,
-    color-mix(in oklab, var(--papel) 84%, white) 1.1deg 3.4deg
-  );
+  /* O serrilhado da borda, com o arredondado da quina por cima. As ranhuras são
+     degradê e não corte seco: corte seco em 90 dentes numa roda de 56 px vira
+     chuvisco em tela de alta densidade, que era o defeito do botão antigo. */
+  background:
+    radial-gradient(circle, transparent 62%, rgb(0 0 0 / 0.22) 100%),
+    repeating-conic-gradient(
+      from 0deg,
+      var(--metal-sombra) 0deg,
+      var(--metal-brilho) 2deg,
+      var(--metal-sombra) 4deg
+    );
   box-shadow:
-    0 2px 6px rgb(0 0 0 / 0.22),
-    0 10px 26px rgb(0 0 0 / 0.3);
+    0 0 0 1px rgb(0 0 0 / 0.3),
+    0 1px 2px rgb(0 0 0 / 0.35),
+    0 10px 24px rgb(0 0 0 / 0.38);
   color: var(--sala);
   /* O arrasto pertence ao dial: sem isto a WebView começa a rolar a página e
      cancela o gesto no meio. */
@@ -1302,25 +1503,51 @@ img {
     box-shadow 220ms ease;
 }
 
-/* A face abaulada, por dentro do serrilhado. */
+/* A face: um disco torneado com bisel. A borda de cima pega a luz e a de baixo
+   afunda, e é isso que faz a face parecer mais alta que o serrilhado. O
+   torneado é um anel repetido quase invisível — só o bastante para o metal não
+   parecer plástico. */
 .dial-botao::before {
   content: '';
   position: absolute;
-  inset: 4px;
+  inset: 3px;
   border-radius: 50%;
-  background: radial-gradient(
-    118% 118% at 32% 22%,
-    color-mix(in oklab, var(--papel) 82%, white) 0%,
-    var(--papel) 54%,
-    color-mix(in oklab, var(--papel) 88%, black) 100%
-  );
+  background:
+    radial-gradient(
+      120% 90% at 50% 8%,
+      color-mix(in oklab, var(--metal-brilho) 70%, white) 0%,
+      transparent 58%
+    ),
+    repeating-radial-gradient(circle, transparent 0 1.5px, rgb(0 0 0 / 0.025) 1.5px 2.5px),
+    radial-gradient(
+      circle at 50% 35%,
+      var(--metal-brilho) 0%,
+      var(--metal) 55%,
+      color-mix(in oklab, var(--metal) 86%, black) 100%
+    );
   box-shadow:
-    inset 0 0 0 1px color-mix(in oklab, var(--papel) 74%, black),
-    inset 0 1px 1px rgb(255 255 255 / 0.4);
+    inset 0 1.5px 1px color-mix(in oklab, var(--metal-brilho) 60%, white),
+    inset 0 -2px 3px rgb(0 0 0 / 0.22),
+    0 1px 2px rgb(0 0 0 / 0.3);
 }
 
+/* O sulco concêntrico da referência: uma linha funda com a borda de baixo
+   pegando luz, como corte de torno. */
+.dial-botao::after {
+  content: '';
+  position: absolute;
+  inset: 11px;
+  border-radius: 50%;
+  box-shadow:
+    inset 0 1px 1px rgb(0 0 0 / 0.18),
+    0 1px 0 color-mix(in oklab, var(--metal-brilho) 70%, white);
+}
+
+/* O + e o × gravados: o traço é da cor da sala e ganha um fio de luz embaixo. */
 .dial-botao > svg {
   position: relative;
+  z-index: 1;
+  filter: drop-shadow(0 1px 0 color-mix(in oklab, var(--metal-brilho) 70%, white));
 }
 
 .dial-botao:active {
@@ -1330,7 +1557,98 @@ img {
 /* Aberto, o botão acende — em luz de papel, nunca em ouro. */
 .dial-botao[data-aberto='true'] {
   box-shadow:
-    0 2px 6px rgb(0 0 0 / 0.22),
-    0 10px 26px rgb(0 0 0 / 0.3),
+    0 0 0 1px rgb(0 0 0 / 0.3),
+    0 1px 2px rgb(0 0 0 / 0.35),
+    0 10px 24px rgb(0 0 0 / 0.38),
     0 0 26px 6px color-mix(in oklab, var(--papel) 30%, transparent);
+}
+
+/* ---------------------------------------------------------------------------
+ * A folha — os painéis que sobem de baixo (Folha.tsx).
+ *
+ * Bottom sheet até 768 px e diálogo centralizado daí para cima, como o CLAUDE.md
+ * §6 pede para modais. A alça no topo diz "isto sobe e desce" sem palavra.
+ * ------------------------------------------------------------------------ */
+
+.folha {
+  position: fixed;
+  inset: auto 0 0 0;
+  width: 100%;
+  max-width: 100%;
+  max-height: min(88dvh, 720px);
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 18px 18px 0 0;
+  background: var(--parede);
+  color: var(--papel);
+  box-shadow: 0 -10px 40px rgb(0 0 0 / 0.4);
+}
+
+.folha[open] {
+  display: flex;
+  flex-direction: column;
+  animation: folha-subir 260ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.folha::backdrop {
+  background: rgb(4 8 20 / 0.55);
+  animation: folha-escurecer 220ms ease-out;
+}
+
+.folha-corpo {
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 10px 20px calc(20px + env(safe-area-inset-bottom));
+}
+
+.folha-corpo::before {
+  content: '';
+  display: block;
+  width: 36px;
+  height: 4px;
+  margin: 0 auto 16px;
+  border-radius: 999px;
+  background: var(--linha);
+}
+
+@keyframes folha-subir {
+  from {
+    transform: translateY(100%);
+  }
+}
+
+@keyframes folha-escurecer {
+  from {
+    opacity: 0;
+  }
+}
+
+@media (min-width: 768px) {
+  .folha {
+    inset: 0;
+    width: min(460px, calc(100% - 48px));
+    height: fit-content;
+    margin: auto;
+    border-radius: 16px;
+  }
+
+  .folha[open] {
+    animation: folha-surgir 200ms ease-out;
+  }
+
+  .folha-corpo {
+    padding: 24px;
+  }
+
+  .folha-corpo::before {
+    display: none;
+  }
+}
+
+@keyframes folha-surgir {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.98);
+  }
 }

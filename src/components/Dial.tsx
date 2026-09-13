@@ -242,7 +242,13 @@ export function Dial() {
             }
           }}
         >
-          {visivel ? <X size={24} aria-hidden /> : <Plus size={24} aria-hidden />}
+          {/* Traço mais grosso que o padrão do lucide: gravado num disco de
+              metal, o fio de 2 px sumia no brilho da face. */}
+          {visivel ? (
+            <X size={22} strokeWidth={2.75} aria-hidden />
+          ) : (
+            <Plus size={22} strokeWidth={2.75} aria-hidden />
+          )}
         </Link>
       </div>
     </>

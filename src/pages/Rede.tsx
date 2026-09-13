@@ -41,7 +41,9 @@ export default function Rede() {
             ? `${contar(neuronios.length, 'neurônio', 'neurônios')} · ${contar(conexoes.length, 'conexão', 'conexões')} · `
             : 'Abrindo…'}
           {carregado && (
-            <span className="text-ouro brilho-ouro-texto-sm">{contar(douradas, 'ponte', 'pontes')}</span>
+            <span className="text-ouro brilho-ouro-texto-sm">
+              {contar(douradas, 'ponte', 'pontes')}
+            </span>
           )}
         </p>
       </header>

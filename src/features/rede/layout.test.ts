@@ -7,9 +7,21 @@ import { grausDoMapa, montarMapa, neuronioEm } from './layout'
 const T0 = new Date('2026-01-01T12:00:00.000Z')
 
 const LIVROS: Livro[] = [
-  { id: 'psi', titulo: 'Psicologia', cor: '#7b6ae0', createdAt: T0 },
-  { id: 'prog', titulo: 'Programação', cor: '#3e9a93', createdAt: new Date(T0.getTime() + 1000) },
-  { id: 'mus', titulo: 'Música', cor: '#c8734a', createdAt: new Date(T0.getTime() + 2000) },
+  { id: 'psi', titulo: 'Psicologia', cor: '#7b6ae0', ordem: 0, createdAt: T0 },
+  {
+    id: 'prog',
+    titulo: 'Programação',
+    cor: '#3e9a93',
+    ordem: 1,
+    createdAt: new Date(T0.getTime() + 1000),
+  },
+  {
+    id: 'mus',
+    titulo: 'Música',
+    cor: '#c8734a',
+    ordem: 2,
+    createdAt: new Date(T0.getTime() + 2000),
+  },
 ]
 
 function neuronio(id: string, livroId: string): NeuronioNaTela {

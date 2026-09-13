@@ -2,14 +2,14 @@ import { describe, expect, it } from 'vitest'
 
 import type { Conexao, Livro, NeuronioNaTela } from '@/core'
 
-import { montarEstante, vizinhosPorNeuronio } from './resumo'
+import { montarEstante, pontesEntreLivros, vizinhosPorNeuronio } from './resumo'
 
 const T0 = new Date('2026-01-01T12:00:00.000Z')
 
 const LIVROS: Livro[] = [
-  { id: 'psi', titulo: 'Psicologia', cor: '#7b6ae0', createdAt: T0 },
-  { id: 'prog', titulo: 'Programação', cor: '#3e9a93', createdAt: T0 },
-  { id: 'vazio', titulo: 'Botânica', cor: '#56a063', createdAt: T0 },
+  { id: 'psi', titulo: 'Psicologia', cor: '#7b6ae0', ordem: 0, createdAt: T0 },
+  { id: 'prog', titulo: 'Programação', cor: '#3e9a93', ordem: 1, createdAt: T0 },
+  { id: 'vazio', titulo: 'Botânica', cor: '#56a063', ordem: 2, createdAt: T0 },
 ]
 
 function neuronio(id: string, livroId: string): NeuronioNaTela {
@@ -113,5 +113,31 @@ describe('vizinhosPorNeuronio', () => {
   it('neurônio sem conexão simplesmente não entra no mapa', () => {
     const mapa = vizinhosPorNeuronio(NEURONIOS, LIVROS, [])
     expect(mapa.get('p1')).toBeUndefined()
+  })
+})
+
+describe('pontesEntreLivros', () => {
+  const MUSICA = neuronio('m1', 'mus')
+
+  it('conta os fios dourados de cada par, enxergados pelos dois lados', () => {
+    const mapa = pontesEntreLivros(
+      [...NEURONIOS, MUSICA],
+      [conexao('p1', 'g1', true), conexao('p2', 'g1', true), conexao('p3', 'm1', true)],
+    )
+
+    expect(mapa.get('psi')?.get('prog')).toBe(2)
+    expect(mapa.get('prog')?.get('psi')).toBe(2)
+    expect(mapa.get('psi')?.get('mus')).toBe(1)
+    expect(mapa.get('prog')?.get('mus')).toBeUndefined()
+  })
+
+  it('fio de dentro do mesmo livro não é ponte', () => {
+    const mapa = pontesEntreLivros(NEURONIOS, [conexao('p1', 'p2', false)])
+    expect(mapa.get('psi')).toBeUndefined()
+  })
+
+  it('ignora fio para neurônio que não está na tela', () => {
+    const mapa = pontesEntreLivros(NEURONIOS, [conexao('p1', 'fantasma', true)])
+    expect(mapa.size).toBe(0)
   })
 })

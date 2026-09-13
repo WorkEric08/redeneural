@@ -48,6 +48,20 @@ export function createDb(name: string = DB_NAME): PalacioDB {
     meta: 'chave',
   })
 
+  // v3: a estante passa a guardar a ordem que a pessoa arrumou. Quem já tinha
+  // livros recebe a ordem que via até aqui — `listLivros` ordenava por
+  // `createdAt`, e o IndexedDB desempata pela chave, que é o que este cursor
+  // também faz. Nenhum livro muda de lugar na primeira abertura depois disso.
+  db.version(3)
+    .stores({
+      livros: 'id, createdAt, ordem',
+    })
+    .upgrade(async (tx) => {
+      const livros = tx.table<Omit<Livro, 'ordem'> & { ordem?: number }, string>('livros')
+      const antigos = await livros.orderBy('createdAt').toArray()
+      await livros.bulkPut(antigos.map((l, ordem) => ({ ...l, ordem })))
+    })
+
   return db
 }
 

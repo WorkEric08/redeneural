@@ -1,4 +1,4 @@
-import type { Conexao, Livro, NeuronioNaTela } from '@/core'
+import type { Conexao, Id, Livro, NeuronioNaTela } from '@/core'
 
 /**
  * As contas que a estante mostra.
@@ -6,6 +6,41 @@ import type { Conexao, Livro, NeuronioNaTela } from '@/core'
  * Puras e fora dos componentes (CLAUDE.md regra 9): a tela só compõe. Nada aqui
  * consulta o banco — tudo sai do que a store já tem em memória.
  */
+
+/**
+ * Quantos fios dourados ligam cada par de livros: `mapa.get(a).get(b)`.
+ *
+ * É o que a estante acende quando se segura um livro, e o que o "espiar" lista.
+ * Sai inteiro de uma vez para os dois lerem dele sem recontar a cada toque.
+ *
+ * A ponte é decidida pelo livro de cada neurônio agora, e não pelo `cross`
+ * gravado na aresta: é a mesma regra de `montarEstante`, e as duas contas não
+ * podem discordar na mesma tela.
+ */
+export function pontesEntreLivros(
+  neuronios: readonly NeuronioNaTela[],
+  conexoes: readonly Conexao[],
+): Map<Id, Map<Id, number>> {
+  const livroDoNeuronio = new Map(neuronios.map((n) => [n.id, n.livroId]))
+  const mapa = new Map<Id, Map<Id, number>>()
+
+  const somar = (de: Id, para: Id): void => {
+    const linha = mapa.get(de) ?? new Map<Id, number>()
+    linha.set(para, (linha.get(para) ?? 0) + 1)
+    mapa.set(de, linha)
+  }
+
+  for (const c of conexoes) {
+    const a = livroDoNeuronio.get(c.aId)
+    const b = livroDoNeuronio.get(c.bId)
+    if (a === undefined || b === undefined || a === b) continue
+
+    somar(a, b)
+    somar(b, a)
+  }
+
+  return mapa
+}
 
 export interface LivroNaEstante {
   livro: Livro

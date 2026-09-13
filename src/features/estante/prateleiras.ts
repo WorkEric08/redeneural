@@ -63,17 +63,40 @@ export interface Prateleira {
   enfeites: Enfeite[]
 }
 
-export function montarPrateleiras(estante: readonly LivroNaEstante[]): Prateleira[] {
+/** Quantas prateleiras o móvel tem e quantos livros vão em cada uma. */
+function distribuicao(total: number): { quantas: number; porPrateleira: number } {
   const quantas = Math.min(
     MAXIMO_DE_PRATELEIRAS,
-    Math.max(MINIMO_DE_PRATELEIRAS, Math.ceil(estante.length / LIVROS_POR_PRATELEIRA)),
+    Math.max(MINIMO_DE_PRATELEIRAS, Math.ceil(total / LIVROS_POR_PRATELEIRA)),
   )
 
   // Os livros se espalham pelo móvel em vez de se amontoarem nas primeiras
   // prateleiras: uma estante com tudo numa fila e o resto vazio não é estante.
   // Com muitos livros, cada prateleira acomoda mais, em vez de o excesso cair
   // fora do móvel.
-  const porPrateleira = Math.max(1, Math.ceil(estante.length / quantas))
+  const porPrateleira = Math.max(1, Math.ceil(total / quantas))
+
+  return { quantas, porPrateleira }
+}
+
+/**
+ * Em que posição da ordem entra um livro criado na prateleira em que a pessoa
+ * tocou, para ele nascer ali.
+ *
+ * Os livros se espalham sozinhos pelo móvel, então a conta é feita com a
+ * estante já contando o livro novo: ele entra no fim daquela prateleira, e quem
+ * vinha depois anda para a seguinte. Num palácio pequeno demais para aquela
+ * prateleira ter livro — com um livro só, a terceira ainda não recebe nenhum —,
+ * ele nasce na última prateleira ocupada, que é o mais perto possível.
+ */
+export function posicaoParaNovoLivro(totalAtual: number, prateleira: number): number {
+  const { quantas, porPrateleira } = distribuicao(totalAtual + 1)
+  const alvo = Math.min(Math.max(0, Math.trunc(prateleira)), quantas - 1)
+  return Math.min((alvo + 1) * porPrateleira - 1, totalAtual)
+}
+
+export function montarPrateleiras(estante: readonly LivroNaEstante[]): Prateleira[] {
+  const { quantas, porPrateleira } = distribuicao(estante.length)
 
   return Array.from({ length: quantas }, (_, i) => ({
     chave: `p${String(i)}`,

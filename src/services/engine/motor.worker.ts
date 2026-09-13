@@ -3,7 +3,9 @@ import {
   arestaParaConexao,
   construirGrafo,
   estadoDosVizinhos,
+  inserirNaOrdem,
   nosDeNeuronios,
+  novoLivro,
   novoNeuronio,
   OPCOES_PADRAO,
   paraTela,
@@ -11,9 +13,12 @@ import {
   recalcularVizinhanca,
   SEM_RERANK,
   textoDoNeuronio,
+  type CriarLivroInput,
   type CriarNeuronioInput,
+  type EditarLivroInput,
   type EstadoDoPalacio,
   type Id,
+  type Livro,
   type Neuronio,
   type NoDoGrafo,
   type PalacioRepo,
@@ -186,6 +191,34 @@ async function apagarNeuronio(id: Id): Promise<EstadoDoPalacio> {
   return reprocessarTudo()
 }
 
+async function criarLivro(input: CriarLivroInput): Promise<Livro[]> {
+  const antes = (await repo.listLivros()).map((l) => l.id)
+  const livro = novoLivro(input, new Date())
+
+  await repo.upsertLivro(livro)
+  await repo.reordenarLivros(inserirNaOrdem(antes, livro.id, input.posicao))
+  return repo.listLivros()
+}
+
+async function editarLivro(input: EditarLivroInput): Promise<Livro[]> {
+  const existente = await repo.getLivro(input.id)
+  if (!existente) throw new Error(`livro ${input.id} não existe`)
+
+  await repo.upsertLivro({ ...existente, titulo: input.titulo.trim(), cor: input.cor })
+  return repo.listLivros()
+}
+
+/**
+ * Livro vazio sai sem reprocessar: ninguém perdeu vizinho. Com neurônios dentro
+ * é o mesmo caso de apagar um neurônio — e reprocessar à toa, num palácio que
+ * ainda tem neurônio sem vetor, baixaria o modelo por nada.
+ */
+async function apagarLivro(id: Id): Promise<EstadoDoPalacio> {
+  const tinhaNeuronios = (await repo.listNeuronios(id)).length > 0
+  await repo.deleteLivro(id)
+  return tinhaNeuronios ? reprocessarTudo() : estadoAtual()
+}
+
 async function importar(json: string): Promise<EstadoDoPalacio> {
   let bruto: unknown
   try {
@@ -225,6 +258,19 @@ async function responder(msg: ParaMotor): Promise<DoMotor> {
 
       case 'reprocessarTudo':
         return { req: msg.req, ok: true, dados: await reprocessarTudo() }
+
+      case 'criarLivro':
+        return { req: msg.req, ok: true, dados: await criarLivro(msg.input) }
+
+      case 'editarLivro':
+        return { req: msg.req, ok: true, dados: await editarLivro(msg.input) }
+
+      case 'apagarLivro':
+        return { req: msg.req, ok: true, dados: await apagarLivro(msg.livroId) }
+
+      case 'reordenarLivros':
+        await repo.reordenarLivros(msg.ids)
+        return { req: msg.req, ok: true, dados: await repo.listLivros() }
 
       case 'exportar':
         return { req: msg.req, ok: true, dados: JSON.stringify(await repo.exportAll()) }

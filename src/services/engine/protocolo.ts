@@ -1,8 +1,11 @@
 import type {
+  CriarLivroInput,
   CriarNeuronioInput,
+  EditarLivroInput,
   EditarNeuronioInput,
   EstadoDoPalacio,
   Id,
+  Livro,
   ProgressoDoMotor,
   ResultadoDeEscrita,
 } from '@/core'
@@ -19,6 +22,10 @@ export interface RespostasDoMotor {
   editarNeuronio: ResultadoDeEscrita
   apagarNeuronio: EstadoDoPalacio
   reprocessarTudo: EstadoDoPalacio
+  criarLivro: Livro[]
+  editarLivro: Livro[]
+  apagarLivro: EstadoDoPalacio
+  reordenarLivros: Livro[]
   exportar: string
   importar: EstadoDoPalacio
 }
@@ -31,6 +38,10 @@ export type ParaMotor =
   | { req: number; tipo: 'editarNeuronio'; input: EditarNeuronioInput }
   | { req: number; tipo: 'apagarNeuronio'; neuronioId: Id }
   | { req: number; tipo: 'reprocessarTudo' }
+  | { req: number; tipo: 'criarLivro'; input: CriarLivroInput }
+  | { req: number; tipo: 'editarLivro'; input: EditarLivroInput }
+  | { req: number; tipo: 'apagarLivro'; livroId: Id }
+  | { req: number; tipo: 'reordenarLivros'; ids: Id[] }
   | { req: number; tipo: 'exportar' }
   | { req: number; tipo: 'importar'; json: string }
 

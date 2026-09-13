@@ -16,6 +16,24 @@ export interface CriarNeuronioInput {
 
 export type EditarNeuronioInput = CriarNeuronioInput
 
+export interface CriarLivroInput {
+  /** Gerado por quem chama, pelo mesmo motivo do neurônio: é o que deixa a tela ser otimista. */
+  id: Id
+  titulo: string
+  cor: string
+  /**
+   * Onde o livro entra na ordem da estante. Quem escolhe é a tela, porque só ela
+   * sabe em que prateleira a pessoa tocou — ver `posicaoParaNovoLivro`.
+   */
+  posicao: number
+}
+
+export interface EditarLivroInput {
+  id: Id
+  titulo: string
+  cor: string
+}
+
 export interface EstadoDoPalacio {
   livros: Livro[]
   neuronios: NeuronioNaTela[]
@@ -57,6 +75,19 @@ export interface ConnectionEngine {
   apagarNeuronio(id: Id): Promise<EstadoDoPalacio>
   /** Recalcula o palácio inteiro — usado após import ou troca de modelo. */
   reprocessarTudo(): Promise<EstadoDoPalacio>
+
+  /** Livro não mexe no grafo: devolve só a estante, já na ordem nova. */
+  criarLivro(input: CriarLivroInput): Promise<Livro[]>
+  /** Trocar nome ou pano não muda nenhuma conexão — `cross` depende do id, não da cor. */
+  editarLivro(input: EditarLivroInput): Promise<Livro[]>
+  /**
+   * Apaga o livro, os neurônios dele e os fios que os tocavam, e reprocessa:
+   * pelo mesmo motivo de apagar um neurônio, alguém pode ter perdido o único
+   * vizinho que tinha.
+   */
+  apagarLivro(id: Id): Promise<EstadoDoPalacio>
+  /** Grava a estante inteira de uma vez: `ids` do primeiro ao último livro. */
+  reordenarLivros(ids: readonly Id[]): Promise<Livro[]>
 
   /**
    * O palácio inteiro como texto JSON, pronto para virar arquivo.

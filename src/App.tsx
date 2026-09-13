@@ -29,6 +29,13 @@ export default function App() {
 
   const mostrarCriar = !SEM_BOTAO_DE_CRIAR.includes(pathname) && !pathname.endsWith('/editar')
 
+  // A estante ocupa a tela exata e não rola (ver Estante.tsx). A folga de baixo,
+  // que existe para a última linha passar do botão flutuante ao rolar, ali só
+  // sobraria como 72 px de rolagem — e rolagem, mesmo travada, arrasta a tela
+  // quando algo recebe foco e deixa o toque seguinte ser engolido como "parar a
+  // rolagem".
+  const telaInteira = pathname === '/'
+
   if (naPorta) {
     return <Porta onEntrar={() => setNaPorta(false)} />
   }
@@ -37,9 +44,9 @@ export default function App() {
     <div className="min-h-dvh lg:pl-52">
       {progresso && <Progresso progresso={progresso} />}
 
-      {/* O respiro embaixo já não é de barra nenhuma: é para o botão flutuante
-          não cobrir a última linha da página. */}
-      <main className="mx-auto w-full max-w-2xl px-4 pt-6 pb-24 lg:pb-16">
+      <main
+        className={`mx-auto w-full max-w-2xl px-4 pt-6 lg:pb-16 ${telaInteira ? 'pb-6' : 'pb-24'}`}
+      >
         <Outlet />
       </main>
 

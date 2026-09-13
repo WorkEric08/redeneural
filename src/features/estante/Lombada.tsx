@@ -1,6 +1,10 @@
-import { Link } from 'react-router-dom'
+import { createPortal } from 'react-dom'
 
+import { contar } from '@/lib/plural'
+
+import { pano } from './panos'
 import type { LivroNaEstante } from './resumo'
+import type { ManipulacaoDaLombada } from './useManipularLivros'
 
 /**
  * Em % da fileira, não em pixels: a fileira agora cresce com a tela (ver
@@ -11,35 +15,98 @@ const ALTURA_MINIMA = 63
 const ALTURA_MAXIMA = 93.5
 
 /**
+ * - `repouso`: na prateleira, sob a luz que lava a cor.
+ * - `escolhido`: puxado para fora pelo painel aberto.
+ * - `erguido`: na mão, antes de o dedo andar.
+ * - `vazio`: o vão que o livro deixa enquanto viaja na mão.
+ */
+export type EstadoDaLombada = 'repouso' | 'escolhido' | 'erguido' | 'vazio'
+
+interface Props {
+  item: LivroNaEstante
+  largura: number
+  estado: EstadoDaLombada
+  /** O livro embaixo do dedo de quem arrasta outro: é com ele que vai trocar. */
+  alvo: boolean
+  /** Tem fio dourado com o livro que está na mão ou no painel. */
+  ponte: boolean
+  /** Acabou de nascer: chega à prateleira em vez de só aparecer nela. */
+  chegando: boolean
+  manipular: ManipulacaoDaLombada
+}
+
+/**
  * Um livro visto de fora.
  *
  * A altura vem da quantidade de neurônios — é a única coisa que a estante conta
  * sem você abrir nada. O título vai gravado em ouro, como numa lombada de
- * verdade, e a luz da sala lava a cor do pano: de longe você não vê a cor real
- * do livro, vê o livro sob a luz.
+ * verdade.
  *
  * A largura vem da semente do id (ver `prateleiras.ts`): varia como numa estante
  * de verdade, mas é sempre a mesma para o mesmo livro.
+ *
+ * Botão, e não link: tocar espia em vez de abrir, e abrir mora no painel.
  */
-export function Lombada({ item, largura }: { item: LivroNaEstante; largura: number }) {
+export function Lombada({ item, largura, estado, alvo, ponte, chegando, manipular }: Props) {
   const altura = ALTURA_MINIMA + item.altura * (ALTURA_MAXIMA - ALTURA_MINIMA)
 
   return (
-    <Link
-      to={`/livro/${item.livro.id}`}
+    <button
+      type="button"
+      data-livro-id={item.livro.id}
+      data-estado={estado}
+      data-alvo={alvo || undefined}
+      data-ponte={ponte || undefined}
+      data-chegando={chegando || undefined}
+      className="lombada lombada--livro"
       style={{
-        // backgroundColor, não background: o atalho apagaria as nervuras e as
-        // quinas, que moram em background-image na classe.
-        backgroundColor: `color-mix(in oklab, ${item.livro.cor} 58%, var(--lavagem))`,
+        ...pano(item.livro.cor),
         height: `${String(Math.round(altura * 10) / 10)}%`,
         width: `${String(largura)}px`,
       }}
-      className="lombada lombada--livro"
-      aria-label={`${item.livro.titulo}, ${String(item.neuronios)} neurônios`}
+      aria-label={`${item.livro.titulo}, ${contar(item.neuronios, 'neurônio', 'neurônios')}`}
+      aria-haspopup="dialog"
+      {...manipular}
     >
       <span className="lombada-titulo">{item.livro.titulo}</span>
 
       {item.saindo > 0 && <span className="lombada-ponto brilho-ouro" aria-hidden />}
-    </Link>
+    </button>
+  )
+}
+
+/**
+ * O livro na mão.
+ *
+ * Fora da estante e em portal no `body` por dois motivos: a fileira recorta o
+ * que passa dela (`overflow: hidden`), e a tela vive dentro de `.animar-entrada`,
+ * cujo `transform` vira referência para qualquer `position: fixed` lá dentro — o
+ * fantasma sairia torto do dedo.
+ */
+export function Fantasma({
+  item,
+  caixa,
+  registrar,
+}: {
+  item: LivroNaEstante
+  caixa: DOMRect
+  registrar: (elemento: HTMLElement | null) => void
+}) {
+  return createPortal(
+    <span
+      ref={registrar}
+      aria-hidden
+      className="lombada lombada--fantasma"
+      style={{
+        ...pano(item.livro.cor),
+        left: caixa.left,
+        top: caixa.top,
+        width: caixa.width,
+        height: caixa.height,
+      }}
+    >
+      <span className="lombada-titulo">{item.livro.titulo}</span>
+    </span>,
+    document.body,
   )
 }

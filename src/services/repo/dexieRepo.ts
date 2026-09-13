@@ -30,7 +30,7 @@ export function createDexieRepo(db: PalacioDB = defaultDb): PalacioRepo {
 
   return {
     async listLivros() {
-      return db.livros.orderBy('createdAt').toArray()
+      return db.livros.orderBy('ordem').toArray()
     },
 
     async getLivro(id) {
@@ -49,6 +49,23 @@ export function createDexieRepo(db: PalacioDB = defaultDb): PalacioRepo {
           await db.neuronios.bulkDelete(neuronioIds)
         }
         await db.livros.delete(id)
+      })
+    },
+
+    async reordenarLivros(ids) {
+      await db.transaction('rw', db.livros, async () => {
+        const gravados = await db.livros.toCollection().primaryKeys()
+        const pedidos = new Set(ids)
+
+        if (pedidos.size !== ids.length || gravados.length !== ids.length) {
+          throw new Error(
+            `reordenarLivros recebeu ${String(ids.length)} ids para ${String(gravados.length)} livros`,
+          )
+        }
+        const faltando = gravados.find((id) => !pedidos.has(id))
+        if (faltando) throw new Error(`reordenarLivros não recebeu o livro ${faltando}`)
+
+        await Promise.all(ids.map((id, ordem) => db.livros.update(id, { ordem })))
       })
     },
 
@@ -177,7 +194,19 @@ export function createDexieRepo(db: PalacioDB = defaultDb): PalacioRepo {
     async importAll(s: PalacioSnapshot) {
       const parsed = snapshotSchema.parse(s)
 
-      const livros = parsed.livros.map(livroFromSnapshot)
+      // A ordem do arquivo vence para os livros que vieram nele: um backup tem
+      // que devolver a estante arrumada como estava — é o mesmo "o arquivo
+      // vence" que já vale para título e cor. Arquivo de antes da estante
+      // guardar ordem cai na ordem que se via naquela época: `createdAt`,
+      // desempatado pelo id.
+      const livros = [...parsed.livros]
+        .sort(
+          (a, b) =>
+            (a.ordem ?? 0) - (b.ordem ?? 0) ||
+            a.createdAt.localeCompare(b.createdAt) ||
+            (a.id < b.id ? -1 : a.id > b.id ? 1 : 0),
+        )
+        .map((l, ordem) => livroFromSnapshot(l, ordem))
       const neuronios = parsed.neuronios.map(neuronioFromSnapshot)
       const conexoes = parsed.conexoes.map(conexaoFromSnapshot)
 
@@ -199,7 +228,13 @@ export function createDexieRepo(db: PalacioDB = defaultDb): PalacioRepo {
 
       // bulkPut por id: reimportar o mesmo snapshot não duplica nada.
       await db.transaction('rw', db.livros, db.neuronios, db.conexoes, async () => {
-        await db.livros.bulkPut(livros)
+        // Quem só existe aqui vai para depois dos livros do arquivo, na ordem em
+        // que já estava.
+        const soAqui = (await db.livros.orderBy('ordem').toArray())
+          .filter((l) => !livroIds.has(l.id))
+          .map((l, i) => ({ ...l, ordem: livros.length + i }))
+
+        await db.livros.bulkPut([...livros, ...soAqui])
         await db.neuronios.bulkPut(neuronios)
         await db.conexoes.bulkPut(conexoes)
       })

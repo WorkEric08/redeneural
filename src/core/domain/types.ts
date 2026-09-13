@@ -14,6 +14,14 @@ export interface Livro {
   titulo: string
   /** Cor da lombada, em hex (#rrggbb). */
   cor: string
+  /**
+   * Lugar na estante: 0 é o primeiro livro da primeira prateleira.
+   *
+   * Gravado, e não derivado de nada, porque quem decide é a pessoa arrastando
+   * o livro — e um palácio da memória precisa devolver cada coisa no canto em
+   * que foi deixada.
+   */
+  ordem: number
   createdAt: Date
 }
 
@@ -74,6 +82,12 @@ export interface LivroSnapshot {
   id: Id
   titulo: string
   cor: string
+  /**
+   * Ausente em backups anteriores a 12/09/2026, quando a estante ainda não
+   * guardava ordem. O import reconstrói a ordem daquela época a partir de
+   * `createdAt` — ver `importAll`.
+   */
+  ordem?: number | undefined
   createdAt: string
 }
 

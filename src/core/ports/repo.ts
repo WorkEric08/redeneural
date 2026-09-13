@@ -9,11 +9,18 @@ import type { MarcaPerdida } from '../motor/incremental'
  * Nenhum componente React pode importar Dexie — só esta interface.
  */
 export interface PalacioRepo {
+  /** Na ordem da estante. */
   listLivros(): Promise<Livro[]>
   getLivro(id: Id): Promise<Livro | undefined>
   upsertLivro(l: Livro): Promise<void>
   /** Apaga o livro, seus neurônios e toda aresta que os tocava. */
   deleteLivro(id: Id): Promise<void>
+  /**
+   * Regrava a `ordem` de todos os livros numa transação só: `ids` é a estante
+   * inteira, do primeiro ao último. Uma lista que não bate com os livros
+   * gravados é recusada — gravar metade deixaria dois livros no mesmo lugar.
+   */
+  reordenarLivros(ids: readonly Id[]): Promise<void>
 
   listNeuronios(livroId?: Id): Promise<Neuronio[]>
   getNeuronio(id: Id): Promise<Neuronio | undefined>

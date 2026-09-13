@@ -1,8 +1,24 @@
 import { useMemo, type CSSProperties } from 'react'
 
-import { Lombada } from './Lombada'
+import type { Id } from '@/core'
+
+import { Fantasma, Lombada, type EstadoDaLombada } from './Lombada'
 import { montarPrateleiras, type Enfeite } from './prateleiras'
 import type { LivroNaEstante } from './resumo'
+import { useManipularLivros } from './useManipularLivros'
+
+interface Props {
+  estante: readonly LivroNaEstante[]
+  /** `pontesEntreLivros`: quantos fios dourados ligam cada par de livros. */
+  pontes: ReadonlyMap<Id, ReadonlyMap<Id, number>>
+  /** O livro do painel aberto — espiando, no menu, sendo editado ou apagado. */
+  selecionadoId: string | null
+  chegandoId: string | null
+  onEspiar: (livroId: string) => void
+  onAcoes: (livroId: string) => void
+  onTrocar: (a: string, b: string) => void
+  onNovo: (prateleira: number) => void
+}
 
 /**
  * O móvel: a estante em que os livros moram.
@@ -12,11 +28,36 @@ import type { LivroNaEstante } from './resumo'
  * é imagem, então acompanha o tema e a largura da tela.
  *
  * As lombadas escuras são enfeite: a biblioteca que ainda não foi escrita. Não
- * têm título nem toque, e a luz não as alcança. Quem ela alcança são os seus
- * livros — é isso que os faz saltar no meio delas.
+ * têm título, e a luz não as alcança — mas tocar nelas escreve um livro ali.
  */
-export function Movel({ estante }: { estante: readonly LivroNaEstante[] }) {
+export function Movel({
+  estante,
+  pontes,
+  selecionadoId,
+  chegandoId,
+  onEspiar,
+  onAcoes,
+  onTrocar,
+  onNovo,
+}: Props) {
   const prateleiras = useMemo(() => montarPrateleiras(estante), [estante])
+  const { gesto, manipular, registrarFantasma } = useManipularLivros({
+    onEspiar,
+    onAcoes,
+    onTrocar,
+  })
+
+  // Quem está na mão manda: segurar outro livro com um painel aberto acende as
+  // pontes do que está na mão, não as do painel.
+  const focoId = gesto.livroId ?? selecionadoId
+  const pontesDoFoco = focoId === null ? undefined : pontes.get(focoId)
+  const naMao =
+    gesto.fase === 'arrastando' ? estante.find((e) => e.livro.id === gesto.livroId) : undefined
+
+  function estadoDe(livroId: string): EstadoDaLombada {
+    if (gesto.livroId === livroId) return gesto.fase === 'arrastando' ? 'vazio' : 'erguido'
+    return selecionadoId === livroId ? 'escolhido' : 'repouso'
+  }
 
   return (
     // O número de prateleiras é o divisor de que a folha precisa para a estante
@@ -25,11 +66,33 @@ export function Movel({ estante }: { estante: readonly LivroNaEstante[] }) {
       <span className="movel-cornija" aria-hidden />
 
       <div className="movel-corpo">
-        {prateleiras.map((p) => (
+        {prateleiras.map((p, indice) => (
           <div className="movel-vao" key={p.chave}>
+            {/* Fica atrás da fileira; as lombadas de enfeite deixam o toque
+                passar até ele, e os livros de verdade, não. Um botão só por
+                prateleira, e não um por lombada escura: é o que o teclado e o
+                leitor de tela conseguem alcançar. */}
+            <button
+              type="button"
+              className="movel-criar"
+              aria-label={`Criar um livro na prateleira ${String(indice + 1)}`}
+              onClick={() => {
+                onNovo(indice)
+              }}
+            />
+
             <div className="movel-fila">
-              {p.livros.map((l) => (
-                <Lombada key={l.item.livro.id} item={l.item} largura={l.largura} />
+              {p.livros.map(({ item, largura }) => (
+                <Lombada
+                  key={item.livro.id}
+                  item={item}
+                  largura={largura}
+                  estado={estadoDe(item.livro.id)}
+                  alvo={gesto.alvoId === item.livro.id}
+                  ponte={(pontesDoFoco?.get(item.livro.id) ?? 0) > 0}
+                  chegando={chegandoId === item.livro.id}
+                  manipular={manipular(item.livro.id)}
+                />
               ))}
               {p.enfeites.map((e) => (
                 <LombadaDeEnfeite key={e.chave} enfeite={e} />
@@ -45,6 +108,10 @@ export function Movel({ estante }: { estante: readonly LivroNaEstante[] }) {
       <span className="movel-pilastra movel-pilastra--esq" aria-hidden />
       <span className="movel-pilastra movel-pilastra--dir" aria-hidden />
       <span className="movel-luar" aria-hidden />
+
+      {naMao && gesto.origem && (
+        <Fantasma item={naMao} caixa={gesto.origem} registrar={registrarFantasma} />
+      )}
     </div>
   )
 }
