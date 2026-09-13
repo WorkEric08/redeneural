@@ -1,5 +1,7 @@
+import { Grip } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 
+import { botao } from '@/components/botao'
 import { Movel } from '@/features/estante/Movel'
 import { PaineisDaEstante } from '@/features/estante/Paineis'
 import { panoSugerido } from '@/features/estante/panos'
@@ -35,6 +37,10 @@ export default function Estante() {
   } = usePalacio()
   const { painel, abrir, trocar, fechar } = usePainel()
   const [chegandoId, setChegandoId] = useState<string | null>(null)
+  // Sem persistência de propósito: é um modo de trabalho, não uma preferência
+  // — cada visita à estante começa com o arrastar desligado, para segurar um
+  // livro só de passagem nunca movê-lo sem querer.
+  const [organizando, setOrganizando] = useState(false)
 
   const estante = useMemo(
     () => montarEstante(livros, neuronios, conexoes),
@@ -69,6 +75,7 @@ export default function Estante() {
           selecionadoId={selecionadoId}
           chegandoId={chegandoId}
           quantidadeDePrateleiras={quantidadeDePrateleiras}
+          organizando={organizando}
           onEspiar={(livroId) => {
             abrir({ tipo: 'espiar', livroId })
           }}
@@ -83,11 +90,29 @@ export default function Estante() {
           }}
         />
 
-        <p className="text-poeira mt-auto flex h-14 items-center text-xs">
-          {carregado
-            ? `${contar(livros.length, 'livro', 'livros')} · ${contar(neuronios.length, 'neurônio', 'neurônios')} · ${contar(conexoes.length, 'conexão', 'conexões')}`
-            : 'Abrindo o palácio…'}
-        </p>
+        <div className="mt-auto flex h-14 items-center gap-3">
+          {/* Liga/desliga o arrastar — segurar continua erguendo o livro e
+              acendendo as pontes dele mesmo desligado; só soltar em outro
+              lugar da estante exige o modo ligado. À esquerda de propósito:
+              o botão de criar (Dial) mora fixo no canto inferior direito, e
+              um botão novo ali ficaria atrás dele, inalcançável. */}
+          <button
+            type="button"
+            aria-pressed={organizando}
+            aria-label={organizando ? 'Sair do modo organizar' : 'Entrar no modo organizar'}
+            className={botao({ tipo: 'secundario', tamanho: 'icone' })}
+            onClick={() => {
+              setOrganizando((o) => !o)
+            }}
+          >
+            <Grip size={18} aria-hidden />
+          </button>
+          <p className="text-poeira min-w-0 flex-1 truncate text-xs">
+            {carregado
+              ? `${contar(livros.length, 'livro', 'livros')} · ${contar(neuronios.length, 'neurônio', 'neurônios')} · ${contar(conexoes.length, 'conexão', 'conexões')}`
+              : 'Abrindo o palácio…'}
+          </p>
+        </div>
       </div>
 
       <PaineisDaEstante

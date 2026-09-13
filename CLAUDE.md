@@ -1228,6 +1228,42 @@ depois na mesma prateleira; soltar numa prateleira vazia não mexe em mais
 nada; o stepper funciona nos dois temas e em mobile/desktop; o estado
 sobrevive a recarregar a página.
 
+## Modo organizar (Fase 11, 13/09/2026)
+
+Primeira das 9 melhorias de estante aprovadas depois da Fase 10 (ver memória
+de projeto — a ordem foi decidida por dependência/risco/valor, não pedida
+item a item). Pedido original: "liga/desliga arrastar, pra evitar mexer sem
+querer num livro só de passagem no toque longo."
+
+**O que muda:** um botão nas costas da estante (`Grip`, ao lado da contagem)
+liga/desliga se segurar-e-arrastar move o livro. Desligado (padrão), segurar
+ainda ergue o livro e acende as pontes dele — isso continua útil sem
+reorganizar nada —, só que mover o dedo depois não vira arrasto: soltar
+sempre abre o menu, do mesmo jeito que soltar parado já abria. Ligado, o
+gesto de arrastar da Fase 10 funciona como sempre.
+
+**Onde vive o estado:** local em `Estante.tsx` (`useState`), não na store nem
+gravado — é um modo de trabalho, não uma preferência do palácio. Cada visita
+à estante começa com o arrastar desligado.
+
+**Por que a única mudança de lógica foi uma linha:** a transição
+`erguido → arrastando` em `useManipularLivros` já era o único lugar que
+decidia se um gesto vira arrasto. Bastou gatear ali (`if (fase === 'erguido'
+&& !organizando) return`) — nenhuma outra parte da máquina de estados
+precisou saber que o modo existe.
+
+**Gotcha do posicionamento:** a primeira tentativa colocou o botão à direita
+da contagem (fim da fileira) e ele foi parar debaixo do botão de criar (Dial),
+fixo no canto inferior direito — clicável só em teoria, inalcançável na
+prática (Playwright confirmou: `intercepts pointer events`). Corrigido
+colocando o botão à **esquerda** da contagem.
+
+Verificado com toque de verdade (Playwright): sem o modo, arrastar não move
+e soltar abre o menu; com o modo ligado, arrastar move como na Fase 10. Nos
+dois temas, 320/412/1440 px. 164 testes, typecheck e lint continuam limpos
+(mudança pequena o bastante para não precisar de teste novo — coberta pela
+verificação manual, como o resto do gesto de arrastar já era).
+
 ## Fases
 
 0. ✅ Esqueleto (Vite/React/TS/Tailwind/PWA/Capacitor)
@@ -1241,3 +1277,4 @@ sobrevive a recarregar a página.
 8. 🟡 Criação, edição e navegação — **a porta ficou para a passada de acabamento**
 9. 🟡 Empacotamento Android — **falta compilar e instalar o APK** (sem JDK/SDK aqui)
 10. ✅ Estante: fundação de prateleiras manuais + arrastar como bandeja — base para as 9 melhorias de estante aprovadas (ver memória de projeto)
+11. ✅ Modo organizar — 1ª das 9 melhorias; próxima é busca global

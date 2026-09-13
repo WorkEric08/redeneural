@@ -16,6 +16,8 @@ interface Props {
   chegandoId: string | null
   /** Quantas prateleiras o móvel tem — gravado, ajustável em Ajustes. */
   quantidadeDePrateleiras: number
+  /** Modo organizar ligado: segurar e arrastar move o livro. Desligado, só ergue. */
+  organizando: boolean
   onEspiar: (livroId: string) => void
   onAcoes: (livroId: string) => void
   /** Move o livro para `(prateleira, posicao)` — mesma assinatura da store. */
@@ -39,6 +41,7 @@ export function Movel({
   selecionadoId,
   chegandoId,
   quantidadeDePrateleiras,
+  organizando,
   onEspiar,
   onAcoes,
   onMover,
@@ -49,6 +52,7 @@ export function Movel({
     [estante, quantidadeDePrateleiras],
   )
   const { gesto, manipular, registrarFantasma } = useManipularLivros({
+    organizando,
     onEspiar,
     onAcoes,
     // A folga entre o livro sob o dedo e a posição final: o hook só sabe qual
@@ -80,6 +84,7 @@ export function Movel({
     // se medir pela tela (ver .movel-fila em index.css).
     <div
       className="movel cores-de-antes"
+      data-organizando={organizando || undefined}
       style={{ '--mv-prateleiras': prateleiras.length } as CSSProperties}
     >
       <span className="movel-cornija" aria-hidden />

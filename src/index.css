@@ -717,6 +717,17 @@ img {
     opacity 160ms ease;
 }
 
+/* No mouse (a estante também é bancada de trabalho no desktop — ver "É um
+   app, não uma página" no CLAUDE.md), o cursor avisa que segurar move o
+   livro. Sem o modo organizar, segurar só ergue — o cursor continua o normal. */
+.movel[data-organizando] .lombada--livro {
+  cursor: grab;
+}
+
+.movel[data-organizando] .lombada--livro:active {
+  cursor: grabbing;
+}
+
 .lombada--livro:active {
   /* O livro sai um dedo da estante — é o gesto de puxar, não de apertar. */
   transform: translateY(-3px);
