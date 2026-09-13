@@ -1131,6 +1131,103 @@ parou; a frase que o usuário lê é escolhida pela tela, não pelo adapter.
 Os dois escrevem no mesmo `dist/`, então quem publicar na web depois de um
 `build:android` precisa rodar `npm run build` antes. Está no README.
 
+## A estante vira grade gravada (Fase 10, 13/09/2026)
+
+Pedido do usuário: mais controle sobre a estante. Antes de mexer em código,
+levantei o desenho atual e sugeri mais 9 ideias além das duas dele —
+reorganizar como a bandeja de apps do Android (empurra quem já está lá) e
+soltar num lugar vazio sem mexer no resto, mais tamanho de livro
+configurável. As 9 sugeridas (divisores/etiquetas, tamanho do livro, ordenar
+com um toque, seleção múltipla, textura/emblema na lombada, intensidade da
+luz/lavagem, "modo organizar", minimapa, busca global) ficaram guardadas em
+memória de projeto, aprovadas para implementar — esta fase é só a fundação
+que as tornou possíveis.
+
+### A pergunta que decidiu o desenho
+
+A prateleira de um livro nunca tinha sido gravada — era 100% calculada
+(`distribuicao(total)` fatiava a estante inteira, ordenada, em blocos de até
+6 livros, 4 a 14 prateleiras, recalculado a cada render). Para "soltar num
+lugar vazio sem mexer no resto" e "prateleiras manuais" fazerem sentido
+juntos, havia dois caminhos:
+
+- uma **grade de vagas fixas** por prateleira, com buracos visíveis mesmo no
+  meio de livros existentes — mais parecido com a bandeja de apps de
+  verdade, mas muda a estante de "livros encostados como estante cheia" para
+  "grade com espaços", que não existia visualmente;
+- uma **lista compacta por prateleira** (livros grudados, sem vão no meio,
+  como hoje), onde só uma prateleira vazia ou o fim de uma prateleira conta
+  como "vazio".
+
+O usuário escolheu a segunda: mantém a estética atual e é a mudança mais
+simples que ainda entrega as três coisas (prateleiras manuais, empurrar,
+soltar sem mexer) juntas.
+
+### Modelo de dados
+
+`Livro` ganhou `prateleira: number` (gravado). `ordem` continua existindo,
+mas mudou de escopo: era um índice denso da estante inteira, agora é denso
+**dentro da prateleira** (0..N-1 daquela prateleira, não da estante toda). A
+quantidade de prateleiras deixou de ser calculada a cada render e virou
+preferência gravada (`meta.preferencias.quantidadeDePrateleiras` — a tabela
+`meta` passou a guardar uma união de dois formatos de documento,
+diferenciados pela `chave`, mesma tabela do `PerfilGravado`).
+
+Migração Dexie v4, no mesmo espírito da v3 (`ordem`): quem já tinha livros
+recebe a prateleira/ordem que a distribuição automática **de então**
+calculava, rodada uma última vez sobre o estado atual — nenhum livro muda de
+lugar. Essa distribuição antiga (`distribuicaoAntiga`/`posicoesAntigas`) saiu
+de `prateleiras.ts` e foi congelada em `src/core/domain/estanteAntiga.ts`,
+só para a migração e para reconstruir backups de antes desta fase — mesmo
+padrão do `ordem?: number` opcional que já existia desde 12/09/2026, agora
+com `prateleira?: number` ao lado.
+
+### O que "bandeja de apps" significou na prática
+
+A primitiva já existia: `inserirNaOrdem` (criada para o livro nascer no fim
+de uma prateleira) já empurra quem está na posição em diante. A única peça
+nova de verdade foi `moverLivroNaEstante` — mover **entre** prateleiras, que
+fecha o buraco na origem (reindexando o que sobrou) e insere no destino.
+Nenhuma primitiva de reordenação precisou ser inventada além dela.
+
+`reordenarLivros` (que exigia a permutação de **toda** a estante — proteção
+que fazia sentido para uma troca 1:1) virou `moverLivro(id, prateleira,
+posicao)`, escopado só na uma ou duas prateleiras tocadas. Exigir a estante
+inteira para mover um livro seria uma trava desproporcional ao tamanho da
+operação.
+
+`trocarNaOrdem`/`aplicarOrdem` — as primitivas do gesto de troca 1:1 antigo —
+ficaram sem chamador depois da mudança e foram removidas (regra 7 do
+mestre: zero código sem uso concreto).
+
+### Interação
+
+`useManipularLivros` passa a detectar duas coisas no arrasto, não uma: em
+qual prateleira o dedo está (`data-prateleira`, novo em `.movel-vao`) e,
+dentro dela, se há um livro embaixo (entra antes dele) ou área vazia (vai
+para o fim). Soltar numa prateleira vazia ganhou um retorno visual próprio,
+mais discreto que o anel de "alvo" de um livro: `data-alvo-vazio` em
+`.movel-vao` acende um contorno fraco na fileira inteira, porque ali quem
+aceita o solto é a prateleira, não um lugar preciso.
+
+### Ajustes ganhou uma seção nova
+
+Um stepper de "Prateleiras", no mesmo padrão visual das outras seções da
+tela. Recusa diminuir com aviso quando sobraria livro numa prateleira que
+deixaria de existir — usa o `Aviso` flutuante que já existia, sem componente
+novo.
+
+### Verificado
+
+164 testes (novos: `moverLivroNaEstante`, `estanteAntiga`, migração v3→v4
+completa com mais de um livro por prateleira, `montarPrateleiras` por
+prateleira gravada, `moverLivro` e quantidade de prateleiras no
+repositório) + typecheck + lint, tudo limpo. No navegador, com toque de
+verdade (Playwright): arrastar um livro sobre outro empurra os que vêm
+depois na mesma prateleira; soltar numa prateleira vazia não mexe em mais
+nada; o stepper funciona nos dois temas e em mobile/desktop; o estado
+sobrevive a recarregar a página.
+
 ## Fases
 
 0. ✅ Esqueleto (Vite/React/TS/Tailwind/PWA/Capacitor)
@@ -1143,3 +1240,4 @@ Os dois escrevem no mesmo `dist/`, então quem publicar na web depois de um
 7. ✅ Rede do palácio em `<canvas>` (layout determinístico, foco, só as pontes)
 8. 🟡 Criação, edição e navegação — **a porta ficou para a passada de acabamento**
 9. 🟡 Empacotamento Android — **falta compilar e instalar o APK** (sem JDK/SDK aqui)
+10. ✅ Estante: fundação de prateleiras manuais + arrastar como bandeja — base para as 9 melhorias de estante aprovadas (ver memória de projeto)
