@@ -1,4 +1,4 @@
-import { ChevronRight, PencilLine, Plus, Trash2 } from 'lucide-react'
+import { CheckSquare, ChevronRight, PencilLine, Plus, Trash2 } from 'lucide-react'
 import { useState, type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 
@@ -27,6 +27,7 @@ interface Props {
   onEditar: (livroId: string, dados: NovoLivro) => Promise<boolean>
   onApagar: (livroId: string) => Promise<boolean>
   onOrdenar: (criterio: CriterioDeOrdenacao) => void
+  onIniciarSelecao: (livroId: string) => void
 }
 
 /** Quantos neurônios o espiar lista antes de mandar abrir o livro. */
@@ -254,7 +255,14 @@ function Ordenar({ onOrdenar, onFechar }: Props) {
   )
 }
 
-function Acoes({ livro, neuronios, ocupado, onTrocarPainel }: Props & { livro: Livro }) {
+function Acoes({
+  livro,
+  neuronios,
+  ocupado,
+  onTrocarPainel,
+  onFechar,
+  onIniciarSelecao,
+}: Props & { livro: Livro }) {
   const quantos = neuronios.filter((n) => n.livroId === livro.id).length
 
   return (
@@ -283,6 +291,19 @@ function Acoes({ livro, neuronios, ocupado, onTrocarPainel }: Props & { livro: L
             <Plus size={19} aria-hidden className="text-poeira" />
             Novo neurônio neste livro
           </Link>
+        </li>
+        <li className="linha-de-lista p-0">
+          <button
+            type="button"
+            className="flex min-h-14 w-full items-center gap-3.5 px-4 text-left"
+            onClick={() => {
+              onIniciarSelecao(livro.id)
+              onFechar()
+            }}
+          >
+            <CheckSquare size={19} aria-hidden className="text-poeira" />
+            Selecionar vários
+          </button>
         </li>
         <li className="linha-de-lista p-0">
           {/* Apagar durante um processamento deixaria o motor gravando o vetor de

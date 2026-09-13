@@ -51,6 +51,12 @@ interface PalacioStore {
   apagarLivro: (id: string) => Promise<boolean>
   /** Move o livro para `(prateleira, posicao)`, empurrando quem já está lá. */
   moverLivro: (id: string, prateleira: number, posicao: number) => Promise<void>
+  /**
+   * Move vários livros de uma vez para o fim de uma prateleira, na mesma
+   * ordem relativa que já tinham entre si — um por vez, reaproveitando
+   * `moverLivro` (a mesma trava de "nunca perder livro" já vale ali).
+   */
+  moverVariosLivros: (ids: readonly string[], prateleira: number) => Promise<void>
   /** Recusa diminuir se sobrar livro numa prateleira que deixaria de existir. */
   definirQuantidadeDePrateleiras: (quantidade: number) => Promise<void>
   /** Atalho de um toque: reordena cada prateleira, sem mudar quem está em qual. */
@@ -255,6 +261,25 @@ export const usePalacio = create<PalacioStore>()((set, get) => {
         set({ livros: await engine.moverLivro(id, prateleira, posicao) })
       } catch (e) {
         set({ livros: antes, erro: mensagem(e) })
+      }
+    },
+
+    async moverVariosLivros(ids, prateleira) {
+      // Preserva a ordem relativa entre quem foi selecionado — do primeiro ao
+      // último na estante de hoje, e não na ordem em que foram tocados.
+      const porId = new Map(get().livros.map((l) => [l.id, l] as const))
+      const ordenados = [...ids].sort((a, b) => {
+        const la = porId.get(a)
+        const lb = porId.get(b)
+        if (!la || !lb) return 0
+        return la.prateleira - lb.prateleira || la.ordem - lb.ordem
+      })
+
+      for (const id of ordenados) {
+        const destino = get().livros.filter(
+          (l) => l.prateleira === prateleira && l.id !== id,
+        ).length
+        await get().moverLivro(id, prateleira, destino)
       }
     },
 

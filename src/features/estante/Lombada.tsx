@@ -1,3 +1,4 @@
+import { Check } from 'lucide-react'
 import { createPortal } from 'react-dom'
 
 import { contar } from '@/lib/plural'
@@ -32,6 +33,8 @@ interface Props {
   ponte: boolean
   /** Acabou de nascer: chega à prateleira em vez de só aparecer nela. */
   chegando: boolean
+  /** Modo de seleção múltipla ligado e este livro está marcado. */
+  selecionado: boolean
   manipular: ManipulacaoDaLombada
 }
 
@@ -47,7 +50,16 @@ interface Props {
  *
  * Botão, e não link: tocar espia em vez de abrir, e abrir mora no painel.
  */
-export function Lombada({ item, largura, estado, alvo, ponte, chegando, manipular }: Props) {
+export function Lombada({
+  item,
+  largura,
+  estado,
+  alvo,
+  ponte,
+  chegando,
+  selecionado,
+  manipular,
+}: Props) {
   const altura = ALTURA_MINIMA + item.altura * (ALTURA_MAXIMA - ALTURA_MINIMA)
 
   return (
@@ -58,19 +70,26 @@ export function Lombada({ item, largura, estado, alvo, ponte, chegando, manipula
       data-alvo={alvo || undefined}
       data-ponte={ponte || undefined}
       data-chegando={chegando || undefined}
+      data-selecionado={selecionado || undefined}
       className="lombada lombada--livro"
       style={{
         ...pano(item.livro.cor),
         height: `${String(Math.round(altura * 10) / 10)}%`,
         width: `${String(largura)}px`,
       }}
-      aria-label={`${item.livro.titulo}, ${contar(item.neuronios, 'neurônio', 'neurônios')}`}
+      aria-label={`${item.livro.titulo}, ${contar(item.neuronios, 'neurônio', 'neurônios')}${selecionado ? ', selecionado' : ''}`}
+      aria-pressed={selecionado}
       aria-haspopup="dialog"
       {...manipular}
     >
       <span className="lombada-titulo">{item.livro.titulo}</span>
 
       {item.saindo > 0 && <span className="lombada-ponto brilho-ouro" aria-hidden />}
+      {selecionado && (
+        <span className="lombada-selecionado" aria-hidden>
+          <Check size={11} strokeWidth={3} aria-hidden />
+        </span>
+      )}
     </button>
   )
 }

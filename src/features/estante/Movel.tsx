@@ -18,8 +18,16 @@ interface Props {
   quantidadeDePrateleiras: number
   /** Modo organizar ligado: segurar e arrastar move o livro. Desligado, só ergue. */
   organizando: boolean
+  /**
+   * Quem está marcado para mover em grupo. Não vazio liga o modo de seleção:
+   * tocar um livro marca/desmarca em vez de espiar, e tocar área vazia de uma
+   * prateleira move o grupo inteiro para lá em vez de criar um livro novo.
+   */
+  selecionados: ReadonlySet<string>
   onEspiar: (livroId: string) => void
   onAcoes: (livroId: string) => void
+  onAlternarSelecao: (livroId: string) => void
+  onMoverSelecionadosPara: (prateleira: number) => void
   /** Move o livro para `(prateleira, posicao)` — mesma assinatura da store. */
   onMover: (livroId: string, prateleira: number, posicao: number) => void
   onNovo: (prateleira: number) => void
@@ -42,18 +50,26 @@ export function Movel({
   chegandoId,
   quantidadeDePrateleiras,
   organizando,
+  selecionados,
   onEspiar,
   onAcoes,
+  onAlternarSelecao,
+  onMoverSelecionadosPara,
   onMover,
   onNovo,
 }: Props) {
+  const selecionando = selecionados.size > 0
+
   const prateleiras = useMemo(
     () => montarPrateleiras(estante, quantidadeDePrateleiras),
     [estante, quantidadeDePrateleiras],
   )
   const { gesto, manipular, registrarFantasma } = useManipularLivros({
     organizando,
-    onEspiar,
+    // Selecionando, tocar marca/desmarca em vez de espiar — o resto do gesto
+    // (segurar, arrastar um livro só) continua igual, sem precisar o hook
+    // saber que existe seleção.
+    onEspiar: selecionando ? onAlternarSelecao : onEspiar,
     onAcoes,
     // A folga entre o livro sob o dedo e a posição final: o hook só sabe qual
     // livro está embaixo do dedo e em qual prateleira — quem sabe a lista
@@ -109,9 +125,14 @@ export function Movel({
             <button
               type="button"
               className="movel-criar"
-              aria-label={`Criar um livro na prateleira ${String(indice + 1)}`}
+              aria-label={
+                selecionando
+                  ? `Mover os livros marcados para a prateleira ${String(indice + 1)}`
+                  : `Criar um livro na prateleira ${String(indice + 1)}`
+              }
               onClick={() => {
-                onNovo(indice)
+                if (selecionando) onMoverSelecionadosPara(indice)
+                else onNovo(indice)
               }}
             />
 
@@ -125,6 +146,7 @@ export function Movel({
                   alvo={gesto.alvoId === item.livro.id}
                   ponte={(pontesDoFoco?.get(item.livro.id) ?? 0) > 0}
                   chegando={chegandoId === item.livro.id}
+                  selecionado={selecionados.has(item.livro.id)}
                   manipular={manipular(item.livro.id)}
                 />
               ))}

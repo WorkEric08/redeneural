@@ -1338,6 +1338,46 @@ lugar; sobrevive a recarregar; layout de três ícones sem rolagem horizontal
 em 320/412/1440 px, dois temas. 179 testes (6 novos, de `ordenar.ts`),
 typecheck e lint limpos.
 
+## Seleção múltipla (Fase 14, 13/09/2026)
+
+Quarta das 9 melhorias aprovadas depois da Fase 10. Pedido original: "mover
+vários livros de uma vez, em vez de um por um."
+
+**Como entra:** "Selecionar vários", um item novo no menu de Ações (segurar
+um livro) — não um botão fixo a mais na fileira de baixo, que já tinha três
+ícones e um quarto apertaria demais em 320px. Escolher ali já marca aquele
+livro e liga o modo.
+
+**O que muda enquanto está ligado:** tocar um livro marca/desmarca (em vez de
+espiar) — o `onEspiar` que o gesto já chamava simplesmente é trocado por
+"alternar seleção" em `Movel.tsx`, sem o hook de gesto (`useManipularLivros`)
+precisar saber que seleção existe. Tocar a área vazia de uma prateleira —
+o mesmo alvo que hoje cria um livro novo ali — move o grupo inteiro para o
+fim daquela prateleira e desliga o modo. Não existe arrastar em grupo: a
+estante já resolve "mover vários" bem com um toque, e estender o gesto de
+arrastar para múltiplos itens seria round-trip que o produto não pedia.
+
+**Por que não precisou de repositório novo:** `moverVariosLivros` (na store)
+só ordena os ids pela posição atual na estante — para preservar a ordem
+relativa entre quem foi marcado — e chama `moverLivro` um de cada vez, em
+sequência, esperando cada um. A store lê o estado mais recente a cada volta
+do laço, então cada chamada já enxerga o resultado da anterior. Reaproveita
+a mesma trava de "nunca perder livro" que `moverLivro` já tinha desde a
+Fase 10 — mover em grupo não é uma operação nova, é a mesma de sempre em
+laço.
+
+**O selo de "selecionado":** o mesmo anel de papel do alvo de arrasto
+(`[data-alvo]`), mais um selo circular com `Check` no pé da lombada — o
+ponto de ponte já mora no topo (`.lombada-ponto`).
+
+Verificado com toque de verdade: segurar → "Selecionar vários" → tocar um
+segundo livro soma à seleção sem abrir o espiar por engano; tocar de novo
+desmarca; tocar prateleira vazia move o grupo (preservando a ordem relativa)
+e desliga o modo; "Cancelar" sai sem mexer em nada. Nos dois temas, mobile
+(320/412) e desktop, sem rolagem horizontal. 179 testes, typecheck e lint
+continuam limpos — a interação em si foi verificada no navegador, não em
+teste automatizado, mesmo padrão do resto do gesto de arrastar.
+
 ## Fases
 
 0. ✅ Esqueleto (Vite/React/TS/Tailwind/PWA/Capacitor)
@@ -1353,4 +1393,5 @@ typecheck e lint limpos.
 10. ✅ Estante: fundação de prateleiras manuais + arrastar como bandeja — base para as 9 melhorias de estante aprovadas (ver memória de projeto)
 11. ✅ Modo organizar — 1ª das 9 melhorias
 12. ✅ Busca global — 2ª das 9
-13. ✅ Ordenar com um toque — 3ª das 9; próxima é seleção múltipla
+13. ✅ Ordenar com um toque — 3ª das 9
+14. ✅ Seleção múltipla — 4ª das 9; próxima é divisores/etiquetas visuais
