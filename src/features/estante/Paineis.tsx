@@ -19,12 +19,10 @@ interface Props {
   neuronios: readonly NeuronioNaTela[]
   pontes: ReadonlyMap<Id, ReadonlyMap<Id, number>>
   ocupado: boolean
-  panoSugerido: string
   /** 0-100: para a amostra do formulário mostrar a mesma lavagem da estante. */
   intensidadeDaLuz: number
   onFechar: () => void
   onTrocarPainel: (painel: Painel) => void
-  onCriar: (novo: NovoLivro, prateleira: number) => Promise<boolean>
   onEditar: (livroId: string, dados: NovoLivro) => Promise<boolean>
   onApagar: (livroId: string) => Promise<boolean>
   onIniciarSelecao: (livroId: string) => void
@@ -49,7 +47,6 @@ export function PaineisDaEstante(props: Props) {
 
 function rotuloDo(painel: Painel | null, livros: readonly Livro[]): string {
   if (!painel) return ''
-  if (painel.tipo === 'novo') return 'Um livro novo'
 
   const titulo = livros.find((l) => l.id === painel.livroId)?.titulo ?? 'livro'
   const acao = { espiar: 'Espiar', acoes: 'Ações de', editar: 'Editar', apagar: 'Apagar' }
@@ -58,34 +55,6 @@ function rotuloDo(painel: Painel | null, livros: readonly Livro[]): string {
 
 function Conteudo(props: Props & { painel: Painel }) {
   const { painel, livros, onFechar } = props
-
-  if (painel.tipo === 'novo') {
-    return (
-      <div className="flex flex-col gap-6">
-        <header className="flex flex-col gap-1">
-          <h2 className="font-titulo text-xl font-semibold tracking-tight">Um livro novo</h2>
-          <p className="text-poeira text-sm">Dê um nome à área. Os neurônios vêm depois.</p>
-        </header>
-        <FormularioDeLivro
-          inicial={{
-            titulo: '',
-            cor: props.panoSugerido,
-            emblema: null,
-            larguraLombada: null,
-            comprimentoLombada: null,
-          }}
-          rotuloDeEnvio="Criar livro"
-          intensidadeDaLuz={props.intensidadeDaLuz}
-          onCancelar={onFechar}
-          onEnviar={(dados) => {
-            void props.onCriar(dados, painel.prateleira).then((ok) => {
-              if (ok) onFechar()
-            })
-          }}
-        />
-      </div>
-    )
-  }
 
   // Apagar guarda o livro que abriu: quando o apagar termina, a store já não o
   // tem, e o painel ainda está na tela o instante que leva para fechar.

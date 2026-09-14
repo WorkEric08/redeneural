@@ -15,7 +15,7 @@ import { PANOS, pano } from './panos'
  * px por esta referência, igual em espírito ao 44px fixo da amostra de
  * largura automática.
  */
-const REFERENCIA_DA_AMOSTRA_PX = 60
+const REFERENCIA_DA_AMOSTRA_PX = 130
 
 interface Props {
   inicial: NovoLivro
@@ -24,7 +24,12 @@ interface Props {
   /** 0-100: para a amostra mostrar a mesma lavagem da estante. */
   intensidadeDaLuz: number
   onEnviar: (dados: NovoLivro) => void
-  onCancelar: () => void
+  /**
+   * Ausente numa tela cheia: sair é o "fechar" da barra de topo, como no
+   * formulário de neurônio — não precisa de um "Cancelar" a mais ocupando
+   * espaço. Presente na folha de editar, que não tem essa barra.
+   */
+  onCancelar?: () => void
 }
 
 /**
@@ -119,9 +124,6 @@ export function FormularioDeLivro({
 
       <fieldset className="flex flex-col">
         <legend className="rotulo-de-secao">Largura</legend>
-        <p className="text-poeira pb-2 text-xs">
-          Automática varia sozinha, como numa estante de verdade.
-        </p>
         <div className="flex flex-wrap items-end gap-4">
           <label className="pano-opcao">
             <input
@@ -162,9 +164,6 @@ export function FormularioDeLivro({
 
       <fieldset className="flex flex-col">
         <legend className="rotulo-de-secao">Comprimento</legend>
-        <p className="text-poeira pb-2 text-xs">
-          Automático mostra quantos neurônios o livro tem — a única forma de ver isso sem abrir.
-        </p>
         <div className="flex flex-wrap items-end gap-4">
           <label className="pano-opcao">
             <input
@@ -206,22 +205,34 @@ export function FormularioDeLivro({
         </div>
       </fieldset>
 
-      <div className="grid grid-cols-2 gap-3">
-        <button
-          type="button"
-          onClick={onCancelar}
-          className={botao({ tipo: 'secundario', largo: true })}
-        >
-          Cancelar
-        </button>
-        <button
-          type="submit"
-          disabled={!podeEnviar}
-          className={botao({ tipo: 'primario', largo: true })}
-        >
-          {rotuloDeEnvio}
-        </button>
-      </div>
+      {onCancelar ? (
+        <div className="grid grid-cols-2 gap-3">
+          <button
+            type="button"
+            onClick={onCancelar}
+            className={botao({ tipo: 'secundario', largo: true })}
+          >
+            Cancelar
+          </button>
+          <button
+            type="submit"
+            disabled={!podeEnviar}
+            className={botao({ tipo: 'primario', largo: true })}
+          >
+            {rotuloDeEnvio}
+          </button>
+        </div>
+      ) : (
+        <div className="barra-de-acao md:flex md:justify-end">
+          <button
+            type="submit"
+            disabled={!podeEnviar}
+            className={`${botao({ tipo: 'primario', largo: true })} md:w-auto md:min-w-44`}
+          >
+            {rotuloDeEnvio}
+          </button>
+        </div>
+      )}
     </form>
   )
 }

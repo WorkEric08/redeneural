@@ -13,7 +13,7 @@ import { usePalacio } from '@/store/palacio'
  * de topo é a saída. Em toda outra o botão precisa existir — abaixo de 1024 px
  * ele não é só criar, é a navegação inteira (ver Dial.tsx).
  */
-const SEM_BOTAO_DE_CRIAR = ['/novo']
+const SEM_BOTAO_DE_CRIAR = ['/novo', '/novo-livro']
 
 /** O casco: carrega o palácio uma vez e emoldura a página da vez. */
 export default function App() {

@@ -1,11 +1,10 @@
 import { Search, X, ZoomIn, ZoomOut } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 
 import { botao } from '@/components/botao'
 import { Movel } from '@/features/estante/Movel'
 import { PaineisDaEstante } from '@/features/estante/Paineis'
-import { panoSugerido } from '@/features/estante/panos'
 import { montarEstante, pontesEntreLivros } from '@/features/estante/resumo'
 import { usePainel } from '@/features/estante/usePainel'
 import { useTravarRolagem } from '@/hooks/useTravarRolagem'
@@ -33,13 +32,18 @@ export default function Estante() {
     quantidadeDePrateleiras,
     intensidadeDaLuz,
     moverLivro,
-    criarLivro,
     editarLivro,
     apagarLivro,
     moverVariosLivros,
   } = usePalacio()
   const { painel, abrir, trocar, fechar } = usePainel()
-  const [chegandoId, setChegandoId] = useState<string | null>(null)
+  const navegar = useNavigate()
+  const [busca, setBusca] = useSearchParams()
+  // O livro nasce em `/novo-livro` (tela cheia) e volta para cá com
+  // `?chegou=`, para a estante animar a chegada na prateleira — daí ler a
+  // busca já na inicialização, e não numa reação a ela (o efeito abaixo só
+  // limpa a URL, sem repetir esta leitura).
+  const [chegandoId, setChegandoId] = useState<string | null>(() => busca.get('chegou'))
   // Sem persistência de propósito: é um jeito de olhar a estante agora, não uma
   // preferência gravada — cada visita volta ao tamanho normal.
   const [visaoGeral, setVisaoGeral] = useState(false)
@@ -64,7 +68,17 @@ export default function Estante() {
     }
   }, [chegandoId])
 
-  const selecionadoId = painel && painel.tipo !== 'novo' ? painel.livroId : null
+  // `chegou` já foi lido na inicialização do estado acima — aqui só some da
+  // URL, sem mexer em mais nada que esteja ali (um painel, por exemplo —
+  // embora os dois não devessem coincidir na prática).
+  useEffect(() => {
+    if (!busca.get('chegou')) return
+    const proxima = new URLSearchParams(busca)
+    proxima.delete('chegou')
+    setBusca(proxima, { replace: true })
+  }, [busca, setBusca])
+
+  const selecionadoId = painel ? painel.livroId : null
 
   function alternarSelecao(livroId: string): void {
     setSelecionados((atual) => {
@@ -109,7 +123,7 @@ export default function Estante() {
             void moverLivro(livroId, prateleira, posicao)
           }}
           onNovo={(prateleira) => {
-            abrir({ tipo: 'novo', prateleira })
+            void navegar(`/novo-livro?prateleira=${String(prateleira)}`)
           }}
         />
 
@@ -171,15 +185,9 @@ export default function Estante() {
         neuronios={neuronios}
         pontes={pontes}
         ocupado={ocupado}
-        panoSugerido={panoSugerido(livros)}
         intensidadeDaLuz={intensidadeDaLuz}
         onFechar={fechar}
         onTrocarPainel={trocar}
-        onCriar={async (novo, prateleira) => {
-          const id = await criarLivro(novo, prateleira)
-          if (id) setChegandoId(id)
-          return id !== null
-        }}
         onEditar={editarLivro}
         onApagar={apagarLivro}
         onIniciarSelecao={(livroId) => {

@@ -8,6 +8,7 @@ import Estante from '@/pages/Estante'
 import Livro from '@/pages/Livro'
 import Neuronio from '@/pages/Neuronio'
 import Novo from '@/pages/Novo'
+import NovoLivro from '@/pages/NovoLivro'
 import Rede from '@/pages/Rede'
 
 /**
@@ -26,6 +27,7 @@ export const router = createBrowserRouter([
       { path: 'livro/:livroId', element: <Livro /> },
       { path: 'rede', element: <Rede /> },
       { path: 'novo', element: <Novo /> },
+      { path: 'novo-livro', element: <NovoLivro /> },
       { path: 'neuronio/:neuronioId', element: <Neuronio /> },
       { path: 'neuronio/:neuronioId/editar', element: <Editar /> },
       { path: 'ajustes', element: <Ajustes /> },

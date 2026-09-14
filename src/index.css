@@ -702,6 +702,9 @@ img {
 
 .lombada {
   position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   flex: none;
   border-radius: 2px 2px 0 0;
   transform-origin: bottom center;
@@ -863,7 +866,6 @@ img {
 /* A lombada de exemplo no formulário do livro: o pano sob a mesma lavagem da
    estante. */
 .lombada--amostra {
-  display: block;
   width: 38px;
   height: 96px;
   background-color: var(--pano-lavado);
@@ -946,12 +948,14 @@ img {
    Opacidade por cima só o deixaria transparente, e livro não é vidro. */
 
 .lombada-titulo {
-  position: absolute;
-  inset: 6px 0 8px 0;
-  display: block;
-  margin: auto;
+  /* Item comum do flex de `.lombada` (`align-items`/`justify-content:
+     center`), não posicionado à parte: um título comprido demais para o
+     livro fica centralizado e cortado dos dois lados, nunca empurrado para
+     cima — o que a antiga técnica com `position: absolute` + `inset` +
+     `margin: auto` não garantia (ela media a partir do topo, então um
+     título que não coubesse simplesmente descia e cortava só embaixo). */
+  max-height: calc(100% - 14px);
   overflow: hidden;
-  width: fit-content;
   padding-block: 4px;
   border-top: 1px solid color-mix(in oklab, var(--ouro-gravado) 45%, transparent);
   border-bottom: 1px solid color-mix(in oklab, var(--ouro-gravado) 45%, transparent);
