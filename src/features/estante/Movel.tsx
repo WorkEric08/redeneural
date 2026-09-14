@@ -179,13 +179,10 @@ export function Movel({
 }
 
 function LombadaDeEnfeite({ enfeite }: { enfeite: Enfeite }) {
-  const classes = ['lombada', 'lombada--enfeite']
-  if (enfeite.filete) classes.push('lombada--filete')
-
   return (
     <span
       aria-hidden
-      className={classes.join(' ')}
+      className="lombada lombada--enfeite"
       style={{
         // A mesma regra da lombada de verdade — a luz lava a cor do pano —, só
         // que com muito menos luz chegando: 8..38% contra os 58% de um livro
