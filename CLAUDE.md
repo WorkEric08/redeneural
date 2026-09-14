@@ -1419,6 +1419,51 @@ toque de mais nada. Nos dois temas, 320/412/1440 px, sem rolagem horizontal.
 191 testes (12 novos: repositório e export/import de etiquetas), typecheck
 e lint limpos.
 
+## Textura/emblema na lombada (Fase 16, 13/09/2026)
+
+Sexta das 9 melhorias aprovadas depois da Fase 10. Cada livro pode ganhar um
+ícone opcional na lombada, além da cor — para diferenciar livros parecidos
+sem depender só do nome (dois livros de tom parecido, ou vários com o mesmo
+pano). Escolhido no mesmo formulário de nome/pano, num novo campo "Emblema"
+com "Nenhum" + 8 ícones fixos (estrela, coração, raio, folha, lua, sol,
+chama, pena — `features/estante/emblemas.ts`). O selo aparece pequeno, na
+base da lombada.
+
+**Nunca dourado** — a mesma regra da "Direção visual": ouro é só a ponte
+entre livros, um emblema é decoração do livro, não um achado do palácio.
+
+**Convive com o check de seleção no mesmo lugar.** A Fase 14 já desenha um
+check ali quando o livro está marcado; os dois nunca fazem sentido juntos
+(um livro selecionado não precisa também mostrar o emblema), então é uma
+única posição com exclusão mútua — selecionado sempre vence.
+
+**Migração sem trocar de versão de schema, de propósito.** `emblema` não é
+indexado — não se filtra nem se busca por ele —, então a v6 do Dexie só
+precisava dar um valor a quem já existia; `.stores({})` (nenhum índice novo)
+com um `.upgrade()` que grava `emblema: null` em todo livro é mais barato
+que subir um índice que ninguém vai usar. Export/import trata a ausência do
+campo (backup de antes da Fase 16) do mesmo jeito: `null`.
+
+**Gotcha do ESLint, novo nesta fase:** o projeto roda as regras do React
+Compiler (`react-hooks/static-components`), que recusam qualquer tag JSX
+vinda de uma variável calculada em tempo de render — mesmo quando essa
+variável só aponta para um de oito componentes fixos e nunca muda de
+identidade de verdade. `iconeDoEmblema(chave)` devolvendo o componente e
+`<IconeEscolhido />` na sequência foi exatamente esse caso, e a regra não
+tem como provar que o lookup é estável. Resolvido com um `switch` que usa a
+tag literal de cada ícone (`EmblemaDaLombada.tsx`) — nenhuma tag JSX vem de
+variável, só de import direto. Post-scriptum: `EMBLEMAS` (a lista para o
+formulário, iterada com `.map` e desestruturada por item) não cai nessa
+regra — o problema é especificamente uma variável de módulo recalculada a
+cada render, não iterar uma lista estática.
+
+Verificado com toque de verdade: escolher um emblema no formulário mostra
+na amostra da lombada; salvar mostra o mesmo ícone na estante de verdade;
+ligar "Selecionar vários" troca o emblema pelo check sem os dois aparecerem
+juntos. Nos dois temas, 320/1440 px, sem rolagem horizontal. 197 testes (6
+novos: repositório, migração v6 e export/import do emblema), typecheck e
+lint limpos (0 erros, 0 avisos).
+
 ## Fases
 
 0. ✅ Esqueleto (Vite/React/TS/Tailwind/PWA/Capacitor)

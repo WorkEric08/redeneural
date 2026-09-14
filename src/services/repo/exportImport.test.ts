@@ -26,9 +26,33 @@ import { createDexieRepo } from './dexieRepo'
 const T0 = new Date('2026-01-01T12:00:00.000Z')
 
 const LIVROS: Livro[] = [
-  { id: 'psi', titulo: 'Psicologia', cor: '#6d5bd0', prateleira: 0, ordem: 0, createdAt: T0 },
-  { id: 'prog', titulo: 'Programação', cor: '#2f7a6f', prateleira: 0, ordem: 1, createdAt: T0 },
-  { id: 'mus', titulo: 'Música', cor: '#b4553a', prateleira: 0, ordem: 2, createdAt: T0 },
+  {
+    id: 'psi',
+    titulo: 'Psicologia',
+    cor: '#6d5bd0',
+    prateleira: 0,
+    ordem: 0,
+    emblema: null,
+    createdAt: T0,
+  },
+  {
+    id: 'prog',
+    titulo: 'Programação',
+    cor: '#2f7a6f',
+    prateleira: 0,
+    ordem: 1,
+    emblema: null,
+    createdAt: T0,
+  },
+  {
+    id: 'mus',
+    titulo: 'Música',
+    cor: '#b4553a',
+    prateleira: 0,
+    ordem: 2,
+    emblema: null,
+    createdAt: T0,
+  },
 ]
 
 /** Os nós do motor viram neurônios de verdade, com vetor e tudo. */
@@ -151,6 +175,7 @@ describe('exportar num navegador e importar noutro', () => {
       cor: '#123456',
       prateleira: 0,
       ordem: 0,
+      emblema: null,
       createdAt: T0,
     })
     await destino.upsertNeuronio({
@@ -243,6 +268,7 @@ describe('a ordem da estante no backup', () => {
       cor: '#123456',
       prateleira: 0,
       ordem: 0,
+      emblema: null,
       createdAt: T0,
     })
 
@@ -303,5 +329,41 @@ describe('etiquetas no backup', () => {
 
     expect(await destino.listEtiquetas()).toEqual([])
     expect(await destino.listLivros()).toHaveLength(LIVROS.length)
+  })
+})
+
+describe('emblema no backup', () => {
+  it('exporta e importa o emblema de um livro', async () => {
+    const origem = await palacioPovoado()
+    const [psi] = await origem.listLivros()
+    await origem.upsertLivro({ ...psi!, emblema: 'estrela' })
+    const snapshot = await origem.exportAll()
+
+    const destino = repoVazio()
+    await destino.importAll(JSON.parse(JSON.stringify(snapshot)) as typeof snapshot)
+
+    expect((await destino.getLivro('psi'))?.emblema).toBe('estrela')
+  })
+
+  // Backup de antes da Fase 16 não tinha o campo — não pode quebrar o import.
+  it('backup sem emblema importa normalmente, com emblema nulo', async () => {
+    const origem = await palacioPovoado()
+    const snapshot = await origem.exportAll()
+    const antigo = {
+      ...snapshot,
+      livros: snapshot.livros.map((l) => ({
+        id: l.id,
+        titulo: l.titulo,
+        cor: l.cor,
+        prateleira: l.prateleira,
+        ordem: l.ordem,
+        createdAt: l.createdAt,
+      })),
+    }
+
+    const destino = repoVazio()
+    await destino.importAll(antigo)
+
+    expect((await destino.listLivros()).every((l) => l.emblema === null)).toBe(true)
   })
 })

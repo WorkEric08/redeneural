@@ -11,6 +11,7 @@ function livro(id: string, titulo: string, prateleira: number, ordem: number, di
     cor: '#7b6ae0',
     prateleira,
     ordem,
+    emblema: null,
     createdAt: new Date(2026, 0, 1 + dias),
   }
 }

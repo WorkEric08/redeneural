@@ -7,8 +7,24 @@ import { buscar } from './buscar'
 const T0 = new Date('2026-01-01T12:00:00.000Z')
 
 const LIVROS: Livro[] = [
-  { id: 'psi', titulo: 'Psicologia', cor: '#7b6ae0', prateleira: 0, ordem: 0, createdAt: T0 },
-  { id: 'mus', titulo: 'Música', cor: '#c8734a', prateleira: 1, ordem: 0, createdAt: T0 },
+  {
+    id: 'psi',
+    titulo: 'Psicologia',
+    cor: '#7b6ae0',
+    prateleira: 0,
+    ordem: 0,
+    emblema: null,
+    createdAt: T0,
+  },
+  {
+    id: 'mus',
+    titulo: 'Música',
+    cor: '#c8734a',
+    prateleira: 1,
+    ordem: 0,
+    emblema: null,
+    createdAt: T0,
+  },
 ]
 
 function neuronio(id: string, livroId: string, titulo: string, conteudo: string): NeuronioNaTela {

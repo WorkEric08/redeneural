@@ -21,16 +21,33 @@ const MUSICA = '8ef85fba-622d-458c-825c-ce1c1fae647d'
 // 3 livros antes da Fase 10 (um por prateleira) — mesma data, desempate pelo
 // id —, para um aparelho novo e um migrado verem a mesma estante.
 export const SEED_LIVROS: Livro[] = [
-  { id: PSICOLOGIA, titulo: 'Psicologia', cor: '#7b6ae0', prateleira: 0, ordem: 0, createdAt: T0 },
+  {
+    id: PSICOLOGIA,
+    titulo: 'Psicologia',
+    cor: '#7b6ae0',
+    prateleira: 0,
+    ordem: 0,
+    emblema: null,
+    createdAt: T0,
+  },
   {
     id: PROGRAMACAO,
     titulo: 'Programação',
     cor: '#3e9a93',
     prateleira: 2,
     ordem: 0,
+    emblema: null,
     createdAt: T0,
   },
-  { id: MUSICA, titulo: 'Música', cor: '#c8734a', prateleira: 1, ordem: 0, createdAt: T0 },
+  {
+    id: MUSICA,
+    titulo: 'Música',
+    cor: '#c8734a',
+    prateleira: 1,
+    ordem: 0,
+    emblema: null,
+    createdAt: T0,
+  },
 ]
 
 function neuronio(id: string, livroId: string, titulo: string, conteudo: string): Neuronio {

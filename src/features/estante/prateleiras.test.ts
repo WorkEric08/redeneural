@@ -8,7 +8,15 @@ import type { LivroNaEstante } from './resumo'
 const T0 = new Date('2026-01-01T12:00:00.000Z')
 
 function livro(id: string, prateleira: number, ordem: number): LivroNaEstante {
-  const l: Livro = { id, titulo: `Livro ${id}`, cor: '#7b6ae0', prateleira, ordem, createdAt: T0 }
+  const l: Livro = {
+    id,
+    titulo: `Livro ${id}`,
+    cor: '#7b6ae0',
+    prateleira,
+    ordem,
+    emblema: null,
+    createdAt: T0,
+  }
   return { livro: l, neuronios: 3, internas: 0, saindo: 0, altura: 0.5 }
 }
 

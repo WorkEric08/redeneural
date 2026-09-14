@@ -907,6 +907,16 @@ img {
   outline-offset: 6px;
 }
 
+/* A opção de emblema no formulário: mesma caixa e mesmo anel de escolhido do
+   pano (herda `.pano-amostra`), só troca o miolo — cor sólida por ícone
+   centralizado. */
+.emblema-amostra {
+  display: grid;
+  place-items: center;
+  background: var(--parede);
+  color: var(--poeira);
+}
+
 /* Sem opacidade: quem escurece o enfeite é a lavagem da cor (ver Movel.tsx).
    Opacidade por cima só o deixaria transparente, e livro não é vidro. */
 
@@ -990,6 +1000,20 @@ img {
   border-radius: 50%;
   background: var(--papel);
   color: var(--sala);
+}
+
+/* O emblema — um ícone extra opcional (Fase 16), no mesmo pé da lombada que o
+   selo de "selecionado" ocupa durante a seleção múltipla; os dois nunca
+   aparecem juntos (`Lombada.tsx` só desenha o emblema quando não está
+   selecionado). Cor fixa e clara, não um token de tema: a lombada é sempre um
+   objeto escuro nos dois temas, e um ícone teria de ser sempre claro também —
+   nunca dourado, que é só da ponte. */
+.lombada-emblema {
+  position: absolute;
+  bottom: 7px;
+  left: 50%;
+  transform: translateX(-50%);
+  color: oklch(0.92 0.01 85 / 0.8);
 }
 
 /* ---------------------------------------------------------------------------

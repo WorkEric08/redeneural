@@ -7,13 +7,22 @@ import { grausDoMapa, montarMapa, neuronioEm } from './layout'
 const T0 = new Date('2026-01-01T12:00:00.000Z')
 
 const LIVROS: Livro[] = [
-  { id: 'psi', titulo: 'Psicologia', cor: '#7b6ae0', prateleira: 0, ordem: 0, createdAt: T0 },
+  {
+    id: 'psi',
+    titulo: 'Psicologia',
+    cor: '#7b6ae0',
+    prateleira: 0,
+    ordem: 0,
+    emblema: null,
+    createdAt: T0,
+  },
   {
     id: 'prog',
     titulo: 'Programação',
     cor: '#3e9a93',
     prateleira: 0,
     ordem: 1,
+    emblema: null,
     createdAt: new Date(T0.getTime() + 1000),
   },
   {
@@ -22,6 +31,7 @@ const LIVROS: Livro[] = [
     cor: '#c8734a',
     prateleira: 0,
     ordem: 2,
+    emblema: null,
     createdAt: new Date(T0.getTime() + 2000),
   },
 ]

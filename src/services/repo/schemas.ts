@@ -7,6 +7,7 @@ const hexColor = z.string().regex(/^#[0-9a-fA-F]{6}$/, 'cor deve ser hex #rrggbb
 const unitInterval = z.number().min(0).max(1)
 
 const ordem = z.number().int().min(0)
+const emblema = z.string().min(1).max(30).nullable()
 
 export const livroSchema = z.object({
   id,
@@ -14,6 +15,7 @@ export const livroSchema = z.object({
   cor: hexColor,
   prateleira: ordem,
   ordem,
+  emblema,
   createdAt: z.date(),
 })
 
@@ -69,6 +71,8 @@ export const snapshotSchema = z.object({
       ordem: ordem.optional(),
       // Opcional: backup de antes da Fase 10 (13-14/09/2026) não tinha prateleira.
       prateleira: ordem.optional(),
+      // Opcional: backup de antes da Fase 16 não tinha emblema.
+      emblema: emblema.optional(),
       createdAt: isoDate,
     }),
   ),

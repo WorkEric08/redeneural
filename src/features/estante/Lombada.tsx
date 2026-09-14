@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom'
 
 import { contar } from '@/lib/plural'
 
+import { EmblemaDaLombada } from './EmblemaDaLombada'
 import { pano } from './panos'
 import type { LivroNaEstante } from './resumo'
 import type { ManipulacaoDaLombada } from './useManipularLivros'
@@ -85,10 +86,12 @@ export function Lombada({
       <span className="lombada-titulo">{item.livro.titulo}</span>
 
       {item.saindo > 0 && <span className="lombada-ponto brilho-ouro" aria-hidden />}
-      {selecionado && (
+      {selecionado ? (
         <span className="lombada-selecionado" aria-hidden>
           <Check size={11} strokeWidth={3} aria-hidden />
         </span>
+      ) : (
+        <EmblemaDaLombada chave={item.livro.emblema} />
       )}
     </button>
   )

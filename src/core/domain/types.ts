@@ -37,6 +37,13 @@ export interface Livro {
    * estante inteira).
    */
   ordem: number
+  /**
+   * Ícone opcional na lombada, além da cor — para diferenciar livros parecidos
+   * sem depender só do nome. `null` é "nenhum". A chave vem de
+   * `features/estante/emblemas.ts`; uma chave que essa lista não reconhece
+   * mais simplesmente não desenha nada, em vez de quebrar.
+   */
+  emblema: string | null
   createdAt: Date
 }
 
@@ -126,6 +133,8 @@ export interface LivroSnapshot {
    * `estanteAntiga.ts` e `importAll`.
    */
   prateleira?: number | undefined
+  /** Ausente em backups anteriores à Fase 16 — o import trata como `null`. */
+  emblema?: string | null | undefined
   createdAt: string
 }
 

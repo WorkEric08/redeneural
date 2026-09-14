@@ -14,6 +14,7 @@ export function novoLivro(input: CriarLivroInput, agora: Date, ordem: number): L
     cor: input.cor,
     prateleira: Math.max(0, Math.trunc(input.prateleira)),
     ordem,
+    emblema: input.emblema ?? null,
     createdAt: agora,
   }
 }

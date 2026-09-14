@@ -27,7 +27,7 @@ beforeEach(() => {
 })
 
 function livro(id: string, titulo: string, ordem = 0, prateleira = 0): Livro {
-  return { id, titulo, cor: '#6d5bd0', prateleira, ordem, createdAt: T0 }
+  return { id, titulo, cor: '#6d5bd0', prateleira, ordem, emblema: null, createdAt: T0 }
 }
 
 function neuronio(id: string, livroId: string, embedding: Float32Array | null = null): Neuronio {
@@ -68,6 +68,15 @@ describe('DexieRepo', () => {
 
     await repo.deleteNeuronio('n1')
     expect(await repo.getNeuronio('n1')).toBeUndefined()
+  })
+
+  it('grava e devolve o emblema do livro', async () => {
+    await repo.upsertLivro({ ...livro('l1', 'Psicologia'), emblema: 'estrela' })
+    expect((await repo.getLivro('l1'))?.emblema).toBe('estrela')
+  })
+
+  it('recusa emblema com string vazia — use null para "nenhum"', async () => {
+    await expect(repo.upsertLivro({ ...livro('l1', 'Psicologia'), emblema: '' })).rejects.toThrow()
   })
 
   it('filtra neurônios por livro', async () => {
@@ -415,7 +424,7 @@ describe('migração para a v3', () => {
       conexoes: 'id, aId, bId, updatedAt',
     })
     antigo.version(2).stores({ meta: 'chave' })
-    await antigo.table<Omit<Livro, 'ordem' | 'prateleira'>, string>('livros').bulkPut([
+    await antigo.table<Omit<Livro, 'ordem' | 'prateleira' | 'emblema'>, string>('livros').bulkPut([
       { id: 'b5fd', titulo: 'Programação', cor: '#3e9a93', createdAt: T0 },
       { id: '382f', titulo: 'Psicologia', cor: '#7b6ae0', createdAt: T0 },
       { id: '8ef8', titulo: 'Música', cor: '#c8734a', createdAt: T0 },
@@ -453,7 +462,7 @@ describe('migração para a v4', () => {
     antigo.version(3).stores({ livros: 'id, createdAt, ordem' })
     // 7 livros: a distribuição antiga dá 4 prateleiras, 2 por prateleira (a
     // última com sobra), então o teste exercita mais de um livro por prateleira.
-    await antigo.table<Omit<Livro, 'prateleira'>, string>('livros').bulkPut(
+    await antigo.table<Omit<Livro, 'prateleira' | 'emblema'>, string>('livros').bulkPut(
       Array.from({ length: 7 }, (_, i) => ({
         id: `l${String(i)}`,
         titulo: `Livro ${String(i)}`,
@@ -477,5 +486,44 @@ describe('migração para a v4', () => {
       [3, 0],
     ])
     expect(await migrado.getQuantidadeDePrateleiras()).toBe(4)
+    // A v6 (Fase 16) roda em seguida, na mesma cadeia — todos ganham `null`.
+    expect(livros.every((l) => l.emblema === null)).toBe(true)
+  })
+})
+
+describe('migração para a v6', () => {
+  // Quem já tinha livro antes da Fase 16 não tinha `emblema` gravado.
+  it('dá `null` a cada livro que já existia', async () => {
+    const nome = `palacio-migracao-v6-${String(nth)}`
+
+    const antigo = new Dexie(nome)
+    antigo.version(1).stores({
+      livros: 'id, createdAt',
+      neuronios: 'id, livroId, updatedAt',
+      conexoes: 'id, aId, bId, updatedAt',
+    })
+    antigo.version(2).stores({ meta: 'chave' })
+    antigo.version(3).stores({ livros: 'id, createdAt, ordem' })
+    antigo.version(4).stores({ livros: 'id, createdAt, ordem, prateleira' })
+    antigo.version(5).stores({ etiquetas: 'prateleira' })
+    await antigo
+      .table<Omit<Livro, 'emblema'>, string>('livros')
+      .bulkPut([
+        { id: 'l1', titulo: 'Psicologia', cor: '#7b6ae0', prateleira: 0, ordem: 0, createdAt: T0 },
+      ])
+    antigo.close()
+
+    const migrado = createDexieRepo(createDb(nome))
+    const [livro1] = await migrado.listLivros()
+
+    expect(livro1?.emblema).toBeNull()
+    // A migração não mexeu em mais nada.
+    expect(livro1).toMatchObject({ prateleira: 0, ordem: 0, titulo: 'Psicologia' })
+  })
+
+  it('livro novo, criado depois da v6, já nasce com o campo', async () => {
+    await repo.upsertLivro(livro('l1', 'Psicologia'))
+    const [livro1] = await repo.listLivros()
+    expect(livro1?.emblema).toBeNull()
   })
 })

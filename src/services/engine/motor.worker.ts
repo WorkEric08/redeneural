@@ -214,7 +214,12 @@ async function editarLivro(input: EditarLivroInput): Promise<Livro[]> {
   const existente = await repo.getLivro(input.id)
   if (!existente) throw new Error(`livro ${input.id} não existe`)
 
-  await repo.upsertLivro({ ...existente, titulo: input.titulo.trim(), cor: input.cor })
+  await repo.upsertLivro({
+    ...existente,
+    titulo: input.titulo.trim(),
+    cor: input.cor,
+    emblema: input.emblema,
+  })
   return repo.listLivros()
 }
 

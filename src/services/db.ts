@@ -115,6 +115,17 @@ export function createDb(name: string = DB_NAME): PalacioDB {
     etiquetas: 'prateleira',
   })
 
+  // v6 (Fase 16): emblema opcional na lombada. `emblema` não é indexado — não
+  // se filtra nem se busca por ele —, então o schema de `livros` não muda,
+  // só o dado precisa de um valor pra quem já existia.
+  db.version(6)
+    .stores({})
+    .upgrade(async (tx) => {
+      const livros = tx.table<Livro & { emblema?: string | null }, string>('livros')
+      const antigos = await livros.toArray()
+      await livros.bulkPut(antigos.map((l) => ({ ...l, emblema: l.emblema ?? null })))
+    })
+
   return db
 }
 

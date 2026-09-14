@@ -25,6 +25,7 @@ export interface NovoNeuronio {
 export interface NovoLivro {
   titulo: string
   cor: string
+  emblema: string | null
 }
 
 interface PalacioStore {
@@ -225,7 +226,9 @@ export const usePalacio = create<PalacioStore>()((set, get) => {
       const antes = get().livros
       set({
         livros: antes.map((l) =>
-          l.id === id ? { ...l, titulo: mudancas.titulo.trim(), cor: mudancas.cor } : l,
+          l.id === id
+            ? { ...l, titulo: mudancas.titulo.trim(), cor: mudancas.cor, emblema: mudancas.emblema }
+            : l,
         ),
         erro: null,
       })

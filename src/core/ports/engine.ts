@@ -23,12 +23,14 @@ export interface CriarLivroInput {
   cor: string
   /** Em qual prateleira a pessoa tocou "criar" — o livro nasce no fim dela. */
   prateleira: number
+  emblema?: string | null
 }
 
 export interface EditarLivroInput {
   id: Id
   titulo: string
   cor: string
+  emblema: string | null
 }
 
 export interface EstadoDoPalacio {
