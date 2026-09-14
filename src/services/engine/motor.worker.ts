@@ -9,6 +9,7 @@ import {
   OPCOES_PADRAO,
   paraTela,
   perfilDoPalacio,
+  primeiroLugarLivre,
   recalcularVizinhanca,
   SEM_RERANK,
   textoDoNeuronio,
@@ -16,6 +17,7 @@ import {
   type CriarNeuronioInput,
   type EditarLivroInput,
   type EstadoDoPalacio,
+  type EstanteGravada,
   type Id,
   type Livro,
   type Neuronio,
@@ -72,9 +74,10 @@ const pontuar: PontuarPar = SEM_RERANK
 const CRESCIMENTO_ATE_REPROCESSAR = 1.5
 
 async function estadoAtual(): Promise<EstadoDoPalacio> {
-  const [livros, neuronios, conexoes, quantidadeDePrateleiras, intensidadeDaLuz] =
+  const [livros, vagas, neuronios, conexoes, quantidadeDePrateleiras, intensidadeDaLuz] =
     await Promise.all([
       repo.listLivros(),
+      repo.listVagas(),
       repo.listNeuronios(),
       repo.listConexoes(),
       repo.getQuantidadeDePrateleiras(),
@@ -83,6 +86,7 @@ async function estadoAtual(): Promise<EstadoDoPalacio> {
 
   return {
     livros,
+    vagas,
     neuronios: neuronios.map(paraTela),
     conexoes,
     quantidadeDePrateleiras,
@@ -198,13 +202,23 @@ async function apagarNeuronio(id: Id): Promise<EstadoDoPalacio> {
   return reprocessarTudo()
 }
 
-async function criarLivro(input: CriarLivroInput): Promise<Livro[]> {
-  // Nasce sempre no fim da prateleira tocada — não mexe em mais nenhum livro.
-  const daPrateleira = (await repo.listLivros()).filter((l) => l.prateleira === input.prateleira)
-  const livro = novoLivro(input, new Date(), daPrateleira.length)
+async function estante(): Promise<EstanteGravada> {
+  const [livros, vagas] = await Promise.all([repo.listLivros(), repo.listVagas()])
+  return { livros, vagas }
+}
 
-  await repo.upsertLivro(livro)
-  return repo.listLivros()
+async function criarLivro(input: CriarLivroInput): Promise<EstanteGravada> {
+  // Nasce no lugar tocado, que a estante só oferece quando não tem livro. Se
+  // outro livro chegou ali antes, fica no buraco mais perto — nascer nunca
+  // empurra ninguém.
+  const livros = await repo.listLivros()
+  const lugar = primeiroLugarLivre(livros, input.prateleira, input.lugar ?? 0)
+  if (lugar === null) {
+    throw new Error(`a prateleira ${String(input.prateleira + 1)} não tem lugar sem livro`)
+  }
+
+  await repo.upsertLivro(novoLivro(input, new Date(), lugar))
+  return estante()
 }
 
 async function editarLivro(input: EditarLivroInput): Promise<Livro[]> {
@@ -233,9 +247,9 @@ async function apagarLivro(id: Id): Promise<EstadoDoPalacio> {
   return tinhaNeuronios ? reprocessarTudo() : estadoAtual()
 }
 
-async function moverLivro(id: Id, prateleira: number, posicao: number): Promise<Livro[]> {
-  await repo.moverLivro(id, prateleira, posicao)
-  return repo.listLivros()
+async function moverLivro(id: Id, prateleira: number, lugar: number): Promise<EstanteGravada> {
+  await repo.moverLivro(id, prateleira, lugar)
+  return estante()
 }
 
 async function responder(msg: ParaMotor): Promise<DoMotor> {
@@ -270,8 +284,16 @@ async function responder(msg: ParaMotor): Promise<DoMotor> {
         return {
           req: msg.req,
           ok: true,
-          dados: await moverLivro(msg.id, msg.prateleira, msg.posicao),
+          dados: await moverLivro(msg.id, msg.prateleira, msg.lugar),
         }
+
+      case 'tirarEnfeite':
+        await repo.abrirVaga({ prateleira: msg.prateleira, ordem: msg.lugar })
+        return { req: msg.req, ok: true, dados: await repo.listVagas() }
+
+      case 'porEnfeite':
+        await repo.fecharVaga({ prateleira: msg.prateleira, ordem: msg.lugar })
+        return { req: msg.req, ok: true, dados: await repo.listVagas() }
 
       case 'definirQuantidadeDePrateleiras':
         await repo.definirQuantidadeDePrateleiras(msg.quantidade)

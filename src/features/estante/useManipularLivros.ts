@@ -8,17 +8,19 @@ import {
 } from 'react'
 
 /**
- * O livro como objeto na mão.
+ * O livro como objeto na mão — e os lugares da estante como onde ele cabe.
  *
- * | Gesto                         | O que faz                                        |
- * | ----------------------------- | ------------------------------------------------- |
- * | Tocar                         | Espia (o painel puxa o livro para fora)          |
- * | Segurar                       | Ergue o livro e acende as pontes dele            |
- * | Segurar e soltar parado       | Abre o menu do livro                             |
- * | Segurar, arrastar e soltar    | Move para onde soltou — empurra quem já está lá  |
+ * | Gesto                              | O que faz                                           |
+ * | ---------------------------------- | ---------------------------------------------------- |
+ * | Tocar um livro                     | Espia (o painel puxa o livro para fora)             |
+ * | Segurar um livro                   | Ergue o livro e acende as pontes dele               |
+ * | Segurar e soltar parado            | Abre o menu do livro                                |
+ * | Segurar, arrastar e soltar         | Põe no lugar embaixo do dedo — empurra se tiver livro |
+ * | Tocar um lugar sem livro           | Cria um livro exatamente ali                        |
+ * | Segurar um lugar sem livro         | Menu do lugar: pôr ou tirar o enfeite               |
  *
  * Tocar é o `click` nativo, e não o `pointerup`: é o que Enter e Espaço também
- * disparam, então o teclado ganha o mesmo "espiar" sem código a mais. Quando o
+ * disparam, então o teclado ganha o mesmo gesto sem código a mais. Quando o
  * dedo segurou ou arrastou, o clique que o navegador manda no fim é engolido —
  * senão soltar um livro também o espiaria.
  */
@@ -30,24 +32,26 @@ const ESPERA = 380
 const TOLERANCIA = 8
 
 /**
- * Lombada é estreita, e o dedo cobre o que está apontando. Sem esta folga, soltar
- * na fresta entre dois livros não acertaria nenhum.
+ * Lugar é estreito, e o dedo cobre o que está apontando. Sem esta folga, soltar
+ * na fresta de 1 px entre dois lugares não acertaria nenhum.
  */
 const FOLGA_DO_ALVO = 14
 
 export type FaseDoGesto = 'parado' | 'erguido' | 'arrastando'
 
+export interface LugarDaEstante {
+  prateleira: number
+  lugar: number
+}
+
 export interface Gesto {
   fase: FaseDoGesto
   livroId: string | null
-  /** O livro embaixo do dedo — é antes dele que o que está na mão vai entrar. */
-  alvoId: string | null
   /**
-   * Em qual prateleira o dedo está, quando não há um livro embaixo dele — soltar
-   * aí manda o livro para o fim daquela prateleira, sem mexer em mais nada.
-   * `null` fora de qualquer prateleira: soltar ali não move nada.
+   * O lugar embaixo do dedo — é para lá que o livro na mão vai. `null` fora de
+   * qualquer prateleira: soltar ali devolve o livro para onde estava.
    */
-  alvoPrateleira: number | null
+  alvo: LugarDaEstante | null
   /** Onde o livro estava na tela quando saiu da prateleira: é de lá que o fantasma parte. */
   origem: DOMRect | null
 }
@@ -74,56 +78,68 @@ interface Toque {
 interface Opcoes {
   onEspiar: (livroId: string) => void
   onAcoes: (livroId: string) => void
-  /**
-   * Soltou arrastando: `alvoId` é o livro embaixo do dedo (entra antes dele),
-   * ou `null` quando soltou em área vazia de `alvoPrateleira` (vai para o fim).
-   */
-  onMover: (livroId: string, alvoPrateleira: number, alvoId: string | null) => void
+  /** Soltou arrastando sobre um lugar. */
+  onMover: (livroId: string, alvo: LugarDaEstante) => void
+  onTocarLugar: (alvo: LugarDaEstante) => void
+  onAcoesDoLugar: (alvo: LugarDaEstante) => void
 }
 
-const PARADO: Gesto = {
-  fase: 'parado',
-  livroId: null,
-  alvoId: null,
-  alvoPrateleira: null,
-  origem: null,
-}
+const PARADO: Gesto = { fase: 'parado', livroId: null, alvo: null, origem: null }
 
-interface Alvo {
-  prateleira: number | null
-  livroId: string | null
-}
+/**
+ * O lugar na coluna do dedo, dentro da prateleira em que ele está.
+ *
+ * Pela coluna, e não pelo elemento embaixo do dedo: as lombadas têm alturas
+ * diferentes, e soltar acima de um livro baixo tem que valer o lugar dele, não
+ * cair no vão da prateleira. Qualquer lugar serve, inclusive o do livro na mão
+ * — o vão que ele deixa (`data-estado='vazio'`) continua ali, e soltar nele é
+ * desistir.
+ */
+function alvoNaEstante(x: number, y: number): LugarDaEstante | null {
+  const vao = document
+    .elementsFromPoint(x, y)
+    .map((elemento) => elemento.closest<HTMLElement>('[data-prateleira]'))
+    .find((achado) => achado !== null)
+  if (!vao) return null
 
-function alvoNaEstante(x: number, y: number, exceto: string): Alvo {
-  for (const dx of [0, -FOLGA_DO_ALVO, FOLGA_DO_ALVO]) {
-    for (const elemento of document.elementsFromPoint(x + dx, y)) {
-      const livro = elemento.closest<HTMLElement>('[data-livro-id]')
-      const id = livro?.dataset['livroId']
-      if (!id || id === exceto) continue
-
-      const vao = livro.closest<HTMLElement>('[data-prateleira]')
-      const prateleira = vao?.dataset['prateleira']
-      return { prateleira: prateleira === undefined ? null : Number(prateleira), livroId: id }
+  let perto: HTMLElement | null = null
+  let distancia = Infinity
+  for (const lugar of vao.querySelectorAll<HTMLElement>('[data-lugar]')) {
+    const caixa = lugar.getBoundingClientRect()
+    const d = Math.max(caixa.left - x, x - caixa.right, 0)
+    if (d < distancia) {
+      perto = lugar
+      distancia = d
     }
+    if (d === 0) break
   }
 
-  // Nenhum livro sob o dedo: ainda pode estar sobre a área vazia de uma
-  // prateleira (ou uma prateleira sem livro nenhum).
-  for (const elemento of document.elementsFromPoint(x, y)) {
-    const vao = elemento.closest<HTMLElement>('[data-prateleira]')
-    if (vao) return { prateleira: Number(vao.dataset['prateleira']), livroId: null }
-  }
-
-  return { prateleira: null, livroId: null }
+  if (!perto || distancia > FOLGA_DO_ALVO) return null
+  return { prateleira: Number(vao.dataset['prateleira']), lugar: Number(perto.dataset['lugar']) }
 }
 
-export function useManipularLivros({ onEspiar, onAcoes, onMover }: Opcoes) {
+function mesmoLugar(a: LugarDaEstante | null, b: LugarDaEstante | null): boolean {
+  return a?.prateleira === b?.prateleira && a?.lugar === b?.lugar
+}
+
+export function useManipularLivros({
+  onEspiar,
+  onAcoes,
+  onMover,
+  onTocarLugar,
+  onAcoesDoLugar,
+}: Opcoes) {
   const [gesto, setGesto] = useState<Gesto>(PARADO)
+  /** O lugar sem livro que o dedo segurou o bastante: soltar abre o menu dele. */
+  const [lugarSegurado, setLugarSegurado] = useState<LugarDaEstante | null>(null)
 
   // Os eventos leem o gesto no mesmo instante em que ele muda; o estado do React
   // só chega no próximo render, tarde demais para um `pointermove` seguido.
   const agora = useRef<Gesto>(PARADO)
   const toque = useRef<Toque | null>(null)
+  const noLugar = useRef<{ pointerId: number; x0: number; y0: number; pronto: boolean } | null>(
+    null,
+  )
   const relogio = useRef<number | null>(null)
   const fantasma = useRef<HTMLElement | null>(null)
   const deslocamento = useRef({ dx: 0, dy: 0 })
@@ -177,7 +193,7 @@ export function useManipularLivros({ onEspiar, onAcoes, onMover }: Opcoes) {
         relogio.current = window.setTimeout(() => {
           relogio.current = null
           engoleOClique.current = true
-          mudar({ fase: 'erguido', livroId, alvoId: null, alvoPrateleira: null, origem: caixa })
+          mudar({ fase: 'erguido', livroId, alvo: null, origem: caixa })
         }, ESPERA)
       },
 
@@ -206,18 +222,9 @@ export function useManipularLivros({ onEspiar, onAcoes, onMover }: Opcoes) {
 
         if (fase === 'erguido' && !longe) return
 
-        const alvo = alvoNaEstante(evento.clientX, evento.clientY, t.livroId)
-        if (
-          fase !== 'arrastando' ||
-          alvo.livroId !== agora.current.alvoId ||
-          alvo.prateleira !== agora.current.alvoPrateleira
-        ) {
-          mudar({
-            ...agora.current,
-            fase: 'arrastando',
-            alvoId: alvo.livroId,
-            alvoPrateleira: alvo.prateleira,
-          })
+        const alvo = alvoNaEstante(evento.clientX, evento.clientY)
+        if (fase !== 'arrastando' || !mesmoLugar(alvo, agora.current.alvo)) {
+          mudar({ ...agora.current, fase: 'arrastando', alvo })
         }
       },
 
@@ -226,14 +233,12 @@ export function useManipularLivros({ onEspiar, onAcoes, onMover }: Opcoes) {
         if (!t || evento.pointerId !== t.pointerId) return
 
         pararORelogio()
-        const { fase, alvoId, alvoPrateleira } = agora.current
+        const { fase, alvo } = agora.current
         toque.current = null
         mudar(PARADO)
 
         if (fase === 'erguido') onAcoes(t.livroId)
-        else if (fase === 'arrastando' && alvoPrateleira !== null) {
-          onMover(t.livroId, alvoPrateleira, alvoId)
-        }
+        else if (fase === 'arrastando' && alvo !== null) onMover(t.livroId, alvo)
       },
 
       onPointerCancel() {
@@ -264,5 +269,82 @@ export function useManipularLivros({ onEspiar, onAcoes, onMover }: Opcoes) {
     }
   }
 
-  return { gesto, manipular, registrarFantasma }
+  /**
+   * Um lugar sem livro — enfeite ou vaga. Não sai do lugar, então o gesto é só
+   * tocar ou segurar: o mesmo "segurar e soltar parado" do livro abre o menu,
+   * na soltura e não no meio do segurar, para o dedo não soltar em cima da
+   * folha que acabou de abrir.
+   */
+  function manipularLugar(alvo: LugarDaEstante): ManipulacaoDaLombada {
+    const soltar = (): void => {
+      pararORelogio()
+      noLugar.current = null
+      setLugarSegurado(null)
+    }
+
+    return {
+      onPointerDown(evento) {
+        if (evento.button !== 0) return
+
+        // Sem a captura, um dedo que escorrega para o lugar vizinho deixaria
+        // este segurando para sempre — o `pointerup` cairia em outro elemento.
+        evento.currentTarget.setPointerCapture(evento.pointerId)
+        engoleOClique.current = false
+        noLugar.current = {
+          pointerId: evento.pointerId,
+          x0: evento.clientX,
+          y0: evento.clientY,
+          pronto: false,
+        }
+
+        pararORelogio()
+        relogio.current = window.setTimeout(() => {
+          relogio.current = null
+          if (!noLugar.current) return
+          noLugar.current.pronto = true
+          engoleOClique.current = true
+          setLugarSegurado(alvo)
+        }, ESPERA)
+      },
+
+      onPointerMove(evento) {
+        const s = noLugar.current
+        if (!s || evento.pointerId !== s.pointerId) return
+        if (Math.hypot(evento.clientX - s.x0, evento.clientY - s.y0) <= TOLERANCIA) return
+
+        engoleOClique.current = true
+        soltar()
+      },
+
+      onPointerUp(evento) {
+        const s = noLugar.current
+        if (!s || evento.pointerId !== s.pointerId) return
+
+        soltar()
+        if (s.pronto) onAcoesDoLugar(alvo)
+      },
+
+      onPointerCancel() {
+        engoleOClique.current = false
+        soltar()
+      },
+
+      onClick(evento) {
+        if (engoleOClique.current) {
+          engoleOClique.current = false
+          evento.preventDefault()
+          return
+        }
+        onTocarLugar(alvo)
+      },
+
+      onContextMenu(evento) {
+        evento.preventDefault()
+        if (noLugar.current) return
+        onAcoesDoLugar(alvo)
+      },
+    }
+  }
+
+  return { gesto, lugarSegurado, manipular, manipularLugar, registrarFantasma }
 }

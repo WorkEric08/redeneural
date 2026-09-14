@@ -4,10 +4,12 @@ import type {
   EditarLivroInput,
   EditarNeuronioInput,
   EstadoDoPalacio,
+  EstanteGravada,
   Id,
   Livro,
   ProgressoDoMotor,
   ResultadoDeEscrita,
+  Vaga,
 } from '@/core'
 
 /**
@@ -21,10 +23,12 @@ export interface RespostasDoMotor {
   criarNeuronio: ResultadoDeEscrita
   editarNeuronio: ResultadoDeEscrita
   apagarNeuronio: EstadoDoPalacio
-  criarLivro: Livro[]
+  criarLivro: EstanteGravada
   editarLivro: Livro[]
   apagarLivro: EstadoDoPalacio
-  moverLivro: Livro[]
+  moverLivro: EstanteGravada
+  tirarEnfeite: Vaga[]
+  porEnfeite: Vaga[]
   definirQuantidadeDePrateleiras: number
   definirIntensidadeDaLuz: number
 }
@@ -39,7 +43,9 @@ export type ParaMotor =
   | { req: number; tipo: 'criarLivro'; input: CriarLivroInput }
   | { req: number; tipo: 'editarLivro'; input: EditarLivroInput }
   | { req: number; tipo: 'apagarLivro'; livroId: Id }
-  | { req: number; tipo: 'moverLivro'; id: Id; prateleira: number; posicao: number }
+  | { req: number; tipo: 'moverLivro'; id: Id; prateleira: number; lugar: number }
+  | { req: number; tipo: 'tirarEnfeite'; prateleira: number; lugar: number }
+  | { req: number; tipo: 'porEnfeite'; prateleira: number; lugar: number }
   | { req: number; tipo: 'definirQuantidadeDePrateleiras'; quantidade: number }
   | { req: number; tipo: 'definirIntensidadeDaLuz'; valor: number }
 

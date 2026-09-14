@@ -16,6 +16,10 @@ export default function NovoLivro() {
   const { livros, ocupado, intensidadeDaLuz, criarLivro } = usePalacio()
 
   const prateleira = Number(busca.get('prateleira') ?? 0)
+  // O lugar tocado na estante. Sem ele (um link antigo), o livro nasce no
+  // primeiro lugar sem livro da prateleira.
+  const lugarNaBusca = busca.get('lugar')
+  const lugar = lugarNaBusca === null ? undefined : Number(lugarNaBusca)
 
   return (
     <div className="flex min-h-dvh flex-col">
@@ -34,7 +38,7 @@ export default function NovoLivro() {
           ocupado={ocupado}
           intensidadeDaLuz={intensidadeDaLuz}
           onEnviar={(dados) => {
-            void criarLivro(dados, prateleira).then((id) => {
+            void criarLivro(dados, prateleira, lugar).then((id) => {
               // `replace`: voltar depois de criar tem que sair do formulário, e
               // o `chegou` avisa a estante para animar a chegada na prateleira.
               if (id) void navegar(`/?chegou=${id}`, { replace: true })

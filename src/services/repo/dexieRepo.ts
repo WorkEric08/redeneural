@@ -1,4 +1,4 @@
-import type { Conexao, Id, Livro, Neuronio, PalacioRepo, PalacioSnapshot } from '@/core'
+import type { Conexao, Id, Livro, Neuronio, PalacioRepo, PalacioSnapshot, Vaga } from '@/core'
 import {
   SNAPSHOT_VERSION,
   clampIntensidadeDaLuz,
@@ -8,11 +8,15 @@ import {
   INTENSIDADE_DA_LUZ_PADRAO,
   livroFromSnapshot,
   livroToSnapshot,
+  LUGARES_POR_PRATELEIRA,
   moverLivroNaEstante,
   MINIMO_DE_PRATELEIRAS,
   neuronioFromSnapshot,
   neuronioToSnapshot,
   posicoesAntigas,
+  primeiroLugarLivre,
+  vagasDepoisDeMover,
+  chaveDoLugar,
 } from '@/core'
 import {
   db as defaultDb,
@@ -21,31 +25,33 @@ import {
   type PreferenciasGravadas,
 } from '@/services/db'
 
-import { conexaoSchema, livroSchema, neuronioSchema, snapshotSchema } from './schemas'
+import { conexaoSchema, livroSchema, neuronioSchema, snapshotSchema, vagaSchema } from './schemas'
 
 /**
- * Reagrupa por prateleira depois de uma fusão de import: os livros de
- * `primeiro` (o arquivo) entram primeiro em cada prateleira deles, na ordem
- * que já tinham; os de `depois` (quem só existia aqui) vão para o fim da
- * própria prateleira, também na ordem que já tinham. `ordem` sai densa,
- * 0..N-1, por prateleira.
+ * Junta, lugar a lugar, os livros do arquivo (`primeiro`) com os que só
+ * existem aqui (`depois`). Os do arquivo ficam no lugar que tinham — o mesmo
+ * "arquivo vence" de título e cor. Os daqui ficam no deles se ainda estiver
+ * livre, e senão vão para o buraco mais perto.
+ *
+ * Nenhum livro se perde: numa prateleira sem buraco nenhum, o que não coube
+ * vai para depois do último lugar, onde a estante não mostra mas o dado fica.
  */
-function juntarPorPrateleira(primeiro: readonly Livro[], depois: readonly Livro[]): Livro[] {
-  const porPrateleira = new Map<number, Livro[]>()
-  const empilhar = (l: Livro): void => {
-    const lista = porPrateleira.get(l.prateleira) ?? []
-    lista.push(l)
-    porPrateleira.set(l.prateleira, lista)
+function juntarPorLugar(primeiro: readonly Livro[], depois: readonly Livro[]): Livro[] {
+  const porLugar = (a: Livro, b: Livro): number => a.prateleira - b.prateleira || a.ordem - b.ordem
+  const colocados: Livro[] = []
+
+  for (const l of [...[...primeiro].sort(porLugar), ...[...depois].sort(porLugar)]) {
+    const livre = primeiroLugarLivre(colocados, l.prateleira, l.ordem)
+    const transbordo =
+      LUGARES_POR_PRATELEIRA + colocados.filter((c) => c.prateleira === l.prateleira).length
+    colocados.push({ ...l, ordem: livre ?? transbordo })
   }
 
-  const porOrdem = (a: Livro, b: Livro): number => a.prateleira - b.prateleira || a.ordem - b.ordem
+  return colocados
+}
 
-  for (const l of [...primeiro].sort(porOrdem)) empilhar(l)
-  for (const l of [...depois].sort(porOrdem)) empilhar(l)
-
-  return [...porPrateleira.entries()].flatMap(([prateleira, lista]) =>
-    lista.map((l, ordem) => ({ ...l, prateleira, ordem })),
-  )
+function chaveDaVaga(v: Vaga): [number, number] {
+  return [v.prateleira, v.ordem]
 }
 
 /**
@@ -76,37 +82,72 @@ export function createDexieRepo(db: PalacioDB = defaultDb): PalacioRepo {
     },
 
     async upsertLivro(l: Livro) {
-      await db.livros.put(livroSchema.parse(l))
+      const livro = livroSchema.parse(l)
+      await db.transaction('rw', db.livros, db.vagas, async () => {
+        await db.livros.put(livro)
+        await db.vagas.delete(chaveDaVaga(livro))
+      })
     },
 
     async deleteLivro(id) {
-      await db.transaction('rw', db.livros, db.neuronios, db.conexoes, async () => {
+      await db.transaction('rw', db.livros, db.neuronios, db.conexoes, db.vagas, async () => {
+        const livro = await db.livros.get(id)
         const neuronioIds = await db.neuronios.where('livroId').equals(id).primaryKeys()
         if (neuronioIds.length > 0) {
           await db.conexoes.bulkDelete(await idsDeConexoesQueTocam(neuronioIds))
           await db.neuronios.bulkDelete(neuronioIds)
         }
         await db.livros.delete(id)
+        if (livro) await db.vagas.put({ prateleira: livro.prateleira, ordem: livro.ordem })
       })
     },
 
-    async moverLivro(id, prateleira, posicao) {
-      await db.transaction('rw', db.livros, async () => {
+    async moverLivro(id, prateleira, lugar) {
+      await db.transaction('rw', db.livros, db.vagas, async () => {
         const todos = await db.livros.toArray()
-        if (!todos.some((l) => l.id === id)) {
-          throw new Error(`moverLivro: livro ${id} não existe`)
+        const movido = todos.find((l) => l.id === id)
+        if (!movido) throw new Error(`moverLivro: livro ${id} não existe`)
+
+        const depois = moverLivroNaEstante(todos, id, prateleira, lugar)
+        if (!depois) {
+          throw new Error(`a prateleira ${String(prateleira + 1)} não tem lugar sem livro`)
         }
 
-        const depois = moverLivroNaEstante(todos, id, prateleira, posicao)
         const mudou = depois.filter((l, i) => {
           const antes = todos[i]
           return antes && (antes.prateleira !== l.prateleira || antes.ordem !== l.ordem)
         })
-
         await Promise.all(
           mudou.map((l) => db.livros.update(l.id, { prateleira: l.prateleira, ordem: l.ordem })),
         )
+
+        // A mesma conta que a store faz para mostrar antes de o banco confirmar.
+        // Vagas são poucas: regravar a tabela inteira é mais simples que um diff.
+        const vagas = vagasDepoisDeMover(await db.vagas.toArray(), todos, depois, id)
+        await db.vagas.clear()
+        await db.vagas.bulkPut(vagas)
       })
+    },
+
+    async listVagas() {
+      return db.vagas.toArray()
+    },
+
+    async abrirVaga(v) {
+      const vaga = vagaSchema.parse(v)
+      await db.transaction('rw', db.livros, db.vagas, async () => {
+        const temLivro = await db.livros
+          .where('prateleira')
+          .equals(vaga.prateleira)
+          .filter((l) => l.ordem === vaga.ordem)
+          .count()
+        if (temLivro > 0) throw new Error('esse lugar tem um livro — não há enfeite para tirar')
+        await db.vagas.put(vaga)
+      })
+    },
+
+    async fecharVaga(v) {
+      await db.vagas.delete(chaveDaVaga(v))
     },
 
     async getQuantidadeDePrateleiras() {
@@ -115,13 +156,16 @@ export function createDexieRepo(db: PalacioDB = defaultDb): PalacioRepo {
     },
 
     async definirQuantidadeDePrateleiras(quantidade) {
-      await db.transaction('rw', db.livros, db.meta, async () => {
+      await db.transaction('rw', db.livros, db.meta, db.vagas, async () => {
         const ocupada = await db.livros.where('prateleira').aboveOrEqual(quantidade).count()
         if (ocupada > 0) {
           throw new Error(
             `ainda há livro na prateleira ${String(quantidade)} ou depois — mova antes de diminuir`,
           )
         }
+        // Prateleira que deixa de existir não guarda buraco: se voltar a existir,
+        // volta cheia de enfeite, como qualquer prateleira nova.
+        await db.vagas.where('prateleira').aboveOrEqual(quantidade).delete()
         const atual = (await db.meta.get('preferencias')) as PreferenciasGravadas | undefined
         const preferencias: PreferenciasGravadas = {
           chave: 'preferencias',
@@ -257,18 +301,20 @@ export function createDexieRepo(db: PalacioDB = defaultDb): PalacioRepo {
     },
 
     async exportAll(): Promise<PalacioSnapshot> {
-      const [livros, neuronios, conexoes, etiquetas] = await db.transaction(
+      const [livros, neuronios, conexoes, etiquetas, vagas] = await db.transaction(
         'r',
         db.livros,
         db.neuronios,
         db.conexoes,
         db.etiquetas,
+        db.vagas,
         async () =>
           Promise.all([
             db.livros.toArray(),
             db.neuronios.toArray(),
             db.conexoes.toArray(),
             db.etiquetas.toArray(),
+            db.vagas.toArray(),
           ]),
       )
 
@@ -279,6 +325,7 @@ export function createDexieRepo(db: PalacioDB = defaultDb): PalacioRepo {
         neuronios: neuronios.map(neuronioToSnapshot),
         conexoes: conexoes.map(conexaoToSnapshot),
         etiquetas,
+        vagas,
       }
     },
 
@@ -333,17 +380,12 @@ export function createDexieRepo(db: PalacioDB = defaultDb): PalacioRepo {
       // bulkPut por id: reimportar o mesmo snapshot não duplica nada.
       await db.transaction(
         'rw',
-        db.livros,
-        db.neuronios,
-        db.conexoes,
-        db.meta,
-        db.etiquetas,
+        [db.livros, db.neuronios, db.conexoes, db.meta, db.etiquetas, db.vagas],
         async () => {
-          // Quem só existe aqui vai para o fim da própria prateleira, na ordem em
-          // que já estava — o mesmo "arquivo vence" de título e cor, agora por
-          // prateleira em vez da estante inteira.
+          // O livro do arquivo fica no lugar dele; o que só existe aqui fica no
+          // seu, se ainda estiver livre — o mesmo "arquivo vence" de título e cor.
           const soAqui = (await db.livros.toArray()).filter((l) => !livroIds.has(l.id))
-          const unidos = juntarPorPrateleira(livros, soAqui)
+          const unidos = juntarPorLugar(livros, soAqui)
 
           await db.livros.bulkPut(unidos)
           await db.neuronios.bulkPut(neuronios)
@@ -351,6 +393,13 @@ export function createDexieRepo(db: PalacioDB = defaultDb): PalacioRepo {
           // A etiqueta do arquivo vence a que já existia na mesma prateleira;
           // etiqueta que só existe aqui não é apagada.
           await db.etiquetas.bulkPut(parsed.etiquetas)
+
+          // As vagas fundem do mesmo jeito — e nenhuma, daqui ou do arquivo,
+          // sobrevive embaixo de um livro.
+          const ocupados = new Set(unidos.map(chaveDoLugar))
+          await db.vagas.bulkPut(parsed.vagas)
+          const soterradas = (await db.vagas.toArray()).filter((v) => ocupados.has(chaveDoLugar(v)))
+          await db.vagas.bulkDelete(soterradas.map(chaveDaVaga))
 
           // Um backup de um palácio com mais prateleiras não pode esconder livro
           // numa prateleira que este aparelho ainda não tem.
@@ -373,11 +422,7 @@ export function createDexieRepo(db: PalacioDB = defaultDb): PalacioRepo {
     async clear() {
       await db.transaction(
         'rw',
-        db.livros,
-        db.neuronios,
-        db.conexoes,
-        db.meta,
-        db.etiquetas,
+        [db.livros, db.neuronios, db.conexoes, db.meta, db.etiquetas, db.vagas],
         async () => {
           await Promise.all([
             db.livros.clear(),
@@ -385,6 +430,7 @@ export function createDexieRepo(db: PalacioDB = defaultDb): PalacioRepo {
             db.conexoes.clear(),
             db.meta.clear(),
             db.etiquetas.clear(),
+            db.vagas.clear(),
           ])
         },
       )

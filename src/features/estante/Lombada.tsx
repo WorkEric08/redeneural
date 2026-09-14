@@ -26,9 +26,11 @@ export type EstadoDaLombada = 'repouso' | 'escolhido' | 'erguido' | 'vazio'
 
 interface Props {
   item: LivroNaEstante
+  /** Em qual lugar da prateleira — é o que o arrasto lê para saber onde soltar. */
+  lugar: number
   largura: number
   estado: EstadoDaLombada
-  /** O livro embaixo do dedo de quem arrasta outro: é com ele que vai trocar. */
+  /** O livro embaixo do dedo de quem arrasta outro: soltar ali o empurra para o lado. */
   alvo: boolean
   /** Tem fio dourado com o livro que está na mão ou no painel. */
   ponte: boolean
@@ -58,6 +60,7 @@ interface Props {
  */
 export function Lombada({
   item,
+  lugar,
   largura,
   estado,
   alvo,
@@ -75,6 +78,7 @@ export function Lombada({
     <button
       type="button"
       data-livro-id={item.livro.id}
+      data-lugar={lugar}
       data-estado={estado}
       data-alvo={alvo || undefined}
       data-ponte={ponte || undefined}

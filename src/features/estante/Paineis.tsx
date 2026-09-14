@@ -1,4 +1,11 @@
-import { CheckSquare, ChevronRight, PencilLine, Plus, Trash2 } from 'lucide-react'
+import {
+  CheckSquare,
+  ChevronRight,
+  PencilLine,
+  Plus,
+  RectangleVertical,
+  Trash2,
+} from 'lucide-react'
 import { useState, type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 
@@ -6,7 +13,14 @@ import { botao } from '@/components/botao'
 import { Confirmacao } from '@/components/Confirmacao'
 import { EtiquetaProcessando } from '@/components/EtiquetaProcessando'
 import { Folha } from '@/components/Folha'
-import type { Id, Livro, NeuronioNaTela } from '@/core'
+import {
+  chaveDoLugar,
+  LUGARES_POR_PRATELEIRA,
+  type Id,
+  type Livro,
+  type NeuronioNaTela,
+  type Vaga,
+} from '@/core'
 import { contar } from '@/lib/plural'
 import type { NovoLivro } from '@/store/palacio'
 
@@ -16,6 +30,8 @@ import type { Painel } from './painel'
 interface Props {
   painel: Painel | null
   livros: readonly Livro[]
+  vagas: readonly Vaga[]
+  quantidadeDePrateleiras: number
   neuronios: readonly NeuronioNaTela[]
   pontes: ReadonlyMap<Id, ReadonlyMap<Id, number>>
   ocupado: boolean
@@ -26,6 +42,8 @@ interface Props {
   onEditar: (livroId: string, dados: NovoLivro) => Promise<boolean>
   onApagar: (livroId: string) => Promise<boolean>
   onIniciarSelecao: (livroId: string) => void
+  onTirarEnfeite: (prateleira: number, lugar: number) => Promise<void>
+  onPorEnfeite: (prateleira: number, lugar: number) => Promise<void>
 }
 
 /** Quantos neurônios o espiar lista antes de mandar abrir o livro. */
@@ -47,6 +65,7 @@ export function PaineisDaEstante(props: Props) {
 
 function rotuloDo(painel: Painel | null, livros: readonly Livro[]): string {
   if (!painel) return ''
+  if (painel.tipo === 'lugar') return nomeDoLugar(painel.prateleira, painel.lugar)
 
   const titulo = livros.find((l) => l.id === painel.livroId)?.titulo ?? 'livro'
   const acao = { espiar: 'Espiar', acoes: 'Ações de', editar: 'Editar', apagar: 'Apagar' }
@@ -55,6 +74,10 @@ function rotuloDo(painel: Painel | null, livros: readonly Livro[]): string {
 
 function Conteudo(props: Props & { painel: Painel }) {
   const { painel, livros, onFechar } = props
+
+  if (painel.tipo === 'lugar') {
+    return <MenuDoLugar {...props} prateleira={painel.prateleira} lugar={painel.lugar} />
+  }
 
   // Apagar guarda o livro que abriu: quando o apagar termina, a store já não o
   // tem, e o painel ainda está na tela o instante que leva para fechar.
@@ -308,10 +331,87 @@ function Apagar({
   )
 }
 
-function Sumiu({ onFechar }: { onFechar: () => void }) {
+/** Contado a partir de 1, como se fala — no banco, a partir de 0. */
+function nomeDoLugar(prateleira: number, lugar: number): string {
+  return `Prateleira ${String(prateleira + 1)}, lugar ${String(lugar + 1)}`
+}
+
+/**
+ * Um lugar sem livro. O enfeite é cenário, e não objeto — mas é a pessoa que
+ * decide se ele fica: tirar deixa a madeira à mostra, pôr enche de novo.
+ */
+function MenuDoLugar({
+  prateleira,
+  lugar,
+  livros,
+  vagas,
+  quantidadeDePrateleiras,
+  onFechar,
+  onTirarEnfeite,
+  onPorEnfeite,
+}: Props & { prateleira: number; lugar: number }) {
+  const chave = chaveDoLugar({ prateleira, ordem: lugar })
+  // Guardado na abertura, como o livro de Apagar: a store já troca o enfeite
+  // antes de a folha terminar de fechar, e o menu não pode piscar a outra opção.
+  const [aberto] = useState(() => vagas.some((v) => chaveDoLugar(v) === chave))
+
+  const foraDaEstante = prateleira >= quantidadeDePrateleiras || lugar >= LUGARES_POR_PRATELEIRA
+  if (foraDaEstante || livros.some((l) => chaveDoLugar(l) === chave)) {
+    return <Sumiu onFechar={onFechar}>Este lugar não está mais livre.</Sumiu>
+  }
+
+  return (
+    <div className="flex flex-col gap-5">
+      <header>
+        <h2 className="font-titulo text-xl font-semibold tracking-tight">
+          {nomeDoLugar(prateleira, lugar)}
+        </h2>
+        <p className="text-poeira text-sm">{aberto ? 'Um lugar vazio' : 'Um enfeite'}</p>
+      </header>
+
+      <ul className="cartao flex flex-col">
+        <li className="linha-de-lista p-0">
+          <Link
+            to={`/novo-livro?prateleira=${String(prateleira)}&lugar=${String(lugar)}`}
+            replace
+            className="flex min-h-14 w-full items-center gap-3.5 px-4"
+          >
+            <Plus size={19} aria-hidden className="text-poeira" />
+            Criar um livro aqui
+          </Link>
+        </li>
+        <li className="linha-de-lista p-0">
+          <button
+            type="button"
+            className="flex min-h-14 w-full items-center gap-3.5 px-4 text-left"
+            onClick={() => {
+              void (aberto ? onPorEnfeite : onTirarEnfeite)(prateleira, lugar)
+              onFechar()
+            }}
+          >
+            {aberto ? (
+              <RectangleVertical size={19} aria-hidden className="text-poeira" />
+            ) : (
+              <Trash2 size={19} aria-hidden className="text-poeira" />
+            )}
+            {aberto ? 'Pôr um enfeite' : 'Tirar o enfeite'}
+          </button>
+        </li>
+      </ul>
+    </div>
+  )
+}
+
+function Sumiu({
+  onFechar,
+  children = 'Este livro não está mais na estante.',
+}: {
+  onFechar: () => void
+  children?: ReactNode
+}) {
   return (
     <div className="flex flex-col gap-4">
-      <p className="text-poeira text-sm">Este livro não está mais na estante.</p>
+      <p className="text-poeira text-sm">{children}</p>
       <button
         type="button"
         onClick={onFechar}

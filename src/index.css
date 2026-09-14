@@ -488,34 +488,12 @@ img {
   background: var(--mv-fundo);
 }
 
-/* `isolation`: os z-index de dentro (botão de criar, fileira, penumbra) ficam
-   presos ao vão. Sem isso a fileira subiria por cima das pilastras e do luar,
-   e os livros deixariam de sumir atrás da pilastra da direita. */
+/* `isolation`: os z-index de dentro (fileira, penumbra) ficam presos ao vão.
+   Sem isso a fileira subiria por cima das pilastras e do luar, e os livros
+   deixariam de sumir atrás da pilastra da direita. */
 .movel-vao {
   position: relative;
   isolation: isolate;
-}
-
-/* Soltar aqui move o livro sem empurrar nenhum outro — prateleira vazia, ou
-   depois do último livro dela. Mais discreto que o anel de "alvo" de um livro
-   (`.lombada--livro[data-alvo]`): aqui é a fileira inteira que aceita o
-   solto, não um lugar preciso. */
-.movel-vao[data-alvo-vazio] .movel-fila {
-  border-radius: 2px;
-  box-shadow: inset 0 0 0 2px color-mix(in oklab, var(--papel) 45%, transparent);
-}
-
-/* O vão inteiro é o botão de criar livro, atrás da fileira (ver Movel.tsx). As
-   lombadas de enfeite não recebem toque, então tocar numa delas é tocar nele. */
-.movel-criar {
-  position: absolute;
-  inset: 0;
-  z-index: 0;
-  width: 100%;
-}
-
-.movel-criar:focus-visible {
-  outline-offset: -4px;
 }
 
 /* Os livros encostam na pilastra da esquerda e somem atrás da direita, como em
@@ -545,9 +523,64 @@ img {
   gap: 1px;
   padding-left: 26px;
   overflow: hidden;
-  /* A fileira deixa o toque passar para o botão de criar; quem o recebe são só
-     os livros de verdade (.lombada--livro). */
+  /* A fileira em si não recebe toque; quem recebe são os lugares — o livro
+     (.lombada--livro) e o lugar sem livro (.lugar). */
   pointer-events: none;
+}
+
+/* --- os lugares sem livro ------------------------------------------------ */
+
+/* A coluna inteira da fileira, e não só a lombada: tocar acima de um enfeite
+   baixo ainda é tocar no lugar dele (ver LugarSemLivro, em Movel.tsx). */
+.lugar {
+  position: relative;
+  display: flex;
+  flex: none;
+  align-items: flex-end;
+  height: 100%;
+  padding: 0;
+  pointer-events: auto;
+  /* O dedo é do lugar, como no livro: segurar não pode virar rolagem. */
+  touch-action: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.lugar > .lombada {
+  width: 100%;
+  transition: transform 160ms ease;
+}
+
+.lugar:focus-visible {
+  outline-offset: -3px;
+}
+
+/* A vaga: a madeira do fundo à mostra. O fio de poeira no pé é o que diz que
+   ali cabe um livro — sem ele seria só um vão no meio da fileira. */
+.lugar--vazio::after {
+  content: '';
+  position: absolute;
+  inset: auto 4px 0;
+  height: 2px;
+  border-radius: 1px;
+  /* Papel, e não branco: de dia o fundo da estante é claro, e um fio branco
+     sumiria nele. */
+  background: color-mix(in oklab, var(--papel) 16%, transparent);
+}
+
+/* Onde o livro na mão vai cair, e o lugar que o dedo segura ou cujo menu está
+   aberto. Luz de papel, como o alvo de um livro — ouro diria "ponte". */
+.lugar[data-alvo]::before,
+.lugar[data-realce]::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 2px;
+  box-shadow: inset 0 0 0 2px color-mix(in oklab, var(--papel) 70%, transparent);
+}
+
+.lugar[data-alvo] > .lombada,
+.lugar[data-realce] > .lombada {
+  transform: translateY(-4px);
 }
 
 /* Visão geral (Fase 18): em vez de rolar ou cortar quem não coube, a estante

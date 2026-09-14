@@ -1,4 +1,4 @@
-import type { Conexao, Id, Livro, Neuronio, PalacioSnapshot } from '../domain/types'
+import type { Conexao, Id, Livro, Neuronio, PalacioSnapshot, Vaga } from '../domain/types'
 import type { PerfilDoPalacio } from '../motor/grafo'
 import type { MarcaPerdida } from '../motor/incremental'
 
@@ -12,15 +12,25 @@ export interface PalacioRepo {
   /** Na ordem da estante. */
   listLivros(): Promise<Livro[]>
   getLivro(id: Id): Promise<Livro | undefined>
+  /** Grava o livro e fecha a vaga que houvesse no lugar dele — livro e buraco não dividem lugar. */
   upsertLivro(l: Livro): Promise<void>
-  /** Apaga o livro, seus neurônios e toda aresta que os tocava. */
+  /**
+   * Apaga o livro, seus neurônios e toda aresta que os tocava. O lugar dele
+   * vira vaga: nada anda sozinho na estante.
+   */
   deleteLivro(id: Id): Promise<void>
   /**
-   * Move um livro para `(prateleira, posicao)`, empurrando quem estava naquela
-   * posição em diante — só a prateleira de origem e a de destino são tocadas,
-   * nunca a estante inteira.
+   * Põe o livro no lugar `(prateleira, lugar)` com `moverLivroNaEstante`: livre,
+   * só ele se move; ocupado, empurra até o buraco mais perto. O lugar de onde
+   * saiu vira vaga. Recusa (erro) numa prateleira cheia de livros.
    */
-  moverLivro(id: Id, prateleira: number, posicao: number): Promise<void>
+  moverLivro(id: Id, prateleira: number, lugar: number): Promise<void>
+  /** Os lugares deixados abertos, sem livro e sem enfeite. */
+  listVagas(): Promise<Vaga[]>
+  /** Tira o enfeite do lugar. Recusa um lugar que tem livro. */
+  abrirVaga(v: Vaga): Promise<void>
+  /** Devolve o enfeite ao lugar. Sem vaga ali, não faz nada. */
+  fecharVaga(v: Vaga): Promise<void>
   /** Quantas prateleiras a estante tem hoje. Default 4 se nunca foi definida. */
   getQuantidadeDePrateleiras(): Promise<number>
   /**

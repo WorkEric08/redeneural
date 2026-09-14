@@ -1,4 +1,4 @@
-import Dexie, { type EntityTable } from 'dexie'
+import Dexie, { type EntityTable, type Table } from 'dexie'
 
 import {
   distribuicaoAntiga,
@@ -7,6 +7,7 @@ import {
   type EtiquetaDePrateleira,
   type Livro,
   type Neuronio,
+  type Vaga,
 } from '@/core'
 
 export const DB_NAME = 'palacio-mental'
@@ -43,6 +44,8 @@ export type PalacioDB = Dexie & {
   conexoes: EntityTable<Conexao, 'id'>
   meta: EntityTable<MetaGravada, 'chave'>
   etiquetas: EntityTable<EtiquetaDePrateleira, 'prateleira'>
+  /** Chave composta `[prateleira+ordem]`: um lugar só tem uma vaga. */
+  vagas: Table<Vaga, [number, number]>
 }
 
 /**
@@ -152,6 +155,14 @@ export function createDb(name: string = DB_NAME): PalacioDB {
         antigos.map((l) => ({ ...l, comprimentoLombada: l.comprimentoLombada ?? null })),
       )
     })
+
+  // v9 (14/09/2026): a prateleira vira fileira de lugares fixos. Tabela nova,
+  // sem migração de dado nenhum: `ordem` denso é um lugar válido, e sem vaga
+  // gravada todo lugar sem livro continua mostrando um enfeite — ninguém muda
+  // de lugar na primeira abertura (mesmo padrão da v2 e da v5).
+  db.version(9).stores({
+    vagas: '[prateleira+ordem], prateleira',
+  })
 
   return db
 }

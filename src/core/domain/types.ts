@@ -22,12 +22,16 @@ export interface Livro {
    */
   prateleira: number
   /**
-   * Lugar DENTRO da prateleira: 0 é o primeiro livro daquela prateleira.
+   * O lugar DENTRO da prateleira: 0 é o primeiro da esquerda, e vai até
+   * `LUGARES_POR_PRATELEIRA` - 1 (ver `ordem.ts`).
    *
    * Gravado, e não derivado de nada, porque quem decide é a pessoa arrastando
    * o livro — e um palácio da memória precisa devolver cada coisa no canto em
-   * que foi deixada. Denso por prateleira (0..N-1 daquela prateleira, não da
-   * estante inteira).
+   * que foi deixada.
+   *
+   * **Esparso** desde 14/09/2026: pode haver lugar vazio entre dois livros. Até
+   * então era denso (0..N-1 da prateleira), e todo valor denso continua sendo
+   * um lugar válido — por isso não houve migração de dado.
    */
   ordem: number
   /**
@@ -54,6 +58,25 @@ export interface Livro {
    */
   comprimentoLombada: number | null
   createdAt: Date
+}
+
+/**
+ * Um lugar da prateleira deixado **aberto** — madeira nua, sem livro e sem
+ * enfeite.
+ *
+ * Os enfeites (as lombadas escuras sem título) são cenário: todo lugar sem
+ * livro mostra um, a não ser que haja uma vaga gravada ali. Por isso a tabela
+ * guarda os buracos, e não os enfeites — são poucos, e a estante continua
+ * cheia por padrão, inclusive numa prateleira que acabou de ser criada.
+ *
+ * Nasce quando um livro sai do lugar (mover ou apagar: "nada anda sozinho") e
+ * quando a pessoa tira o enfeite; some quando um livro ou um enfeite volta a
+ * ocupar o lugar.
+ */
+export interface Vaga {
+  prateleira: number
+  /** O mesmo espaço de `Livro.ordem`: o lugar na prateleira. */
+  ordem: number
 }
 
 /**
@@ -123,6 +146,12 @@ export interface PalacioSnapshot {
    * que só existe aqui não é apagada.
    */
   etiquetas?: EtiquetaDePrateleira[] | undefined
+  /**
+   * Ausente em backups de antes de 14/09/2026 (lugares fixos) — o import trata
+   * como `[]`. Funde como as etiquetas: a vaga do arquivo entra, a que só existe
+   * aqui fica, e nenhuma sobrevive embaixo de um livro.
+   */
+  vagas?: Vaga[] | undefined
 }
 
 export interface LivroSnapshot {

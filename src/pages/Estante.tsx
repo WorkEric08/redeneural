@@ -25,6 +25,7 @@ export default function Estante() {
 
   const {
     livros,
+    vagas,
     neuronios,
     conexoes,
     carregado,
@@ -35,6 +36,8 @@ export default function Estante() {
     editarLivro,
     apagarLivro,
     moverVariosLivros,
+    tirarEnfeite,
+    porEnfeite,
   } = usePalacio()
   const { painel, abrir, trocar, fechar } = usePainel()
   const navegar = useNavigate()
@@ -78,7 +81,9 @@ export default function Estante() {
     setBusca(proxima, { replace: true })
   }, [busca, setBusca])
 
-  const selecionadoId = painel ? painel.livroId : null
+  const selecionadoId = painel && painel.tipo !== 'lugar' ? painel.livroId : null
+  const lugarEscolhido =
+    painel?.tipo === 'lugar' ? { prateleira: painel.prateleira, lugar: painel.lugar } : null
 
   function alternarSelecao(livroId: string): void {
     setSelecionados((atual) => {
@@ -100,8 +105,10 @@ export default function Estante() {
       <div className="flex min-h-[calc(100dvh_-_29px_-_env(safe-area-inset-bottom))] flex-col lg:min-h-0">
         <Movel
           estante={estante}
+          vagas={vagas}
           pontes={pontes}
           selecionadoId={selecionadoId}
+          lugarEscolhido={lugarEscolhido}
           chegandoId={chegandoId}
           quantidadeDePrateleiras={quantidadeDePrateleiras}
           intensidadeDaLuz={intensidadeDaLuz}
@@ -114,16 +121,19 @@ export default function Estante() {
             abrir({ tipo: 'acoes', livroId })
           }}
           onAlternarSelecao={alternarSelecao}
-          onMoverSelecionadosPara={(prateleira) => {
-            void moverVariosLivros([...selecionados], prateleira).then(() => {
+          onMoverSelecionadosPara={(prateleira, lugar) => {
+            void moverVariosLivros([...selecionados], prateleira, lugar).then(() => {
               setSelecionados(new Set())
             })
           }}
-          onMover={(livroId, prateleira, posicao) => {
-            void moverLivro(livroId, prateleira, posicao)
+          onMover={(livroId, prateleira, lugar) => {
+            void moverLivro(livroId, prateleira, lugar)
           }}
-          onNovo={(prateleira) => {
-            void navegar(`/novo-livro?prateleira=${String(prateleira)}`)
+          onNovo={(prateleira, lugar) => {
+            void navegar(`/novo-livro?prateleira=${String(prateleira)}&lugar=${String(lugar)}`)
+          }}
+          onAcoesDoLugar={(prateleira, lugar) => {
+            abrir({ tipo: 'lugar', prateleira, lugar })
           }}
         />
 
@@ -142,8 +152,8 @@ export default function Estante() {
               <X size={18} aria-hidden />
             </button>
             <p className="text-poeira min-w-0 flex-1 truncate text-xs">
-              {contar(selecionados.size, 'livro selecionado', 'livros selecionados')} · toque numa
-              prateleira vazia para mover
+              {contar(selecionados.size, 'livro selecionado', 'livros selecionados')} · toque num
+              lugar sem livro para pôr ali
             </p>
           </div>
         ) : (
@@ -182,6 +192,8 @@ export default function Estante() {
       <PaineisDaEstante
         painel={painel}
         livros={livros}
+        vagas={vagas}
+        quantidadeDePrateleiras={quantidadeDePrateleiras}
         neuronios={neuronios}
         pontes={pontes}
         ocupado={ocupado}
@@ -193,6 +205,8 @@ export default function Estante() {
         onIniciarSelecao={(livroId) => {
           setSelecionados(new Set([livroId]))
         }}
+        onTirarEnfeite={tirarEnfeite}
+        onPorEnfeite={porEnfeite}
       />
     </div>
   )

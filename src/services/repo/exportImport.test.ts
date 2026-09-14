@@ -288,7 +288,7 @@ describe('a ordem da estante no backup', () => {
     expect(await ids(destino)).toEqual(['mus', 'prog', 'psi'])
   })
 
-  it('funde: os livros do arquivo na ordem dele, e os que só existiam aqui depois', async () => {
+  it('funde: o livro daqui cujo lugar o arquivo ocupou vai para o buraco mais perto', async () => {
     const origem = await palacioPovoado()
     const destino = repoVazio()
     await destino.upsertLivro({
@@ -307,6 +307,65 @@ describe('a ordem da estante no backup', () => {
     await destino.importAll(await origem.exportAll())
 
     expect(await ids(destino)).toEqual(['psi', 'prog', 'mus', 'meu'])
+  })
+
+  it('funde: o livro daqui fica no lugar dele quando o arquivo não o ocupa', async () => {
+    const origem = await palacioPovoado()
+    const destino = repoVazio()
+    await destino.upsertLivro({
+      id: 'meu',
+      titulo: 'Meu livro',
+      cor: '#123456',
+      prateleira: 0,
+      ordem: 12,
+      emblema: null,
+      larguraLombada: null,
+      comprimentoLombada: null,
+      createdAt: T0,
+    })
+
+    await destino.importAll(await origem.exportAll())
+
+    expect((await destino.getLivro('meu'))?.ordem).toBe(12)
+  })
+})
+
+describe('vagas no backup', () => {
+  it('um backup devolve os lugares abertos', async () => {
+    const origem = await palacioPovoado()
+    await origem.abrirVaga({ prateleira: 1, ordem: 4 })
+    const snapshot = await origem.exportAll()
+
+    const destino = repoVazio()
+    await destino.importAll(JSON.parse(JSON.stringify(snapshot)) as typeof snapshot)
+
+    expect(await destino.listVagas()).toEqual([{ prateleira: 1, ordem: 4 }])
+  })
+
+  it('nenhuma vaga, daqui ou do arquivo, sobrevive embaixo de um livro', async () => {
+    const origem = await palacioPovoado()
+    const snapshot = await origem.exportAll()
+    const comVagaSoterrada = { ...snapshot, vagas: [{ prateleira: 0, ordem: 0 }] }
+
+    const destino = repoVazio()
+    await destino.abrirVaga({ prateleira: 0, ordem: 1 })
+    await destino.abrirVaga({ prateleira: 3, ordem: 3 })
+    await destino.importAll(comVagaSoterrada)
+
+    expect(await destino.listVagas()).toEqual([{ prateleira: 3, ordem: 3 }])
+  })
+
+  // Backup de antes dos lugares fixos não tinha o campo — não pode quebrar o import.
+  it('backup sem vagas importa normalmente, com a estante cheia', async () => {
+    const origem = await palacioPovoado()
+    const antigo = await origem.exportAll()
+    delete antigo.vagas
+
+    const destino = repoVazio()
+    await destino.importAll(antigo)
+
+    expect(await destino.listLivros()).toHaveLength(3)
+    expect(await destino.listVagas()).toEqual([])
   })
 })
 

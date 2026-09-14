@@ -1,14 +1,18 @@
 import { create } from 'zustand'
 
 import {
+  chaveDoLugar,
   INTENSIDADE_DA_LUZ_PADRAO,
   MINIMO_DE_PRATELEIRAS,
   moverLivroNaEstante,
   novoLivro,
+  primeiroLugarLivre,
+  vagasDepoisDeMover,
   type Conexao,
   type Livro,
   type NeuronioNaTela,
   type ProgressoDoMotor,
+  type Vaga,
 } from '@/core'
 import { newId } from '@/lib/id'
 import { engine } from '@/services/engine/workerEngine'
@@ -31,6 +35,8 @@ interface PalacioStore {
   livros: Livro[]
   neuronios: NeuronioNaTela[]
   conexoes: Conexao[]
+  /** Os lugares deixados abertos — sem livro e sem enfeite. */
+  vagas: Vaga[]
   quantidadeDePrateleiras: number
   /** 0-100: o quanto a luz da sala lava a cor do pano em repouso. */
   intensidadeDaLuz: number
@@ -47,18 +53,25 @@ interface PalacioStore {
   editarNeuronio: (id: string, mudancas: NovoNeuronio) => Promise<boolean>
   /** `false` se o motor não conseguiu — quem confirmou fica onde está e lê o erro. */
   apagarNeuronio: (id: string) => Promise<boolean>
-  /** Devolve o id do livro criado, ou null se o motor não conseguiu. */
-  criarLivro: (novo: NovoLivro, prateleira: number) => Promise<string | null>
+  /**
+   * Nasce no `lugar` tocado (ou no buraco mais perto dele). Devolve o id do
+   * livro criado, ou null se o motor não conseguiu.
+   */
+  criarLivro: (novo: NovoLivro, prateleira: number, lugar?: number) => Promise<string | null>
   editarLivro: (id: string, mudancas: NovoLivro) => Promise<boolean>
   apagarLivro: (id: string) => Promise<boolean>
-  /** Move o livro para `(prateleira, posicao)`, empurrando quem já está lá. */
-  moverLivro: (id: string, prateleira: number, posicao: number) => Promise<void>
+  /** Põe o livro no lugar `(prateleira, lugar)`, empurrando se já houver livro ali. */
+  moverLivro: (id: string, prateleira: number, lugar: number) => Promise<void>
   /**
-   * Move vários livros de uma vez para o fim de uma prateleira, na mesma
+   * Põe vários livros a partir de um lugar, cada um no próximo buraco, na mesma
    * ordem relativa que já tinham entre si — um por vez, reaproveitando
    * `moverLivro` (a mesma trava de "nunca perder livro" já vale ali).
    */
-  moverVariosLivros: (ids: readonly string[], prateleira: number) => Promise<void>
+  moverVariosLivros: (ids: readonly string[], prateleira: number, lugar: number) => Promise<void>
+  /** Tira o enfeite de um lugar sem livro: fica a madeira à mostra. */
+  tirarEnfeite: (prateleira: number, lugar: number) => Promise<void>
+  /** Devolve um enfeite a um lugar aberto. */
+  porEnfeite: (prateleira: number, lugar: number) => Promise<void>
   /** Recusa diminuir se sobrar livro numa prateleira que deixaria de existir. */
   definirQuantidadeDePrateleiras: (quantidade: number) => Promise<void>
   /** Otimista, como o resto das preferências — a estante já lava na hora. */
@@ -80,6 +93,7 @@ export const usePalacio = create<PalacioStore>()((set, get) => {
     livros: [],
     neuronios: [],
     conexoes: [],
+    vagas: [],
     quantidadeDePrateleiras: MINIMO_DE_PRATELEIRAS,
     intensidadeDaLuz: INTENSIDADE_DA_LUZ_PADRAO,
     carregado: false,
@@ -185,22 +199,31 @@ export const usePalacio = create<PalacioStore>()((set, get) => {
       set({ erro: null, aviso: null })
     },
 
-    async criarLivro(novo, prateleira): Promise<string | null> {
-      const antes = get().livros
-      const input = { id: newId(), ...novo, prateleira }
-      // Nasce no fim da prateleira tocada — não desloca nenhum outro livro.
-      const ordem = antes.filter((l) => l.prateleira === prateleira).length
+    async criarLivro(novo, prateleira, lugar): Promise<string | null> {
+      const { livros: antes, vagas: vagasAntes } = get()
+      const input = { id: newId(), ...novo, prateleira, lugar }
+      // A mesma regra do motor: o lugar tocado, ou o buraco mais perto dele se
+      // outro livro já chegou ali — nascer nunca empurra ninguém.
+      const ordem = primeiroLugarLivre(antes, prateleira, lugar ?? 0)
+      if (ordem === null) {
+        set({ aviso: `A prateleira ${String(prateleira + 1)} não tem lugar sem livro.` })
+        return null
+      }
       const provisorio = novoLivro(input, new Date(), ordem)
 
       // Otimista, como o neurônio: o livro já está na prateleira quando o painel
       // fecha, em vez de aparecer um instante depois.
-      set({ livros: [...antes, provisorio], erro: null })
+      set({
+        livros: [...antes, provisorio],
+        vagas: vagasAntes.filter((v) => chaveDoLugar(v) !== chaveDoLugar(provisorio)),
+        erro: null,
+      })
 
       try {
-        set({ livros: await engine.criarLivro(input) })
+        set(await engine.criarLivro(input))
         return input.id
       } catch (e) {
-        set({ livros: antes, erro: mensagem(e) })
+        set({ livros: antes, vagas: vagasAntes, erro: mensagem(e) })
         return null
       }
     },
@@ -248,21 +271,53 @@ export const usePalacio = create<PalacioStore>()((set, get) => {
       }
     },
 
-    async moverLivro(id, prateleira, posicao) {
-      const antes = get().livros
+    async moverLivro(id, prateleira, lugar) {
+      const { livros: antes, vagas: vagasAntes } = get()
+      const depois = moverLivroNaEstante(antes, id, prateleira, lugar)
+      if (!depois) {
+        set({ aviso: `A prateleira ${String(prateleira + 1)} não tem lugar sem livro.` })
+        return
+      }
 
       // Otimista: quem solta o livro tem que vê-lo já no lugar novo. Esperar o
       // banco faria o livro voltar à origem e só depois pular — parece erro.
-      set({ livros: moverLivroNaEstante(antes, id, prateleira, posicao), erro: null })
+      set({
+        livros: depois,
+        vagas: vagasDepoisDeMover(vagasAntes, antes, depois, id),
+        erro: null,
+      })
 
       try {
-        set({ livros: await engine.moverLivro(id, prateleira, posicao) })
+        set(await engine.moverLivro(id, prateleira, lugar))
       } catch (e) {
-        set({ livros: antes, erro: mensagem(e) })
+        set({ livros: antes, vagas: vagasAntes, erro: mensagem(e) })
       }
     },
 
-    async moverVariosLivros(ids, prateleira) {
+    async tirarEnfeite(prateleira, lugar) {
+      const antes = get().vagas
+      set({ vagas: [...antes, { prateleira, ordem: lugar }], erro: null })
+
+      try {
+        set({ vagas: await engine.tirarEnfeite(prateleira, lugar) })
+      } catch (e) {
+        set({ vagas: antes, erro: mensagem(e) })
+      }
+    },
+
+    async porEnfeite(prateleira, lugar) {
+      const antes = get().vagas
+      const chave = chaveDoLugar({ prateleira, ordem: lugar })
+      set({ vagas: antes.filter((v) => chaveDoLugar(v) !== chave), erro: null })
+
+      try {
+        set({ vagas: await engine.porEnfeite(prateleira, lugar) })
+      } catch (e) {
+        set({ vagas: antes, erro: mensagem(e) })
+      }
+    },
+
+    async moverVariosLivros(ids, prateleira, lugar) {
       // Preserva a ordem relativa entre quem foi selecionado — do primeiro ao
       // último na estante de hoje, e não na ordem em que foram tocados.
       const porId = new Map(get().livros.map((l) => [l.id, l] as const))
@@ -273,11 +328,18 @@ export const usePalacio = create<PalacioStore>()((set, get) => {
         return la.prateleira - lb.prateleira || la.ordem - lb.ordem
       })
 
+      // Cada um no próximo buraco a partir do lugar tocado: mover em grupo não
+      // empurra ninguém que já estava na prateleira.
+      let aPartirDe = lugar
       for (const id of ordenados) {
-        const destino = get().livros.filter(
-          (l) => l.prateleira === prateleira && l.id !== id,
-        ).length
+        const outros = get().livros.filter((l) => l.id !== id)
+        const destino = primeiroLugarLivre(outros, prateleira, aPartirDe)
+        if (destino === null) {
+          set({ aviso: `A prateleira ${String(prateleira + 1)} não tem lugar sem livro.` })
+          return
+        }
         await get().moverLivro(id, prateleira, destino)
+        aPartirDe = destino + 1
       }
     },
 
@@ -286,7 +348,12 @@ export const usePalacio = create<PalacioStore>()((set, get) => {
       set({ quantidadeDePrateleiras: quantidade, erro: null })
 
       try {
-        set({ quantidadeDePrateleiras: await engine.definirQuantidadeDePrateleiras(quantidade) })
+        const gravada = await engine.definirQuantidadeDePrateleiras(quantidade)
+        // O motor apaga as vagas de prateleira que deixou de existir; aqui também.
+        set({
+          quantidadeDePrateleiras: gravada,
+          vagas: get().vagas.filter((v) => v.prateleira < gravada),
+        })
       } catch (e) {
         set({ quantidadeDePrateleiras: antes, erro: mensagem(e) })
       }

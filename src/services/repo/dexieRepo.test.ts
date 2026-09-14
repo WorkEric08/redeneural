@@ -10,7 +10,14 @@ import 'fake-indexeddb/auto'
 import Dexie from 'dexie'
 import { beforeEach, describe, expect, it } from 'vitest'
 
-import { conexaoId, type Conexao, type Livro, type Neuronio, type PalacioRepo } from '@/core'
+import {
+  conexaoId,
+  LUGARES_POR_PRATELEIRA,
+  type Conexao,
+  type Livro,
+  type Neuronio,
+  type PalacioRepo,
+} from '@/core'
 import { SEED_LIVROS, SEED_NEURONIOS, seedPalacio } from '@/features/palacio/seed'
 import { createDb } from '@/services/db'
 
@@ -327,7 +334,7 @@ describe('ordem da estante', () => {
     expect(await ids()).toEqual(['l2', 'l3', 'l1'])
   })
 
-  it('mover empurra quem está na posição em diante, dentro da prateleira', async () => {
+  it('mover para um lugar com livro empurra a fila até o buraco, sem abrir vaga', async () => {
     for (const [i, id] of ['l1', 'l2', 'l3'].entries()) await repo.upsertLivro(livro(id, id, i))
 
     await repo.moverLivro('l3', 0, 0)
@@ -337,23 +344,92 @@ describe('ordem da estante', () => {
       ['l1', 1],
       ['l2', 2],
     ])
+    // A origem de l3 (lugar 2) foi ocupada pelo empurrão.
+    expect(await repo.listVagas()).toEqual([])
   })
 
-  it('mover para outra prateleira não mexe em livro de uma terceira', async () => {
+  it('mover para outra prateleira não faz ninguém andar, e a origem vira vaga', async () => {
     await repo.upsertLivro(livro('a', 'a', 0, 0))
     await repo.upsertLivro(livro('b', 'b', 1, 0))
     await repo.upsertLivro(livro('x', 'x', 0, 2))
 
-    await repo.moverLivro('a', 5, 0)
+    await repo.moverLivro('a', 5, 7)
 
     const porId = new Map((await repo.listLivros()).map((l) => [l.id, [l.prateleira, l.ordem]]))
-    expect(porId.get('a')).toEqual([5, 0])
-    expect(porId.get('b')).toEqual([0, 0]) // fechou o buraco que 'a' deixou
-    expect(porId.get('x')).toEqual([2, 0]) // outra prateleira, intocada
+    expect(porId.get('a')).toEqual([5, 7])
+    expect(porId.get('b')).toEqual([0, 1]) // o buraco que 'a' deixou continua lá
+    expect(porId.get('x')).toEqual([2, 0])
+    expect(await repo.listVagas()).toEqual([{ prateleira: 0, ordem: 0 }])
+  })
+
+  it('chegar num lugar aberto fecha a vaga dele', async () => {
+    await repo.upsertLivro(livro('a', 'a', 0, 0))
+    await repo.upsertLivro(livro('b', 'b', 4, 0))
+    await repo.moverLivro('a', 0, 9) // abre o 0
+
+    await repo.moverLivro('b', 0, 0)
+
+    expect(await repo.listVagas()).toEqual([{ prateleira: 0, ordem: 4 }])
+  })
+
+  it('recusa mover para uma prateleira cheia de livros, sem mexer em nada', async () => {
+    for (let i = 0; i < LUGARES_POR_PRATELEIRA; i += 1) {
+      await repo.upsertLivro(livro(`c${String(i)}`, 'c', i, 0))
+    }
+    await repo.upsertLivro(livro('n', 'n', 0, 1))
+
+    await expect(repo.moverLivro('n', 0, 3)).rejects.toThrow(/prateleira 1/)
+    expect((await repo.getLivro('n'))?.prateleira).toBe(1)
   })
 
   it('recusa mover livro que não existe', async () => {
     await expect(repo.moverLivro('fantasma', 0, 0)).rejects.toThrow(/fantasma/)
+  })
+})
+
+describe('vagas', () => {
+  it('apagar um livro deixa o lugar dele aberto', async () => {
+    await repo.upsertLivro(livro('a', 'a', 3, 1))
+    await repo.deleteLivro('a')
+    expect(await repo.listVagas()).toEqual([{ prateleira: 1, ordem: 3 }])
+  })
+
+  it('gravar um livro num lugar aberto fecha a vaga', async () => {
+    await repo.abrirVaga({ prateleira: 0, ordem: 2 })
+    await repo.upsertLivro(livro('a', 'a', 2, 0))
+    expect(await repo.listVagas()).toEqual([])
+  })
+
+  it('tirar e pôr o enfeite abre e fecha a vaga, sem duplicar', async () => {
+    await repo.abrirVaga({ prateleira: 0, ordem: 5 })
+    await repo.abrirVaga({ prateleira: 0, ordem: 5 })
+    expect(await repo.listVagas()).toEqual([{ prateleira: 0, ordem: 5 }])
+
+    await repo.fecharVaga({ prateleira: 0, ordem: 5 })
+    await repo.fecharVaga({ prateleira: 0, ordem: 5 })
+    expect(await repo.listVagas()).toEqual([])
+  })
+
+  it('recusa abrir vaga embaixo de um livro', async () => {
+    await repo.upsertLivro(livro('a', 'a', 1, 0))
+    await expect(repo.abrirVaga({ prateleira: 0, ordem: 1 })).rejects.toThrow(/livro/)
+    expect(await repo.listVagas()).toEqual([])
+  })
+
+  it('diminuir as prateleiras apaga as vagas das que deixaram de existir', async () => {
+    await repo.definirQuantidadeDePrateleiras(6)
+    await repo.abrirVaga({ prateleira: 1, ordem: 0 })
+    await repo.abrirVaga({ prateleira: 5, ordem: 0 })
+
+    await repo.definirQuantidadeDePrateleiras(4)
+
+    expect(await repo.listVagas()).toEqual([{ prateleira: 1, ordem: 0 }])
+  })
+
+  it('limpar leva as vagas junto', async () => {
+    await repo.abrirVaga({ prateleira: 0, ordem: 0 })
+    await repo.clear()
+    expect(await repo.listVagas()).toEqual([])
   })
 })
 
@@ -633,5 +709,39 @@ describe('migração para a v8', () => {
     await repo.upsertLivro(livro('l1', 'Psicologia'))
     const [livro1] = await repo.listLivros()
     expect(livro1?.comprimentoLombada).toBeNull()
+  })
+})
+
+describe('migração para a v9', () => {
+  // Os lugares fixos não mudaram nenhum livro: `ordem` denso já é um lugar
+  // válido, e sem vaga gravada todo lugar sem livro continua mostrando enfeite.
+  it('ninguém muda de lugar, e nenhuma vaga nasce aberta', async () => {
+    const nome = `palacio-migracao-v9-${String(nth)}`
+
+    const antigo = new Dexie(nome)
+    antigo.version(1).stores({
+      livros: 'id, createdAt',
+      neuronios: 'id, livroId, updatedAt',
+      conexoes: 'id, aId, bId, updatedAt',
+    })
+    antigo.version(2).stores({ meta: 'chave' })
+    antigo.version(3).stores({ livros: 'id, createdAt, ordem' })
+    antigo.version(4).stores({ livros: 'id, createdAt, ordem, prateleira' })
+    antigo.version(5).stores({ etiquetas: 'prateleira' })
+    antigo.version(6).stores({})
+    antigo.version(7).stores({})
+    antigo.version(8).stores({})
+    await antigo
+      .table<Livro, string>('livros')
+      .bulkPut([livro('l1', 'Psicologia', 0, 0), livro('l2', 'Música', 1, 0)])
+    antigo.close()
+
+    const migrado = createDexieRepo(createDb(nome))
+
+    expect((await migrado.listLivros()).map((l) => [l.id, l.prateleira, l.ordem])).toEqual([
+      ['l1', 0, 0],
+      ['l2', 0, 1],
+    ])
+    expect(await migrado.listVagas()).toEqual([])
   })
 })

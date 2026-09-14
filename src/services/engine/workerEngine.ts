@@ -5,10 +5,12 @@ import type {
   EditarLivroInput,
   EditarNeuronioInput,
   EstadoDoPalacio,
+  EstanteGravada,
   Id,
   Livro,
   ProgressoDoMotor,
   ResultadoDeEscrita,
+  Vaga,
 } from '@/core'
 
 import type { DoMotor, ParaMotor, RespostasDoMotor, TipoDePedido } from './protocolo'
@@ -81,7 +83,7 @@ export function criarWorkerEngine(): ConnectionEngine {
     apagarNeuronio: (neuronioId: Id): Promise<EstadoDoPalacio> =>
       pedir<'apagarNeuronio'>({ tipo: 'apagarNeuronio', neuronioId }),
 
-    criarLivro: (input: CriarLivroInput): Promise<Livro[]> =>
+    criarLivro: (input: CriarLivroInput): Promise<EstanteGravada> =>
       pedir<'criarLivro'>({ tipo: 'criarLivro', input }),
 
     editarLivro: (input: EditarLivroInput): Promise<Livro[]> =>
@@ -90,8 +92,14 @@ export function criarWorkerEngine(): ConnectionEngine {
     apagarLivro: (livroId: Id): Promise<EstadoDoPalacio> =>
       pedir<'apagarLivro'>({ tipo: 'apagarLivro', livroId }),
 
-    moverLivro: (id: Id, prateleira: number, posicao: number): Promise<Livro[]> =>
-      pedir<'moverLivro'>({ tipo: 'moverLivro', id, prateleira, posicao }),
+    moverLivro: (id: Id, prateleira: number, lugar: number): Promise<EstanteGravada> =>
+      pedir<'moverLivro'>({ tipo: 'moverLivro', id, prateleira, lugar }),
+
+    tirarEnfeite: (prateleira: number, lugar: number): Promise<Vaga[]> =>
+      pedir<'tirarEnfeite'>({ tipo: 'tirarEnfeite', prateleira, lugar }),
+
+    porEnfeite: (prateleira: number, lugar: number): Promise<Vaga[]> =>
+      pedir<'porEnfeite'>({ tipo: 'porEnfeite', prateleira, lugar }),
 
     definirQuantidadeDePrateleiras: (quantidade: number): Promise<number> =>
       pedir<'definirQuantidadeDePrateleiras'>({

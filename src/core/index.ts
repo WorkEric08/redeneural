@@ -19,6 +19,7 @@ export type {
   EditarLivroInput,
   EditarNeuronioInput,
   EstadoDoPalacio,
+  EstanteGravada,
   ProgressoDoMotor,
   ResultadoDeEscrita,
 } from './ports/engine'

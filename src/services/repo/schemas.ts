@@ -23,6 +23,11 @@ export const livroSchema = z.object({
   createdAt: z.date(),
 })
 
+export const vagaSchema = z.object({
+  prateleira: ordem,
+  ordem,
+})
+
 export const etiquetaSchema = z.object({
   prateleira: ordem,
   texto: z.string().trim().min(1).max(60),
@@ -111,4 +116,6 @@ export const snapshotSchema = z.object({
   ),
   // Ausente em backup de antes da Fase 15 — trata como estante sem etiqueta nenhuma.
   etiquetas: z.array(etiquetaSchema).optional().default([]),
+  // Ausente em backup de antes dos lugares fixos (14/09/2026) — nenhuma vaga aberta.
+  vagas: z.array(vagaSchema).optional().default([]),
 })

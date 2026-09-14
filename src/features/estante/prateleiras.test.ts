@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest'
 
-import type { Livro } from '@/core'
+import { LUGARES_POR_PRATELEIRA, type Livro, type Vaga } from '@/core'
 
-import { montarPrateleiras, posicaoParaNovoLivro } from './prateleiras'
+import { montarPrateleiras, type Lugar, type Prateleira } from './prateleiras'
 import type { LivroNaEstante } from './resumo'
 
 const T0 = new Date('2026-01-01T12:00:00.000Z')
@@ -27,82 +27,92 @@ function livro(
   return { livro: l, neuronios: 3, internas: 0, saindo: 0, altura: 0.5 }
 }
 
-function todosOsIds(estante: readonly LivroNaEstante[], quantidadeDePrateleiras: number): string[] {
-  return montarPrateleiras(estante, quantidadeDePrateleiras).flatMap((p) =>
-    p.livros.map((l) => l.item.livro.id),
-  )
+/** `L:id` para livro, `E` para enfeite, `_` para vaga — a fileira num relance. */
+function fileira(p: Prateleira, ate = 6): string[] {
+  return p.lugares
+    .slice(0, ate)
+    .map((x) => (x.tipo === 'livro' ? `L:${x.item.livro.id}` : x.tipo === 'enfeite' ? 'E' : '_'))
+}
+
+function livrosDe(prateleiras: readonly Prateleira[]): Extract<Lugar, { tipo: 'livro' }>[] {
+  return prateleiras.flatMap((p) => p.lugares.filter((x) => x.tipo === 'livro'))
 }
 
 describe('montarPrateleiras', () => {
-  it('agrupa cada livro na prateleira gravada, sem depender de quantos existem', () => {
-    const estante = [livro('a', 0, 0), livro('b', 2, 0), livro('c', 0, 1)]
-    const prateleiras = montarPrateleiras(estante, 4)
-
-    expect(prateleiras[0]!.livros.map((l) => l.item.livro.id)).toEqual(['a', 'c'])
-    expect(prateleiras[1]!.livros).toEqual([])
-    expect(prateleiras[2]!.livros.map((l) => l.item.livro.id)).toEqual(['b'])
-    expect(prateleiras[3]!.livros).toEqual([])
+  it('cada prateleira tem sempre todos os lugares, com livro ou sem', () => {
+    const prateleiras = montarPrateleiras([livro('a', 0, 3)], [], 4)
+    expect(prateleiras.length).toBe(4)
+    for (const p of prateleiras) expect(p.lugares.length).toBe(LUGARES_POR_PRATELEIRA)
   })
 
-  it('dentro da prateleira, ordena por `ordem`, não pela ordem de chegada', () => {
-    const estante = [livro('depois', 0, 1), livro('antes', 0, 0)]
-    expect(montarPrateleiras(estante, 4)[0]!.livros.map((l) => l.item.livro.id)).toEqual([
-      'antes',
-      'depois',
-    ])
+  it('põe cada livro no lugar gravado, deixando buraco entre eles', () => {
+    const [p] = montarPrateleiras([livro('a', 0, 0), livro('b', 0, 3)], [], 1)
+    expect(fileira(p!)).toEqual(['L:a', 'E', 'E', 'L:b', 'E', 'E'])
   })
 
-  it('tem sempre a quantidade de prateleiras pedida, vazia ou não', () => {
-    expect(montarPrateleiras([], 4).length).toBe(4)
-    expect(montarPrateleiras([], 1).length).toBe(1)
-    expect(montarPrateleiras([livro('a', 0, 0)], 9).length).toBe(9)
+  it('lugar sem livro mostra enfeite, a não ser que haja vaga aberta ali', () => {
+    const vagas: Vaga[] = [{ prateleira: 0, ordem: 1 }]
+    const [p] = montarPrateleiras([livro('a', 0, 0)], vagas, 1)
+    expect(fileira(p!, 3)).toEqual(['L:a', '_', 'E'])
   })
 
-  it('nunca perde um livro, por mais que existam numa prateleira só', () => {
-    for (const quantidade of [0, 1, 3, 7, 32, 90]) {
-      const estante = Array.from({ length: quantidade }, (_, i) => livro(`l${String(i)}`, 0, i))
-      expect(todosOsIds(estante, 4)).toEqual(estante.map((e) => e.livro.id))
-    }
+  it('o livro vence uma vaga gravada no mesmo lugar', () => {
+    const [p] = montarPrateleiras([livro('a', 0, 0)], [{ prateleira: 0, ordem: 0 }], 1)
+    expect(fileira(p!, 1)).toEqual(['L:a'])
+  })
+
+  it('vaga de outra prateleira não abre buraco nesta', () => {
+    const [p0, p1] = montarPrateleiras([], [{ prateleira: 1, ordem: 2 }], 2)
+    expect(fileira(p0!, 3)).toEqual(['E', 'E', 'E'])
+    expect(fileira(p1!, 3)).toEqual(['E', 'E', '_'])
+  })
+
+  it('a cor de um enfeite é do lugar: pôr um livro ao lado não a troca', () => {
+    const vazio = montarPrateleiras([], [], 1)[0]!.lugares[5]
+    const comVizinho = montarPrateleiras([livro('a', 0, 4)], [], 1)[0]!.lugares[5]
+    expect(comVizinho).toEqual(vazio)
+  })
+
+  it('vaga e enfeite têm a mesma largura: tirar um enfeite não faz a fileira andar', () => {
+    const [p] = montarPrateleiras([], [{ prateleira: 0, ordem: 0 }], 1)
+    expect(p!.lugares[0]!.largura).toBe(p!.lugares[1]!.largura)
+  })
+
+  it('nunca perde um livro, nem os de fora da grade (dados de antes dos lugares)', () => {
+    const estante = Array.from({ length: 30 }, (_, i) => livro(`l${String(i)}`, 0, i))
+    const ids = livrosDe(montarPrateleiras(estante, [], 4)).map((x) => x.item.livro.id)
+    expect(ids).toEqual(estante.map((e) => e.livro.id))
   })
 
   // A promessa da mobília: o mesmo palácio tem que dar sempre o mesmo desenho,
   // ou reabrir o app reembaralharia a estante. Vale para enfeite também.
   it('é determinístico entre chamadas', () => {
-    const estante = Array.from({ length: 9 }, (_, i) => livro(`l${String(i)}`, i % 4, 0))
-    expect(montarPrateleiras(estante, 4)).toEqual(montarPrateleiras(estante, 4))
+    const estante = Array.from({ length: 9 }, (_, i) => livro(`l${String(i)}`, i % 4, i))
+    const vagas: Vaga[] = [{ prateleira: 2, ordem: 11 }]
+    expect(montarPrateleiras(estante, vagas, 4)).toEqual(montarPrateleiras(estante, vagas, 4))
   })
 
   it('dá à mesma lombada sempre a mesma largura, esteja onde estiver', () => {
-    const sozinho = montarPrateleiras([livro('psi', 0, 0)], 4)
+    const largura = (ps: readonly Prateleira[]): number | undefined =>
+      livrosDe(ps).find((x) => x.item.livro.id === 'psi')?.largura
+
+    const sozinho = montarPrateleiras([livro('psi', 0, 0)], [], 4)
     const acompanhado = montarPrateleiras(
-      [livro('a', 0, 0), livro('b', 0, 1), livro('c', 1, 0), livro('psi', 2, 0)],
+      [livro('a', 0, 0), livro('b', 0, 1), livro('c', 1, 0), livro('psi', 2, 9)],
+      [],
       4,
     )
-
-    const largura = (ps: ReturnType<typeof montarPrateleiras>): number | undefined =>
-      ps.flatMap((p) => p.livros).find((l) => l.item.livro.id === 'psi')?.largura
-
     expect(largura(sozinho)).toBe(largura(acompanhado))
   })
 
   it('usa a largura escolhida na mão, ignorando a semente do id', () => {
-    const [prateleira] = montarPrateleiras([livro('psi', 0, 0, 68)], 4)
-    expect(prateleira!.livros[0]!.largura).toBe(68)
+    const [x] = livrosDe(montarPrateleiras([livro('psi', 0, 0, 68)], [], 1))
+    expect(x!.largura).toBe(68)
   })
 
   it('sem largura escolhida, cai na semente do id (comportamento de sempre)', () => {
-    const [prateleira] = montarPrateleiras([livro('psi', 0, 0, null)], 4)
-    const largura = prateleira!.livros[0]!.largura
-    expect(largura).toBeGreaterThanOrEqual(30)
-    expect(largura).toBeLessThanOrEqual(46)
-  })
-})
-
-describe('posicaoParaNovoLivro', () => {
-  it('nasce no fim da prateleira tocada, sem contar as outras', () => {
-    const livros = [{ prateleira: 0 }, { prateleira: 0 }, { prateleira: 1 }]
-    expect(posicaoParaNovoLivro(livros, 0)).toBe(2)
-    expect(posicaoParaNovoLivro(livros, 1)).toBe(1)
-    expect(posicaoParaNovoLivro(livros, 2)).toBe(0)
+    const [x] = livrosDe(montarPrateleiras([livro('psi', 0, 0, null)], [], 1))
+    expect(x!.largura).toBeGreaterThanOrEqual(30)
+    expect(x!.largura).toBeLessThanOrEqual(46)
   })
 })

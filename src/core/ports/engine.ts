@@ -1,5 +1,5 @@
 import type { NeuronioNaTela } from '../domain/tela'
-import type { Conexao, Id, Livro } from '../domain/types'
+import type { Conexao, Id, Livro, Vaga } from '../domain/types'
 
 export interface CriarNeuronioInput {
   /**
@@ -21,8 +21,13 @@ export interface CriarLivroInput {
   id: Id
   titulo: string
   cor: string
-  /** Em qual prateleira a pessoa tocou "criar" — o livro nasce no fim dela. */
+  /** Em qual prateleira a pessoa tocou "criar". */
   prateleira: number
+  /**
+   * Em qual lugar dela. Ausente, o livro nasce no primeiro lugar sem livro; se
+   * o lugar tiver outro livro, empurra como mover (ver `moverLivroNaEstante`).
+   */
+  lugar?: number | undefined
   emblema?: string | null
   larguraLombada?: number | null
   comprimentoLombada?: number | null
@@ -37,8 +42,15 @@ export interface EditarLivroInput {
   comprimentoLombada: number | null
 }
 
+/** O que a estante grava além do grafo: onde cada livro está e os lugares deixados abertos. */
+export interface EstanteGravada {
+  livros: Livro[]
+  vagas: Vaga[]
+}
+
 export interface EstadoDoPalacio {
   livros: Livro[]
+  vagas: Vaga[]
   neuronios: NeuronioNaTela[]
   conexoes: Conexao[]
   /** Quantas prateleiras a estante tem — gravado, ajustável em Ajustes. */
@@ -81,8 +93,8 @@ export interface ConnectionEngine {
   editarNeuronio(input: EditarNeuronioInput): Promise<ResultadoDeEscrita>
   apagarNeuronio(id: Id): Promise<EstadoDoPalacio>
 
-  /** Livro não mexe no grafo: devolve só a estante, já na ordem nova. */
-  criarLivro(input: CriarLivroInput): Promise<Livro[]>
+  /** Livro não mexe no grafo: devolve só a estante, já com o livro no lugar. */
+  criarLivro(input: CriarLivroInput): Promise<EstanteGravada>
   /** Trocar nome ou pano não muda nenhuma conexão — `cross` depende do id, não da cor. */
   editarLivro(input: EditarLivroInput): Promise<Livro[]>
   /**
@@ -92,11 +104,15 @@ export interface ConnectionEngine {
    */
   apagarLivro(id: Id): Promise<EstadoDoPalacio>
   /**
-   * Move um livro para `(prateleira, posicao)`, empurrando quem estava ali em
-   * diante — a "bandeja de apps do Android". Soltar numa prateleira vazia (ou
-   * depois do último livro dela) não mexe em mais nada.
+   * Põe um livro no lugar `(prateleira, lugar)`. Lugar sem livro: só ele se
+   * move. Com livro: empurra até o buraco mais perto — a "bandeja de apps do
+   * Android". O lugar de onde saiu fica aberto.
    */
-  moverLivro(id: Id, prateleira: number, posicao: number): Promise<Livro[]>
+  moverLivro(id: Id, prateleira: number, lugar: number): Promise<EstanteGravada>
+  /** Tira o enfeite de um lugar sem livro, deixando a madeira à mostra. */
+  tirarEnfeite(prateleira: number, lugar: number): Promise<Vaga[]>
+  /** Põe um enfeite de volta num lugar aberto. */
+  porEnfeite(prateleira: number, lugar: number): Promise<Vaga[]>
   /**
    * Quantas prateleiras a estante tem. Recusa diminuir se sobrar livro numa
    * prateleira que deixaria de existir — mova os livros antes.
