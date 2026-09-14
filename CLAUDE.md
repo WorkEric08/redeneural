@@ -1607,6 +1607,53 @@ v7, export/import), typecheck e lint limpos (0 erros, 0 avisos).
 Com esta fase, as 9 melhorias de estante aprovadas depois da Fase 10 (ver
 memória de projeto) estão todas implementadas.
 
+## A estante fica mais simples, e a altura vira escolha (14/09/2026)
+
+Pedidos do usuário, em sequência, na mesma sessão: simplificar a estante e
+Ajustes, e revisitar a tensão que a Fase 19 deixou registrada.
+
+### Estante e Ajustes com menos botão
+
+- **Nome de prateleira (Fase 15), modo organizar (Fase 11) e ordenar com um
+  toque (Fase 13) saíram.** Sem o toggle do modo organizar, arrastar voltou
+  a funcionar sempre — como era antes da Fase 11. Ajustes perdeu as seções
+  Backup (export/import, Fase 5) e Manutenção (reprocessar tudo);
+  `exportAll`/`importAll` e a tabela `etiquetas` continuam no repositório,
+  só não têm mais UI — cortar até aí bastou, e é mais barato de reverter do
+  que arrancar a infraestrutura de banco também.
+- A seção "Emblema" (Fase 16) saiu do formulário de livro — emblemas já
+  salvos continuam aparecendo na lombada, só não dá mais para escolher um
+  novo por ali. `emblemas.ts` foi removido por ficar sem chamador.
+- **Os livros de enfeite (decorativos, sem título) ficaram uniformes:**
+  mesma largura, mesma altura, sem filete dourado, sem etiqueta de papel
+  colada, sem inclinação — só a cor varia agora, na mesma paleta de sempre.
+  A variação "deitado" deixou de existir.
+
+### O comprimento da lombada, e a tensão da Fase 19 revisitada
+
+A Fase 19 apontou a tensão e registrou "para o caso de a decisão precisar
+ser revisitada" — revisitada agora, a pedido explícito do usuário e sabendo
+do custo (perguntei antes de implementar): **`Livro.comprimentoLombada:
+number | null`** (Dexie v8), no mesmo padrão de `larguraLombada` de ponta a
+ponta — schema Zod, migração, snapshot de export/import, protocolo do
+Worker, store. `null` continua sendo automático (altura = quantidade de
+neurônios, como sempre); um valor escolhido na mão sobrepõe esse sinal só
+para aquele livro.
+
+Seção "Comprimento" no formulário, espelhando "Largura": Automático + 4
+pressets — Curto (55%), Normal (72%), Alto (88%), Enorme (98%), em % da
+fileira, a mesma escala de `ALTURA_MINIMA`/`ALTURA_MAXIMA` em
+`Lombada.tsx`. A amostra do formulário não vive dentro de uma fileira de
+verdade, então a porcentagem escolhida vira altura em px só para a
+pré-visualização, por uma referência local (`REFERENCIA_DA_AMOSTRA_PX`).
+
+Verificado com toque de verdade e no navegador: as remoções conferidas
+visualmente (estante sem os 3 botões extras, Ajustes só com "Estante",
+livros de enfeite uniformes e retos); o Comprimento testado criando um
+livro "Enorme" sem neurônio nenhum e vendo a lombada nascer alta mesmo
+assim — a prova de que o sinal automático é mesmo sobreposto. 202 testes
+(2 novos: migração v8), typecheck e lint limpos.
+
 ## Fases
 
 0. ✅ Esqueleto (Vite/React/TS/Tailwind/PWA/Capacitor)
@@ -1614,19 +1661,24 @@ memória de projeto) estão todas implementadas.
 2. ✅ Núcleo puro + testes com embeddings falsos (`src/core/motor`)
 3. 🟡 Spike (`spike.html`) — decisões tomadas no desktop; **falta confirmar no celular**
 4. ✅ Adapters web + fluxo completo (`TransformersEmbedding`, Worker, store, tela crua)
-5. ✅ Export/import (arquivo JSON, fusão idempotente, reprocessamento no import)
+5. ✅ Export/import (arquivo JSON, fusão idempotente, reprocessamento no
+   import) — **UI de Ajustes removida em 14/09/2026**, capacidade do
+   repositório intocada
 6. ✅ Estante (lombadas, livro aberto, rotas) — acabamento visual fica para o fim
 7. ✅ Rede do palácio em `<canvas>` (layout determinístico, foco, só as pontes)
 8. 🟡 Criação, edição e navegação — **a porta ficou para a passada de acabamento**
 9. 🟡 Empacotamento Android — **falta compilar e instalar o APK** (sem JDK/SDK aqui)
 10. ✅ Estante: fundação de prateleiras manuais + arrastar como bandeja — base para as 9 melhorias de estante aprovadas (ver memória de projeto)
-11. ✅ Modo organizar — 1ª das 9 melhorias
+11. ✅ Modo organizar — 1ª das 9 melhorias — **removido em 14/09/2026**
 12. ✅ Busca global — 2ª das 9
-13. ✅ Ordenar com um toque — 3ª das 9
+13. ✅ Ordenar com um toque — 3ª das 9 — **removido em 14/09/2026**
 14. ✅ Seleção múltipla — 4ª das 9
-15. ✅ Nome de prateleira — 5ª das 9
-16. ✅ Textura/emblema na lombada — 6ª das 9
+15. ✅ Nome de prateleira — 5ª das 9 — **removido em 14/09/2026**
+16. ✅ Textura/emblema na lombada — 6ª das 9 — **seção do formulário removida
+    em 14/09/2026** (o campo e a lombada continuam existindo)
 17. ✅ Intensidade da luz ajustável — 7ª das 9
 18. ✅ Visão geral da estante (minimapa/zoom-out) — 8ª das 9
 19. ✅ Largura da lombada configurável — 9ª e última das 9 melhorias de
     estante aprovadas depois da Fase 10
+20. ✅ Comprimento configurável na lombada — revisita a tensão registrada na
+    Fase 19
