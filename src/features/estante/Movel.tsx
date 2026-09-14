@@ -181,7 +181,6 @@ export function Movel({
 function LombadaDeEnfeite({ enfeite }: { enfeite: Enfeite }) {
   const classes = ['lombada', 'lombada--enfeite']
   if (enfeite.filete) classes.push('lombada--filete')
-  if (enfeite.etiqueta) classes.push('lombada--etiqueta')
 
   return (
     <span
@@ -194,8 +193,6 @@ function LombadaDeEnfeite({ enfeite }: { enfeite: Enfeite }) {
         backgroundColor: `color-mix(in oklab, var(--lombada-${String(enfeite.pano)}) ${String(Math.round(8 + enfeite.luz * 30))}%, var(--lavagem))`,
         height: `${String(enfeite.altura)}%`,
         width: `${String(enfeite.largura)}px`,
-        transform:
-          enfeite.inclinacao === 0 ? undefined : `rotate(${String(enfeite.inclinacao)}deg)`,
       }}
     />
   )

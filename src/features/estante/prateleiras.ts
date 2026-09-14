@@ -7,10 +7,9 @@ import type { LivroNaEstante } from './resumo'
  *
  * Puro e fora dos componentes (CLAUDE.md regra 9). **Determinístico**, pela
  * mesma razão do layout da rede: a estante é mobília, e mobília que se remexe
- * a cada sessão não serve de palácio da memória. Toda variação — cor, filete,
- * etiqueta e inclinação dos enfeites, e a largura da lombada de verdade
- * quando ninguém a escolheu na mão (Fase 19, `Livro.larguraLombada`) — sai da
- * semente do id.
+ * a cada sessão não serve de palácio da memória. Toda variação — cor e filete
+ * dos enfeites, e a largura da lombada de verdade quando ninguém a escolheu
+ * na mão (Fase 19, `Livro.larguraLombada`) — sai da semente do id.
  *
  * Desde a Fase 10, a prateleira de um livro é **gravada** (`Livro.prateleira`),
  * não mais calculada aqui — isto só agrupa quem já sabe onde mora. A
@@ -50,12 +49,8 @@ export interface Enfeite {
   luz: number
   /** Filete dourado gravado na lombada. */
   filete: boolean
-  /** Etiqueta de papel colada na lombada, como nas encadernações antigas. */
-  etiqueta: boolean
   /** Qual pano de encadernação, 1..6 — o luar desbota todos para o mesmo azul. */
   pano: number
-  /** Graus de inclinação: livro encostado no vizinho. */
-  inclinacao: number
 }
 
 export interface Prateleira {
@@ -115,9 +110,7 @@ function montarEnfeites(prateleira: number): Enfeite[] {
       altura: ALTURA_DO_ENFEITE,
       luz: sorteio(chave, 3),
       filete: sorteio(chave, 4) > 0.72,
-      etiqueta: sorteio(chave, 8) > 0.8,
       pano: PANOS[Math.floor(sorteio(chave, 7) * PANOS.length)] ?? 4,
-      inclinacao: sorteio(chave, 6) > 0.94 ? (sorteio(chave, 1) > 0.5 ? 3 : -3) : 0,
     }
   })
 }
