@@ -355,13 +355,17 @@ revisão. Não adiantar fases.
 ## Modelo de dados
 
 ```
-livros:     { id, titulo, cor, ordem, createdAt }
+livros:     { id, titulo, cor, prateleira, ordem, createdAt }
 neuronios:  { id, livroId, titulo, conteudo, embedding: Float32Array | null, createdAt, updatedAt }
 conexoes:   { id, aId, bId, score, emb, rr, cross, mantidaPorA, mantidaPorB, updatedAt }
+vagas:      { prateleira, ordem }
 ```
 
-- `livros.ordem` é o lugar na estante, gravado porque quem decide é a pessoa
-  arrastando o livro (desde 12/09/2026, Dexie v3 — ver "A estante na mão").
+- `livros.ordem` é o lugar na prateleira (0..25), gravado porque quem decide é
+  a pessoa arrastando o livro. **Esparso** desde 14/09/2026 — pode haver
+  buraco entre dois livros (ver "A estante vira fileira de lugares").
+- `vagas` guarda os lugares deixados abertos, não os enfeites: todo lugar sem
+  livro e sem vaga mostra um enfeite.
 
 - `embedding` é **`Float32Array` (BLOB), nunca array JSON** — ~1.5KB contra ~8KB por
   neurônio, e migra direto para SQLite depois. É `null` só enquanto a inferência não
@@ -1163,6 +1167,9 @@ O usuário escolheu a segunda: mantém a estética atual e é a mudança mais
 simples que ainda entrega as três coisas (prateleiras manuais, empurrar,
 soltar sem mexer) juntas.
 
+**Revisitado em 14/09/2026:** o usuário pediu a primeira, sabendo do custo —
+ver "A estante vira fileira de lugares".
+
 ### Modelo de dados
 
 `Livro` ganhou `prateleira: number` (gravado). `ordem` continua existindo,
@@ -1695,6 +1702,93 @@ Enorme") ficando inteiro e centralizado, tanto na amostra quanto na
 lombada de verdade depois de criado; editar continua sendo folha, com o
 "Cancelar" que a tela cheia não tem. 202 testes, typecheck e lint limpos.
 
+## A estante vira fileira de lugares (14/09/2026)
+
+Pedido do usuário: pôr um livro em **qualquer** lugar da prateleira — inclusive
+com buraco antes dele —, e poder apagar e criar livros de enfeite.
+
+**Isso revisita a escolha da Fase 10**, que ficou com a lista compacta
+justamente para não haver buraco no meio da fileira. Apontei antes de mexer,
+com as três leituras possíveis; ele escolheu **lugares fixos: livro, enfeite ou
+vazio**, sabendo que a estante deixa de parecer cheia onde ele abrir vaga.
+
+### Modelo
+
+- Cada prateleira tem `LUGARES_POR_PRATELEIRA` (26) lugares — o mesmo 26 que
+  era a quantidade de enfeites, o bastante para transbordar a prateleira mais
+  larga (672 px) e sumir atrás da pilastra da direita.
+- `Livro.ordem` virou **o lugar**, esparso. Ordem densa já era lugar válido:
+  **não houve migração de dado**, e nenhum livro mudou de lugar ao atualizar.
+- **A tabela guarda os buracos, não os enfeites** (`vagas`, Dexie v9, chave
+  `[prateleira+ordem]`). Gravar os enfeites seriam 26 linhas por prateleira, e
+  uma prateleira nova nasceria pelada; gravando os buracos são poucas linhas, e
+  a estante continua cheia por padrão.
+- A cor de um enfeite sai do **lugar** (`e{prateleira}-{lugar}`), não da
+  posição numa lista. Antes, pôr um livro no começo da prateleira trocava a cor
+  de todos os enfeites depois dele. Por isso, na primeira abertura depois da
+  mudança, as cores dos enfeites mudaram — os livros não.
+- Vaga e enfeite têm a mesma largura (30 px): tirar um enfeite não faz a
+  fileira andar. Um livro largo que sai deixa uma vaga de 30 px, e os vizinhos
+  da direita andam na tela — os lugares deles não mudam.
+
+### Regras (puras, em `core/domain/ordem.ts`)
+
+| Situação                                     | O que acontece                                                                          |
+| -------------------------------------------- | --------------------------------------------------------------------------------------- |
+| Soltar num lugar sem livro (enfeite ou vaga) | Só o livro se move                                                                      |
+| Soltar num lugar com livro                   | Empurra a fila até o buraco mais perto: primeiro à direita, senão à esquerda            |
+| Prateleira sem nenhum lugar livre            | Recusa, com aviso                                                                       |
+| O lugar de onde o livro saiu                 | Vira vaga — nada anda sozinho                                                           |
+| Apagar um livro                              | O lugar dele vira vaga, pela mesma regra                                                |
+| Criar um livro                               | Nasce no lugar tocado; se outro livro chegou antes, no buraco mais perto. Nunca empurra |
+
+`vagasDepoisDeMover` é a conta das vagas, a mesma na store (otimismo) e no
+repositório (gravação). `upsertLivro` fecha a vaga embaixo do livro gravado:
+é o único ponto de escrita de livro, então "vaga nunca embaixo de livro" mora
+num lugar só.
+
+### Gestos
+
+| Gesto                                   | O que faz                                                                   |
+| --------------------------------------- | --------------------------------------------------------------------------- |
+| Tocar um lugar sem livro                | Cria um livro exatamente ali (`/novo-livro?prateleira=&lugar=`)             |
+| Segurar um lugar sem livro e soltar     | Menu do lugar (`?lugar=P-L`): criar aqui, tirar o enfeite ou pôr um enfeite |
+| Arrastar um livro                       | Solta no lugar embaixo do dedo                                              |
+| Seleção múltipla ligada, tocar um lugar | Põe o grupo a partir dali, cada um no próximo buraco                        |
+
+O menu do lugar abre **na soltura**, como o do livro, e não quando o tempo de
+segurar completa: aberto por baixo do dedo, a soltura cairia na folha
+recém-aberta.
+
+### Detalhes que não são óbvios
+
+- **O alvo do arrasto é a coluna do dedo, não o elemento embaixo dele.** As
+  lombadas têm alturas diferentes: pelo elemento, soltar acima de um livro
+  baixo caía no vão da prateleira e não achava lugar nenhum. `alvoNaEstante`
+  acha a prateleira sob o dedo e, nela, o lugar cuja faixa horizontal contém o
+  dedo.
+- O lugar do livro na mão continua sendo alvo: o vão que ele deixa
+  (`data-estado='vazio'`) segue na fileira, e soltar nele é desistir.
+- O botão único por prateleira (`.movel-criar`) saiu. Cada lugar sem livro é
+  um `<button>` da altura da fileira inteira — tocar acima de um enfeite ainda
+  é tocar o lugar dele —, e teclado e leitor de tela ganham um alvo por lugar
+  em vez de "criar no fim".
+- Import funde **por lugar**: o livro do arquivo fica no lugar dele; o que só
+  existe aqui fica no seu se estiver livre, senão vai para o buraco mais perto.
+  Backup de antes dos lugares não tem `vagas` e entra com a estante cheia.
+- O fio de poeira no pé da vaga usa `--papel`, não branco: de dia o fundo da
+  estante é claro, e o branco sumia.
+- Dexie aceita no máximo cinco tabelas soltas numa transação. Import e `clear`
+  passaram a seis e recebem a lista num array.
+
+Verificado com toque de verdade (CDP) em 412×892, nos dois temas: arrastar para
+enfeite, para vaga e para cima de outro livro (empurra), soltar no alto da
+fileira, criar no meio de uma prateleira vazia, tirar e pôr enfeite, mover em
+grupo a partir de um lugar — tudo sobrevivendo a recarregar. No desktop, o
+mouse arrasta, o clique cria e o botão direito abre o menu. Sem rolagem lateral
+em 320, 768 e 1440 px. 227 testes (eram 202), typecheck e lint limpos. Bundle
+principal: 121 KB gzipped.
+
 ## Fases
 
 0. ✅ Esqueleto (Vite/React/TS/Tailwind/PWA/Capacitor)
@@ -1725,3 +1819,5 @@ lombada de verdade depois de criado; editar continua sendo folha, com o
     estante aprovadas depois da Fase 10
 20. ✅ Comprimento configurável na lombada — revisita a tensão registrada na
     Fase 19
+21. ✅ Estante em lugares fixos, com enfeite que se tira e se põe — revisita a
+    escolha da Fase 10
