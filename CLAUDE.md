@@ -1654,6 +1654,47 @@ livro "Enorme" sem neurônio nenhum e vendo a lombada nascer alta mesmo
 assim — a prova de que o sinal automático é mesmo sobreposto. 202 testes
 (2 novos: migração v8), typecheck e lint limpos.
 
+## Criar livro vira tela cheia, e o título da amostra é recentralizado (14/09/2026)
+
+Pedido do usuário, mesmo dia: "Um livro novo" deixa de ser bottom sheet e
+vira rota própria (`/novo-livro?prateleira=N`), no mesmo padrão que
+`/novo` já usa para neurônio — sair é o X da barra de topo, e
+`FormularioDeLivro` ganhou `onCancelar` **opcional**: presente na folha de
+editar (que continua sheet), ausente na tela cheia, onde o botão duplicado
+só ocuparia espaço. Como quem cria não é mais o mesmo componente que anima
+a chegada na prateleira, a estante passou a ler `?chegou=<id>` na URL
+(lido já na inicialização do estado, não num efeito — evita o aviso do
+React Compiler sobre `setState` síncrono em efeito) e some com o parâmetro
+logo em seguida.
+
+**Sem rolagem, de propósito.** Tiradas as legendas descritivas abaixo de
+"Um livro novo" (agora só "Novo livro"), "Largura" e "Comprimento", a tela
+inteira cabe em 390×844 sem sobrar conteúdo — verificado comparando
+`scrollHeight` com `innerHeight` da página. Um gotcha no caminho: a rota
+nova esqueceu de entrar em `SEM_BOTAO_DE_CRIAR` (`App.tsx`), e o Dial
+sobrava por cima do botão "Criar livro" com 112px de respiro reservado
+para ele — mesmo erro que `/novo` já tinha resolvido, só que para uma rota
+que ainda não existia.
+
+**O título da amostra estava saindo do centro.** `.lombada-titulo` usava
+`position: absolute` com `inset` assimétrico (6px em cima, 8px embaixo) e
+`margin: auto` — uma técnica que só centraliza de verdade quando o texto
+cabe no espaço entre os dois. Quando não cabe (comum na amostra do
+formulário, mais baixa que uma lombada de verdade), o navegador não corta
+dos dois lados: ele cresce a partir do topo, e o título parece "subido".
+Trocado por `.lombada` como flex container (`align-items` e
+`justify-content: center`) com o título como item de flex comum — agora
+centraliza sempre, e um título comprido demais corta simetricamente dos
+dois lados. Junto, a referência que converte o Comprimento (%) em pixels
+de pré-visualização subiu de 60 para 130, para a amostra parecer mais com
+uma lombada de verdade e sobrar espaço de verdade para o título.
+
+Verificado no navegador: a tela nova sem folha, sem Dial por cima, sem
+rolagem; a amostra com um título propositalmente comprido ("Teste
+Enorme") ficando inteiro e centralizado, tanto na amostra quanto na
+lombada de verdade depois de criado; editar continua sendo folha, com o
+"Cancelar" que a tela cheia não tem. 202 testes, typecheck e lint limpos.
+
 ## Fases
 
 0. ✅ Esqueleto (Vite/React/TS/Tailwind/PWA/Capacitor)
@@ -1666,7 +1707,9 @@ assim — a prova de que o sinal automático é mesmo sobreposto. 202 testes
    repositório intocada
 6. ✅ Estante (lombadas, livro aberto, rotas) — acabamento visual fica para o fim
 7. ✅ Rede do palácio em `<canvas>` (layout determinístico, foco, só as pontes)
-8. 🟡 Criação, edição e navegação — **a porta ficou para a passada de acabamento**
+8. 🟡 Criação, edição e navegação — **a porta ficou para a passada de
+   acabamento**; criar livro entrou nesse padrão de rota em 14/09/2026
+   (`/novo-livro`), editar livro continua em folha
 9. 🟡 Empacotamento Android — **falta compilar e instalar o APK** (sem JDK/SDK aqui)
 10. ✅ Estante: fundação de prateleiras manuais + arrastar como bandeja — base para as 9 melhorias de estante aprovadas (ver memória de projeto)
 11. ✅ Modo organizar — 1ª das 9 melhorias — **removido em 14/09/2026**
