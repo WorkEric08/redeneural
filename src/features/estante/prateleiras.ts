@@ -7,9 +7,10 @@ import type { LivroNaEstante } from './resumo'
  *
  * Puro e fora dos componentes (CLAUDE.md regra 9). **Determinístico**, pela
  * mesma razão do layout da rede: a estante é mobília, e mobília que se remexe
- * a cada sessão não serve de palácio da memória. Toda variação — inclinação,
- * altura dos enfeites, e a largura da lombada quando ninguém a escolheu na
- * mão (Fase 19, `Livro.larguraLombada`) — sai da semente do id.
+ * a cada sessão não serve de palácio da memória. Toda variação — cor, filete,
+ * etiqueta e inclinação dos enfeites, e a largura da lombada de verdade
+ * quando ninguém a escolheu na mão (Fase 19, `Livro.larguraLombada`) — sai da
+ * semente do id.
  *
  * Desde a Fase 10, a prateleira de um livro é **gravada** (`Livro.prateleira`),
  * não mais calculada aqui — isto só agrupa quem já sabe onde mora. A
@@ -53,8 +54,6 @@ export interface Enfeite {
   etiqueta: boolean
   /** Qual pano de encadernação, 1..6 — o luar desbota todos para o mesmo azul. */
   pano: number
-  /** Deitado sobre os outros, como acontece em estante cheia. */
-  deitado: boolean
   /** Graus de inclinação: livro encostado no vizinho. */
   inclinacao: number
 }
@@ -98,32 +97,27 @@ export function montarPrateleiras(
   }))
 }
 
-function arredondar(valor: number): number {
-  return Math.round(valor * 10) / 10
-}
+/**
+ * Todo enfeite tem o mesmo tamanho — só a cor varia (pedido do usuário,
+ * 14/09/2026). Mesmo teto dos livros de verdade (ver Lombada.tsx): um enfeite
+ * maior que o maior livro possível ia parecer erro, não decoração.
+ */
+const LARGURA_DO_ENFEITE = 30
+const ALTURA_DO_ENFEITE = 80
 
 function montarEnfeites(prateleira: number): Enfeite[] {
   return Array.from({ length: ENFEITES_POR_PRATELEIRA }, (_, i) => {
     const chave = `e${String(prateleira)}-${String(i)}`
-    const [a, b] = semente(chave)
-    const deitado = sorteio(chave, 5) > 0.93
 
     return {
       chave,
-      largura: deitado ? Math.round(32 + a * 24) : Math.round(15 + a * 26),
-      // Altura puxada para cima: numa estante cheia quase todo livro chega
-      // perto da tábua de cima, e vão vazio demais lê como buraco, não como ar.
-      // Mesmo teto dos livros de verdade (ver Lombada.tsx) — um enfeite maior
-      // que o maior livro possível ia parecer erro, não decoração. Em % da
-      // fileira, que agora se mede pela tela: são os mesmos 7..13 e 60..84 px
-      // sobre a fileira de 92 px de antes.
-      altura: deitado ? arredondar(7.6 + b * 6.5) : arredondar(65 + b * 26),
+      largura: LARGURA_DO_ENFEITE,
+      altura: ALTURA_DO_ENFEITE,
       luz: sorteio(chave, 3),
       filete: sorteio(chave, 4) > 0.72,
-      etiqueta: !deitado && sorteio(chave, 8) > 0.8,
+      etiqueta: sorteio(chave, 8) > 0.8,
       pano: PANOS[Math.floor(sorteio(chave, 7) * PANOS.length)] ?? 4,
-      deitado,
-      inclinacao: sorteio(chave, 6) > 0.94 ? (a > 0.5 ? 3 : -3) : 0,
+      inclinacao: sorteio(chave, 6) > 0.94 ? (sorteio(chave, 1) > 0.5 ? 3 : -3) : 0,
     }
   })
 }

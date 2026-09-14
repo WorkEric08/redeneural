@@ -1,11 +1,10 @@
-import { Shuffle, X } from 'lucide-react'
+import { Shuffle } from 'lucide-react'
 import { useState } from 'react'
 
 import { botao } from '@/components/botao'
 import type { NovoLivro } from '@/store/palacio'
 
 import { EmblemaDaLombada } from './EmblemaDaLombada'
-import { EMBLEMAS } from './emblemas'
 import { LARGURAS } from './larguras'
 import { PANOS, pano } from './panos'
 
@@ -37,7 +36,9 @@ export function FormularioDeLivro({
 }: Props) {
   const [titulo, setTitulo] = useState(inicial.titulo)
   const [cor, setCor] = useState(inicial.cor)
-  const [emblema, setEmblema] = useState(inicial.emblema)
+  // Sem seção própria no formulário: um livro editado mantém o emblema que já
+  // tinha, só não dá mais para escolher um novo.
+  const emblema = inicial.emblema
   const [larguraLombada, setLarguraLombada] = useState(inicial.larguraLombada)
 
   const podeEnviar = titulo.trim().length > 0 && !ocupado
@@ -96,45 +97,6 @@ export function FormularioDeLivro({
               />
               <span className="pano-amostra" style={{ backgroundColor: p.cor }} aria-hidden />
               <span className="text-poeira text-[0.7rem] leading-tight">{p.nome}</span>
-            </label>
-          ))}
-        </div>
-      </fieldset>
-
-      <fieldset className="flex flex-col">
-        <legend className="rotulo-de-secao">Emblema</legend>
-        <p className="text-poeira pb-2 text-xs">Opcional — um ícone a mais na lombada.</p>
-        <div className="grid grid-cols-4 gap-x-2 gap-y-3">
-          <label className="pano-opcao">
-            <input
-              type="radio"
-              name="emblema"
-              checked={emblema === null}
-              onChange={() => {
-                setEmblema(null)
-              }}
-              className="sr-only"
-            />
-            <span className="pano-amostra emblema-amostra" aria-hidden>
-              <X size={16} aria-hidden />
-            </span>
-            <span className="text-poeira text-[0.7rem] leading-tight">Nenhum</span>
-          </label>
-          {EMBLEMAS.map(({ chave, rotulo, Icone }) => (
-            <label key={chave} className="pano-opcao">
-              <input
-                type="radio"
-                name="emblema"
-                checked={emblema === chave}
-                onChange={() => {
-                  setEmblema(chave)
-                }}
-                className="sr-only"
-              />
-              <span className="pano-amostra emblema-amostra" aria-hidden>
-                <Icone size={16} aria-hidden />
-              </span>
-              <span className="text-poeira text-[0.7rem] leading-tight">{rotulo}</span>
             </label>
           ))}
         </div>

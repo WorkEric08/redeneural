@@ -906,16 +906,6 @@ img {
   outline-offset: 6px;
 }
 
-/* A opção de emblema no formulário: mesma caixa e mesmo anel de escolhido do
-   pano (herda `.pano-amostra`), só troca o miolo — cor sólida por ícone
-   centralizado. */
-.emblema-amostra {
-  display: grid;
-  place-items: center;
-  background: var(--parede);
-  color: var(--poeira);
-}
-
 /* A opção de largura: mesma caixa do pano (herda `.pano-amostra`), mas sem
    `aspect-ratio` quadrado — aqui a largura É a escolha, então cada opção tem
    a sua própria (posta inline, em px reais, ver FormularioDeLivro.tsx). */
