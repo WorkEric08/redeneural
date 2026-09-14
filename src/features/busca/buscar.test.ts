@@ -15,6 +15,7 @@ const LIVROS: Livro[] = [
     ordem: 0,
     emblema: null,
     larguraLombada: null,
+    comprimentoLombada: null,
     createdAt: T0,
   },
   {
@@ -25,6 +26,7 @@ const LIVROS: Livro[] = [
     ordem: 0,
     emblema: null,
     larguraLombada: null,
+    comprimentoLombada: null,
     createdAt: T0,
   },
 ]

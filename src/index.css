@@ -924,6 +924,24 @@ img {
   color: var(--poeira);
 }
 
+/* A opção de comprimento: mesma ideia da largura, espelhada — a altura É a
+   escolha aqui, então a caixa fica com largura fixa e cada opção traz a
+   própria altura (posta inline, em % reais, ver FormularioDeLivro.tsx). */
+.comprimento-amostra {
+  aspect-ratio: unset;
+  width: 38px;
+  max-width: none;
+  height: auto;
+}
+
+.comprimento-amostra--auto {
+  display: grid;
+  height: 44px;
+  place-items: center;
+  background: var(--parede);
+  color: var(--poeira);
+}
+
 /* Sem opacidade: quem escurece o enfeite é a lavagem da cor (ver Movel.tsx).
    Opacidade por cima só o deixaria transparente, e livro não é vidro. */
 

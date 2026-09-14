@@ -9,6 +9,7 @@ const unitInterval = z.number().min(0).max(1)
 const ordem = z.number().int().min(0)
 const emblema = z.string().min(1).max(30).nullable()
 const larguraLombada = z.number().min(16).max(120).nullable()
+const comprimentoLombada = z.number().min(20).max(100).nullable()
 
 export const livroSchema = z.object({
   id,
@@ -18,6 +19,7 @@ export const livroSchema = z.object({
   ordem,
   emblema,
   larguraLombada,
+  comprimentoLombada,
   createdAt: z.date(),
 })
 
@@ -77,6 +79,8 @@ export const snapshotSchema = z.object({
       emblema: emblema.optional(),
       // Opcional: backup de antes da Fase 19 não tinha largura própria.
       larguraLombada: larguraLombada.optional(),
+      // Opcional: backup de antes de 14/09/2026 não tinha comprimento próprio.
+      comprimentoLombada: comprimentoLombada.optional(),
       createdAt: isoDate,
     }),
   ),

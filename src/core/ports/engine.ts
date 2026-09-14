@@ -25,6 +25,7 @@ export interface CriarLivroInput {
   prateleira: number
   emblema?: string | null
   larguraLombada?: number | null
+  comprimentoLombada?: number | null
 }
 
 export interface EditarLivroInput {
@@ -33,6 +34,7 @@ export interface EditarLivroInput {
   cor: string
   emblema: string | null
   larguraLombada: number | null
+  comprimentoLombada: number | null
 }
 
 export interface EstadoDoPalacio {

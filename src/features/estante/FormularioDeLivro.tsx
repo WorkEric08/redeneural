@@ -4,9 +4,18 @@ import { useState } from 'react'
 import { botao } from '@/components/botao'
 import type { NovoLivro } from '@/store/palacio'
 
+import { COMPRIMENTOS } from './comprimentos'
 import { EmblemaDaLombada } from './EmblemaDaLombada'
 import { LARGURAS } from './larguras'
 import { PANOS, pano } from './panos'
+
+/**
+ * Só para a amostra: o comprimento é gravado em % da fileira (o mesmo mundo
+ * da altura automática), mas a amostra não vive dentro de uma fileira — vira
+ * px por esta referência, igual em espírito ao 44px fixo da amostra de
+ * largura automática.
+ */
+const REFERENCIA_DA_AMOSTRA_PX = 60
 
 interface Props {
   inicial: NovoLivro
@@ -40,6 +49,7 @@ export function FormularioDeLivro({
   // tinha, só não dá mais para escolher um novo.
   const emblema = inicial.emblema
   const [larguraLombada, setLarguraLombada] = useState(inicial.larguraLombada)
+  const [comprimentoLombada, setComprimentoLombada] = useState(inicial.comprimentoLombada)
 
   const podeEnviar = titulo.trim().length > 0 && !ocupado
 
@@ -48,7 +58,9 @@ export function FormularioDeLivro({
       className="flex flex-col gap-6"
       onSubmit={(evento) => {
         evento.preventDefault()
-        if (podeEnviar) onEnviar({ titulo: titulo.trim(), cor, emblema, larguraLombada })
+        if (podeEnviar) {
+          onEnviar({ titulo: titulo.trim(), cor, emblema, larguraLombada, comprimentoLombada })
+        }
       }}
     >
       <div className="flex items-end gap-4">
@@ -73,6 +85,9 @@ export function FormularioDeLivro({
           style={{
             ...pano(cor, intensidadeDaLuz),
             ...(larguraLombada !== null && { width: `${String(larguraLombada)}px` }),
+            ...(comprimentoLombada !== null && {
+              height: `${String(Math.round((comprimentoLombada / 100) * REFERENCIA_DA_AMOSTRA_PX))}px`,
+            }),
           }}
         >
           <span className="lombada-titulo">{titulo.trim() || '…'}</span>
@@ -140,6 +155,52 @@ export function FormularioDeLivro({
                 style={{ width: `${String(l.px)}px`, backgroundColor: cor }}
               />
               <span className="text-poeira text-[0.7rem] leading-tight">{l.rotulo}</span>
+            </label>
+          ))}
+        </div>
+      </fieldset>
+
+      <fieldset className="flex flex-col">
+        <legend className="rotulo-de-secao">Comprimento</legend>
+        <p className="text-poeira pb-2 text-xs">
+          Automático mostra quantos neurônios o livro tem — a única forma de ver isso sem abrir.
+        </p>
+        <div className="flex flex-wrap items-end gap-4">
+          <label className="pano-opcao">
+            <input
+              type="radio"
+              name="comprimento"
+              checked={comprimentoLombada === null}
+              onChange={() => {
+                setComprimentoLombada(null)
+              }}
+              className="sr-only"
+            />
+            <span className="pano-amostra comprimento-amostra comprimento-amostra--auto" aria-hidden>
+              <Shuffle size={16} aria-hidden />
+            </span>
+            <span className="text-poeira text-[0.7rem] leading-tight">Automático</span>
+          </label>
+          {COMPRIMENTOS.map((c) => (
+            <label key={c.chave} className="pano-opcao">
+              <input
+                type="radio"
+                name="comprimento"
+                checked={comprimentoLombada === c.percentual}
+                onChange={() => {
+                  setComprimentoLombada(c.percentual)
+                }}
+                className="sr-only"
+              />
+              <span
+                className="pano-amostra comprimento-amostra"
+                aria-hidden
+                style={{
+                  height: `${String(Math.round((c.percentual / 100) * REFERENCIA_DA_AMOSTRA_PX))}px`,
+                  backgroundColor: cor,
+                }}
+              />
+              <span className="text-poeira text-[0.7rem] leading-tight">{c.rotulo}</span>
             </label>
           ))}
         </div>

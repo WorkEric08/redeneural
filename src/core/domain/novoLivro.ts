@@ -16,6 +16,7 @@ export function novoLivro(input: CriarLivroInput, agora: Date, ordem: number): L
     ordem,
     emblema: input.emblema ?? null,
     larguraLombada: input.larguraLombada ?? null,
+    comprimentoLombada: input.comprimentoLombada ?? null,
     createdAt: agora,
   }
 }

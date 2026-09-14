@@ -217,6 +217,7 @@ async function editarLivro(input: EditarLivroInput): Promise<Livro[]> {
     cor: input.cor,
     emblema: input.emblema,
     larguraLombada: input.larguraLombada,
+    comprimentoLombada: input.comprimentoLombada,
   })
   return repo.listLivros()
 }

@@ -67,7 +67,13 @@ function Conteudo(props: Props & { painel: Painel }) {
           <p className="text-poeira text-sm">Dê um nome à área. Os neurônios vêm depois.</p>
         </header>
         <FormularioDeLivro
-          inicial={{ titulo: '', cor: props.panoSugerido, emblema: null, larguraLombada: null }}
+          inicial={{
+            titulo: '',
+            cor: props.panoSugerido,
+            emblema: null,
+            larguraLombada: null,
+            comprimentoLombada: null,
+          }}
           rotuloDeEnvio="Criar livro"
           intensidadeDaLuz={props.intensidadeDaLuz}
           onCancelar={onFechar}
@@ -100,6 +106,7 @@ function Conteudo(props: Props & { painel: Painel }) {
           cor: livro.cor,
           emblema: livro.emblema,
           larguraLombada: livro.larguraLombada,
+          comprimentoLombada: livro.comprimentoLombada,
         }}
         rotuloDeEnvio="Salvar"
         intensidadeDaLuz={props.intensidadeDaLuz}

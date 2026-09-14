@@ -35,6 +35,7 @@ function livro(id: string, titulo: string, ordem = 0, prateleira = 0): Livro {
     ordem,
     emblema: null,
     larguraLombada: null,
+    comprimentoLombada: null,
     createdAt: T0,
   }
 }
@@ -427,7 +428,10 @@ describe('migração para a v3', () => {
     })
     antigo.version(2).stores({ meta: 'chave' })
     await antigo
-      .table<Omit<Livro, 'ordem' | 'prateleira' | 'emblema' | 'larguraLombada'>, string>('livros')
+      .table<
+        Omit<Livro, 'ordem' | 'prateleira' | 'emblema' | 'larguraLombada' | 'comprimentoLombada'>,
+        string
+      >('livros')
       .bulkPut([
         { id: 'b5fd', titulo: 'Programação', cor: '#3e9a93', createdAt: T0 },
         { id: '382f', titulo: 'Psicologia', cor: '#7b6ae0', createdAt: T0 },
@@ -467,7 +471,10 @@ describe('migração para a v4', () => {
     // 7 livros: a distribuição antiga dá 4 prateleiras, 2 por prateleira (a
     // última com sobra), então o teste exercita mais de um livro por prateleira.
     await antigo
-      .table<Omit<Livro, 'prateleira' | 'emblema' | 'larguraLombada'>, string>('livros')
+      .table<
+        Omit<Livro, 'prateleira' | 'emblema' | 'larguraLombada' | 'comprimentoLombada'>,
+        string
+      >('livros')
       .bulkPut(
         Array.from({ length: 7 }, (_, i) => ({
           id: `l${String(i)}`,
@@ -515,7 +522,7 @@ describe('migração para a v6', () => {
     antigo.version(4).stores({ livros: 'id, createdAt, ordem, prateleira' })
     antigo.version(5).stores({ etiquetas: 'prateleira' })
     await antigo
-      .table<Omit<Livro, 'emblema' | 'larguraLombada'>, string>('livros')
+      .table<Omit<Livro, 'emblema' | 'larguraLombada' | 'comprimentoLombada'>, string>('livros')
       .bulkPut([
         { id: 'l1', titulo: 'Psicologia', cor: '#7b6ae0', prateleira: 0, ordem: 0, createdAt: T0 },
       ])
@@ -553,17 +560,19 @@ describe('migração para a v7', () => {
     antigo.version(4).stores({ livros: 'id, createdAt, ordem, prateleira' })
     antigo.version(5).stores({ etiquetas: 'prateleira' })
     antigo.version(6).stores({})
-    await antigo.table<Omit<Livro, 'larguraLombada'>, string>('livros').bulkPut([
-      {
-        id: 'l1',
-        titulo: 'Psicologia',
-        cor: '#7b6ae0',
-        prateleira: 0,
-        ordem: 0,
-        emblema: null,
-        createdAt: T0,
-      },
-    ])
+    await antigo
+      .table<Omit<Livro, 'larguraLombada' | 'comprimentoLombada'>, string>('livros')
+      .bulkPut([
+        {
+          id: 'l1',
+          titulo: 'Psicologia',
+          cor: '#7b6ae0',
+          prateleira: 0,
+          ordem: 0,
+          emblema: null,
+          createdAt: T0,
+        },
+      ])
     antigo.close()
 
     const migrado = createDexieRepo(createDb(nome))
@@ -578,5 +587,51 @@ describe('migração para a v7', () => {
     await repo.upsertLivro(livro('l1', 'Psicologia'))
     const [livro1] = await repo.listLivros()
     expect(livro1?.larguraLombada).toBeNull()
+  })
+})
+
+describe('migração para a v8', () => {
+  // Quem já tinha livro antes de 14/09/2026 não tinha `comprimentoLombada` gravado.
+  it('dá `null` a cada livro que já existia', async () => {
+    const nome = `palacio-migracao-v8-${String(nth)}`
+
+    const antigo = new Dexie(nome)
+    antigo.version(1).stores({
+      livros: 'id, createdAt',
+      neuronios: 'id, livroId, updatedAt',
+      conexoes: 'id, aId, bId, updatedAt',
+    })
+    antigo.version(2).stores({ meta: 'chave' })
+    antigo.version(3).stores({ livros: 'id, createdAt, ordem' })
+    antigo.version(4).stores({ livros: 'id, createdAt, ordem, prateleira' })
+    antigo.version(5).stores({ etiquetas: 'prateleira' })
+    antigo.version(6).stores({})
+    antigo.version(7).stores({})
+    await antigo.table<Omit<Livro, 'comprimentoLombada'>, string>('livros').bulkPut([
+      {
+        id: 'l1',
+        titulo: 'Psicologia',
+        cor: '#7b6ae0',
+        prateleira: 0,
+        ordem: 0,
+        emblema: null,
+        larguraLombada: null,
+        createdAt: T0,
+      },
+    ])
+    antigo.close()
+
+    const migrado = createDexieRepo(createDb(nome))
+    const [livro1] = await migrado.listLivros()
+
+    expect(livro1?.comprimentoLombada).toBeNull()
+    // A migração não mexeu em mais nada.
+    expect(livro1).toMatchObject({ prateleira: 0, ordem: 0, titulo: 'Psicologia', emblema: null })
+  })
+
+  it('livro novo, criado depois da v8, já nasce com o campo', async () => {
+    await repo.upsertLivro(livro('l1', 'Psicologia'))
+    const [livro1] = await repo.listLivros()
+    expect(livro1?.comprimentoLombada).toBeNull()
   })
 })

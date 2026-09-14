@@ -24,6 +24,7 @@ export interface NovoLivro {
   cor: string
   emblema: string | null
   larguraLombada: number | null
+  comprimentoLombada: number | null
 }
 
 interface PalacioStore {
@@ -215,6 +216,7 @@ export const usePalacio = create<PalacioStore>()((set, get) => {
                 cor: mudancas.cor,
                 emblema: mudancas.emblema,
                 larguraLombada: mudancas.larguraLombada,
+                comprimentoLombada: mudancas.comprimentoLombada,
               }
             : l,
         ),

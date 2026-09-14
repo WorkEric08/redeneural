@@ -21,6 +21,7 @@ function livro(
     ordem,
     emblema: null,
     larguraLombada,
+    comprimentoLombada: null,
     createdAt: T0,
   }
   return { livro: l, neuronios: 3, internas: 0, saindo: 0, altura: 0.5 }

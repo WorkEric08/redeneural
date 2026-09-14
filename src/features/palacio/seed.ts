@@ -29,6 +29,7 @@ export const SEED_LIVROS: Livro[] = [
     ordem: 0,
     emblema: null,
     larguraLombada: null,
+    comprimentoLombada: null,
     createdAt: T0,
   },
   {
@@ -39,6 +40,7 @@ export const SEED_LIVROS: Livro[] = [
     ordem: 0,
     emblema: null,
     larguraLombada: null,
+    comprimentoLombada: null,
     createdAt: T0,
   },
   {
@@ -49,6 +51,7 @@ export const SEED_LIVROS: Livro[] = [
     ordem: 0,
     emblema: null,
     larguraLombada: null,
+    comprimentoLombada: null,
     createdAt: T0,
   },
 ]

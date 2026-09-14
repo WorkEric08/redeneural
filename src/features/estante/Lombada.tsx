@@ -44,12 +44,15 @@ interface Props {
 /**
  * Um livro visto de fora.
  *
- * A altura vem da quantidade de neurônios — é a única coisa que a estante conta
- * sem você abrir nada. O título vai gravado em ouro, como numa lombada de
- * verdade.
+ * Por padrão a altura vem da quantidade de neurônios — é a única coisa que a
+ * estante conta sem você abrir nada. `Livro.comprimentoLombada` deixa
+ * escolher a altura na mão, abrindo mão desse sinal para aquele livro (ver o
+ * comentário em `core/domain/types.ts`). O título vai gravado em ouro, como
+ * numa lombada de verdade.
  *
- * A largura vem da semente do id (ver `prateleiras.ts`): varia como numa estante
- * de verdade, mas é sempre a mesma para o mesmo livro.
+ * A largura vem da semente do id (ver `prateleiras.ts`) ou de
+ * `Livro.larguraLombada`: varia como numa estante de verdade, mas é sempre a
+ * mesma para o mesmo livro.
  *
  * Botão, e não link: tocar espia em vez de abrir, e abrir mora no painel.
  */
@@ -64,7 +67,9 @@ export function Lombada({
   intensidadeDaLuz,
   manipular,
 }: Props) {
-  const altura = ALTURA_MINIMA + item.altura * (ALTURA_MAXIMA - ALTURA_MINIMA)
+  const altura =
+    item.livro.comprimentoLombada ??
+    ALTURA_MINIMA + item.altura * (ALTURA_MAXIMA - ALTURA_MINIMA)
 
   return (
     <button

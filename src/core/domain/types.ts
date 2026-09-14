@@ -32,21 +32,27 @@ export interface Livro {
   ordem: number
   /**
    * Ícone opcional na lombada, além da cor — para diferenciar livros parecidos
-   * sem depender só do nome. `null` é "nenhum". A chave vem de
-   * `features/estante/emblemas.ts`; uma chave que essa lista não reconhece
-   * mais simplesmente não desenha nada, em vez de quebrar.
+   * sem depender só do nome. `null` é "nenhum". As chaves reconhecidas vivem
+   * em `features/estante/EmblemaDaLombada.tsx`; uma chave que esse switch não
+   * reconhece mais simplesmente não desenha nada, em vez de quebrar.
    */
   emblema: string | null
   /**
    * Largura da lombada em px, escolhida na mão. `null` é "automática": varia
    * com a semente do id, como sempre (ver `features/estante/prateleiras.ts`).
-   *
-   * De propósito **não existe** um campo equivalente para a altura: a altura
-   * da lombada é a quantidade de neurônios do livro — a única métrica que a
-   * estante mostra sem abrir nada (ver CLAUDE.md, "A estante"). Deixá-la
-   * configurável apagaria esse sinal para quem olha de fora.
    */
   larguraLombada: number | null
+  /**
+   * Altura da lombada em % da fileira, escolhida na mão. `null` é
+   * "automática": a quantidade de neurônios do livro, como sempre (ver
+   * `features/estante/resumo.ts` e `Lombada.tsx`).
+   *
+   * Pedido explícito do usuário (14/09/2026), sabendo do custo: por padrão a
+   * altura é a única métrica que a estante mostra sem abrir nada (ver
+   * CLAUDE.md, "A estante"), e um livro com altura escolhida na mão deixa de
+   * comunicar isso — fica visualmente idêntico a um livro cheio de conteúdo.
+   */
+  comprimentoLombada: number | null
   createdAt: Date
 }
 
@@ -140,6 +146,8 @@ export interface LivroSnapshot {
   emblema?: string | null | undefined
   /** Ausente em backups anteriores à Fase 19 — o import trata como `null`. */
   larguraLombada?: number | null | undefined
+  /** Ausente em backups de antes de 14/09/2026 — o import trata como `null`. */
+  comprimentoLombada?: number | null | undefined
   createdAt: string
 }
 

@@ -34,6 +34,7 @@ const LIVROS: Livro[] = [
     ordem: 0,
     emblema: null,
     larguraLombada: null,
+    comprimentoLombada: null,
     createdAt: T0,
   },
   {
@@ -44,6 +45,7 @@ const LIVROS: Livro[] = [
     ordem: 1,
     emblema: null,
     larguraLombada: null,
+    comprimentoLombada: null,
     createdAt: T0,
   },
   {
@@ -54,6 +56,7 @@ const LIVROS: Livro[] = [
     ordem: 2,
     emblema: null,
     larguraLombada: null,
+    comprimentoLombada: null,
     createdAt: T0,
   },
 ]
@@ -201,6 +204,7 @@ describe('exportar num navegador e importar noutro', () => {
       ordem: 0,
       emblema: null,
       larguraLombada: null,
+      comprimentoLombada: null,
       createdAt: T0,
     })
     await destino.upsertNeuronio({
@@ -295,6 +299,7 @@ describe('a ordem da estante no backup', () => {
       ordem: 0,
       emblema: null,
       larguraLombada: null,
+      comprimentoLombada: null,
       createdAt: T0,
     })
 

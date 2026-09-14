@@ -139,6 +139,20 @@ export function createDb(name: string = DB_NAME): PalacioDB {
       await livros.bulkPut(antigos.map((l) => ({ ...l, larguraLombada: l.larguraLombada ?? null })))
     })
 
+  // v8 (14/09/2026): comprimento da lombada, opcional. Mesmo padrão da v6/v7
+  // — não é indexado, então só o dado precisa de um valor (`null` =
+  // automático, a quantidade de neurônios continua decidindo) pra quem já
+  // existia.
+  db.version(8)
+    .stores({})
+    .upgrade(async (tx) => {
+      const livros = tx.table<Livro & { comprimentoLombada?: number | null }, string>('livros')
+      const antigos = await livros.toArray()
+      await livros.bulkPut(
+        antigos.map((l) => ({ ...l, comprimentoLombada: l.comprimentoLombada ?? null })),
+      )
+    })
+
   return db
 }
 
