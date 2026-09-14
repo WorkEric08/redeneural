@@ -33,6 +33,7 @@ const LIVROS: Livro[] = [
     prateleira: 0,
     ordem: 0,
     emblema: null,
+    larguraLombada: null,
     createdAt: T0,
   },
   {
@@ -42,6 +43,7 @@ const LIVROS: Livro[] = [
     prateleira: 0,
     ordem: 1,
     emblema: null,
+    larguraLombada: null,
     createdAt: T0,
   },
   {
@@ -51,6 +53,7 @@ const LIVROS: Livro[] = [
     prateleira: 0,
     ordem: 2,
     emblema: null,
+    larguraLombada: null,
     createdAt: T0,
   },
 ]
@@ -176,6 +179,7 @@ describe('exportar num navegador e importar noutro', () => {
       prateleira: 0,
       ordem: 0,
       emblema: null,
+      larguraLombada: null,
       createdAt: T0,
     })
     await destino.upsertNeuronio({
@@ -269,6 +273,7 @@ describe('a ordem da estante no backup', () => {
       prateleira: 0,
       ordem: 0,
       emblema: null,
+      larguraLombada: null,
       createdAt: T0,
     })
 
@@ -365,5 +370,42 @@ describe('emblema no backup', () => {
     await destino.importAll(antigo)
 
     expect((await destino.listLivros()).every((l) => l.emblema === null)).toBe(true)
+  })
+})
+
+describe('largura da lombada no backup', () => {
+  it('exporta e importa a largura escolhida na mão', async () => {
+    const origem = await palacioPovoado()
+    const [psi] = await origem.listLivros()
+    await origem.upsertLivro({ ...psi!, larguraLombada: 68 })
+    const snapshot = await origem.exportAll()
+
+    const destino = repoVazio()
+    await destino.importAll(JSON.parse(JSON.stringify(snapshot)) as typeof snapshot)
+
+    expect((await destino.getLivro('psi'))?.larguraLombada).toBe(68)
+  })
+
+  // Backup de antes da Fase 19 não tinha o campo — não pode quebrar o import.
+  it('backup sem largura própria importa normalmente, como automática', async () => {
+    const origem = await palacioPovoado()
+    const snapshot = await origem.exportAll()
+    const antigo = {
+      ...snapshot,
+      livros: snapshot.livros.map((l) => ({
+        id: l.id,
+        titulo: l.titulo,
+        cor: l.cor,
+        prateleira: l.prateleira,
+        ordem: l.ordem,
+        emblema: l.emblema,
+        createdAt: l.createdAt,
+      })),
+    }
+
+    const destino = repoVazio()
+    await destino.importAll(antigo)
+
+    expect((await destino.listLivros()).every((l) => l.larguraLombada === null)).toBe(true)
   })
 })

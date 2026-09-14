@@ -7,7 +7,12 @@ import type { LivroNaEstante } from './resumo'
 
 const T0 = new Date('2026-01-01T12:00:00.000Z')
 
-function livro(id: string, prateleira: number, ordem: number): LivroNaEstante {
+function livro(
+  id: string,
+  prateleira: number,
+  ordem: number,
+  larguraLombada: number | null = null,
+): LivroNaEstante {
   const l: Livro = {
     id,
     titulo: `Livro ${id}`,
@@ -15,6 +20,7 @@ function livro(id: string, prateleira: number, ordem: number): LivroNaEstante {
     prateleira,
     ordem,
     emblema: null,
+    larguraLombada,
     createdAt: T0,
   }
   return { livro: l, neuronios: 3, internas: 0, saindo: 0, altura: 0.5 }
@@ -76,6 +82,18 @@ describe('montarPrateleiras', () => {
       ps.flatMap((p) => p.livros).find((l) => l.item.livro.id === 'psi')?.largura
 
     expect(largura(sozinho)).toBe(largura(acompanhado))
+  })
+
+  it('usa a largura escolhida na mão, ignorando a semente do id', () => {
+    const [prateleira] = montarPrateleiras([livro('psi', 0, 0, 68)], 4)
+    expect(prateleira!.livros[0]!.largura).toBe(68)
+  })
+
+  it('sem largura escolhida, cai na semente do id (comportamento de sempre)', () => {
+    const [prateleira] = montarPrateleiras([livro('psi', 0, 0, null)], 4)
+    const largura = prateleira!.livros[0]!.largura
+    expect(largura).toBeGreaterThanOrEqual(30)
+    expect(largura).toBeLessThanOrEqual(46)
   })
 })
 

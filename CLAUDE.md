@@ -1560,6 +1560,53 @@ horizontal. Sem teste automatizado novo — é CSS mais um booleano local, sem
 função pura nova para testar (mesmo caso do modo organizar, Fase 11); 206
 testes, typecheck e lint continuam limpos.
 
+## Largura da lombada configurável (Fase 19, 13/09/2026)
+
+Nona e última das melhorias de estante aprovadas depois da Fase 10 — e uma
+das duas ideias originais do próprio usuário (a outra, "bandeja de apps do
+Android", virou a Fase 10 inteira). Pedido original: largura **e altura**
+configuráveis por livro.
+
+**Só a largura entrou.** A altura da lombada é a quantidade de neurônios do
+livro — a única métrica que a estante mostra sem abrir nada (ver "A
+estante"). Um override manual de altura apagaria esse sinal, e sem jeito de
+saber, só olhando, se um livro alto tem muito conteúdo ou só foi esticado à
+mão. Apontei essa tensão antes de desenhar; o usuário respondeu para seguir
+mesmo assim, sem pausar — o registro fica aqui, para o caso de a decisão
+precisar ser revisitada.
+
+**O que é:** no mesmo formulário de nome/pano/emblema, um campo "Largura"
+com cinco opções — Automática (o de sempre: varia com a semente do id,
+30-46px) e quatro tamanhos fixos, Fina (24px) a Grande (68px). Escolher um
+grava `Livro.larguraLombada`; `null` continua sendo "automática".
+
+**Onde a escolha entra:** `montarPrateleiras` troca a largura calculada pela
+gravada quando ela existe (`item.livro.larguraLombada ?? automatica`) — uma
+linha, porque a única outra mudança foi o dado existir. Nenhuma prateleira,
+nenhum enfeite, nenhum gesto de arrastar precisou saber que a largura pode
+vir de dois lugares diferentes: a estante já lida com largura variável desde
+sempre (é o que faz duas lombadas nunca serem idênticas), só nunca tinha um
+terceiro lugar de onde ela podia vir.
+
+**Mesmo padrão de dado opcional das Fases 16 e 17:** `larguraLombada` não é
+indexado, então a v7 do Dexie só precisa dar `null` pra quem já existia
+(`.upgrade()` sem novo índice) — terceira vez que esse molde se repete, e a
+essa altura é claramente **o** jeito de adicionar um campo simples à lombada
+neste projeto. Entra no backup, com o mesmo "ausente = null" de sempre para
+arquivos de antes desta fase.
+
+Verificado com toque de verdade: escolher "Grande" alarga a amostra do
+formulário e a lombada de verdade na estante, mantendo a altura intocada;
+reabrir o formulário mostra a opção certa marcada; voltar para "Automática"
+devolve exatamente a largura de antes (mesma semente, mesmo resultado). Nos
+dois temas, 320/1440 px, sem rolagem horizontal — a 320px a fileira de
+opções quebra em duas linhas (`flex-wrap`), sem cortar nada. 214 testes (8
+novos: `montarPrateleiras` com e sem largura própria, repositório, migração
+v7, export/import), typecheck e lint limpos (0 erros, 0 avisos).
+
+Com esta fase, as 9 melhorias de estante aprovadas depois da Fase 10 (ver
+memória de projeto) estão todas implementadas.
+
 ## Fases
 
 0. ✅ Esqueleto (Vite/React/TS/Tailwind/PWA/Capacitor)
@@ -1580,5 +1627,6 @@ testes, typecheck e lint continuam limpos.
 15. ✅ Nome de prateleira — 5ª das 9
 16. ✅ Textura/emblema na lombada — 6ª das 9
 17. ✅ Intensidade da luz ajustável — 7ª das 9
-18. ✅ Visão geral da estante (minimapa/zoom-out) — 8ª das 9; próxima e
-    última é tamanho do livro configurável
+18. ✅ Visão geral da estante (minimapa/zoom-out) — 8ª das 9
+19. ✅ Largura da lombada configurável — 9ª e última das 9 melhorias de
+    estante aprovadas depois da Fase 10

@@ -8,6 +8,7 @@ const unitInterval = z.number().min(0).max(1)
 
 const ordem = z.number().int().min(0)
 const emblema = z.string().min(1).max(30).nullable()
+const larguraLombada = z.number().min(16).max(120).nullable()
 
 export const livroSchema = z.object({
   id,
@@ -16,6 +17,7 @@ export const livroSchema = z.object({
   prateleira: ordem,
   ordem,
   emblema,
+  larguraLombada,
   createdAt: z.date(),
 })
 
@@ -73,6 +75,8 @@ export const snapshotSchema = z.object({
       prateleira: ordem.optional(),
       // Opcional: backup de antes da Fase 16 não tinha emblema.
       emblema: emblema.optional(),
+      // Opcional: backup de antes da Fase 19 não tinha largura própria.
+      larguraLombada: larguraLombada.optional(),
       createdAt: isoDate,
     }),
   ),

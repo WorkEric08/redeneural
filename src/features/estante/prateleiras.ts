@@ -7,8 +7,9 @@ import type { LivroNaEstante } from './resumo'
  *
  * Puro e fora dos componentes (CLAUDE.md regra 9). **Determinístico**, pela
  * mesma razão do layout da rede: a estante é mobília, e mobília que se remexe
- * a cada sessão não serve de palácio da memória. Toda variação — largura da
- * lombada, inclinação, altura dos enfeites — sai da semente do id.
+ * a cada sessão não serve de palácio da memória. Toda variação — inclinação,
+ * altura dos enfeites, e a largura da lombada quando ninguém a escolheu na
+ * mão (Fase 19, `Livro.larguraLombada`) — sai da semente do id.
  *
  * Desde a Fase 10, a prateleira de um livro é **gravada** (`Livro.prateleira`),
  * não mais calculada aqui — isto só agrupa quem já sabe onde mora. A
@@ -90,7 +91,8 @@ export function montarPrateleiras(
       .sort((a, b) => a.livro.ordem - b.livro.ordem)
       .map((item) => {
         const [a] = semente(item.livro.id)
-        return { item, largura: Math.round(30 + a * 16) }
+        const automatica = Math.round(30 + a * 16)
+        return { item, largura: item.livro.larguraLombada ?? automatica }
       }),
     enfeites: montarEnfeites(i),
   }))

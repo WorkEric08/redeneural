@@ -128,6 +128,17 @@ export function createDb(name: string = DB_NAME): PalacioDB {
       await livros.bulkPut(antigos.map((l) => ({ ...l, emblema: l.emblema ?? null })))
     })
 
+  // v7 (Fase 19): largura da lombada, opcional. Mesmo padrão da v6 — não é
+  // indexada, então só o dado precisa de um valor (`null` = automática, a
+  // semente do id continua decidindo) pra quem já existia.
+  db.version(7)
+    .stores({})
+    .upgrade(async (tx) => {
+      const livros = tx.table<Livro & { larguraLombada?: number | null }, string>('livros')
+      const antigos = await livros.toArray()
+      await livros.bulkPut(antigos.map((l) => ({ ...l, larguraLombada: l.larguraLombada ?? null })))
+    })
+
   return db
 }
 

@@ -946,6 +946,24 @@ img {
   color: var(--poeira);
 }
 
+/* A opção de largura: mesma caixa do pano (herda `.pano-amostra`), mas sem
+   `aspect-ratio` quadrado — aqui a largura É a escolha, então cada opção tem
+   a sua própria (posta inline, em px reais, ver FormularioDeLivro.tsx). */
+.largura-amostra {
+  aspect-ratio: unset;
+  width: auto;
+  max-width: none;
+  height: 44px;
+}
+
+.largura-amostra--auto {
+  display: grid;
+  width: 38px;
+  place-items: center;
+  background: var(--parede);
+  color: var(--poeira);
+}
+
 /* Sem opacidade: quem escurece o enfeite é a lavagem da cor (ver Movel.tsx).
    Opacidade por cima só o deixaria transparente, e livro não é vidro. */
 

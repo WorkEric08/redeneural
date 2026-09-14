@@ -28,6 +28,7 @@ export function livroToSnapshot(l: Livro): LivroSnapshot {
     prateleira: l.prateleira,
     ordem: l.ordem,
     emblema: l.emblema,
+    larguraLombada: l.larguraLombada,
     createdAt: toIso(l.createdAt),
   }
 }
@@ -45,6 +46,7 @@ export function livroFromSnapshot(s: LivroSnapshot, prateleira: number, ordem: n
     prateleira,
     ordem,
     emblema: s.emblema ?? null,
+    larguraLombada: s.larguraLombada ?? null,
     createdAt: fromIso(s.createdAt, `livro ${s.id}.createdAt`),
   }
 }

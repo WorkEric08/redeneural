@@ -27,6 +27,7 @@ export interface NovoLivro {
   titulo: string
   cor: string
   emblema: string | null
+  larguraLombada: number | null
 }
 
 interface PalacioStore {
@@ -233,7 +234,13 @@ export const usePalacio = create<PalacioStore>()((set, get) => {
       set({
         livros: antes.map((l) =>
           l.id === id
-            ? { ...l, titulo: mudancas.titulo.trim(), cor: mudancas.cor, emblema: mudancas.emblema }
+            ? {
+                ...l,
+                titulo: mudancas.titulo.trim(),
+                cor: mudancas.cor,
+                emblema: mudancas.emblema,
+                larguraLombada: mudancas.larguraLombada,
+              }
             : l,
         ),
         erro: null,

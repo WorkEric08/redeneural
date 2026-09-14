@@ -12,6 +12,7 @@ function livro(id: string, titulo: string, prateleira: number, ordem: number, di
     prateleira,
     ordem,
     emblema: null,
+    larguraLombada: null,
     createdAt: new Date(2026, 0, 1 + dias),
   }
 }

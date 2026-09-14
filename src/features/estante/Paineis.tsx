@@ -73,7 +73,7 @@ function Conteudo(props: Props & { painel: Painel }) {
           <p className="text-poeira text-sm">Dê um nome à área. Os neurônios vêm depois.</p>
         </header>
         <FormularioDeLivro
-          inicial={{ titulo: '', cor: props.panoSugerido, emblema: null }}
+          inicial={{ titulo: '', cor: props.panoSugerido, emblema: null, larguraLombada: null }}
           rotuloDeEnvio="Criar livro"
           intensidadeDaLuz={props.intensidadeDaLuz}
           onCancelar={onFechar}
@@ -106,7 +106,12 @@ function Conteudo(props: Props & { painel: Painel }) {
     <div className="flex flex-col gap-6">
       <Cabecalho livro={livro}>Renomear e trocar o pano</Cabecalho>
       <FormularioDeLivro
-        inicial={{ titulo: livro.titulo, cor: livro.cor, emblema: livro.emblema }}
+        inicial={{
+          titulo: livro.titulo,
+          cor: livro.cor,
+          emblema: livro.emblema,
+          larguraLombada: livro.larguraLombada,
+        }}
         rotuloDeEnvio="Salvar"
         intensidadeDaLuz={props.intensidadeDaLuz}
         onCancelar={onFechar}

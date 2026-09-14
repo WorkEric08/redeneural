@@ -24,6 +24,7 @@ export interface CriarLivroInput {
   /** Em qual prateleira a pessoa tocou "criar" — o livro nasce no fim dela. */
   prateleira: number
   emblema?: string | null
+  larguraLombada?: number | null
 }
 
 export interface EditarLivroInput {
@@ -31,6 +32,7 @@ export interface EditarLivroInput {
   titulo: string
   cor: string
   emblema: string | null
+  larguraLombada: number | null
 }
 
 export interface EstadoDoPalacio {

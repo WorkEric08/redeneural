@@ -44,6 +44,16 @@ export interface Livro {
    * mais simplesmente não desenha nada, em vez de quebrar.
    */
   emblema: string | null
+  /**
+   * Largura da lombada em px, escolhida na mão. `null` é "automática": varia
+   * com a semente do id, como sempre (ver `features/estante/prateleiras.ts`).
+   *
+   * De propósito **não existe** um campo equivalente para a altura: a altura
+   * da lombada é a quantidade de neurônios do livro — a única métrica que a
+   * estante mostra sem abrir nada (ver CLAUDE.md, "A estante"). Deixá-la
+   * configurável apagaria esse sinal para quem olha de fora.
+   */
+  larguraLombada: number | null
   createdAt: Date
 }
 
@@ -135,6 +145,8 @@ export interface LivroSnapshot {
   prateleira?: number | undefined
   /** Ausente em backups anteriores à Fase 16 — o import trata como `null`. */
   emblema?: string | null | undefined
+  /** Ausente em backups anteriores à Fase 19 — o import trata como `null`. */
+  larguraLombada?: number | null | undefined
   createdAt: string
 }
 

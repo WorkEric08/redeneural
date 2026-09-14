@@ -14,6 +14,7 @@ const LIVROS: Livro[] = [
     prateleira: 0,
     ordem: 0,
     emblema: null,
+    larguraLombada: null,
     createdAt: T0,
   },
   {
@@ -23,6 +24,7 @@ const LIVROS: Livro[] = [
     prateleira: 0,
     ordem: 1,
     emblema: null,
+    larguraLombada: null,
     createdAt: T0,
   },
   {
@@ -32,6 +34,7 @@ const LIVROS: Livro[] = [
     prateleira: 0,
     ordem: 2,
     emblema: null,
+    larguraLombada: null,
     createdAt: T0,
   },
 ]
