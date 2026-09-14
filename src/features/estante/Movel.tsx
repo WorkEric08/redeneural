@@ -22,6 +22,11 @@ interface Props {
   /** Modo organizar ligado: segurar e arrastar move o livro. Desligado, só ergue. */
   organizando: boolean
   /**
+   * Visão geral ligada: fileiras bem mais baixas, sem título/emblema/selo —
+   * só a cor de cada livro —, para caber muito mais prateleira de uma vez.
+   */
+  visaoGeral: boolean
+  /**
    * Quem está marcado para mover em grupo. Não vazio liga o modo de seleção:
    * tocar um livro marca/desmarca em vez de espiar, e tocar área vazia de uma
    * prateleira move o grupo inteiro para lá em vez de criar um livro novo.
@@ -57,6 +62,7 @@ export function Movel({
   quantidadeDePrateleiras,
   intensidadeDaLuz,
   organizando,
+  visaoGeral,
   selecionados,
   etiquetas,
   onEspiar,
@@ -110,6 +116,7 @@ export function Movel({
     <div
       className="movel cores-de-antes"
       data-organizando={organizando || undefined}
+      data-visao-geral={visaoGeral || undefined}
       style={{ '--mv-prateleiras': prateleiras.length } as CSSProperties}
     >
       <span className="movel-cornija" aria-hidden />

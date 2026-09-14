@@ -1509,6 +1509,57 @@ recarregar a página. Nos dois temas, 320/390/1440 px, sem rolagem horizontal.
 206 testes (9 novos: `clampIntensidadeDaLuz`, `pano()` com intensidade,
 repositório), typecheck e lint limpos (0 erros, 0 avisos).
 
+## Visão geral da estante (Fase 18, 13/09/2026)
+
+Oitava das 9 melhorias aprovadas depois da Fase 10. Motivo real, não só
+estético: a fileira nunca fica menor que 92px (`.movel-fila`, ver "A estante
+se mede pela tela"), e a estante **não rola** — de propósito, desde a Fase 6,
+para arrastar não disputar o dedo com a rolagem. As duas decisões juntas
+significam que um palácio com mais prateleiras do que o piso de 92px cabe na
+tela perde prateleiras de vista **sem jeito nenhum de alcançá-las**: elas
+ficam cortadas por trás do rodapé, e nem rolar nem redimensionar resolve.
+Verificado direto: num aparelho de 892px de altura, 20 prateleiras a 92px
+cada só deixam 8 visíveis — as outras 12 simplesmente não existem para quem
+olha a tela.
+
+**A solução não é rolar, é caber.** Um botão (`Ver a estante inteira`, ao
+lado do de organizar) troca o piso da fileira de 92px para 24px — o
+suficiente para qualquer quantidade razoável de prateleiras caber de uma vez,
+sem cortar nenhuma. Como a estante continua sem rolagem, "ver tudo de uma vez
+zoomed out" já cumpre o que um minimapa cumpriria num painel que rolasse — daí
+os dois nomes da ideia (minimapa/zoom-out) virarem uma coisa só.
+
+**Nesse tamanho, detalhe teria virado ruído.** Título gravado, selo de
+seleção, emblema e nome de prateleira não caberiam legíveis a 24px de altura
+— em vez de espremer texto ilegível, a Fase esconde todos eles
+(`display: none` sob `.movel[data-visao-geral]`) e deixa só a cor de cada
+lombada, a mesma leitura de um minimapa de editor de código. Nenhuma lógica
+de gesto mudou: `useManipularLivros` não sabe que o modo existe, então
+tocar, segurar, arrastar e criar continuam funcionando exatamente como
+sempre, só que em cima de retângulos menores — zero risco para o gesto que
+levou sete fases para ficar certo.
+
+**Sem persistência, de propósito** — mesmo motivo do modo organizar (Fase
+11): é um jeito de olhar a estante agora, não uma preferência do palácio.
+Cada visita volta ao tamanho normal.
+
+**Gotcha:** a primeira versão também reduzia o `padding-left` da fileira (de
+26px para 4px), pensando que aqueles 26px existiam só para abrir espaço para
+o selo de nome da prateleira — que some na visão geral de qualquer jeito.
+Errado: o padding existe para o primeiro livro não ficar **atrás da pilastra
+esquerda** (24px de largura, sempre por cima da fileira — ver "A estante na
+mão"), e isso não depende do tamanho da fileira. Com o padding reduzido, o
+primeiro livro de cada prateleira ficava inclicável (Playwright: `intercepts
+pointer events`, a mesma classe de erro da Fase 11). Corrigido devolvendo o
+padding ao valor de sempre.
+
+Verificado com 20 prateleiras num viewport de 412×892: modo normal mostra 8,
+visão geral mostra as 20; tocar um livro ainda espia normalmente; desligar
+volta o título a aparecer. Nos dois temas, 320/1440 px, sem rolagem
+horizontal. Sem teste automatizado novo — é CSS mais um booleano local, sem
+função pura nova para testar (mesmo caso do modo organizar, Fase 11); 206
+testes, typecheck e lint continuam limpos.
+
 ## Fases
 
 0. ✅ Esqueleto (Vite/React/TS/Tailwind/PWA/Capacitor)
@@ -1528,4 +1579,6 @@ repositório), typecheck e lint limpos (0 erros, 0 avisos).
 14. ✅ Seleção múltipla — 4ª das 9
 15. ✅ Nome de prateleira — 5ª das 9
 16. ✅ Textura/emblema na lombada — 6ª das 9
-17. ✅ Intensidade da luz ajustável — 7ª das 9; próxima é minimapa/zoom-out
+17. ✅ Intensidade da luz ajustável — 7ª das 9
+18. ✅ Visão geral da estante (minimapa/zoom-out) — 8ª das 9; próxima e
+    última é tamanho do livro configurável
