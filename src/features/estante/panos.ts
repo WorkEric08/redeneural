@@ -1,17 +1,23 @@
 import type { CSSProperties } from 'react'
 
-import type { Livro } from '@/core'
+import { INTENSIDADE_DA_LUZ_PADRAO, type Livro } from '@/core'
 
 /**
  * As duas cores de um pano: a real e a lavada pela luz da sala. A folha escolhe
  * qual mostrar pelo estado da lombada — de longe se vê a lavada; puxado para
  * perto, a real. É a ideia que o CLAUDE.md guardava para a passada final
  * ("distância desbota") virando comportamento.
+ *
+ * `intensidadeDaLuz` (0-100, ajustável em Ajustes desde a Fase 17) é o quanto
+ * da mistura vira a cor da luz — o resto é a cor real do pano.
  */
-export function pano(cor: string): CSSProperties {
+export function pano(
+  cor: string,
+  intensidadeDaLuz: number = INTENSIDADE_DA_LUZ_PADRAO,
+): CSSProperties {
   return {
     '--pano': cor,
-    '--pano-lavado': `color-mix(in oklab, ${cor} 58%, var(--lavagem))`,
+    '--pano-lavado': `color-mix(in oklab, ${cor} ${String(100 - intensidadeDaLuz)}%, var(--lavagem))`,
   } as CSSProperties
 }
 

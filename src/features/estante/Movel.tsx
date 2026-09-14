@@ -17,6 +17,8 @@ interface Props {
   chegandoId: string | null
   /** Quantas prateleiras o móvel tem — gravado, ajustável em Ajustes. */
   quantidadeDePrateleiras: number
+  /** 0-100: o quanto a luz da sala lava a cor do pano em repouso. */
+  intensidadeDaLuz: number
   /** Modo organizar ligado: segurar e arrastar move o livro. Desligado, só ergue. */
   organizando: boolean
   /**
@@ -53,6 +55,7 @@ export function Movel({
   selecionadoId,
   chegandoId,
   quantidadeDePrateleiras,
+  intensidadeDaLuz,
   organizando,
   selecionados,
   etiquetas,
@@ -173,6 +176,7 @@ export function Movel({
                   ponte={(pontesDoFoco?.get(item.livro.id) ?? 0) > 0}
                   chegando={chegandoId === item.livro.id}
                   selecionado={selecionados.has(item.livro.id)}
+                  intensidadeDaLuz={intensidadeDaLuz}
                   manipular={manipular(item.livro.id)}
                 />
               ))}

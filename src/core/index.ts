@@ -1,6 +1,7 @@
 export * from './domain/types'
 export * from './domain/conexaoId'
 export * from './domain/estanteAntiga'
+export * from './domain/luz'
 export * from './domain/base64'
 export * from './domain/snapshot'
 export * from './domain/tela'

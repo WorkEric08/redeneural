@@ -12,6 +12,8 @@ interface Props {
   inicial: NovoLivro
   rotuloDeEnvio: string
   ocupado?: boolean
+  /** 0-100: para a amostra mostrar a mesma lavagem da estante. */
+  intensidadeDaLuz: number
   onEnviar: (dados: NovoLivro) => void
   onCancelar: () => void
 }
@@ -28,6 +30,7 @@ export function FormularioDeLivro({
   inicial,
   rotuloDeEnvio,
   ocupado = false,
+  intensidadeDaLuz,
   onEnviar,
   onCancelar,
 }: Props) {
@@ -61,7 +64,11 @@ export function FormularioDeLivro({
           />
         </label>
 
-        <span aria-hidden className="lombada lombada--amostra cores-de-antes" style={pano(cor)}>
+        <span
+          aria-hidden
+          className="lombada lombada--amostra cores-de-antes"
+          style={pano(cor, intensidadeDaLuz)}
+        >
           <span className="lombada-titulo">{titulo.trim() || '…'}</span>
           <EmblemaDaLombada chave={emblema} />
         </span>

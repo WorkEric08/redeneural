@@ -41,6 +41,8 @@ export interface EstadoDoPalacio {
   quantidadeDePrateleiras: number
   /** Nomes de prateleira — puramente visual, uma por prateleira no máximo. */
   etiquetas: EtiquetaDePrateleira[]
+  /** 0-100: o quanto a luz da sala lava a cor do pano em repouso. */
+  intensidadeDaLuz: number
 }
 
 export interface ResultadoDeEscrita {
@@ -100,6 +102,8 @@ export interface ConnectionEngine {
    * prateleira que deixaria de existir — mova os livros antes.
    */
   definirQuantidadeDePrateleiras(quantidade: number): Promise<number>
+  /** Grava a intensidade da luz (0-100), sempre recortada para essa faixa. */
+  definirIntensidadeDaLuz(valor: number): Promise<number>
   /**
    * Reordena cada prateleira pelo critério escolhido — um atalho, não o
    * padrão. Nunca muda quem está em qual prateleira, só a ordem dentro dela.

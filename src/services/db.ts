@@ -27,10 +27,12 @@ export interface PerfilGravado {
   atualizadoEm: Date
 }
 
-/** Preferências simples do palácio — hoje só a quantidade de prateleiras (Fase 10). */
+/** Preferências simples do palácio: quantidade de prateleiras (Fase 10) e intensidade da luz (Fase 17). */
 export interface PreferenciasGravadas {
   chave: 'preferencias'
   quantidadeDePrateleiras: number
+  /** 0-100. Ausente em preferências gravadas antes da Fase 17 — o repo trata como `INTENSIDADE_DA_LUZ_PADRAO`. */
+  intensidadeDaLuz?: number
 }
 
 export type MetaGravada = PerfilGravado | PreferenciasGravadas

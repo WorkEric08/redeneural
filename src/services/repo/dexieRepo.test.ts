@@ -358,6 +358,34 @@ describe('quantidade de prateleiras', () => {
     await repo.definirQuantidadeDePrateleiras(2)
     expect(await repo.getQuantidadeDePrateleiras()).toBe(2)
   })
+
+  it('definir uma não apaga a intensidade da luz já gravada, e vice-versa', async () => {
+    await repo.definirIntensidadeDaLuz(70)
+    await repo.definirQuantidadeDePrateleiras(6)
+    expect(await repo.getIntensidadeDaLuz()).toBe(70)
+
+    await repo.definirIntensidadeDaLuz(10)
+    expect(await repo.getQuantidadeDePrateleiras()).toBe(6)
+  })
+})
+
+describe('intensidade da luz', () => {
+  it('42 por padrão, quando nunca foi definida', async () => {
+    expect(await repo.getIntensidadeDaLuz()).toBe(42)
+  })
+
+  it('grava e devolve o que foi definido', async () => {
+    await repo.definirIntensidadeDaLuz(80)
+    expect(await repo.getIntensidadeDaLuz()).toBe(80)
+  })
+
+  it('recorta para 0-100', async () => {
+    await repo.definirIntensidadeDaLuz(150)
+    expect(await repo.getIntensidadeDaLuz()).toBe(100)
+
+    await repo.definirIntensidadeDaLuz(-30)
+    expect(await repo.getIntensidadeDaLuz()).toBe(0)
+  })
 })
 
 describe('etiqueta de prateleira', () => {

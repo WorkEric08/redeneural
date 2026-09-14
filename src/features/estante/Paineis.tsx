@@ -22,6 +22,8 @@ interface Props {
   etiquetas: readonly EtiquetaDePrateleira[]
   ocupado: boolean
   panoSugerido: string
+  /** 0-100: para a amostra do formulário mostrar a mesma lavagem da estante. */
+  intensidadeDaLuz: number
   onFechar: () => void
   onTrocarPainel: (painel: Painel) => void
   onCriar: (novo: NovoLivro, prateleira: number) => Promise<boolean>
@@ -73,6 +75,7 @@ function Conteudo(props: Props & { painel: Painel }) {
         <FormularioDeLivro
           inicial={{ titulo: '', cor: props.panoSugerido, emblema: null }}
           rotuloDeEnvio="Criar livro"
+          intensidadeDaLuz={props.intensidadeDaLuz}
           onCancelar={onFechar}
           onEnviar={(dados) => {
             void props.onCriar(dados, painel.prateleira).then((ok) => {
@@ -105,6 +108,7 @@ function Conteudo(props: Props & { painel: Painel }) {
       <FormularioDeLivro
         inicial={{ titulo: livro.titulo, cor: livro.cor, emblema: livro.emblema }}
         rotuloDeEnvio="Salvar"
+        intensidadeDaLuz={props.intensidadeDaLuz}
         onCancelar={onFechar}
         onEnviar={(dados) => {
           void props.onEditar(livro.id, dados).then((ok) => {

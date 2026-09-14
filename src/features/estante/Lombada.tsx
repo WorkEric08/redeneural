@@ -36,6 +36,8 @@ interface Props {
   chegando: boolean
   /** Modo de seleção múltipla ligado e este livro está marcado. */
   selecionado: boolean
+  /** 0-100: o quanto a luz da sala lava a cor do pano em repouso. */
+  intensidadeDaLuz: number
   manipular: ManipulacaoDaLombada
 }
 
@@ -59,6 +61,7 @@ export function Lombada({
   ponte,
   chegando,
   selecionado,
+  intensidadeDaLuz,
   manipular,
 }: Props) {
   const altura = ALTURA_MINIMA + item.altura * (ALTURA_MAXIMA - ALTURA_MINIMA)
@@ -74,7 +77,7 @@ export function Lombada({
       data-selecionado={selecionado || undefined}
       className="lombada lombada--livro"
       style={{
-        ...pano(item.livro.cor),
+        ...pano(item.livro.cor, intensidadeDaLuz),
         height: `${String(Math.round(altura * 10) / 10)}%`,
         width: `${String(largura)}px`,
       }}

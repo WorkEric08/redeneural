@@ -1,9 +1,11 @@
 import type { Conexao, Id, Livro, Neuronio, PalacioRepo, PalacioSnapshot } from '@/core'
 import {
   SNAPSHOT_VERSION,
+  clampIntensidadeDaLuz,
   conexaoId,
   conexaoFromSnapshot,
   conexaoToSnapshot,
+  INTENSIDADE_DA_LUZ_PADRAO,
   livroFromSnapshot,
   livroToSnapshot,
   moverLivroNaEstante,
@@ -133,9 +135,31 @@ export function createDexieRepo(db: PalacioDB = defaultDb): PalacioRepo {
             `ainda há livro na prateleira ${String(quantidade)} ou depois — mova antes de diminuir`,
           )
         }
+        const atual = (await db.meta.get('preferencias')) as PreferenciasGravadas | undefined
         const preferencias: PreferenciasGravadas = {
           chave: 'preferencias',
           quantidadeDePrateleiras: quantidade,
+          ...(atual?.intensidadeDaLuz !== undefined && {
+            intensidadeDaLuz: atual.intensidadeDaLuz,
+          }),
+        }
+        await db.meta.put(preferencias)
+      })
+    },
+
+    async getIntensidadeDaLuz() {
+      const gravado = (await db.meta.get('preferencias')) as PreferenciasGravadas | undefined
+      return gravado?.intensidadeDaLuz ?? INTENSIDADE_DA_LUZ_PADRAO
+    },
+
+    async definirIntensidadeDaLuz(valor) {
+      const recortado = clampIntensidadeDaLuz(valor)
+      await db.transaction('rw', db.meta, async () => {
+        const atual = (await db.meta.get('preferencias')) as PreferenciasGravadas | undefined
+        const preferencias: PreferenciasGravadas = {
+          chave: 'preferencias',
+          quantidadeDePrateleiras: atual?.quantidadeDePrateleiras ?? MINIMO_DE_PRATELEIRAS,
+          intensidadeDaLuz: recortado,
         }
         await db.meta.put(preferencias)
       })
@@ -362,6 +386,9 @@ export function createDexieRepo(db: PalacioDB = defaultDb): PalacioRepo {
             const preferencias: PreferenciasGravadas = {
               chave: 'preferencias',
               quantidadeDePrateleiras: maiorPrateleira,
+              ...(atual?.intensidadeDaLuz !== undefined && {
+                intensidadeDaLuz: atual.intensidadeDaLuz,
+              }),
             }
             await db.meta.put(preferencias)
           }

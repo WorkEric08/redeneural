@@ -104,6 +104,9 @@ export function criarWorkerEngine(): ConnectionEngine {
         quantidade,
       }),
 
+    definirIntensidadeDaLuz: (valor: number): Promise<number> =>
+      pedir<'definirIntensidadeDaLuz'>({ tipo: 'definirIntensidadeDaLuz', valor }),
+
     ordenarEstante: (criterio: CriterioDeOrdenacao): Promise<Livro[]> =>
       pedir<'ordenarEstante'>({ tipo: 'ordenarEstante', criterio }),
 

@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 
 import {
+  INTENSIDADE_DA_LUZ_PADRAO,
   MINIMO_DE_PRATELEIRAS,
   moverLivroNaEstante,
   novoLivro,
@@ -34,6 +35,8 @@ interface PalacioStore {
   conexoes: Conexao[]
   quantidadeDePrateleiras: number
   etiquetas: EtiquetaDePrateleira[]
+  /** 0-100: o quanto a luz da sala lava a cor do pano em repouso. */
+  intensidadeDaLuz: number
 
   carregado: boolean
   ocupado: boolean
@@ -62,6 +65,8 @@ interface PalacioStore {
   moverVariosLivros: (ids: readonly string[], prateleira: number) => Promise<void>
   /** Recusa diminuir se sobrar livro numa prateleira que deixaria de existir. */
   definirQuantidadeDePrateleiras: (quantidade: number) => Promise<void>
+  /** Otimista, como o resto das preferências — a estante já lava na hora. */
+  definirIntensidadeDaLuz: (valor: number) => Promise<void>
   /** Atalho de um toque: reordena cada prateleira, sem mudar quem está em qual. */
   ordenarEstante: (criterio: CriterioDeOrdenacao) => Promise<void>
   /** Texto vazio apaga a etiqueta daquela prateleira. */
@@ -87,6 +92,7 @@ export const usePalacio = create<PalacioStore>()((set, get) => {
     conexoes: [],
     quantidadeDePrateleiras: MINIMO_DE_PRATELEIRAS,
     etiquetas: [],
+    intensidadeDaLuz: INTENSIDADE_DA_LUZ_PADRAO,
     carregado: false,
     ocupado: false,
     progresso: null,
@@ -299,6 +305,17 @@ export const usePalacio = create<PalacioStore>()((set, get) => {
         set({ quantidadeDePrateleiras: await engine.definirQuantidadeDePrateleiras(quantidade) })
       } catch (e) {
         set({ quantidadeDePrateleiras: antes, erro: mensagem(e) })
+      }
+    },
+
+    async definirIntensidadeDaLuz(valor) {
+      const antes = get().intensidadeDaLuz
+      set({ intensidadeDaLuz: valor, erro: null })
+
+      try {
+        set({ intensidadeDaLuz: await engine.definirIntensidadeDaLuz(valor) })
+      } catch (e) {
+        set({ intensidadeDaLuz: antes, erro: mensagem(e) })
       }
     },
 

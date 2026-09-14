@@ -41,6 +41,10 @@ export interface PalacioRepo {
    * numa prateleira que deixaria de existir — nunca perder livro por engano.
    */
   definirQuantidadeDePrateleiras(quantidade: number): Promise<void>
+  /** 0-100. Default `INTENSIDADE_DA_LUZ_PADRAO` se nunca foi definida. */
+  getIntensidadeDaLuz(): Promise<number>
+  /** Grava a intensidade da luz, sempre recortada para 0-100. */
+  definirIntensidadeDaLuz(valor: number): Promise<void>
   listEtiquetas(): Promise<EtiquetaDePrateleira[]>
   /** Texto vazio apaga a etiqueta daquela prateleira. */
   definirEtiqueta(prateleira: number, texto: string): Promise<void>

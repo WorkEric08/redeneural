@@ -76,13 +76,15 @@ const pontuar: PontuarPar = SEM_RERANK
 const CRESCIMENTO_ATE_REPROCESSAR = 1.5
 
 async function estadoAtual(): Promise<EstadoDoPalacio> {
-  const [livros, neuronios, conexoes, quantidadeDePrateleiras, etiquetas] = await Promise.all([
-    repo.listLivros(),
-    repo.listNeuronios(),
-    repo.listConexoes(),
-    repo.getQuantidadeDePrateleiras(),
-    repo.listEtiquetas(),
-  ])
+  const [livros, neuronios, conexoes, quantidadeDePrateleiras, etiquetas, intensidadeDaLuz] =
+    await Promise.all([
+      repo.listLivros(),
+      repo.listNeuronios(),
+      repo.listConexoes(),
+      repo.getQuantidadeDePrateleiras(),
+      repo.listEtiquetas(),
+      repo.getIntensidadeDaLuz(),
+    ])
 
   return {
     livros,
@@ -90,6 +92,7 @@ async function estadoAtual(): Promise<EstadoDoPalacio> {
     conexoes,
     quantidadeDePrateleiras,
     etiquetas,
+    intensidadeDaLuz,
   }
 }
 
@@ -309,6 +312,10 @@ async function responder(msg: ParaMotor): Promise<DoMotor> {
       case 'definirQuantidadeDePrateleiras':
         await repo.definirQuantidadeDePrateleiras(msg.quantidade)
         return { req: msg.req, ok: true, dados: msg.quantidade }
+
+      case 'definirIntensidadeDaLuz':
+        await repo.definirIntensidadeDaLuz(msg.valor)
+        return { req: msg.req, ok: true, dados: await repo.getIntensidadeDaLuz() }
 
       case 'ordenarEstante':
         return { req: msg.req, ok: true, dados: await ordenarEstante(msg.criterio) }

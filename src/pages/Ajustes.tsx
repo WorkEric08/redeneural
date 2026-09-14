@@ -1,10 +1,11 @@
-import { Download, Minus, Plus, RefreshCw, Rows3, Search, Upload } from 'lucide-react'
+import { Download, Lightbulb, Minus, Plus, RefreshCw, Rows3, Search, Upload } from 'lucide-react'
 import type { ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 
 import { botao } from '@/components/botao'
 import { BarraDeTopo } from '@/components/BarraDeTopo'
 import { EtiquetaProcessando } from '@/components/EtiquetaProcessando'
+import { INTENSIDADE_DA_LUZ_MAXIMA, INTENSIDADE_DA_LUZ_MINIMA } from '@/core'
 import { usePalacio } from '@/store/palacio'
 
 /**
@@ -24,6 +25,8 @@ export default function Ajustes() {
     ocupado,
     quantidadeDePrateleiras,
     definirQuantidadeDePrateleiras,
+    intensidadeDaLuz,
+    definirIntensidadeDaLuz,
     reprocessarTudo,
     exportar,
     importar,
@@ -100,9 +103,35 @@ export default function Ajustes() {
                 </button>
               </div>
             </div>
+
+            <div className="linha-de-lista flex-col items-stretch gap-3">
+              <div className="flex items-center gap-3.5">
+                <Icone>
+                  <Lightbulb size={18} aria-hidden />
+                </Icone>
+                <Texto titulo="Intensidade da luz">
+                  De longe, o quanto a luz da sala lava a cor dos livros.
+                </Texto>
+                <span className="font-dado w-9 shrink-0 text-right text-sm tabular-nums">
+                  {intensidadeDaLuz}%
+                </span>
+              </div>
+              <input
+                type="range"
+                min={INTENSIDADE_DA_LUZ_MINIMA}
+                max={INTENSIDADE_DA_LUZ_MAXIMA}
+                value={intensidadeDaLuz}
+                disabled={travado}
+                aria-label="Intensidade da luz"
+                onChange={(e) => {
+                  void definirIntensidadeDaLuz(Number(e.target.value))
+                }}
+                className="accent-realce w-full"
+              />
+            </div>
           </div>
           <p className="text-poeira px-1 pt-2.5 text-xs leading-relaxed">
-            Diminuir é recusado se ainda sobrar livro nas prateleiras removidas — mova-os antes.
+            Diminuir prateleiras é recusado se ainda sobrar livro nas removidas — mova-os antes.
           </p>
         </section>
 

@@ -31,6 +31,7 @@ export default function Estante() {
     carregado,
     ocupado,
     quantidadeDePrateleiras,
+    intensidadeDaLuz,
     moverLivro,
     criarLivro,
     editarLivro,
@@ -100,6 +101,7 @@ export default function Estante() {
           selecionadoId={selecionadoId}
           chegandoId={chegandoId}
           quantidadeDePrateleiras={quantidadeDePrateleiras}
+          intensidadeDaLuz={intensidadeDaLuz}
           organizando={organizando}
           selecionados={selecionados}
           etiquetas={etiquetasPorPrateleira}
@@ -196,6 +198,7 @@ export default function Estante() {
         etiquetas={etiquetas}
         ocupado={ocupado}
         panoSugerido={panoSugerido(livros)}
+        intensidadeDaLuz={intensidadeDaLuz}
         onFechar={fechar}
         onTrocarPainel={trocar}
         onCriar={async (novo, prateleira) => {

@@ -1464,6 +1464,51 @@ juntos. Nos dois temas, 320/1440 px, sem rolagem horizontal. 197 testes (6
 novos: repositório, migração v6 e export/import do emblema), typecheck e
 lint limpos (0 erros, 0 avisos).
 
+## Intensidade da luz ajustável (Fase 17, 13/09/2026)
+
+Sétima das 9 melhorias aprovadas depois da Fase 10. Desde a Fase 6 a lombada
+em repouso mostra a cor do pano **lavada** pela luz da sala — de longe não se
+vê a cor real, só de perto (ver "A estante", "distância desbota"). Esse tanto
+de lavagem era uma constante fixa no código (58% da cor real, 42% da luz);
+agora é uma preferência, ajustável em Ajustes → Estante com um slider (0 a
+100).
+
+**Onde a preferência mora:** junto de `quantidadeDePrateleiras`, no mesmo
+documento `meta.preferencias` (Fase 10) — nenhuma tabela nova, nenhuma versão
+nova do Dexie. `intensidadeDaLuz` é só mais um campo opcional ali, com
+`INTENSIDADE_DA_LUZ_PADRAO` (42) valendo para quem nunca definiu, e não entra
+no backup pelo mesmo motivo de `quantidadeDePrateleiras` não entrar: é
+preferência local, não dado do palácio.
+
+**Gotcha que só apareceu com dois campos no mesmo documento:** como
+`definirQuantidadeDePrateleiras` e a fusão de um import regravam o documento
+`preferencias` inteiro, os dois já tinham (antes desta fase, sem sintoma
+porque só havia um campo) o risco de sobrescrever um campo irmão com
+`undefined` se não lessem o documento atual primeiro. Corrigido nos três
+pontos que gravam ali: sempre ler o documento antes de regravar, preservando
+o campo que a operação não veio para mudar.
+
+**Escopo: só a lombada de verdade, não o enfeite.** As lombadas escuras que
+preenchem a prateleira (`LombadaDeEnfeite`, ver "A estante na mão") já usam
+uma faixa própria e bem mais lavada (8-38%) para saltarem menos que os livros
+de verdade — uma fórmula independente, não `pano()`. Estender o slider a elas
+também exigiria decidir uma segunda escala proporcional só para preservar
+essa relação, por um efeito que ninguém pediu; fora do escopo desta fase.
+
+**Por que virou um controle de linha inteira, não inline como o de
+prateleiras:** a primeira versão pôs o slider ao lado do texto, na mesma
+linha — coube bem em 1440px, mas em 320px espremeu a descrição numa coluna
+tão estreita que ela quebrou em seis linhas curtas e feias. Um slider também
+pede mais largura que um contador +/- para ser arrastável com o dedo.
+Resolvido pondo o slider **abaixo** do título, ocupando a linha inteira.
+
+Verificado no navegador: o slider muda a cor da lombada na hora (0 mostra a
+cor real mesmo em repouso, 100 lava quase tudo na cor da sala), a amostra do
+formulário de livro acompanha o mesmo valor, e o ajuste sobrevive a
+recarregar a página. Nos dois temas, 320/390/1440 px, sem rolagem horizontal.
+206 testes (9 novos: `clampIntensidadeDaLuz`, `pano()` com intensidade,
+repositório), typecheck e lint limpos (0 erros, 0 avisos).
+
 ## Fases
 
 0. ✅ Esqueleto (Vite/React/TS/Tailwind/PWA/Capacitor)
@@ -1482,4 +1527,5 @@ lint limpos (0 erros, 0 avisos).
 13. ✅ Ordenar com um toque — 3ª das 9
 14. ✅ Seleção múltipla — 4ª das 9
 15. ✅ Nome de prateleira — 5ª das 9
-16. ✅ Textura/emblema na lombada — 6ª das 9; próxima é intensidade da luz/lavagem ajustável
+16. ✅ Textura/emblema na lombada — 6ª das 9
+17. ✅ Intensidade da luz ajustável — 7ª das 9; próxima é minimapa/zoom-out
