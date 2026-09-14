@@ -72,13 +72,6 @@ interface Toque {
 }
 
 interface Opcoes {
-  /**
-   * Modo organizar ligado: segurar e arrastar move o livro. Desligado, segurar
-   * ainda ergue e acende as pontes — só não vira arrasto — e soltar sempre
-   * abre o menu, do mesmo jeito que soltar parado já abria. É o que evita
-   * mover um livro sem querer só de segurar de passagem para espiar as pontes.
-   */
-  organizando: boolean
   onEspiar: (livroId: string) => void
   onAcoes: (livroId: string) => void
   /**
@@ -124,7 +117,7 @@ function alvoNaEstante(x: number, y: number, exceto: string): Alvo {
   return { prateleira: null, livroId: null }
 }
 
-export function useManipularLivros({ organizando, onEspiar, onAcoes, onMover }: Opcoes) {
+export function useManipularLivros({ onEspiar, onAcoes, onMover }: Opcoes) {
   const [gesto, setGesto] = useState<Gesto>(PARADO)
 
   // Os eventos leem o gesto no mesmo instante em que ele muda; o estado do React
@@ -212,9 +205,6 @@ export function useManipularLivros({ organizando, onEspiar, onAcoes, onMover }: 
         }
 
         if (fase === 'erguido' && !longe) return
-        // Sem o modo organizar, segurar nunca vira arrastar: o livro fica
-        // erguido (pontes acesas) até soltar, e soltar sempre abre o menu.
-        if (fase === 'erguido' && !organizando) return
 
         const alvo = alvoNaEstante(evento.clientX, evento.clientY, t.livroId)
         if (

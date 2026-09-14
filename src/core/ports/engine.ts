@@ -1,5 +1,5 @@
 import type { NeuronioNaTela } from '../domain/tela'
-import type { Conexao, CriterioDeOrdenacao, EtiquetaDePrateleira, Id, Livro } from '../domain/types'
+import type { Conexao, Id, Livro } from '../domain/types'
 
 export interface CriarNeuronioInput {
   /**
@@ -41,8 +41,6 @@ export interface EstadoDoPalacio {
   conexoes: Conexao[]
   /** Quantas prateleiras a estante tem — gravado, ajustável em Ajustes. */
   quantidadeDePrateleiras: number
-  /** Nomes de prateleira — puramente visual, uma por prateleira no máximo. */
-  etiquetas: EtiquetaDePrateleira[]
   /** 0-100: o quanto a luz da sala lava a cor do pano em repouso. */
   intensidadeDaLuz: number
 }
@@ -80,8 +78,6 @@ export interface ConnectionEngine {
   criarNeuronio(input: CriarNeuronioInput): Promise<ResultadoDeEscrita>
   editarNeuronio(input: EditarNeuronioInput): Promise<ResultadoDeEscrita>
   apagarNeuronio(id: Id): Promise<EstadoDoPalacio>
-  /** Recalcula o palácio inteiro — usado após import ou troca de modelo. */
-  reprocessarTudo(): Promise<EstadoDoPalacio>
 
   /** Livro não mexe no grafo: devolve só a estante, já na ordem nova. */
   criarLivro(input: CriarLivroInput): Promise<Livro[]>
@@ -106,30 +102,6 @@ export interface ConnectionEngine {
   definirQuantidadeDePrateleiras(quantidade: number): Promise<number>
   /** Grava a intensidade da luz (0-100), sempre recortada para essa faixa. */
   definirIntensidadeDaLuz(valor: number): Promise<number>
-  /**
-   * Reordena cada prateleira pelo critério escolhido — um atalho, não o
-   * padrão. Nunca muda quem está em qual prateleira, só a ordem dentro dela.
-   */
-  ordenarEstante(criterio: CriterioDeOrdenacao): Promise<Livro[]>
-  /** Texto vazio apaga a etiqueta daquela prateleira. Devolve todas as que sobraram. */
-  definirEtiqueta(prateleira: number, texto: string): Promise<EtiquetaDePrateleira[]>
-
-  /**
-   * O palácio inteiro como texto JSON, pronto para virar arquivo.
-   *
-   * Texto e não objeto de propósito: o snapshot de um palácio grande passa de
-   * alguns MB, e devolver o objeto faria a travessia do Worker copiar tudo para
-   * a thread da interface só serializar de novo em seguida.
-   */
-  exportar(): Promise<string>
-  /**
-   * Funde o snapshot com o que já existe (por id, idempotente) e reprocessa.
-   *
-   * Reprocessar é obrigatório: os scores gravados no arquivo foram calculados com
-   * o perfil de *outro* palácio, e depois da fusão o corpus é outro. Como os
-   * embeddings vêm no arquivo, isso não baixa modelo nenhum.
-   */
-  importar(json: string): Promise<EstadoDoPalacio>
   /** Devolve a função que cancela a inscrição. */
   aoProgredir(ouvinte: (p: ProgressoDoMotor) => void): () => void
 }

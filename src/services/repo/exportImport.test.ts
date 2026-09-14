@@ -19,7 +19,7 @@ import {
   type PalacioRepo,
 } from '@/core'
 import { PALACIO } from '@/core/motor/fixtures'
-import { createDb } from '@/services/db'
+import { createDb, type PalacioDB } from '@/services/db'
 
 import { createDexieRepo } from './dexieRepo'
 
@@ -92,9 +92,14 @@ async function reprocessar(repo: PalacioRepo): Promise<Conexao[]> {
   return repo.listConexoes()
 }
 
-async function palacioPovoado(): Promise<PalacioRepo> {
+function criarRepoComDb(): { repo: PalacioRepo; db: PalacioDB } {
   nth += 1
-  const repo = createDexieRepo(createDb(`palacio-export-${nth}`))
+  const db = createDb(`palacio-export-${nth}`)
+  return { repo: createDexieRepo(db), db }
+}
+
+async function palacioPovoado(): Promise<PalacioRepo> {
+  const { repo } = criarRepoComDb()
 
   for (const l of LIVROS) await repo.upsertLivro(l)
   for (const n of NEURONIOS) await repo.upsertNeuronio(n)
@@ -104,8 +109,24 @@ async function palacioPovoado(): Promise<PalacioRepo> {
 }
 
 function repoVazio(): PalacioRepo {
-  nth += 1
-  return createDexieRepo(createDb(`palacio-export-${nth}`))
+  return criarRepoComDb().repo
+}
+
+/**
+ * Etiqueta não tem método próprio em `PalacioRepo` (só `exportAll`/`importAll`
+ * ainda tocam `db.etiquetas`) — os testes de fusão do backup escrevem e leem a
+ * tabela direto, como o dexieRepo faz por dentro.
+ */
+async function palacioPovoadoComDb(): Promise<{ repo: PalacioRepo; db: PalacioDB }> {
+  const par = criarRepoComDb()
+  for (const l of LIVROS) await par.repo.upsertLivro(l)
+  for (const n of NEURONIOS) await par.repo.upsertNeuronio(n)
+  await reprocessar(par.repo)
+  return par
+}
+
+function repoVazioComDb(): { repo: PalacioRepo; db: PalacioDB } {
+  return criarRepoComDb()
 }
 
 function ordenar<T extends { id: string }>(xs: T[]): T[] {
@@ -286,35 +307,35 @@ describe('a ordem da estante no backup', () => {
 
 describe('etiquetas no backup', () => {
   it('exporta e importa a etiqueta de uma prateleira', async () => {
-    const origem = await palacioPovoado()
-    await origem.definirEtiqueta(0, 'Trabalho')
+    const { repo: origem, db: dbOrigem } = await palacioPovoadoComDb()
+    await dbOrigem.etiquetas.put({ prateleira: 0, texto: 'Trabalho' })
     const snapshot = await origem.exportAll()
 
-    const destino = repoVazio()
+    const { repo: destino, db: dbDestino } = repoVazioComDb()
     await destino.importAll(JSON.parse(JSON.stringify(snapshot)) as typeof snapshot)
 
-    expect(await destino.listEtiquetas()).toEqual([{ prateleira: 0, texto: 'Trabalho' }])
+    expect(await dbDestino.etiquetas.toArray()).toEqual([{ prateleira: 0, texto: 'Trabalho' }])
   })
 
   it('a etiqueta do arquivo vence a que já existia na mesma prateleira', async () => {
-    const origem = await palacioPovoado()
-    await origem.definirEtiqueta(0, 'Trabalho')
+    const { repo: origem, db: dbOrigem } = await palacioPovoadoComDb()
+    await dbOrigem.etiquetas.put({ prateleira: 0, texto: 'Trabalho' })
 
-    const destino = repoVazio()
-    await destino.definirEtiqueta(0, 'Nome antigo')
+    const { repo: destino, db: dbDestino } = repoVazioComDb()
+    await dbDestino.etiquetas.put({ prateleira: 0, texto: 'Nome antigo' })
     await destino.importAll(await origem.exportAll())
 
-    expect(await destino.listEtiquetas()).toEqual([{ prateleira: 0, texto: 'Trabalho' }])
+    expect(await dbDestino.etiquetas.toArray()).toEqual([{ prateleira: 0, texto: 'Trabalho' }])
   })
 
   it('etiqueta que só existe aqui não é apagada pelo import', async () => {
     const origem = await palacioPovoado()
-    const destino = repoVazio()
-    await destino.definirEtiqueta(2, 'Só aqui')
+    const { repo: destino, db: dbDestino } = repoVazioComDb()
+    await dbDestino.etiquetas.put({ prateleira: 2, texto: 'Só aqui' })
 
     await destino.importAll(await origem.exportAll())
 
-    expect(await destino.listEtiquetas()).toEqual([{ prateleira: 2, texto: 'Só aqui' }])
+    expect(await dbDestino.etiquetas.toArray()).toEqual([{ prateleira: 2, texto: 'Só aqui' }])
   })
 
   // Backup de antes da Fase 15 não tinha o campo — não pode quebrar o import.
@@ -329,10 +350,10 @@ describe('etiquetas no backup', () => {
       conexoes: snapshot.conexoes,
     }
 
-    const destino = repoVazio()
+    const { repo: destino, db: dbDestino } = repoVazioComDb()
     await destino.importAll(antigo)
 
-    expect(await destino.listEtiquetas()).toEqual([])
+    expect(await dbDestino.etiquetas.toArray()).toEqual([])
     expect(await destino.listLivros()).toHaveLength(LIVROS.length)
   })
 })

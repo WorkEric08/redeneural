@@ -6,16 +6,12 @@ import {
   moverLivroNaEstante,
   novoLivro,
   type Conexao,
-  type CriterioDeOrdenacao,
-  type EtiquetaDePrateleira,
   type Livro,
   type NeuronioNaTela,
   type ProgressoDoMotor,
 } from '@/core'
-import { aplicarMudancasDeOrdem, ordenarPorCriterio } from '@/features/estante/ordenar'
 import { newId } from '@/lib/id'
 import { engine } from '@/services/engine/workerEngine'
-import { lerTexto, nomeDoBackup, salvarTexto } from '@/services/native/arquivos'
 
 export interface NovoNeuronio {
   livroId: string
@@ -35,7 +31,6 @@ interface PalacioStore {
   neuronios: NeuronioNaTela[]
   conexoes: Conexao[]
   quantidadeDePrateleiras: number
-  etiquetas: EtiquetaDePrateleira[]
   /** 0-100: o quanto a luz da sala lava a cor do pano em repouso. */
   intensidadeDaLuz: number
 
@@ -51,7 +46,6 @@ interface PalacioStore {
   editarNeuronio: (id: string, mudancas: NovoNeuronio) => Promise<boolean>
   /** `false` se o motor não conseguiu — quem confirmou fica onde está e lê o erro. */
   apagarNeuronio: (id: string) => Promise<boolean>
-  reprocessarTudo: () => Promise<void>
   /** Devolve o id do livro criado, ou null se o motor não conseguiu. */
   criarLivro: (novo: NovoLivro, prateleira: number) => Promise<string | null>
   editarLivro: (id: string, mudancas: NovoLivro) => Promise<boolean>
@@ -68,12 +62,6 @@ interface PalacioStore {
   definirQuantidadeDePrateleiras: (quantidade: number) => Promise<void>
   /** Otimista, como o resto das preferências — a estante já lava na hora. */
   definirIntensidadeDaLuz: (valor: number) => Promise<void>
-  /** Atalho de um toque: reordena cada prateleira, sem mudar quem está em qual. */
-  ordenarEstante: (criterio: CriterioDeOrdenacao) => Promise<void>
-  /** Texto vazio apaga a etiqueta daquela prateleira. */
-  definirEtiqueta: (prateleira: number, texto: string) => Promise<void>
-  exportar: () => Promise<void>
-  importar: (arquivo: File) => Promise<void>
   /** O aviso flutuante some — pelo tempo ou pelo toque. */
   dispensarAvisos: () => void
 }
@@ -92,7 +80,6 @@ export const usePalacio = create<PalacioStore>()((set, get) => {
     neuronios: [],
     conexoes: [],
     quantidadeDePrateleiras: MINIMO_DE_PRATELEIRAS,
-    etiquetas: [],
     intensidadeDaLuz: INTENSIDADE_DA_LUZ_PADRAO,
     carregado: false,
     ocupado: false,
@@ -195,18 +182,6 @@ export const usePalacio = create<PalacioStore>()((set, get) => {
 
     dispensarAvisos() {
       set({ erro: null, aviso: null })
-    },
-
-    async reprocessarTudo() {
-      set({ ocupado: true, erro: null })
-
-      try {
-        set(await engine.reprocessarTudo())
-      } catch (e) {
-        set({ erro: mensagem(e) })
-      } finally {
-        set({ ocupado: false, progresso: null })
-      }
     },
 
     async criarLivro(novo, prateleira): Promise<string | null> {
@@ -323,70 +298,6 @@ export const usePalacio = create<PalacioStore>()((set, get) => {
         set({ intensidadeDaLuz: await engine.definirIntensidadeDaLuz(valor) })
       } catch (e) {
         set({ intensidadeDaLuz: antes, erro: mensagem(e) })
-      }
-    },
-
-    async ordenarEstante(criterio) {
-      const antes = get().livros
-      // Otimista com a mesma função pura que o worker usa: a tela reordena na
-      // hora, e o motor só confirma.
-      const mudancas = ordenarPorCriterio(antes, get().neuronios, criterio)
-      set({ livros: aplicarMudancasDeOrdem(antes, mudancas), erro: null })
-
-      try {
-        set({ livros: await engine.ordenarEstante(criterio) })
-      } catch (e) {
-        set({ livros: antes, erro: mensagem(e) })
-      }
-    },
-
-    async definirEtiqueta(prateleira, texto) {
-      const antes = get().etiquetas
-      const limpo = texto.trim()
-      const otimista = antes.filter((e) => e.prateleira !== prateleira)
-      if (limpo !== '') otimista.push({ prateleira, texto: limpo })
-      set({ etiquetas: otimista, erro: null })
-
-      try {
-        set({ etiquetas: await engine.definirEtiqueta(prateleira, texto) })
-      } catch (e) {
-        set({ etiquetas: antes, erro: mensagem(e) })
-      }
-    },
-
-    async exportar() {
-      set({ ocupado: true, erro: null, aviso: null })
-
-      try {
-        const destino = await salvarTexto(nomeDoBackup(), await engine.exportar())
-        set({
-          aviso: destino.tipo === 'download' ? 'Backup baixado.' : 'Backup pronto para guardar.',
-        })
-      } catch (e) {
-        set({ erro: mensagem(e) })
-      } finally {
-        set({ ocupado: false })
-      }
-    },
-
-    async importar(arquivo) {
-      const antes = get().neuronios.length
-      set({ ocupado: true, erro: null, aviso: null })
-
-      try {
-        const estado = await engine.importar(await lerTexto(arquivo))
-        const novos = estado.neuronios.length - antes
-        set({
-          ...estado,
-          aviso:
-            novos > 0
-              ? `Importado: +${String(novos)} neurônios (${String(estado.neuronios.length)} no total).`
-              : 'Importado: nada de novo — o arquivo já estava aqui.',
-        })
-      } catch (e) {
-        set({ erro: mensagem(e) })
-      } finally {
-        set({ ocupado: false, progresso: null })
       }
     },
   }

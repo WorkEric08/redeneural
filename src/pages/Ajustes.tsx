@@ -1,4 +1,4 @@
-import { Download, Lightbulb, Minus, Plus, RefreshCw, Rows3, Search, Upload } from 'lucide-react'
+import { Lightbulb, Minus, Plus, Rows3, Search } from 'lucide-react'
 import type { ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 
@@ -8,14 +8,7 @@ import { EtiquetaProcessando } from '@/components/EtiquetaProcessando'
 import { INTENSIDADE_DA_LUZ_MAXIMA, INTENSIDADE_DA_LUZ_MINIMA } from '@/core'
 import { usePalacio } from '@/store/palacio'
 
-/**
- * Backup e manutenção do palácio.
- *
- * É onde o export/import da Fase 5 e o reprocessamento foram morar quando a
- * navegação de verdade chegou — antes viviam numa tela crua de desenvolvimento.
- * O que cada ação respondeu aparece no aviso flutuante (Aviso.tsx), e não numa
- * caixa no meio da tela que empurra tudo para baixo.
- */
+/** Ajustes do palácio: quantidade de prateleiras e intensidade da luz. */
 export default function Ajustes() {
   const {
     livros,
@@ -27,9 +20,6 @@ export default function Ajustes() {
     definirQuantidadeDePrateleiras,
     intensidadeDaLuz,
     definirIntensidadeDaLuz,
-    reprocessarTudo,
-    exportar,
-    importar,
   } = usePalacio()
 
   const semVetor = neuronios.filter((n) => n.processando).length
@@ -132,70 +122,6 @@ export default function Ajustes() {
           </div>
           <p className="text-poeira px-1 pt-2.5 text-xs leading-relaxed">
             Diminuir prateleiras é recusado se ainda sobrar livro nas removidas — mova-os antes.
-          </p>
-        </section>
-
-        <section>
-          <h2 className="rotulo-de-secao">Backup</h2>
-          <div className="cartao">
-            <button
-              type="button"
-              onClick={() => void exportar()}
-              disabled={travado}
-              className="linha-de-lista"
-            >
-              <Icone>
-                <Download size={18} aria-hidden />
-              </Icone>
-              <Texto titulo="Exportar backup">Um arquivo com tudo, inclusive os vetores.</Texto>
-            </button>
-
-            <label className="linha-de-lista cursor-pointer">
-              <Icone>
-                <Upload size={18} aria-hidden />
-              </Icone>
-              <Texto titulo="Importar backup">
-                Funde com o que já existe, por id — o mesmo arquivo duas vezes não duplica nada.
-              </Texto>
-              <input
-                type="file"
-                accept="application/json,.json"
-                disabled={ocupado}
-                className="hidden"
-                onChange={(e) => {
-                  const arquivo = e.target.files?.[0]
-                  // Zera o input: escolher o mesmo arquivo de novo tem que disparar.
-                  e.target.value = ''
-                  if (arquivo) void importar(arquivo)
-                }}
-              />
-            </label>
-          </div>
-          <p className="text-poeira px-1 pt-2.5 text-xs leading-relaxed">
-            Importar num aparelho novo devolve o palácio funcionando sem baixar o modelo.
-          </p>
-        </section>
-
-        <section>
-          <h2 className="rotulo-de-secao">Manutenção</h2>
-          <div className="cartao">
-            <button
-              type="button"
-              onClick={() => void reprocessarTudo()}
-              disabled={travado}
-              className="linha-de-lista"
-            >
-              <Icone>
-                <RefreshCw size={18} aria-hidden className={ocupado ? 'animate-spin' : undefined} />
-              </Icone>
-              <Texto titulo={ocupado ? 'Processando…' : 'Reprocessar tudo'}>
-                Refaz o grafo inteiro — depois de um import, ou se algo parecer errado.
-              </Texto>
-            </button>
-          </div>
-          <p className="text-poeira px-1 pt-2.5 text-xs leading-relaxed">
-            O palácio já faz isso sozinho conforme cresce. Não recalcula o embedding de quem já tem:
-            os vetores ficam gravados, então costuma ser rápido e não usa rede.
           </p>
         </section>
       </div>

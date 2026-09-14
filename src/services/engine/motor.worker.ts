@@ -14,22 +14,18 @@ import {
   textoDoNeuronio,
   type CriarLivroInput,
   type CriarNeuronioInput,
-  type CriterioDeOrdenacao,
   type EditarLivroInput,
   type EstadoDoPalacio,
-  type EtiquetaDePrateleira,
   type Id,
   type Livro,
   type Neuronio,
   type NoDoGrafo,
   type PalacioRepo,
-  type PalacioSnapshot,
   type PerfilDoPalacio,
   type PontuarPar,
   type ProgressoDoMotor,
   type ResultadoDeEscrita,
 } from '@/core'
-import { ordenarPorCriterio } from '@/features/estante/ordenar'
 import { seedPalacio } from '@/features/palacio/seed'
 import { criarTransformersEmbedding } from '@/services/inferencia/transformersEmbedding'
 import { palacioRepo } from '@/services/repo/dexieRepo'
@@ -76,13 +72,12 @@ const pontuar: PontuarPar = SEM_RERANK
 const CRESCIMENTO_ATE_REPROCESSAR = 1.5
 
 async function estadoAtual(): Promise<EstadoDoPalacio> {
-  const [livros, neuronios, conexoes, quantidadeDePrateleiras, etiquetas, intensidadeDaLuz] =
+  const [livros, neuronios, conexoes, quantidadeDePrateleiras, intensidadeDaLuz] =
     await Promise.all([
       repo.listLivros(),
       repo.listNeuronios(),
       repo.listConexoes(),
       repo.getQuantidadeDePrateleiras(),
-      repo.listEtiquetas(),
       repo.getIntensidadeDaLuz(),
     ])
 
@@ -91,7 +86,6 @@ async function estadoAtual(): Promise<EstadoDoPalacio> {
     neuronios: neuronios.map(paraTela),
     conexoes,
     quantidadeDePrateleiras,
-    etiquetas,
     intensidadeDaLuz,
   }
 }
@@ -243,35 +237,6 @@ async function moverLivro(id: Id, prateleira: number, posicao: number): Promise<
   return repo.listLivros()
 }
 
-async function ordenarEstante(criterio: CriterioDeOrdenacao): Promise<Livro[]> {
-  const [livros, neuronios] = await Promise.all([repo.listLivros(), repo.listNeuronios()])
-  await repo.definirOrdens(ordenarPorCriterio(livros, neuronios, criterio))
-  return repo.listLivros()
-}
-
-async function definirEtiqueta(prateleira: number, texto: string): Promise<EtiquetaDePrateleira[]> {
-  await repo.definirEtiqueta(prateleira, texto)
-  return repo.listEtiquetas()
-}
-
-async function importar(json: string): Promise<EstadoDoPalacio> {
-  let bruto: unknown
-  try {
-    bruto = JSON.parse(json)
-  } catch {
-    throw new Error('o arquivo não é JSON válido')
-  }
-
-  // `importAll` valida o formato e a integridade (nada de neurônio apontando para
-  // livro que não veio) antes de encostar no banco.
-  await repo.importAll(bruto as PalacioSnapshot)
-
-  // Os scores do arquivo foram calculados com o perfil de outro palácio, e depois
-  // da fusão o corpus é outro. Com os embeddings vindo no arquivo, isto não baixa
-  // modelo nenhum — é só a matemática.
-  return reprocessarTudo()
-}
-
 async function responder(msg: ParaMotor): Promise<DoMotor> {
   try {
     switch (msg.tipo) {
@@ -290,9 +255,6 @@ async function responder(msg: ParaMotor): Promise<DoMotor> {
 
       case 'apagarNeuronio':
         return { req: msg.req, ok: true, dados: await apagarNeuronio(msg.neuronioId) }
-
-      case 'reprocessarTudo':
-        return { req: msg.req, ok: true, dados: await reprocessarTudo() }
 
       case 'criarLivro':
         return { req: msg.req, ok: true, dados: await criarLivro(msg.input) }
@@ -317,22 +279,6 @@ async function responder(msg: ParaMotor): Promise<DoMotor> {
       case 'definirIntensidadeDaLuz':
         await repo.definirIntensidadeDaLuz(msg.valor)
         return { req: msg.req, ok: true, dados: await repo.getIntensidadeDaLuz() }
-
-      case 'ordenarEstante':
-        return { req: msg.req, ok: true, dados: await ordenarEstante(msg.criterio) }
-
-      case 'definirEtiqueta':
-        return {
-          req: msg.req,
-          ok: true,
-          dados: await definirEtiqueta(msg.prateleira, msg.texto),
-        }
-
-      case 'exportar':
-        return { req: msg.req, ok: true, dados: JSON.stringify(await repo.exportAll()) }
-
-      case 'importar':
-        return { req: msg.req, ok: true, dados: await importar(msg.json) }
     }
   } catch (e) {
     return { req: msg.req, ok: false, erro: e instanceof Error ? e.message : String(e) }

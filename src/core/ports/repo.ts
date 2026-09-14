@@ -1,11 +1,4 @@
-import type {
-  Conexao,
-  EtiquetaDePrateleira,
-  Id,
-  Livro,
-  Neuronio,
-  PalacioSnapshot,
-} from '../domain/types'
+import type { Conexao, Id, Livro, Neuronio, PalacioSnapshot } from '../domain/types'
 import type { PerfilDoPalacio } from '../motor/grafo'
 import type { MarcaPerdida } from '../motor/incremental'
 
@@ -28,12 +21,6 @@ export interface PalacioRepo {
    * nunca a estante inteira.
    */
   moverLivro(id: Id, prateleira: number, posicao: number): Promise<void>
-  /**
-   * Regrava só `ordem` dos livros informados — nunca `prateleira`. É o que a
-   * ordenação automática usa: reordena dentro de cada prateleira sem mudar
-   * quem está em qual.
-   */
-  definirOrdens(mudancas: readonly { id: Id; ordem: number }[]): Promise<void>
   /** Quantas prateleiras a estante tem hoje. Default 4 se nunca foi definida. */
   getQuantidadeDePrateleiras(): Promise<number>
   /**
@@ -45,9 +32,6 @@ export interface PalacioRepo {
   getIntensidadeDaLuz(): Promise<number>
   /** Grava a intensidade da luz, sempre recortada para 0-100. */
   definirIntensidadeDaLuz(valor: number): Promise<void>
-  listEtiquetas(): Promise<EtiquetaDePrateleira[]>
-  /** Texto vazio apaga a etiqueta daquela prateleira. */
-  definirEtiqueta(prateleira: number, texto: string): Promise<void>
 
   listNeuronios(livroId?: Id): Promise<Neuronio[]>
   getNeuronio(id: Id): Promise<Neuronio | undefined>

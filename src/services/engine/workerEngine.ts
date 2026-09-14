@@ -2,11 +2,9 @@ import type {
   ConnectionEngine,
   CriarLivroInput,
   CriarNeuronioInput,
-  CriterioDeOrdenacao,
   EditarLivroInput,
   EditarNeuronioInput,
   EstadoDoPalacio,
-  EtiquetaDePrateleira,
   Id,
   Livro,
   ProgressoDoMotor,
@@ -83,9 +81,6 @@ export function criarWorkerEngine(): ConnectionEngine {
     apagarNeuronio: (neuronioId: Id): Promise<EstadoDoPalacio> =>
       pedir<'apagarNeuronio'>({ tipo: 'apagarNeuronio', neuronioId }),
 
-    reprocessarTudo: (): Promise<EstadoDoPalacio> =>
-      pedir<'reprocessarTudo'>({ tipo: 'reprocessarTudo' }),
-
     criarLivro: (input: CriarLivroInput): Promise<Livro[]> =>
       pedir<'criarLivro'>({ tipo: 'criarLivro', input }),
 
@@ -106,17 +101,6 @@ export function criarWorkerEngine(): ConnectionEngine {
 
     definirIntensidadeDaLuz: (valor: number): Promise<number> =>
       pedir<'definirIntensidadeDaLuz'>({ tipo: 'definirIntensidadeDaLuz', valor }),
-
-    ordenarEstante: (criterio: CriterioDeOrdenacao): Promise<Livro[]> =>
-      pedir<'ordenarEstante'>({ tipo: 'ordenarEstante', criterio }),
-
-    definirEtiqueta: (prateleira: number, texto: string): Promise<EtiquetaDePrateleira[]> =>
-      pedir<'definirEtiqueta'>({ tipo: 'definirEtiqueta', prateleira, texto }),
-
-    exportar: (): Promise<string> => pedir<'exportar'>({ tipo: 'exportar' }),
-
-    importar: (json: string): Promise<EstadoDoPalacio> =>
-      pedir<'importar'>({ tipo: 'importar', json }),
 
     aoProgredir(ouvinte) {
       ouvintes.add(ouvinte)

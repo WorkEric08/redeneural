@@ -1,11 +1,9 @@
 import type {
   CriarLivroInput,
   CriarNeuronioInput,
-  CriterioDeOrdenacao,
   EditarLivroInput,
   EditarNeuronioInput,
   EstadoDoPalacio,
-  EtiquetaDePrateleira,
   Id,
   Livro,
   ProgressoDoMotor,
@@ -23,17 +21,12 @@ export interface RespostasDoMotor {
   criarNeuronio: ResultadoDeEscrita
   editarNeuronio: ResultadoDeEscrita
   apagarNeuronio: EstadoDoPalacio
-  reprocessarTudo: EstadoDoPalacio
   criarLivro: Livro[]
   editarLivro: Livro[]
   apagarLivro: EstadoDoPalacio
   moverLivro: Livro[]
   definirQuantidadeDePrateleiras: number
   definirIntensidadeDaLuz: number
-  ordenarEstante: Livro[]
-  definirEtiqueta: EtiquetaDePrateleira[]
-  exportar: string
-  importar: EstadoDoPalacio
 }
 
 export type TipoDePedido = keyof RespostasDoMotor
@@ -43,17 +36,12 @@ export type ParaMotor =
   | { req: number; tipo: 'criarNeuronio'; input: CriarNeuronioInput }
   | { req: number; tipo: 'editarNeuronio'; input: EditarNeuronioInput }
   | { req: number; tipo: 'apagarNeuronio'; neuronioId: Id }
-  | { req: number; tipo: 'reprocessarTudo' }
   | { req: number; tipo: 'criarLivro'; input: CriarLivroInput }
   | { req: number; tipo: 'editarLivro'; input: EditarLivroInput }
   | { req: number; tipo: 'apagarLivro'; livroId: Id }
   | { req: number; tipo: 'moverLivro'; id: Id; prateleira: number; posicao: number }
   | { req: number; tipo: 'definirQuantidadeDePrateleiras'; quantidade: number }
   | { req: number; tipo: 'definirIntensidadeDaLuz'; valor: number }
-  | { req: number; tipo: 'ordenarEstante'; criterio: CriterioDeOrdenacao }
-  | { req: number; tipo: 'definirEtiqueta'; prateleira: number; texto: string }
-  | { req: number; tipo: 'exportar' }
-  | { req: number; tipo: 'importar'; json: string }
 
 export type DoMotor =
   | { req: number; ok: true; dados: RespostasDoMotor[TipoDePedido] }

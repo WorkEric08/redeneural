@@ -1,4 +1,4 @@
-import { ArrowDownAZ, Grip, Search, X, ZoomIn, ZoomOut } from 'lucide-react'
+import { Search, X, ZoomIn, ZoomOut } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 
@@ -36,18 +36,11 @@ export default function Estante() {
     criarLivro,
     editarLivro,
     apagarLivro,
-    ordenarEstante,
     moverVariosLivros,
-    etiquetas,
-    definirEtiqueta,
   } = usePalacio()
   const { painel, abrir, trocar, fechar } = usePainel()
   const [chegandoId, setChegandoId] = useState<string | null>(null)
-  // Sem persistência de propósito: é um modo de trabalho, não uma preferência
-  // — cada visita à estante começa com o arrastar desligado, para segurar um
-  // livro só de passagem nunca movê-lo sem querer.
-  const [organizando, setOrganizando] = useState(false)
-  // Mesmo motivo do organizar: é um jeito de olhar a estante agora, não uma
+  // Sem persistência de propósito: é um jeito de olhar a estante agora, não uma
   // preferência gravada — cada visita volta ao tamanho normal.
   const [visaoGeral, setVisaoGeral] = useState(false)
   // Vazio: modo de seleção desligado. Ganhar o primeiro id já liga o modo —
@@ -60,10 +53,6 @@ export default function Estante() {
     [livros, neuronios, conexoes],
   )
   const pontes = useMemo(() => pontesEntreLivros(neuronios, conexoes), [neuronios, conexoes])
-  const etiquetasPorPrateleira = useMemo(
-    () => new Map(etiquetas.map((e) => [e.prateleira, e.texto])),
-    [etiquetas],
-  )
 
   useEffect(() => {
     if (chegandoId === null) return
@@ -75,10 +64,7 @@ export default function Estante() {
     }
   }, [chegandoId])
 
-  const selecionadoId =
-    painel && painel.tipo !== 'novo' && painel.tipo !== 'ordenar' && painel.tipo !== 'etiqueta'
-      ? painel.livroId
-      : null
+  const selecionadoId = painel && painel.tipo !== 'novo' ? painel.livroId : null
 
   function alternarSelecao(livroId: string): void {
     setSelecionados((atual) => {
@@ -105,10 +91,8 @@ export default function Estante() {
           chegandoId={chegandoId}
           quantidadeDePrateleiras={quantidadeDePrateleiras}
           intensidadeDaLuz={intensidadeDaLuz}
-          organizando={organizando}
           visaoGeral={visaoGeral}
           selecionados={selecionados}
-          etiquetas={etiquetasPorPrateleira}
           onEspiar={(livroId) => {
             abrir({ tipo: 'espiar', livroId })
           }}
@@ -120,9 +104,6 @@ export default function Estante() {
             void moverVariosLivros([...selecionados], prateleira).then(() => {
               setSelecionados(new Set())
             })
-          }}
-          onEditarEtiqueta={(prateleira) => {
-            abrir({ tipo: 'etiqueta', prateleira })
           }}
           onMover={(livroId, prateleira, posicao) => {
             void moverLivro(livroId, prateleira, posicao)
@@ -153,21 +134,10 @@ export default function Estante() {
           </div>
         ) : (
           <div className="mt-auto flex h-14 items-center gap-3">
-            {/* Os quatro botões vêm antes do texto, e não depois: o botão de
+            {/* Os dois botões vêm antes do texto, e não depois: o botão de
                 criar (Dial) mora fixo no canto inferior direito, e um botão
-                colocado depois de um `flex-1` acaba empurrado até lá — ficaria
-                atrás dele, inalcançável (aconteceu com o de organizar). */}
-            <button
-              type="button"
-              aria-pressed={organizando}
-              aria-label={organizando ? 'Sair do modo organizar' : 'Entrar no modo organizar'}
-              className={botao({ tipo: 'secundario', tamanho: 'icone' })}
-              onClick={() => {
-                setOrganizando((o) => !o)
-              }}
-            >
-              <Grip size={18} aria-hidden />
-            </button>
+                colocado depois de um `flex-1` acaba empurrado até lá —
+                ficaria atrás dele, inalcançável. */}
             <button
               type="button"
               aria-pressed={visaoGeral}
@@ -186,16 +156,6 @@ export default function Estante() {
             >
               <Search size={18} aria-hidden />
             </Link>
-            <button
-              type="button"
-              aria-label="Ordenar a estante"
-              className={botao({ tipo: 'secundario', tamanho: 'icone' })}
-              onClick={() => {
-                abrir({ tipo: 'ordenar' })
-              }}
-            >
-              <ArrowDownAZ size={18} aria-hidden />
-            </button>
             <p className="text-poeira min-w-0 flex-1 truncate text-xs">
               {carregado
                 ? `${contar(livros.length, 'livro', 'livros')} · ${contar(neuronios.length, 'neurônio', 'neurônios')} · ${contar(conexoes.length, 'conexão', 'conexões')}`
@@ -210,7 +170,6 @@ export default function Estante() {
         livros={livros}
         neuronios={neuronios}
         pontes={pontes}
-        etiquetas={etiquetas}
         ocupado={ocupado}
         panoSugerido={panoSugerido(livros)}
         intensidadeDaLuz={intensidadeDaLuz}
@@ -223,15 +182,8 @@ export default function Estante() {
         }}
         onEditar={editarLivro}
         onApagar={apagarLivro}
-        onOrdenar={(criterio) => {
-          void ordenarEstante(criterio)
-        }}
         onIniciarSelecao={(livroId) => {
-          setOrganizando(false)
           setSelecionados(new Set([livroId]))
-        }}
-        onDefinirEtiqueta={(prateleira, texto) => {
-          void definirEtiqueta(prateleira, texto)
         }}
       />
     </div>

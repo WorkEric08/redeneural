@@ -411,55 +411,6 @@ describe('intensidade da luz', () => {
   })
 })
 
-describe('etiqueta de prateleira', () => {
-  it('vazia por padrão', async () => {
-    expect(await repo.listEtiquetas()).toEqual([])
-  })
-
-  it('grava e devolve', async () => {
-    await repo.definirEtiqueta(0, 'Trabalho')
-    expect(await repo.listEtiquetas()).toEqual([{ prateleira: 0, texto: 'Trabalho' }])
-  })
-
-  it('regravar a mesma prateleira substitui, não duplica', async () => {
-    await repo.definirEtiqueta(0, 'Trabalho')
-    await repo.definirEtiqueta(0, 'Estudo')
-    expect(await repo.listEtiquetas()).toEqual([{ prateleira: 0, texto: 'Estudo' }])
-  })
-
-  it('texto vazio apaga a etiqueta', async () => {
-    await repo.definirEtiqueta(0, 'Trabalho')
-    await repo.definirEtiqueta(0, '')
-    expect(await repo.listEtiquetas()).toEqual([])
-  })
-
-  it('texto só de espaço também apaga', async () => {
-    await repo.definirEtiqueta(0, 'Trabalho')
-    await repo.definirEtiqueta(0, '   ')
-    expect(await repo.listEtiquetas()).toEqual([])
-  })
-
-  it('apagar prateleira sem etiqueta não quebra', async () => {
-    await expect(repo.definirEtiqueta(0, '')).resolves.toBeUndefined()
-  })
-
-  it('prateleiras diferentes guardam etiquetas independentes', async () => {
-    await repo.definirEtiqueta(0, 'Trabalho')
-    await repo.definirEtiqueta(1, 'Estudo')
-    const lista = (await repo.listEtiquetas()).sort((a, b) => a.prateleira - b.prateleira)
-    expect(lista).toEqual([
-      { prateleira: 0, texto: 'Trabalho' },
-      { prateleira: 1, texto: 'Estudo' },
-    ])
-  })
-
-  it('limpar o palácio apaga as etiquetas junto', async () => {
-    await repo.definirEtiqueta(0, 'Trabalho')
-    await repo.clear()
-    expect(await repo.listEtiquetas()).toEqual([])
-  })
-})
-
 describe('migração para a v3', () => {
   // É o que acontece no aparelho de quem já usava o app: o banco abre em v2, com
   // livros sem `ordem`, e nenhum deles pode mudar de lugar na tela. Como

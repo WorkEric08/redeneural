@@ -1,4 +1,3 @@
-import { Tag } from 'lucide-react'
 import { useMemo, type CSSProperties } from 'react'
 
 import type { Id } from '@/core'
@@ -19,8 +18,6 @@ interface Props {
   quantidadeDePrateleiras: number
   /** 0-100: o quanto a luz da sala lava a cor do pano em repouso. */
   intensidadeDaLuz: number
-  /** Modo organizar ligado: segurar e arrastar move o livro. Desligado, só ergue. */
-  organizando: boolean
   /**
    * Visão geral ligada: fileiras bem mais baixas, sem título/emblema/selo —
    * só a cor de cada livro —, para caber muito mais prateleira de uma vez.
@@ -32,13 +29,10 @@ interface Props {
    * prateleira move o grupo inteiro para lá em vez de criar um livro novo.
    */
   selecionados: ReadonlySet<string>
-  /** Nome de cada prateleira, por índice — puramente visual. */
-  etiquetas: ReadonlyMap<number, string>
   onEspiar: (livroId: string) => void
   onAcoes: (livroId: string) => void
   onAlternarSelecao: (livroId: string) => void
   onMoverSelecionadosPara: (prateleira: number) => void
-  onEditarEtiqueta: (prateleira: number) => void
   /** Move o livro para `(prateleira, posicao)` — mesma assinatura da store. */
   onMover: (livroId: string, prateleira: number, posicao: number) => void
   onNovo: (prateleira: number) => void
@@ -61,15 +55,12 @@ export function Movel({
   chegandoId,
   quantidadeDePrateleiras,
   intensidadeDaLuz,
-  organizando,
   visaoGeral,
   selecionados,
-  etiquetas,
   onEspiar,
   onAcoes,
   onAlternarSelecao,
   onMoverSelecionadosPara,
-  onEditarEtiqueta,
   onMover,
   onNovo,
 }: Props) {
@@ -80,7 +71,6 @@ export function Movel({
     [estante, quantidadeDePrateleiras],
   )
   const { gesto, manipular, registrarFantasma } = useManipularLivros({
-    organizando,
     // Selecionando, tocar marca/desmarca em vez de espiar — o resto do gesto
     // (segurar, arrastar um livro só) continua igual, sem precisar o hook
     // saber que existe seleção.
@@ -115,7 +105,6 @@ export function Movel({
     // se medir pela tela (ver .movel-fila em index.css).
     <div
       className="movel cores-de-antes"
-      data-organizando={organizando || undefined}
       data-visao-geral={visaoGeral || undefined}
       style={{ '--mv-prateleiras': prateleiras.length } as CSSProperties}
     >
@@ -134,26 +123,6 @@ export function Movel({
               undefined
             }
           >
-            {/* Acima da penumbra, de propósito: um selo pequeno que não some
-                na sombra da tábua de cima. Botão de verdade, não deixa
-                passar o toque — quem quiser tocar o livro embaixo toca ao
-                lado. */}
-            <button
-              type="button"
-              className="movel-nome"
-              data-vazio={!etiquetas.has(indice) || undefined}
-              aria-label={
-                etiquetas.has(indice)
-                  ? `Editar o nome desta prateleira: ${etiquetas.get(indice) ?? ''}`
-                  : `Nomear a prateleira ${String(indice + 1)}`
-              }
-              onClick={() => {
-                onEditarEtiqueta(indice)
-              }}
-            >
-              {etiquetas.has(indice) ? etiquetas.get(indice) : <Tag size={11} aria-hidden />}
-            </button>
-
             {/* Fica atrás da fileira; as lombadas de enfeite deixam o toque
                 passar até ele, e os livros de verdade, não. Um botão só por
                 prateleira, e não um por lombada escura: é o que o teclado e o

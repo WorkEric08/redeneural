@@ -21,13 +21,7 @@ import {
   type PreferenciasGravadas,
 } from '@/services/db'
 
-import {
-  conexaoSchema,
-  etiquetaSchema,
-  livroSchema,
-  neuronioSchema,
-  snapshotSchema,
-} from './schemas'
+import { conexaoSchema, livroSchema, neuronioSchema, snapshotSchema } from './schemas'
 
 /**
  * Reagrupa por prateleira depois de uma fusão de import: os livros de
@@ -115,13 +109,6 @@ export function createDexieRepo(db: PalacioDB = defaultDb): PalacioRepo {
       })
     },
 
-    async definirOrdens(mudancas) {
-      if (mudancas.length === 0) return
-      await db.transaction('rw', db.livros, async () => {
-        await Promise.all(mudancas.map((m) => db.livros.update(m.id, { ordem: m.ordem })))
-      })
-    },
-
     async getQuantidadeDePrateleiras() {
       const gravado = (await db.meta.get('preferencias')) as PreferenciasGravadas | undefined
       return gravado?.quantidadeDePrateleiras ?? MINIMO_DE_PRATELEIRAS
@@ -163,19 +150,6 @@ export function createDexieRepo(db: PalacioDB = defaultDb): PalacioRepo {
         }
         await db.meta.put(preferencias)
       })
-    },
-
-    async listEtiquetas() {
-      return db.etiquetas.toArray()
-    },
-
-    async definirEtiqueta(prateleira, texto) {
-      const limpo = texto.trim()
-      if (limpo === '') {
-        await db.etiquetas.delete(prateleira)
-        return
-      }
-      await db.etiquetas.put(etiquetaSchema.parse({ prateleira, texto: limpo }))
     },
 
     async listNeuronios(livroId) {
