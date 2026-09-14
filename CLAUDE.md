@@ -1481,4 +1481,5 @@ lint limpos (0 erros, 0 avisos).
 12. ✅ Busca global — 2ª das 9
 13. ✅ Ordenar com um toque — 3ª das 9
 14. ✅ Seleção múltipla — 4ª das 9
-15. ✅ Nome de prateleira — 5ª das 9; próxima é textura/emblema na lombada
+15. ✅ Nome de prateleira — 5ª das 9
+16. ✅ Textura/emblema na lombada — 6ª das 9; próxima é intensidade da luz/lavagem ajustável
