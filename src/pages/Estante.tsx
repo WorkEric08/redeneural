@@ -125,13 +125,13 @@ export default function Estante() {
 
   return (
     <div className="animar-entrada flex flex-col gap-5">
-      {/* A altura mínima é a tela inteira menos o respiro do `<main>` (5px no
-          topo + 24px embaixo, ver App.tsx): o `mt-auto` empurra a contagem até
+      {/* A altura mínima é a tela inteira menos o respiro do `<main>` (0px no
+          topo, 24px embaixo, ver App.tsx): o `mt-auto` empurra a contagem até
           a mesma altura do botão de criar (h-14, como .dial-botao).
 
           Só abaixo de 1024 px: no desktop não existe dial para alinhar (a
           navegação é a coluna fixa — ver Dial.tsx). */}
-      <div className="flex min-h-[calc(100dvh_-_29px_-_env(safe-area-inset-bottom))] flex-col lg:min-h-0">
+      <div className="flex min-h-[calc(100dvh_-_24px_-_env(safe-area-inset-bottom))] flex-col lg:min-h-0">
         <Movel
           estante={estante}
           vagas={vagas}

@@ -44,9 +44,11 @@ export default function App() {
   //   embaixo.
   const naEstante = pathname === '/'
   // A estante ganha respiro mínimo no celular (pedido do usuário, 13/09/2026):
-  // topo e laterais caem para 5px abaixo de 1024px — onde a coluna de
-  // navegação já dá folga própria — mantendo os 24px/16px de antes no desktop.
-  const respiro = naEstante ? 'pt-[5px] pb-6 lg:pt-6' : mostrarCriar ? 'pb-28 lg:pb-16' : 'pb-0'
+  // laterais caem para 5px abaixo de 1024px — onde a coluna de navegação já
+  // dá folga própria — mantendo os 24px/16px de antes no desktop. O topo foi
+  // para 0px (pedido do usuário, 15/09/2026): a cornija do móvel encosta no
+  // topo real da tela.
+  const respiro = naEstante ? 'pt-0 pb-6 lg:pt-6' : mostrarCriar ? 'pb-28 lg:pb-16' : 'pb-0'
   const horizontal = naEstante ? 'px-[5px] lg:px-4' : 'px-4'
 
   if (naPorta) {
