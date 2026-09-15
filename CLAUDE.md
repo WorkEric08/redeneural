@@ -1990,6 +1990,145 @@ cruzados na tela do neurônio, e a constelação inteira da Rede — todos em
 azul, incluindo a leitura ao vivo do token resolvido pelo navegador (não só
 o valor gravado no CSS). 232 testes, typecheck e lint limpos.
 
+## A Rede se organiza por significado (15/09/2026)
+
+Item 2 do plano da Rede (ver "A Rede como constelação"): o layout da parte 1
+continuava o da Fase 7 — livros em círculo, neurônios em volta da âncora do
+próprio livro. A partir daqui os aglomerados nascem só das conexões, de
+qualquer livro, e a posição de cada neurônio é **gravada**, não recalculada
+do zero a cada abertura.
+
+Pedido explícito do usuário nesta fase: manter só o que já estava em
+andamento (a Rede), deixar as pendências de hardware (Fase 3 e 9) para
+quando o projeto chegar na passada de acabamento, e sempre escrever o
+código pensando em não quebrar o caminho até o Android nativo — sem se
+aprofundar nisso agora. As ideias extras que sobravam da lista da estante
+(múltiplas estantes/salas, múltiplos acabamentos de madeira) foram
+recusadas por fugirem do escopo do projeto — removidas da memória de
+projeto, não é mais pendência.
+
+### Onde o algoritmo mora, e por quê
+
+`src/core/motor/redeLayout.ts` — não em `features/rede`, porque agora ele
+roda **dentro do Worker** (cálculo pesado fora da thread da interface,
+regra de ouro da arquitetura: o núcleo não sabe onde está rodando, e um
+motor de layout é exatamente o tipo de coisa que uma implementação nativa
+vai precisar reimplementar um dia). A UI só lê o resultado gravado.
+
+`features/rede/layout.ts` perdeu `montarMapa`/`dimensionar`/`Mapa` — foram
+para o núcleo. Sobrou só o que a UI ainda calcula do próprio lado:
+`grausDoMapa` (tamanho do ponto pelo grau) e `neuronioEm` (hit-testing).
+
+### O algoritmo
+
+Força-dirigido puro, sem `Math.random` nem relógio:
+
+- **Atração por aresta**, proporcional à distância atual e ao score — quanto
+  mais forte a conexão, mais perto os dois querem ficar. A mesma fórmula do
+  layout antigo, só que agora sem âncora de livro puxando por baixo.
+- **Repulsão por grade espacial**: só quem está a menos de `raioDeRepulsao`
+  entra na conta (cada nó olha a própria célula e as 8 vizinhas), perto de
+  O(n) por passo em vez de O(n²) — o mesmo motivo que já valia no layout
+  antigo, mais importante agora que a repulsão não fica mais restrita ao
+  mesmo livro.
+- **Âncora própria**, não um centro genérico: quem já tinha posição gravada
+  recebe um puxão fraco de volta para **onde ele mesmo estava**, não para o
+  centroide do grafo inteiro. Sem isso, um grafo com ciclos (que tem mais de
+  um equilíbrio físico válido) podia assentar numa rotação ou num rearranjo
+  local diferente a cada recálculo, mesmo com as arestas praticamente
+  iguais — "mobília não anda" para o layout antigo era garantido só por ser
+  uma função pura do id; aqui, sem uma âncora individual, não tinha nada
+  segurando a forma entre um recálculo e o outro.
+- Nó novo (sem posição gravada) nasce perto de um vizinho que já tem lugar
+  — propagado em até 6 passadas, resolvido por ordem de id para ser
+  determinístico independente da ordem dos arrays —, ou espalhado por
+  semente do id ao redor do centro do que já existia, se for uma ilha nova
+  de verdade.
+
+### Quando roda, e com quantas iterações
+
+Acionado nos mesmos pontos que já recalculavam o grafo de conexões —
+`reprocessarTudo` e o caminho incremental de `escrever` —, mas **quantas
+iterações rodar depende de haver posição de referência, não de qual
+caminho chamou**: `apagarNeuronio` e o crescimento de 50% também passam por
+`reprocessarTudo`, mas continuam sendo um recálculo sobre um layout que já
+existia, e merecem o mesmo assenta-e-para de uma escrita incremental (26
+iterações) — não as 160 de quem nunca teve chão nenhum embaixo. Só a
+primeira organização de todas (nenhuma posição gravada ainda) é fria de
+verdade.
+
+### Onde fica gravado
+
+Em `meta`, chave `posicoesDaRede` — o mesmo padrão do `PerfilDoPalacio`, e
+pelo mesmo motivo **fora do backup**: é derivado do grafo, recalculado na
+chegada. Nenhuma tabela nova, nenhum bump de versão do Dexie (o `meta` só
+indexa a chave, não o formato do documento).
+
+### Dois bugs achados no caminho, os dois com teste de regressão
+
+- **A posição de um neurônio apagado sobrevivia no mapa.** A partida quente
+  copiava `posicoesAnteriores` inteiro, sem filtrar por quem ainda está em
+  `nos` — o apagado não recebe força nenhuma (as passadas do laço principal
+  só olham os nós atuais), então ficava congelado ali para sempre, vazando
+  para o que fosse gravado no próximo recálculo.
+- **`calcularLayoutDaRede` mutava os pontos de `posicoesAnteriores` no
+  lugar.** `new Map(anteriores)` copia as chaves, mas os objetos `{x,y}`
+  continuam sendo os mesmos — e o laço principal escreve `p.x += f.x` neles
+  diretamente (mais barato que recriar o ponto a cada passo). Sem copiar os
+  objetos também, isso alterava escondido o mapa de quem chamou, no meio do
+  próprio cálculo. Pior: **mascarava os testes de estabilidade** — comparar
+  "antes" com o resultado usando os mesmos objetos passa mesmo com o bug,
+  porque os dois lados da comparação já são o mesmo objeto mutado. Os testes
+  originais (grafo de 8 nós, criado à mão) passavam por essa coincidência;
+  só apareceu comparando com um grafo de verdade, dumped do Worker.
+
+O segundo bug é o motivo de `ancoragemPropria` ter uma constante medida:
+antes de corrigi-lo, toda medição de estabilidade era uma medição de "um
+objeto comparado com ele mesmo" — zero por construção, não por o layout ser
+estável de verdade.
+
+### Números medidos (179 nós, 620 arestas, palácio sintético)
+
+Apagar um neurônio pela UI de verdade (dispara `reprocessarTudo`; os
+sintéticos já têm embedding, então não baixa o modelo), depois apagar um
+segundo em seguida, medindo o deslocamento de quem sobrou:
+
+| `ancoragemPropria`                                          | Deslocamento médio | Pior caso  |
+| ----------------------------------------------------------- | ------------------ | ---------- |
+| 0,05 (primeira tentativa, com os dois bugs ainda presentes) | 65–115 px          | 173–298 px |
+| 0,4 (calibrado, bugs corrigidos)                            | **7 px**           | **12 px**  |
+
+0,4 continua bem mais fraco que o puxão de uma aresta de verdade — quem tem
+motivo real para se mover (a conexão mudou), se move; quem não tem, fica
+parado, dentro de uma folga pequena o bastante para não se notar.
+
+### Palácio sintético para testar sem o modelo
+
+`src/features/palacio/seed.ts` continua sendo o único seed real do projeto.
+Para testar o layout com um grafo grande, gravei neurônios sintéticos
+**direto no IndexedDB do navegador de teste** (fora do repositório, só numa
+sessão de verificação): cada um com um embedding de verdade — centroide
+aleatório de unidade por comunidade, mais ruído pequeno, renormalizado —,
+não zerado, para o motor de conexões de verdade (`construirGrafo`, cosseno
+sobre o vetor) descobrir as comunidades sozinho. Embeddings com o mesmo
+valor davam um grafo degenerado (quase uma árvore, 178 arestas para 179
+nós) e o layout virava um artefato de estrela; com embeddings agrupados de
+verdade, 620 arestas e uma constelação coerente. Depois, apagar um neurônio
+pela UI aciona o pipeline real (`reprocessarTudo` → `construirGrafo` →
+`recalcularPosicoesDaRede` → grava) sem precisar baixar os 129 MB do
+modelo, porque os sintéticos já chegam com vetor.
+
+Verificado: grafo coerente (sem estrela degenerada) com embeddings
+agrupados; estabilidade medida apagando um segundo neurônio em seguida (ver
+tabela acima); nenhuma posição de nó apagado sobrevivendo no `meta`. 235
+testes (14 no motor de layout, eram 12 no `layout.test.ts` antigo — a
+diferença é o teste de "não muta `posicoesAnteriores`" e o de "posição
+apagada não sobrevive"), typecheck e lint limpos. Bundle principal: 122 KB
+gzipped.
+
+Faltam os itens 3 (tocar acende a vizinhança, nomes ao aproximar, duplo
+toque, busca leva a câmera) e 4 (arrastar neurônio) do plano da Rede.
+
 ## Fases
 
 0. ✅ Esqueleto (Vite/React/TS/Tailwind/PWA/Capacitor)
@@ -2023,6 +2162,6 @@ o valor gravado no CSS). 232 testes, typecheck e lint limpos.
 21. ✅ Estante em lugares fixos, com enfeite que se tira e se põe — revisita a
     escolha da Fase 10
 22. ✅ Abrir o livro com animação — o livro sai da estante, vira de capa e abre
-23. 🟡 Rede como constelação — **parte 1 de 4 feita** (tela cheia e nova
-    pintura); faltam organização por significado, tocar/aproximar e arrastar
-    neurônio
+23. 🟡 Rede como constelação — **partes 1 e 2 de 4 feitas** (tela cheia e
+    nova pintura; organização por significado com posições gravadas);
+    faltam tocar/aproximar e arrastar neurônio
