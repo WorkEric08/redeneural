@@ -3,6 +3,9 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 
 import { botao } from '@/components/botao'
+import type { Livro } from '@/core'
+import { AberturaDoLivro } from '@/features/estante/AberturaDoLivro'
+import { geometriaDaAbertura, type Abertura } from '@/features/estante/abertura'
 import { Movel } from '@/features/estante/Movel'
 import { PaineisDaEstante } from '@/features/estante/Paineis'
 import { montarEstante, pontesEntreLivros } from '@/features/estante/resumo'
@@ -81,6 +84,32 @@ export default function Estante() {
     setBusca(proxima, { replace: true })
   }, [busca, setBusca])
 
+  // O livro saindo da estante. Só vale enquanto o espiar dele está na URL:
+  // voltar no meio da animação tira o espiar, e com ele a animação — senão o
+  // fim dela trocaria a estante pelo livro no histórico.
+  const [abrindo, setAbrindo] = useState<{ livro: Livro; geometria: Abertura } | null>(null)
+  const abrindoAgora =
+    abrindo && painel?.tipo === 'espiar' && painel.livroId === abrindo.livro.id ? abrindo : null
+
+  function abrirLivro(livroId: string): void {
+    const livro = livros.find((l) => l.id === livroId)
+    const lombada = document.querySelector(`[data-livro-id="${CSS.escape(livroId)}"]`)
+    const semMovimento = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+
+    if (!livro || !lombada || semMovimento) {
+      void navegar(`/livro/${livroId}`, { replace: true })
+      return
+    }
+    setAbrindo({
+      livro,
+      geometria: geometriaDaAbertura(
+        lombada.getBoundingClientRect(),
+        window.innerWidth,
+        window.innerHeight,
+      ),
+    })
+  }
+
   const selecionadoId = painel && painel.tipo !== 'lugar' ? painel.livroId : null
   const lugarEscolhido =
     painel?.tipo === 'lugar' ? { prateleira: painel.prateleira, lugar: painel.lugar } : null
@@ -109,12 +138,16 @@ export default function Estante() {
           pontes={pontes}
           selecionadoId={selecionadoId}
           lugarEscolhido={lugarEscolhido}
+          abrindoId={abrindoAgora?.livro.id ?? null}
           chegandoId={chegandoId}
           quantidadeDePrateleiras={quantidadeDePrateleiras}
           intensidadeDaLuz={intensidadeDaLuz}
           visaoGeral={visaoGeral}
           selecionados={selecionados}
           onEspiar={(livroId) => {
+            // Um espiar novo nunca herda a abertura de um anterior que foi
+            // desistida no meio — senão ela recomeçaria sozinha.
+            setAbrindo(null)
             abrir({ tipo: 'espiar', livroId })
           }}
           onAcoes={(livroId) => {
@@ -190,7 +223,10 @@ export default function Estante() {
       </div>
 
       <PaineisDaEstante
-        painel={painel}
+        // Enquanto o livro sai da estante a folha some, mas a URL continua no
+        // espiar: quem troca de tela é o fim da animação, com `replace`, e o
+        // voltar do livro cai na estante como antes.
+        painel={abrindoAgora ? null : painel}
         livros={livros}
         vagas={vagas}
         quantidadeDePrateleiras={quantidadeDePrateleiras}
@@ -205,9 +241,20 @@ export default function Estante() {
         onIniciarSelecao={(livroId) => {
           setSelecionados(new Set([livroId]))
         }}
+        onAbrirLivro={abrirLivro}
         onTirarEnfeite={tirarEnfeite}
         onPorEnfeite={porEnfeite}
       />
+
+      {abrindoAgora && (
+        <AberturaDoLivro
+          livro={abrindoAgora.livro}
+          geometria={abrindoAgora.geometria}
+          onAberto={() => {
+            void navegar(`/livro/${abrindoAgora.livro.id}`, { replace: true })
+          }}
+        />
+      )}
     </div>
   )
 }

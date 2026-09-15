@@ -1896,6 +1896,142 @@ img {
 }
 
 /* ---------------------------------------------------------------------------
+ * Abrir o livro (AberturaDoLivro.tsx): o livro sai da prateleira, vira de
+ * capa, abre, e a sala cobre a troca de tela.
+ * ------------------------------------------------------------------------ */
+
+.abertura {
+  position: fixed;
+  inset: 0;
+  z-index: 70;
+  overflow: hidden;
+}
+
+/* A sala da página nova, e não a da estante (`cores-de-antes` fica só no
+   livro): é sobre ela que a tela do livro entra, sem corte. */
+.abertura-fundo,
+.abertura-cena {
+  position: absolute;
+  inset: 0;
+}
+
+.abertura-fundo {
+  background: var(--sala);
+  opacity: 0;
+}
+
+/* A perspectiva mora aqui, e o esmaecer do fim também — nunca no livro. No
+   Chromium, opacidade animada (ou `will-change: opacity`) é propriedade de
+   agrupamento: achata o `preserve-3d`, e a caixa vira um cartão plano, com a
+   lombada de lado e a capa aberta invisível. A mesma PERSPECTIVA de
+   abertura.ts: a conta que põe a lombada 3D em cima da da estante depende
+   deste número. */
+.abertura-cena {
+  perspective: 1600px;
+}
+
+.abertura-livro {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform-style: preserve-3d;
+}
+
+.abertura-livro > * {
+  position: absolute;
+  inset: 0;
+}
+
+/* Só as faces somem de costas. O container da capa não: senão, passando de
+   90°, ele esconderia o avesso junto. */
+.abertura-miolo,
+.abertura-lombada,
+.abertura-capa > * {
+  position: absolute;
+  inset: 0;
+  backface-visibility: hidden;
+}
+
+/* A primeira página, logo atrás da capa. Papel é claro nos dois temas, pelo
+   mesmo motivo de a lombada ser escura nos dois: é objeto, não interface. */
+.abertura-miolo {
+  inset: 3px 3px 3px 0;
+  border-radius: 0 2px 2px 0;
+  background: linear-gradient(
+    90deg,
+    oklch(0.78 0.02 85) 0,
+    oklch(0.92 0.015 85) 16px,
+    oklch(0.95 0.012 85) 100%
+  );
+  transform: translateZ(calc(var(--grossura) / 2 - 1px));
+}
+
+/* A lombada: a mesma `.lombada` da prateleira, virada para o lado. Tudo que
+   ela desenha em px é multiplicado pelo quanto ela é maior que a da estante —
+   encolhida na partida, fica idêntica à que saiu da prateleira. */
+.abertura-lombada.lombada {
+  right: auto;
+  left: calc(50% - var(--grossura) / 2);
+  width: var(--grossura);
+  border-radius: 2px;
+  background-color: var(--pano);
+  transform: rotateY(-90deg) translateZ(var(--meia-largura));
+}
+
+.abertura-lombada .lombada-titulo {
+  max-height: calc(100% - 14px * var(--aumento-da-lombada));
+  padding-block: calc(4px * var(--aumento-da-lombada));
+  border-width: calc(1px * var(--aumento-da-lombada)) 0;
+  font-size: calc(0.72rem * var(--aumento-da-lombada));
+}
+
+/* A capa gira pela dobra, do lado da lombada. */
+.abertura-capa {
+  transform-origin: left center;
+  transform: translateZ(calc(var(--grossura) / 2));
+  transform-style: preserve-3d;
+}
+
+.abertura-capa-frente {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 22% 12% 0;
+  border-radius: 1px 3px 3px 1px;
+  background-color: var(--pano);
+  background-image:
+    linear-gradient(90deg, rgb(0 0 0 / 0.38) 0, rgb(255 255 255 / 0.08) 6px, transparent 11px),
+    radial-gradient(120% 90% at 30% 18%, rgb(255 255 255 / 0.12), transparent 62%);
+  box-shadow:
+    inset 0 0 0 1px rgb(0 0 0 / 0.35),
+    inset 0 0 0 6px rgb(0 0 0 / 0.1);
+}
+
+/* Gravado em ouro, como o título da lombada — é o mesmo livro. */
+.abertura-titulo {
+  max-width: 100%;
+  padding-block: 0.45em;
+  border-top: 1px solid color-mix(in oklab, var(--ouro-gravado) 45%, transparent);
+  border-bottom: 1px solid color-mix(in oklab, var(--ouro-gravado) 45%, transparent);
+  font-family: var(--fonte-titulo);
+  font-size: clamp(0.95rem, calc(var(--meia-largura) * 0.16), 1.5rem);
+  font-weight: 600;
+  line-height: 1.15;
+  text-align: center;
+  overflow-wrap: anywhere;
+  color: var(--ouro-gravado);
+  text-shadow: 0 1px 0 rgb(0 0 0 / 0.6);
+}
+
+/* O avesso da capa, que aparece quando ela abre. */
+.abertura-capa-verso {
+  border-radius: 3px 1px 1px 3px;
+  background: color-mix(in oklab, var(--pano) 50%, black);
+  box-shadow: inset -10px 0 14px rgb(0 0 0 / 0.35);
+  transform: rotateY(180deg);
+}
+
+/* ---------------------------------------------------------------------------
  * A interface — tudo que não é estante, porta nem o retângulo da Rede.
  *
  * Três profundidades, todas da paleta: a sala (Rich Black), a superfície

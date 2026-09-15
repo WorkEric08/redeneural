@@ -21,6 +21,8 @@ interface Props {
   selecionadoId: string | null
   /** O lugar sem livro cujo menu está aberto. */
   lugarEscolhido: LugarDaEstante | null
+  /** O livro que está saindo da estante para abrir: o lugar dele fica como vão. */
+  abrindoId: string | null
   chegandoId: string | null
   /** Quantas prateleiras o móvel tem — gravado, ajustável em Ajustes. */
   quantidadeDePrateleiras: number
@@ -67,6 +69,7 @@ export function Movel({
   pontes,
   selecionadoId,
   lugarEscolhido,
+  abrindoId,
   chegandoId,
   quantidadeDePrateleiras,
   intensidadeDaLuz,
@@ -115,6 +118,7 @@ export function Movel({
   const alvo = gesto.fase === 'arrastando' ? gesto.alvo : null
 
   function estadoDe(livroId: string): EstadoDaLombada {
+    if (abrindoId === livroId) return 'vazio'
     if (gesto.livroId === livroId) return gesto.fase === 'arrastando' ? 'vazio' : 'erguido'
     return selecionadoId === livroId ? 'escolhido' : 'repouso'
   }

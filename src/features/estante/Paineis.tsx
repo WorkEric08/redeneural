@@ -42,6 +42,8 @@ interface Props {
   onEditar: (livroId: string, dados: NovoLivro) => Promise<boolean>
   onApagar: (livroId: string) => Promise<boolean>
   onIniciarSelecao: (livroId: string) => void
+  /** "Abrir o livro": quem chama anima o livro saindo da estante e só então troca de tela. */
+  onAbrirLivro: (livroId: string) => void
   onTirarEnfeite: (prateleira: number, lugar: number) => Promise<void>
   onPorEnfeite: (prateleira: number, lugar: number) => Promise<void>
 }
@@ -136,7 +138,7 @@ function Cabecalho({ livro, children }: { livro: Livro; children?: ReactNode }) 
  * da estante. Tudo que leva para outra tela usa `replace` — o painel é um passo
  * no histórico, e voltar do livro tem que cair na estante, não no painel.
  */
-function Espiar({ livro, livros, neuronios, pontes }: Props & { livro: Livro }) {
+function Espiar({ livro, livros, neuronios, pontes, onAbrirLivro }: Props & { livro: Livro }) {
   const dele = neuronios.filter((n) => n.livroId === livro.id)
   const ligacoes = [...(pontes.get(livro.id) ?? new Map<Id, number>())]
     .map(([id, quantas]) => ({ outro: livros.find((l) => l.id === id), quantas }))
@@ -216,7 +218,17 @@ function Espiar({ livro, livros, neuronios, pontes }: Props & { livro: Livro }) 
         </section>
       )}
 
-      <Link to={`/livro/${livro.id}`} replace className={botao({ tipo: 'primario', largo: true })}>
+      {/* Continua link (o destino é anunciado e o teclado o alcança), mas quem
+          navega é o fim da animação — ver AberturaDoLivro. */}
+      <Link
+        to={`/livro/${livro.id}`}
+        replace
+        className={botao({ tipo: 'primario', largo: true })}
+        onClick={(evento) => {
+          evento.preventDefault()
+          onAbrirLivro(livro.id)
+        }}
+      >
         Abrir o livro
       </Link>
     </div>
