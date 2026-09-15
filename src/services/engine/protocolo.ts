@@ -7,6 +7,7 @@ import type {
   EstanteGravada,
   Id,
   Livro,
+  Ponto,
   ProgressoDoMotor,
   ResultadoDeEscrita,
   Vaga,
@@ -31,6 +32,7 @@ export interface RespostasDoMotor {
   porEnfeite: Vaga[]
   definirQuantidadeDePrateleiras: number
   definirIntensidadeDaLuz: number
+  moverNeuronioNaRede: Readonly<Record<Id, Ponto>>
 }
 
 export type TipoDePedido = keyof RespostasDoMotor
@@ -48,6 +50,7 @@ export type ParaMotor =
   | { req: number; tipo: 'porEnfeite'; prateleira: number; lugar: number }
   | { req: number; tipo: 'definirQuantidadeDePrateleiras'; quantidade: number }
   | { req: number; tipo: 'definirIntensidadeDaLuz'; valor: number }
+  | { req: number; tipo: 'moverNeuronioNaRede'; id: Id; ponto: Ponto }
 
 export type DoMotor =
   | { req: number; ok: true; dados: RespostasDoMotor[TipoDePedido] }

@@ -2,7 +2,15 @@ import { describe, expect, it } from 'vitest'
 
 import type { Conexao, NeuronioNaTela } from '@/core'
 
-import { grausDoMapa, neuronioEm, vizinhancaDe } from './layout'
+import {
+  easeOutCubic,
+  grausDoMapa,
+  neuronioEm,
+  posicoesDoArrasto,
+  quadroDoAssentamento,
+  vizinhancaDe,
+  type NoArrastado,
+} from './layout'
 
 const T0 = new Date('2026-01-01T12:00:00.000Z')
 
@@ -92,5 +100,75 @@ describe('neuronioEm', () => {
       ['b', { x: 2, y: 0 }],
     ])
     expect(neuronioEm({ x: 1, y: 0 }, juntos, ordem, 22)).toBe('b')
+  })
+})
+
+describe('posicoesDoArrasto', () => {
+  const alvo: NoArrastado = {
+    id: 'p1',
+    origem: { x: 0, y: 0 },
+    vizinhos: [
+      { id: 'forte', score: 1, origem: { x: 100, y: 0 } },
+      { id: 'fraco', score: 0, origem: { x: 0, y: 100 } },
+    ],
+  }
+
+  it('o nó arrastado segue o delta exatamente', () => {
+    const quadro = posicoesDoArrasto(alvo, { x: 10, y: 20 })
+    expect(quadro.get('p1')).toEqual({ x: 10, y: 20 })
+  })
+
+  it('um vizinho de conexão forte acompanha mais que um de conexão fraca', () => {
+    const quadro = posicoesDoArrasto(alvo, { x: 100, y: 0 })
+    const forte = quadro.get('forte')!
+    const fraco = quadro.get('fraco')!
+    expect(forte.x).toBeGreaterThan(100)
+    expect(fraco.x).toBe(0)
+  })
+
+  it('score zero não move o vizinho nem um pouco', () => {
+    const quadro = posicoesDoArrasto(alvo, { x: 50, y: 50 })
+    expect(quadro.get('fraco')).toEqual({ x: 0, y: 100 })
+  })
+})
+
+describe('quadroDoAssentamento', () => {
+  const inicio = new Map([
+    ['a', { x: 0, y: 0 }],
+    ['b', { x: 10, y: 10 }],
+  ])
+  const alvo = { a: { x: 100, y: 0 }, b: { x: 10, y: 110 } }
+
+  it('em k=0 fica exatamente no início', () => {
+    const quadro = quadroDoAssentamento(inicio, alvo, 0)
+    expect(quadro.get('a')).toEqual({ x: 0, y: 0 })
+    expect(quadro.get('b')).toEqual({ x: 10, y: 10 })
+  })
+
+  it('em k=1 fica exatamente no alvo', () => {
+    const quadro = quadroDoAssentamento(inicio, alvo, 1)
+    expect(quadro.get('a')).toEqual({ x: 100, y: 0 })
+    expect(quadro.get('b')).toEqual({ x: 10, y: 110 })
+  })
+
+  it('em k=0.5 fica na metade do caminho', () => {
+    const quadro = quadroDoAssentamento(inicio, alvo, 0.5)
+    expect(quadro.get('a')).toEqual({ x: 50, y: 0 })
+  })
+
+  it('um id que o alvo não conhece fica parado onde estava', () => {
+    const quadro = quadroDoAssentamento(new Map([['sumido', { x: 5, y: 5 }]]), {}, 0.8)
+    expect(quadro.get('sumido')).toEqual({ x: 5, y: 5 })
+  })
+})
+
+describe('easeOutCubic', () => {
+  it('começa em 0 e termina em 1', () => {
+    expect(easeOutCubic(0)).toBe(0)
+    expect(easeOutCubic(1)).toBe(1)
+  })
+
+  it('é mais rápido no início que no fim — passou de metade do caminho antes de t=0,5', () => {
+    expect(easeOutCubic(0.5)).toBeGreaterThan(0.5)
   })
 })

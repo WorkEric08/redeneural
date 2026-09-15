@@ -79,6 +79,12 @@ interface PalacioStore {
   definirQuantidadeDePrateleiras: (quantidade: number) => Promise<void>
   /** Otimista, como o resto das preferências — a estante já lava na hora. */
   definirIntensidadeDaLuz: (valor: number) => Promise<void>
+  /**
+   * Solta um neurônio arrastado no ponto novo. Devolve o layout reagindo a
+   * ele na hora — a tela anima o assentamento com o resultado, sem esperar
+   * o próximo render para saber onde a vizinhança parou.
+   */
+  moverNeuronioNaRede: (id: string, ponto: Ponto) => Promise<Readonly<Record<string, Ponto>>>
   /** O aviso flutuante some — pelo tempo ou pelo toque. */
   dispensarAvisos: () => void
 }
@@ -377,6 +383,19 @@ export const usePalacio = create<PalacioStore>()((set, get) => {
         set({ intensidadeDaLuz: await engine.definirIntensidadeDaLuz(valor) })
       } catch (e) {
         set({ intensidadeDaLuz: antes, erro: mensagem(e) })
+      }
+    },
+
+    async moverNeuronioNaRede(id, ponto) {
+      try {
+        const posicoesDaRede = await engine.moverNeuronioNaRede(id, ponto)
+        set({ posicoesDaRede })
+        return posicoesDaRede
+      } catch (e) {
+        // Sem otimismo para desfazer: nada mudou aqui ainda. A tela anima de
+        // volta para o que já tinha, usando o que devolvemos.
+        set({ erro: mensagem(e) })
+        return get().posicoesDaRede
       }
     },
   }

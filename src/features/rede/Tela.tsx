@@ -1,9 +1,15 @@
 import { useCallback, useEffect, useImperativeHandle, useRef, type RefObject } from 'react'
 
-import type { Id } from '@/core'
+import type { Id, Ponto } from '@/core'
 
 import { desenhar, type Camera, type Cena, type CoresDaRede } from './desenhar'
-import { neuronioEm } from './layout'
+import {
+  neuronioEm,
+  posicoesDoArrasto,
+  quadroDoAssentamento,
+  easeOutCubic,
+  type NoArrastado,
+} from './layout'
 
 /**
  * A tela da rede: canvas, câmera e dedo.
@@ -33,6 +39,9 @@ const ZOOM_DO_DUPLO_TOQUE = 1.9
 /** Para onde a busca e o duplo toque num neurônio levam a câmera — perto o
  *  bastante para os rótulos ambiente já aparecerem (ver `desenhar.ts`). */
 const ESCALA_DE_FOCO = 2.4
+/** Quanto tempo o assentamento leva depois de soltar — nem instantâneo (o
+ *  pulo pareceria bug), nem longo o bastante para atrasar quem já quer seguir. */
+const DURACAO_DO_ASSENTAMENTO = 900
 
 export interface ControleDaTela {
   enquadrar: () => void
@@ -50,6 +59,12 @@ export interface Folgas {
 interface Props {
   cena: Omit<Cena, 'cores'>
   onSelecionar: (id: string | null) => void
+  /**
+   * Solta um neurônio arrastado no ponto novo (mundo). Devolve o layout já
+   * reagindo a ele — a tela anima o assentamento sozinha com o resultado, sem
+   * esperar a store re-renderizar para saber onde a vizinhança parou.
+   */
+  onArrastarNeuronio: (id: Id, ponto: Ponto) => Promise<Readonly<Record<Id, Ponto>>>
   controle?: RefObject<ControleDaTela | null>
   /** Estável entre renders (constante de módulo): enquadrar depende dela. */
   folgas: Folgas
@@ -86,7 +101,7 @@ function lerCores(el: HTMLElement): CoresDaRede {
   }
 }
 
-export function Tela({ cena, onSelecionar, controle, folgas }: Props) {
+export function Tela({ cena, onSelecionar, onArrastarNeuronio, controle, folgas }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const camera = useRef<Camera>({ x: 0, y: 0, escala: 1 })
   const cores = useRef<CoresDaRede | null>(null)
@@ -95,6 +110,15 @@ export function Tela({ cena, onSelecionar, controle, folgas }: Props) {
   /** O último toque solto, para reconhecer um segundo logo em seguida como duplo. */
   const ultimoToque = useRef<{ tempo: number; x: number; y: number } | null>(null)
   const cenaRef = useRef(cena)
+
+  /** O neurônio sob o dedo desde o toque, se o toque começou em cima de um —
+   *  `null` enquanto o gesto é (ou ainda pode virar) arrastar a câmera. */
+  const noArrastado = useRef<({ mundoInicial: Ponto } & NoArrastado) | null>(null)
+  /** As posições que o desenho usa em vez das da cena, enquanto um nó está
+   *  sendo arrastado ou assentando — `null` quando a cena manda de verdade. */
+  const posicoesArrastadas = useRef<Map<Id, Ponto> | null>(null)
+  /** Cancela um assentamento anterior se um novo arrasto começar no meio dele. */
+  const assentamentoEmAndamento = useRef<{ cancelado: boolean } | null>(null)
 
   const pintar = useCallback(() => {
     const canvas = canvasRef.current
@@ -112,8 +136,20 @@ export function Tela({ cena, onSelecionar, controle, folgas }: Props) {
 
     cores.current ??= lerCores(canvas)
 
+    const overlay = posicoesArrastadas.current
+    const posicoes =
+      overlay && overlay.size > 0
+        ? new Map<Id, Ponto>([...cenaRef.current.posicoes, ...overlay])
+        : cenaRef.current.posicoes
+
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
-    desenhar(ctx, { ...cenaRef.current, cores: cores.current }, camera.current, largura, altura)
+    desenhar(
+      ctx,
+      { ...cenaRef.current, posicoes, cores: cores.current },
+      camera.current,
+      largura,
+      altura,
+    )
   }, [])
 
   /**
@@ -179,6 +215,67 @@ export function Tela({ cena, onSelecionar, controle, folgas }: Props) {
       pintar()
     },
     [pintar, folgas],
+  )
+
+  /**
+   * Anima do quadro em que o dedo soltou até onde a física de verdade decidiu
+   * que a vizinhança deveria ficar — "assenta e para", não um laço eterno: só
+   * corre por `DURACAO_DO_ASSENTAMENTO` e some. Um arrasto novo no meio
+   * cancela este via `execucao.cancelado`, para os dois não brigarem pelo
+   * mesmo overlay.
+   */
+  const animarAssentamento = useCallback(
+    (
+      inicio: ReadonlyMap<Id, Ponto>,
+      alvo: Readonly<Record<Id, Ponto>>,
+      execucao: { cancelado: boolean },
+    ) => {
+      const t0 = performance.now()
+
+      const quadro = (agora: number): void => {
+        if (execucao.cancelado) return
+        const t = Math.min(1, (agora - t0) / DURACAO_DO_ASSENTAMENTO)
+
+        posicoesArrastadas.current = quadroDoAssentamento(inicio, alvo, easeOutCubic(t))
+        pintar()
+
+        if (t < 1) requestAnimationFrame(quadro)
+        else posicoesArrastadas.current = null
+      }
+
+      requestAnimationFrame(quadro)
+    },
+    [pintar],
+  )
+
+  /**
+   * Soltou o dedo em cima de um arrasto de verdade: congela a vizinhança
+   * exatamente onde acompanhou até aqui, pede ao motor a física de verdade a
+   * partir do ponto do soltar, e anima o resultado quando ele chegar.
+   */
+  const assentar = useCallback(
+    (id: Id, pontoFinal: Ponto) => {
+      const congelado = new Map(posicoesArrastadas.current ?? [])
+      congelado.set(id, pontoFinal)
+      posicoesArrastadas.current = congelado
+      pintar()
+
+      if (assentamentoEmAndamento.current) assentamentoEmAndamento.current.cancelado = true
+      const execucao = { cancelado: false }
+      assentamentoEmAndamento.current = execucao
+
+      onArrastarNeuronio(id, pontoFinal)
+        .then((posicoesReais) => {
+          if (execucao.cancelado) return
+          animarAssentamento(congelado, posicoesReais, execucao)
+        })
+        .catch(() => {
+          if (execucao.cancelado) return
+          posicoesArrastadas.current = null
+          pintar()
+        })
+    },
+    [pintar, onArrastarNeuronio, animarAssentamento],
   )
 
   useImperativeHandle(controle, () => ({ enquadrar, focar }), [enquadrar, focar])
@@ -283,6 +380,33 @@ export function Tela({ cena, onSelecionar, controle, folgas }: Props) {
       aria-label={`Rede do palácio: ${String(cena.neuronios.length)} neurônios e ${String(cena.conexoes.length)} conexões`}
       onPointerDown={(e) => {
         e.currentTarget.setPointerCapture(e.pointerId)
+
+        // O primeiro dedo a descer decide: em cima de um neurônio, o gesto
+        // pode virar arrastar o nó; em qualquer outro lugar (ou com um
+        // segundo dedo já no ar), continua sendo câmera. A decisão de verdade
+        // só vem no solto — `arrastou.current` é o mesmo teste de tolerância
+        // que já separa toque de arrasto de câmera.
+        if (ponteiros.current.size === 0) {
+          const mundo = paraOMundo(e.clientX, e.clientY)
+          const raioDeToque = RAIO_DO_TOQUE / camera.current.escala
+          const alvo = neuronioEm(mundo, cena.posicoes, cena.neuronios, raioDeToque)
+          const origem = alvo ? cena.posicoes.get(alvo) : undefined
+
+          if (alvo && origem) {
+            if (assentamentoEmAndamento.current) assentamentoEmAndamento.current.cancelado = true
+            const vizinhos: { id: Id; score: number; origem: Ponto }[] = []
+            for (const c of cena.conexoes) {
+              const outro = c.aId === alvo ? c.bId : c.bId === alvo ? c.aId : null
+              if (outro === null) continue
+              const p = cena.posicoes.get(outro)
+              if (p) vizinhos.push({ id: outro, score: c.score, origem: p })
+            }
+            noArrastado.current = { id: alvo, mundoInicial: mundo, origem, vizinhos }
+          } else {
+            noArrastado.current = null
+          }
+        }
+
         ponteiros.current.set(e.pointerId, { x: e.clientX, y: e.clientY })
         arrastou.current = 0
       }}
@@ -294,6 +418,10 @@ export function Tela({ cena, onSelecionar, controle, folgas }: Props) {
         const dy = e.clientY - anterior.y
 
         if (ponteiros.current.size === 2) {
+          // Um segundo dedo cancela o arrasto de nó — vira pinça, como sempre.
+          noArrastado.current = null
+          posicoesArrastadas.current = null
+
           const antes = distanciaEntreDedos()
           ponteiros.current.set(e.pointerId, { x: e.clientX, y: e.clientY })
           const depois = distanciaEntreDedos()
@@ -308,6 +436,18 @@ export function Tela({ cena, onSelecionar, controle, folgas }: Props) {
 
         ponteiros.current.set(e.pointerId, { x: e.clientX, y: e.clientY })
         arrastou.current += Math.abs(dx) + Math.abs(dy)
+
+        const alvo = noArrastado.current
+        if (alvo) {
+          const mundo = paraOMundo(e.clientX, e.clientY)
+          posicoesArrastadas.current = posicoesDoArrasto(alvo, {
+            x: mundo.x - alvo.mundoInicial.x,
+            y: mundo.y - alvo.mundoInicial.y,
+          })
+          pintar()
+          return
+        }
+
         camera.current = {
           ...camera.current,
           x: camera.current.x + dx,
@@ -318,6 +458,24 @@ export function Tela({ cena, onSelecionar, controle, folgas }: Props) {
       onPointerUp={(e) => {
         const eraUmDedoSo = ponteiros.current.size === 1
         ponteiros.current.delete(e.pointerId)
+
+        const alvoDoArrasto = noArrastado.current
+        noArrastado.current = null
+
+        if (alvoDoArrasto && eraUmDedoSo && arrastou.current > TOLERANCIA_DO_TOQUE) {
+          const mundo = paraOMundo(e.clientX, e.clientY)
+          onSelecionar(alvoDoArrasto.id)
+          ultimoToque.current = null
+          assentar(alvoDoArrasto.id, {
+            x: alvoDoArrasto.origem.x + (mundo.x - alvoDoArrasto.mundoInicial.x),
+            y: alvoDoArrasto.origem.y + (mundo.y - alvoDoArrasto.mundoInicial.y),
+          })
+          return
+        }
+        // Um toque comum em cima do nó (sem arrastar de verdade): nada se
+        // moveu, então nada fica preso no overlay.
+        if (alvoDoArrasto) posicoesArrastadas.current = null
+
         if (!eraUmDedoSo || arrastou.current > TOLERANCIA_DO_TOQUE) return
 
         const mundo = paraOMundo(e.clientX, e.clientY)
@@ -345,6 +503,8 @@ export function Tela({ cena, onSelecionar, controle, folgas }: Props) {
       }}
       onPointerCancel={(e) => {
         ponteiros.current.delete(e.pointerId)
+        noArrastado.current = null
+        posicoesArrastadas.current = null
       }}
       onWheel={(e) => {
         aplicarZoom(e.deltaY < 0 ? 1.12 : 1 / 1.12, e.clientX, e.clientY)

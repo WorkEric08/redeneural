@@ -128,6 +128,12 @@ export interface ConnectionEngine {
   definirQuantidadeDePrateleiras(quantidade: number): Promise<number>
   /** Grava a intensidade da luz (0-100), sempre recortada para essa faixa. */
   definirIntensidadeDaLuz(valor: number): Promise<number>
+  /**
+   * Arrastar um neurônio: onde o dedo soltou vira a âncora dele, e a mesma
+   * física de sempre (partida quente, poucas iterações) deixa a vizinhança
+   * reagir a partir daí — sem tocar em conexões, só no layout.
+   */
+  moverNeuronioNaRede(id: Id, ponto: Ponto): Promise<Readonly<Record<Id, Ponto>>>
   /** Devolve a função que cancela a inscrição. */
   aoProgredir(ouvinte: (p: ProgressoDoMotor) => void): () => void
 }

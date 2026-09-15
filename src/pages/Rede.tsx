@@ -29,7 +29,8 @@ export default function Rede() {
   // O canvas é do dedo inteiro: arrastar a rede não pode disputar com a rolagem.
   useTravarRolagem()
 
-  const { livros, neuronios, conexoes, posicoesDaRede, carregado } = usePalacio()
+  const { livros, neuronios, conexoes, posicoesDaRede, carregado, moverNeuronioNaRede } =
+    usePalacio()
 
   // A folha dos filtros mora na URL, como os painéis da estante: o voltar do
   // Android fecha a folha antes de sair da Rede. A busca manda para cá com
@@ -102,6 +103,7 @@ export default function Rede() {
             selecionado,
           }}
           onSelecionar={setSelecionado}
+          onArrastarNeuronio={moverNeuronioNaRede}
           controle={controle}
           folgas={FOLGAS}
         />

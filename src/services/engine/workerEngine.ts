@@ -8,6 +8,7 @@ import type {
   EstanteGravada,
   Id,
   Livro,
+  Ponto,
   ProgressoDoMotor,
   ResultadoDeEscrita,
   Vaga,
@@ -109,6 +110,9 @@ export function criarWorkerEngine(): ConnectionEngine {
 
     definirIntensidadeDaLuz: (valor: number): Promise<number> =>
       pedir<'definirIntensidadeDaLuz'>({ tipo: 'definirIntensidadeDaLuz', valor }),
+
+    moverNeuronioNaRede: (id: Id, ponto: Ponto): Promise<Readonly<Record<Id, Ponto>>> =>
+      pedir<'moverNeuronioNaRede'>({ tipo: 'moverNeuronioNaRede', id, ponto }),
 
     aoProgredir(ouvinte) {
       ouvintes.add(ouvinte)

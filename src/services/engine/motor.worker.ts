@@ -316,6 +316,31 @@ async function moverLivro(id: Id, prateleira: number, lugar: number): Promise<Es
   return estante()
 }
 
+/**
+ * Arrastar um neurônio: onde o dedo soltou vira a âncora dele mesmo, e a
+ * mesma física de sempre (partida quente, poucas iterações) deixa a
+ * vizinhança reagir a partir daí. Só o layout — nenhuma conexão muda, e não
+ * há por que reprocessar o grafo por causa de um arrasto.
+ */
+async function moverNeuronioNaRede(id: Id, ponto: Ponto): Promise<Readonly<Record<Id, Ponto>>> {
+  const nos = nosDeNeuronios(await repo.listNeuronios())
+  const conexoes = await repo.listConexoes()
+  const anteriores = await repo.getPosicoesDaRede()
+  const partida = { ...anteriores, [id]: ponto }
+
+  const posicoes = calcularLayoutDaRede(
+    nos.map((n) => ({ id: n.id })),
+    conexoes.map((c) => ({ aId: c.aId, bId: c.bId, score: c.score })),
+    new Map(Object.entries(partida)),
+    { ...OPCOES_LAYOUT_DA_REDE, iteracoes: ITERACOES_LAYOUT_INCREMENTAL },
+  )
+
+  const gravado: Record<Id, Ponto> = {}
+  for (const [nid, p] of posicoes) gravado[nid] = p
+  await repo.setPosicoesDaRede(gravado)
+  return gravado
+}
+
 async function responder(msg: ParaMotor): Promise<DoMotor> {
   try {
     switch (msg.tipo) {
@@ -366,6 +391,9 @@ async function responder(msg: ParaMotor): Promise<DoMotor> {
       case 'definirIntensidadeDaLuz':
         await repo.definirIntensidadeDaLuz(msg.valor)
         return { req: msg.req, ok: true, dados: await repo.getIntensidadeDaLuz() }
+
+      case 'moverNeuronioNaRede':
+        return { req: msg.req, ok: true, dados: await moverNeuronioNaRede(msg.id, msg.ponto) }
     }
   } catch (e) {
     return { req: msg.req, ok: false, erro: e instanceof Error ? e.message : String(e) }
