@@ -73,9 +73,17 @@ export default function Ajustes() {
                 <button
                   type="button"
                   aria-label="Menos uma prateleira"
-                  className={botao({ tipo: 'secundario', tamanho: 'icone' })}
-                  disabled={travado || quantidadeDePrateleiras <= 1}
-                  onClick={() => void definirQuantidadeDePrateleiras(quantidadeDePrateleiras - 1)}
+                  className={`${botao({ tipo: 'secundario', tamanho: 'icone' })} aria-disabled:pointer-events-none aria-disabled:opacity-45`}
+                  // `disabled` nativo fica só para "travado" (ocupado): as duas
+                  // setas dividem a mesma `.linha-de-lista`, e o CSS que apaga a
+                  // linha inteira quando ela `:has(:disabled)` apagaria a outra
+                  // seta também — a de menos travava junto ao chegar no teto.
+                  disabled={travado}
+                  aria-disabled={quantidadeDePrateleiras <= 1}
+                  onClick={() => {
+                    if (quantidadeDePrateleiras <= 1) return
+                    void definirQuantidadeDePrateleiras(quantidadeDePrateleiras - 1)
+                  }}
                 >
                   <Minus size={16} aria-hidden />
                 </button>
@@ -85,9 +93,13 @@ export default function Ajustes() {
                 <button
                   type="button"
                   aria-label="Mais uma prateleira"
-                  className={botao({ tipo: 'secundario', tamanho: 'icone' })}
-                  disabled={travado || quantidadeDePrateleiras >= MAXIMO_DE_PRATELEIRAS}
-                  onClick={() => void definirQuantidadeDePrateleiras(quantidadeDePrateleiras + 1)}
+                  className={`${botao({ tipo: 'secundario', tamanho: 'icone' })} aria-disabled:pointer-events-none aria-disabled:opacity-45`}
+                  disabled={travado}
+                  aria-disabled={quantidadeDePrateleiras >= MAXIMO_DE_PRATELEIRAS}
+                  onClick={() => {
+                    if (quantidadeDePrateleiras >= MAXIMO_DE_PRATELEIRAS) return
+                    void definirQuantidadeDePrateleiras(quantidadeDePrateleiras + 1)
+                  }}
                 >
                   <Plus size={16} aria-hidden />
                 </button>
