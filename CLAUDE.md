@@ -1925,8 +1925,70 @@ conexão) em 320×568. Sem rolagem lateral. 232 testes, typecheck e lint limpos.
 Bundle principal: 123 KB gzipped.
 
 Com o layout da Fase 7 cada livro fica longe dos outros, e toda ponte vira uma
-linha comprida atravessando o vazio — o ouro pesa mais do que vai pesar quando a
-parte 2 aproximar quem conversa.
+linha comprida atravessando o vazio — a cor de ponte pesa mais do que vai pesar
+quando a parte 2 aproximar quem conversa.
+
+## A ponte muda de ouro para azul (15/09/2026)
+
+Pedido do usuário, na tela da Rede: trocar a cor das conexões de ouro para
+azul claro. E uma pergunta à parte, sem pedido de mudança — por que um fio
+aparece pontilhado: é o `score === 0` do motor, o vizinho que a regra "nunca
+órfão" manteve mesmo sendo o candidato menos ruim — traço sólido é vínculo de
+verdade, pontilhado é preenchimento forçado. Vale nos fios do neurônio e na
+Rede.
+
+**Conflito apontado antes de mexer:** "ouro significa uma coisa só — a conexão
+que atravessa livros" é regra do CLAUDE.md desde a Fase 6, e ele tinha acabado
+de confirmá-la, uma resposta antes, especificamente para a Rede. Perguntei o
+escopo com AskUserQuestion — só a Rede, ou em todo o app onde ouro já
+significava isso (estante, neurônio, livro, Rede) — e ele escolheu **em todo o
+app**: a regra não mudou, só a cor que a cumpre.
+
+### O que mudou
+
+`--ouro`/`--ouro-luz` viraram **`--ponte`/`--ponte-luz`**, com um azul novo
+(oklch, matiz 230 — sky blue, longe dos matizes ~245-265 já usados em
+`--papel`/`--poeira`/`--linha`, para continuar destacando como o ouro
+destacava). Contraste contra `--sala`: 4,73:1 de dia (o ouro tinha 4,9:1) e
+10,25:1 de noite (o ouro tinha ~9,5:1) — ambos acima do mínimo de
+acessibilidade, medidos com o mesmo método da paleta original (conversão
+OKLab/OKLCH → sRGB própria, sem depender do navegador).
+
+Renomeado, e não só recolorido: manter uma classe chamada `text-ouro`
+pintando azul enganaria quem lesse o código depois — `brilho-ouro*` →
+`brilho-ponte*`, `border-ouro`/`bg-ouro-luz` → `border-ponte`/`bg-ponte-luz`,
+`CoresDaRede.ouro` → `.ponte`. `--ouro-gravado` **não mudou**: é o título
+gravado em toda lombada (tenha ponte ou não), um detalhe de material da
+encadernação, não o sinal de ponte — os dois só coincidiam em tom por acaso.
+
+**Bug encontrado no caminho:** `.lombada-ponto` (o pontinho no topo da
+lombada, "livro com fio saindo") lia `--ouro-gravado` em vez de `--ouro` — os
+dois eram visualmente parecidos antes, então ninguém notou. Se eu só tivesse
+trocado `--ouro`, o ponto continuaria dourado enquanto o resto do app virava
+azul. Corrigido para ler `--ponte`. Mesmo problema em
+`.lombada--livro[data-ponte]` (o glow ao segurar um livro que compartilha
+ponte com o que está na mão): lia `var(--ouro)` direto, sem passar pelo
+Tailwind — fácil de esquecer numa busca só por classes.
+
+Nenhum dos dois precisou entrar em `.cores-de-antes` (a estante congelada):
+como nada ali usava `--ouro` de verdade, `--ponte` simplesmente cai da
+cascata normal do tema, a mesma cor viva do resto do app.
+
+### Risco sinalizado, não resolvido
+
+A paleta de panos evitava a faixa do ouro (~75-82) para nenhum livro se
+confundir com ponte. Agora que a ponte é azul, **"Azul" (#5b7fd6) e
+"Ardósia" (#6f7f96) caem perto da faixa nova** — o mesmo risco, cor
+diferente. Não mexi na paleta (não foi pedido, e tirar uma cor sem avisar
+seria decisão silenciosa); fica anotado em `panos.ts` e aqui, para o usuário
+decidir se troca.
+
+Verificado com um palácio sintético (60 neurônios, 34 pontes, gravado direto
+no IndexedDB do navegador de teste) nos dois temas: o ponto da lombada, o
+glow ao segurar, a contagem "N pontes" no espiar e na tela do livro, os fios
+cruzados na tela do neurônio, e a constelação inteira da Rede — todos em
+azul, incluindo a leitura ao vivo do token resolvido pelo navegador (não só
+o valor gravado no CSS). 232 testes, typecheck e lint limpos.
 
 ## Fases
 
