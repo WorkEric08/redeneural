@@ -7,6 +7,7 @@ import {
   type EtiquetaDePrateleira,
   type Livro,
   type Neuronio,
+  type Ponto,
   type Vaga,
 } from '@/core'
 
@@ -36,7 +37,19 @@ export interface PreferenciasGravadas {
   intensidadeDaLuz?: number
 }
 
-export type MetaGravada = PerfilGravado | PreferenciasGravadas
+/**
+ * As posições que a Rede gravou da última vez que organizou o grafo por
+ * significado (Fase 23-2). O mesmo espírito do `PerfilGravado`: derivado do
+ * grafo, congelado entre recálculos para a mobília não andar sozinha —
+ * **não entra no backup**, pela mesma razão que o perfil não entra ("é
+ * recalculado na chegada", ver CLAUDE.md).
+ */
+export interface PosicoesDaRedeGravadas {
+  chave: 'posicoesDaRede'
+  posicoes: Record<string, Ponto>
+}
+
+export type MetaGravada = PerfilGravado | PreferenciasGravadas | PosicoesDaRedeGravadas
 
 export type PalacioDB = Dexie & {
   livros: EntityTable<Livro, 'id'>

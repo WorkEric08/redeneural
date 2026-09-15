@@ -113,7 +113,7 @@ export function Tela({ cena, onSelecionar, controle, folgas }: Props) {
     let minY = Infinity
     let maxX = -Infinity
     let maxY = -Infinity
-    for (const p of cenaRef.current.mapa.posicoes.values()) {
+    for (const p of cenaRef.current.posicoes.values()) {
       if (!Number.isFinite(p.x) || !Number.isFinite(p.y)) continue
       minX = Math.min(minX, p.x)
       minY = Math.min(minY, p.y)
@@ -151,7 +151,7 @@ export function Tela({ cena, onSelecionar, controle, folgas }: Props) {
    *
    * Reenquadra só quando o palácio muda de forma; trocar foco ou seleção repinta.
    */
-  const assinatura = `${String(cena.mapa.posicoes.size)}:${String(cena.conexoes.length)}`
+  const assinatura = `${String(cena.posicoes.size)}:${String(cena.conexoes.length)}`
   const formaAnterior = useRef('')
 
   useEffect(() => {
@@ -283,7 +283,7 @@ export function Tela({ cena, onSelecionar, controle, folgas }: Props) {
 
         const mundo = paraOMundo(e.clientX, e.clientY)
         const raioDeToque = RAIO_DO_TOQUE / camera.current.escala
-        onSelecionar(neuronioEm(mundo, cena.mapa.posicoes, cena.neuronios, raioDeToque))
+        onSelecionar(neuronioEm(mundo, cena.posicoes, cena.neuronios, raioDeToque))
       }}
       onPointerCancel={(e) => {
         ponteiros.current.delete(e.pointerId)

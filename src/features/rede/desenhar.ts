@@ -1,6 +1,4 @@
-import type { Conexao, Id, Livro, NeuronioNaTela } from '@/core'
-
-import type { Mapa, Ponto } from './layout'
+import type { Conexao, Id, Livro, NeuronioNaTela, Ponto } from '@/core'
 
 /**
  * O desenho da rede, em canvas: uma constelação.
@@ -33,7 +31,8 @@ export interface Camera {
 }
 
 export interface Cena {
-  mapa: Mapa
+  /** Onde cada neurônio está — organizado por significado, gravado (`@/core/motor/redeLayout`). */
+  posicoes: ReadonlyMap<Id, Ponto>
   livros: readonly Livro[]
   neuronios: readonly NeuronioNaTela[]
   conexoes: readonly Conexao[]
@@ -147,7 +146,7 @@ function desenharFios(
   apagado: (livroId: Id | undefined) => boolean,
   px: number,
 ): void {
-  const { posicoes } = cena.mapa
+  const { posicoes } = cena
   const lotes = new Map<string, Lote>()
 
   for (const c of cena.conexoes) {
@@ -192,7 +191,7 @@ function desenharPontes(
   apagado: (livroId: Id | undefined) => boolean,
   px: number,
 ): void {
-  const { posicoes } = cena.mapa
+  const { posicoes } = cena
   const halos = new Map<string, Lote>()
   const fios = new Map<string, Lote>()
 
@@ -254,7 +253,7 @@ function desenharNeuronios(
   >()
 
   for (const n of cena.neuronios) {
-    const p = cena.mapa.posicoes.get(n.id)
+    const p = cena.posicoes.get(n.id)
     if (!finito(p)) continue
     const longe = apagado(n.livroId)
     const chave = `${n.livroId}:${String(longe)}`
@@ -290,7 +289,7 @@ function desenharNeuronios(
   }
   ctx.globalAlpha = 1
 
-  const escolhido = cena.selecionado ? cena.mapa.posicoes.get(cena.selecionado) : undefined
+  const escolhido = cena.selecionado ? cena.posicoes.get(cena.selecionado) : undefined
   if (finito(escolhido) && cena.selecionado) {
     const raio = raioNaTela(cena.graus.get(cena.selecionado) ?? 0) * px
     ctx.strokeStyle = cena.cores.papel
@@ -313,7 +312,7 @@ function desenharEtiqueta(
   altura: number,
 ): void {
   const n = cena.neuronios.find((x) => x.id === cena.selecionado)
-  const p = cena.selecionado ? cena.mapa.posicoes.get(cena.selecionado) : undefined
+  const p = cena.selecionado ? cena.posicoes.get(cena.selecionado) : undefined
   if (!n || !finito(p)) return
 
   const x = largura / 2 + camera.x + p.x * camera.escala

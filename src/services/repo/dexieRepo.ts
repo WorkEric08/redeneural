@@ -22,6 +22,7 @@ import {
   db as defaultDb,
   type PalacioDB,
   type PerfilGravado,
+  type PosicoesDaRedeGravadas,
   type PreferenciasGravadas,
 } from '@/services/db'
 
@@ -298,6 +299,16 @@ export function createDexieRepo(db: PalacioDB = defaultDb): PalacioRepo {
         atualizadoEm: new Date(),
       }
       await db.meta.put(perfil)
+    },
+
+    async getPosicoesDaRede() {
+      const gravado = (await db.meta.get('posicoesDaRede')) as PosicoesDaRedeGravadas | undefined
+      return gravado?.posicoes ?? {}
+    },
+
+    async setPosicoesDaRede(posicoes) {
+      const gravado: PosicoesDaRedeGravadas = { chave: 'posicoesDaRede', posicoes: { ...posicoes } }
+      await db.meta.put(gravado)
     },
 
     async exportAll(): Promise<PalacioSnapshot> {

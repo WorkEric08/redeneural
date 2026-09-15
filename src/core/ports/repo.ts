@@ -1,6 +1,7 @@
 import type { Conexao, Id, Livro, Neuronio, PalacioSnapshot, Vaga } from '../domain/types'
 import type { PerfilDoPalacio } from '../motor/grafo'
 import type { MarcaPerdida } from '../motor/incremental'
+import type { Ponto } from '../motor/redeLayout'
 
 /**
  * Porta de persistência.
@@ -72,6 +73,18 @@ export interface PalacioRepo {
    */
   getPerfil(): Promise<PerfilDoPalacio | undefined>
   setPerfil(p: PerfilDoPalacio, neuronios: number): Promise<void>
+
+  /**
+   * As posições que a Rede gravou da última vez que organizou o grafo por
+   * significado. `{}` num palácio que nunca foi organizado.
+   */
+  getPosicoesDaRede(): Promise<Readonly<Record<Id, Ponto>>>
+  /**
+   * Grava as posições inteiras — a Rede sempre recalcula o grafo todo (mesmo
+   * a atualização incremental parte das posições de antes, mas devolve o
+   * conjunto completo), então sempre substitui tudo de uma vez.
+   */
+  setPosicoesDaRede(posicoes: Readonly<Record<Id, Ponto>>): Promise<void>
 
   exportAll(): Promise<PalacioSnapshot>
   /** Idempotente: importar o mesmo snapshot duas vezes não duplica nada. */

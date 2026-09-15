@@ -5,7 +5,7 @@ import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-do
 import { BarraDeTopo } from '@/components/BarraDeTopo'
 import { botao } from '@/components/botao'
 import { Folha } from '@/components/Folha'
-import { grausDoMapa, montarMapa } from '@/features/rede/layout'
+import { grausDoMapa } from '@/features/rede/layout'
 import { Tela, type ControleDaTela, type Folgas } from '@/features/rede/Tela'
 import { useTravarRolagem } from '@/hooks/useTravarRolagem'
 import { contar } from '@/lib/plural'
@@ -29,7 +29,7 @@ export default function Rede() {
   // O canvas é do dedo inteiro: arrastar a rede não pode disputar com a rolagem.
   useTravarRolagem()
 
-  const { livros, neuronios, conexoes, carregado } = usePalacio()
+  const { livros, neuronios, conexoes, posicoesDaRede, carregado } = usePalacio()
 
   const [livroEmFoco, setLivroEmFoco] = useState<string | null>(null)
   const [soAsPontes, setSoAsPontes] = useState(false)
@@ -49,8 +49,10 @@ export default function Rede() {
     else void navegar(-1)
   }
 
-  // O mapa é caro e determinístico: só refaz quando o palácio muda de forma.
-  const mapa = useMemo(() => montarMapa(livros, neuronios, conexoes), [livros, neuronios, conexoes])
+  // O cálculo pesado já aconteceu no Worker (`@/core/motor/redeLayout`) — aqui
+  // só converte o formato de transporte (plano, serializável) para o Map que o
+  // canvas usa.
+  const posicoes = useMemo(() => new Map(Object.entries(posicoesDaRede)), [posicoesDaRede])
   const graus = useMemo(() => grausDoMapa(conexoes), [conexoes])
 
   const pontes = conexoes.filter((c) => c.cross).length
@@ -67,7 +69,7 @@ export default function Rede() {
       <div className="fixed inset-0 z-0 lg:left-52">
         <Tela
           cena={{
-            mapa,
+            posicoes,
             livros,
             neuronios,
             conexoes,

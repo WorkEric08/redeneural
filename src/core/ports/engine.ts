@@ -1,5 +1,6 @@
 import type { NeuronioNaTela } from '../domain/tela'
 import type { Conexao, Id, Livro, Vaga } from '../domain/types'
+import type { Ponto } from '../motor/redeLayout'
 
 export interface CriarNeuronioInput {
   /**
@@ -57,6 +58,11 @@ export interface EstadoDoPalacio {
   quantidadeDePrateleiras: number
   /** 0-100: o quanto a luz da sala lava a cor do pano em repouso. */
   intensidadeDaLuz: number
+  /**
+   * Onde a Rede organizou cada neurônio da última vez — por significado, não
+   * por livro (Fase 23-2). `{}` num palácio que nunca foi organizado.
+   */
+  posicoesDaRede: Readonly<Record<Id, Ponto>>
 }
 
 export interface ResultadoDeEscrita {
@@ -71,6 +77,8 @@ export interface ResultadoDeEscrita {
    */
   neuronios: NeuronioNaTela[]
   conexoes: Conexao[]
+  /** A Rede se reacomoda junto — o novo neurônio nasce perto de quem ele conversa. */
+  posicoesDaRede: Readonly<Record<Id, Ponto>>
 }
 
 /** Só o que a tela precisa mostrar enquanto espera. */

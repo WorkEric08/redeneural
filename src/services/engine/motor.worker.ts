@@ -1,11 +1,15 @@
 /// <reference lib="webworker" />
 import {
   arestaParaConexao,
+  calcularLayoutDaRede,
   construirGrafo,
   estadoDosVizinhos,
+  ITERACOES_LAYOUT_COMPLETO,
+  ITERACOES_LAYOUT_INCREMENTAL,
   nosDeNeuronios,
   novoLivro,
   novoNeuronio,
+  OPCOES_LAYOUT_DA_REDE,
   OPCOES_PADRAO,
   paraTela,
   perfilDoPalacio,
@@ -24,6 +28,7 @@ import {
   type NoDoGrafo,
   type PalacioRepo,
   type PerfilDoPalacio,
+  type Ponto,
   type PontuarPar,
   type ProgressoDoMotor,
   type ResultadoDeEscrita,
@@ -74,15 +79,23 @@ const pontuar: PontuarPar = SEM_RERANK
 const CRESCIMENTO_ATE_REPROCESSAR = 1.5
 
 async function estadoAtual(): Promise<EstadoDoPalacio> {
-  const [livros, vagas, neuronios, conexoes, quantidadeDePrateleiras, intensidadeDaLuz] =
-    await Promise.all([
-      repo.listLivros(),
-      repo.listVagas(),
-      repo.listNeuronios(),
-      repo.listConexoes(),
-      repo.getQuantidadeDePrateleiras(),
-      repo.getIntensidadeDaLuz(),
-    ])
+  const [
+    livros,
+    vagas,
+    neuronios,
+    conexoes,
+    quantidadeDePrateleiras,
+    intensidadeDaLuz,
+    posicoesDaRede,
+  ] = await Promise.all([
+    repo.listLivros(),
+    repo.listVagas(),
+    repo.listNeuronios(),
+    repo.listConexoes(),
+    repo.getQuantidadeDePrateleiras(),
+    repo.getIntensidadeDaLuz(),
+    repo.getPosicoesDaRede(),
+  ])
 
   return {
     livros,
@@ -91,7 +104,42 @@ async function estadoAtual(): Promise<EstadoDoPalacio> {
     conexoes,
     quantidadeDePrateleiras,
     intensidadeDaLuz,
+    posicoesDaRede,
   }
+}
+
+/**
+ * Organiza a Rede por significado e grava o resultado — cálculo pesado fora da
+ * thread da interface, pedido do usuário (15/09/2026). Roda depois de o grafo
+ * de conexões já estar assentado: a Rede reage ao que o motor decidiu, nunca o
+ * contrário.
+ *
+ * Quantas iterações rodar depende de **haver posição de referência**, não de
+ * qual caminho chamou. `apagarNeuronio` e o crescimento de 50% também passam
+ * por `reprocessarTudo`, mas continuam sendo um recálculo *sobre* um layout
+ * que já existia — merecem o mesmo "assenta e para" de uma escrita incremental,
+ * não as 160 iterações de quem nunca teve chão nenhum embaixo. Só a primeira
+ * organização de todas (nenhuma posição gravada ainda) é fria de verdade.
+ */
+async function recalcularPosicoesDaRede(
+  nos: readonly NoDoGrafo[],
+  conexoes: readonly { aId: Id; bId: Id; score: number }[],
+): Promise<void> {
+  const anteriores = await repo.getPosicoesDaRede()
+  const partidaFria = Object.keys(anteriores).length === 0
+  const posicoes = calcularLayoutDaRede(
+    nos.map((n) => ({ id: n.id })),
+    conexoes.map((c) => ({ aId: c.aId, bId: c.bId, score: c.score })),
+    new Map(Object.entries(anteriores)),
+    {
+      ...OPCOES_LAYOUT_DA_REDE,
+      iteracoes: partidaFria ? ITERACOES_LAYOUT_COMPLETO : ITERACOES_LAYOUT_INCREMENTAL,
+    },
+  )
+
+  const gravado: Record<Id, Ponto> = {}
+  for (const [id, p] of posicoes) gravado[id] = p
+  await repo.setPosicoesDaRede(gravado)
 }
 
 /** Calcula e grava o embedding que faltava. Devolve o neurônio já com vetor. */
@@ -133,6 +181,7 @@ async function reprocessarTudo(): Promise<EstadoDoPalacio> {
 
   await repo.replaceTodasConexoes(arestas.map((a) => arestaParaConexao(a, agora)))
   await repo.setPerfil(perfil, nos.length)
+  await recalcularPosicoesDaRede(nos, arestas)
 
   return estadoAtual()
 }
@@ -169,7 +218,12 @@ async function escrever(
     const estado = await reprocessarTudo()
     const naTela = estado.neuronios.find((n) => n.id === completo.id)
     if (!naTela) throw new Error(`neurônio ${completo.id} sumiu no reprocessamento`)
-    return { neuronio: naTela, neuronios: estado.neuronios, conexoes: estado.conexoes }
+    return {
+      neuronio: naTela,
+      neuronios: estado.neuronios,
+      conexoes: estado.conexoes,
+      posicoesDaRede: estado.posicoesDaRede,
+    }
   }
 
   const vizinhancas = estadoDosVizinhos(await repo.listConexoes())
@@ -188,8 +242,18 @@ async function escrever(
     resultado.arestas.map((a) => arestaParaConexao(a, new Date())),
   )
 
+  // A Rede reage ao grafo já assentado, com o que sobrou de antes como
+  // partida quente — só este neurônio (e quem estava perto dele) se acomoda,
+  // ninguém mais reembaralha.
+  await recalcularPosicoesDaRede(nos, await repo.listConexoes())
+
   const depois = await estadoAtual()
-  return { neuronio: paraTela(completo), neuronios: depois.neuronios, conexoes: depois.conexoes }
+  return {
+    neuronio: paraTela(completo),
+    neuronios: depois.neuronios,
+    conexoes: depois.conexoes,
+    posicoesDaRede: depois.posicoesDaRede,
+  }
 }
 
 /**

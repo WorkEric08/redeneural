@@ -11,6 +11,7 @@ import {
   type Conexao,
   type Livro,
   type NeuronioNaTela,
+  type Ponto,
   type ProgressoDoMotor,
   type Vaga,
 } from '@/core'
@@ -37,6 +38,8 @@ interface PalacioStore {
   conexoes: Conexao[]
   /** Os lugares deixados abertos — sem livro e sem enfeite. */
   vagas: Vaga[]
+  /** Onde a Rede organizou cada neurônio da última vez, por significado. */
+  posicoesDaRede: Record<string, Ponto>
   quantidadeDePrateleiras: number
   /** 0-100: o quanto a luz da sala lava a cor do pano em repouso. */
   intensidadeDaLuz: number
@@ -94,6 +97,7 @@ export const usePalacio = create<PalacioStore>()((set, get) => {
     neuronios: [],
     conexoes: [],
     vagas: [],
+    posicoesDaRede: {},
     quantidadeDePrateleiras: MINIMO_DE_PRATELEIRAS,
     intensidadeDaLuz: INTENSIDADE_DA_LUZ_PADRAO,
     carregado: false,
@@ -135,10 +139,13 @@ export const usePalacio = create<PalacioStore>()((set, get) => {
       set((s) => ({ neuronios: [...s.neuronios, provisorio], ocupado: true, erro: null }))
 
       try {
-        const { neuronios, conexoes } = await engine.criarNeuronio({ id, ...novo })
+        const { neuronios, conexoes, posicoesDaRede } = await engine.criarNeuronio({
+          id,
+          ...novo,
+        })
         // O palácio inteiro, não só o que foi escrito: um reprocessamento tira o
         // "processando…" dos outros também.
-        set({ neuronios, conexoes })
+        set({ neuronios, conexoes, posicoesDaRede })
         return id
       } catch (e) {
         // Desfaz o otimismo: o Worker não conseguiu, então não fingimos que deu.
@@ -169,8 +176,11 @@ export const usePalacio = create<PalacioStore>()((set, get) => {
       }))
 
       try {
-        const { neuronios, conexoes } = await engine.editarNeuronio({ id, ...mudancas })
-        set({ neuronios, conexoes })
+        const { neuronios, conexoes, posicoesDaRede } = await engine.editarNeuronio({
+          id,
+          ...mudancas,
+        })
+        set({ neuronios, conexoes, posicoesDaRede })
         return true
       } catch (e) {
         set({ erro: mensagem(e) })
@@ -184,8 +194,8 @@ export const usePalacio = create<PalacioStore>()((set, get) => {
       set({ ocupado: true, erro: null })
 
       try {
-        const { neuronios, conexoes } = await engine.apagarNeuronio(id)
-        set({ neuronios, conexoes })
+        const { neuronios, conexoes, posicoesDaRede } = await engine.apagarNeuronio(id)
+        set({ neuronios, conexoes, posicoesDaRede })
         return true
       } catch (e) {
         set({ erro: mensagem(e) })
