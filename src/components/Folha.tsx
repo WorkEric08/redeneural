@@ -69,9 +69,15 @@ export function Folha({ aberta, rotulo, onFechar, children }: Props) {
     // campo de formulário — daí o `setAttribute`.)
     corpo.current?.setAttribute('autofocus', '')
 
-    if (aberta && !d.open) d.showModal()
+    if (aberta && !d.open) {
+      // Fechar arrastando deixa a folha empurrada para fora da tela. Sem
+      // zerar aqui, uma folha de rótulo fixo (os filtros da Rede) reabria só
+      // com o fundo desfocado, e o painel preso lá embaixo.
+      posicionar(d, 0, false)
+      d.showModal()
+    }
     if (!aberta && d.open) d.close()
-  }, [aberta])
+  }, [aberta, posicionar])
 
   // Some quando o painel troca (do menu para "renomear", por exemplo): a folha
   // de baixo não pode herdar o arrasto da de cima.
