@@ -1243,6 +1243,19 @@ isso. Quem já tinha mais de 6 não perde nada — só não sobe além, e pode
 diminuir normalmente. (O `MAXIMO_DE_PRATELEIRAS` de `estanteAntiga.ts`, 14,
 é outro: congelado, só da migração.)
 
+**Bug do teto, visto pelo usuário na hora:** as duas setas do stepper
+(`disabled` nativo no limite) dividem a mesma `.linha-de-lista`, e o CSS
+`.linha-de-lista:has(:disabled)` apaga a linha **inteira** — pensado para uma
+linha de controle único ficar inerte enquanto "travada" (ocupado). Ao chegar
+em 6, "Mais" virava `disabled` e essa regra também bloqueava "Menos" por
+herança de `pointer-events`, mesmo ele continuando clicável no React
+DevTools. Corrigido: `disabled` nativo passou a valer só para "travado"; o
+limite de cada seta é `aria-disabled` (fora do `:has(:disabled)`), com o
+próprio clique guardado contra o limite e o estilo replicado via
+`aria-disabled:opacity-45 aria-disabled:pointer-events-none`. Verificado
+descendo do teto até o mínimo de verdade (livro ocupando a última prateleira)
+e voltando a subir, sem travar em nenhum dos dois sentidos.
+
 ### Verificado
 
 164 testes (novos: `moverLivroNaEstante`, `estanteAntiga`, migração v3→v4
