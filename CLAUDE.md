@@ -1789,6 +1789,63 @@ mouse arrasta, o clique cria e o botão direito abre o menu. Sem rolagem lateral
 em 320, 768 e 1440 px. 227 testes (eram 202), typecheck e lint limpos. Bundle
 principal: 121 KB gzipped.
 
+## Abrir o livro (14/09/2026)
+
+Pedido do usuário: ao abrir um livro, o próprio livro vai para o meio da tela e
+se abre, dando acesso à tela dele. É atmosfera — o tipo de coisa que a decisão
+"estética por último" empurrava para a passada final —, mas foi pedido
+explicitamente agora.
+
+### O que acontece
+
+"Abrir o livro", no espiar, não troca de tela na hora. A lombada vira uma caixa
+3D de verdade — lombada, capa e primeira página — e:
+
+| Tempo       | O que se vê                                                                             |
+| ----------- | --------------------------------------------------------------------------------------- |
+| 0–460 ms    | Sai da prateleira e voa até o meio da tela, girando da lombada à capa                   |
+| 460–880 ms  | A capa abre para a esquerda; o livro anda meia capa para o par de páginas ficar no meio |
+| 800–1040 ms | O livro some e a sala cobre tudo; a tela do livro entra por baixo                       |
+
+Tocar o livro continua sendo espiar: abrir segue levando dois toques, a escolha
+registrada em "A estante na mão".
+
+### Detalhes que não são óbvios
+
+- **Parte exatamente em cima da lombada da estante.** De lombada para quem
+  olha, a face da lombada fica meia capa mais perto da tela, e a perspectiva a
+  aumenta. `geometriaDaAbertura` (pura, testada) desconta isso na escala e na
+  posição de partida. A grossura da caixa é limitada (8–30% da altura), e as
+  lombadas da estante costumam passar disso; quando passa, uma escala
+  horizontal só na partida dá a largura exata, e some durante o voo. Medido no
+  navegador: diferença de centésimos de pixel.
+- **Opacidade animada achata o 3D no Chromium.** Animação de `opacity` (e
+  `will-change: opacity`) é propriedade de agrupamento: força
+  `transform-style: flat`, e a caixa vira um cartão — lombada de lado, capa
+  aberta invisível. O esmaecer do fim mora em `.abertura-cena`, que também
+  carrega a `perspective`; o livro só anima `transform`.
+- `backface-visibility: hidden` vai só nas faces, nunca no container da capa:
+  passando de 90°, ele esconderia o avesso junto.
+- **A folha some sem sair da URL.** Durante a animação a estante passa
+  `painel={null}` para a folha, mas a URL continua no `?espiar=`. O fim troca
+  de tela com `replace`, então o voltar do livro cai na estante, como antes.
+- **Voltar no meio desiste.** A animação só vale enquanto o espiar daquele
+  livro está na URL; um espiar novo limpa a anterior, senão ela recomeçaria
+  sozinha ao espiar o mesmo livro.
+- O fim chama `onAberto` por `useEffectEvent`: a store atualiza a estante no
+  meio da animação, e um callback novo não pode reiniciá-la.
+- O fundo que cobre a troca usa a `--sala` da página nova, e não a da estante
+  (`cores-de-antes` fica só no livro): é sobre ela que a tela do livro entra.
+- Papel é claro nos dois temas, pelo mesmo motivo de a lombada ser escura nos
+  dois: é objeto, não interface.
+- **Movimento reduzido abre direto**, sem animação. A regra global do CSS não
+  alcança a Web Animations API, então a consulta é feita no toque.
+
+Verificado quadro a quadro (animações congeladas em tempos fixos) em 412×892
+nos dois temas, 320×568 e 1440×900; movimento reduzido abrindo direto; voltar
+no meio da animação ficando na estante. 232 testes (5 novos, da geometria),
+typecheck e lint limpos. Bundle principal: 122 KB gzipped.
+
 ## Fases
 
 0. ✅ Esqueleto (Vite/React/TS/Tailwind/PWA/Capacitor)
@@ -1821,3 +1878,4 @@ principal: 121 KB gzipped.
     Fase 19
 21. ✅ Estante em lugares fixos, com enfeite que se tira e se põe — revisita a
     escolha da Fase 10
+22. ✅ Abrir o livro com animação — o livro sai da estante, vira de capa e abre
