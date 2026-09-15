@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useImperativeHandle, useRef, type RefObject } from 'react'
 
-import { desenhar, raioDoNeuronio, type Camera, type Cena, type CoresDaRede } from './desenhar'
+import { desenhar, type Camera, type Cena, type CoresDaRede } from './desenhar'
 import { neuronioEm } from './layout'
 
 /**
@@ -11,18 +11,40 @@ import { neuronioEm } from './layout'
  * eterno é bateria queimando para mostrar uma imagem parada.
  */
 
-const ESCALA_MINIMA = 0.25
-const ESCALA_MAXIMA = 3
+/**
+ * O ponto tem tamanho fixo na tela (ver `raioNaTela`), então aproximar só afasta
+ * os pontos entre si — dá para ir bem mais perto do que quando o nó crescia
+ * junto com o zoom.
+ */
+const ESCALA_MINIMA = 0.1
+const ESCALA_MAXIMA = 6
 const TOLERANCIA_DO_TOQUE = 8
+/** Alvo de toque em pixels de tela: um ponto de 2 px é impossível de acertar com o dedo. */
+const RAIO_DO_TOQUE = 22
 
 export interface ControleDaTela {
   enquadrar: () => void
+}
+
+/** O que cobre a tela por cima do canvas — barra de topo, controles —, em px. */
+export interface Folgas {
+  topo: number
+  base: number
+  lados: number
 }
 
 interface Props {
   cena: Omit<Cena, 'cores'>
   onSelecionar: (id: string | null) => void
   controle?: RefObject<ControleDaTela | null>
+  /** Estável entre renders (constante de módulo): enquadrar depende dela. */
+  folgas: Folgas
+}
+
+const MISTURAS = ['lighter', 'multiply', 'screen', 'source-over'] as const
+
+function ehMistura(valor: string): valor is (typeof MISTURAS)[number] {
+  return (MISTURAS as readonly string[]).includes(valor)
 }
 
 /** Lê um token do design system já resolvido em rgb — o canvas não entende `var()`. */
@@ -34,9 +56,26 @@ function lerCor(el: HTMLElement, token: string): string {
   return cor
 }
 
-export function Tela({ cena, onSelecionar, controle }: Props) {
+/**
+ * Lidas uma vez, e de novo só quando o tema troca: `getComputedStyle` força
+ * recálculo de estilo, e arrastar a rede pinta a cada quadro.
+ */
+function lerCores(el: HTMLElement): CoresDaRede {
+  const mistura = getComputedStyle(el).getPropertyValue('--rede-mistura').trim()
+  return {
+    sala: lerCor(el, '--sala'),
+    papel: lerCor(el, '--papel'),
+    ouro: lerCor(el, '--ouro'),
+    fio: lerCor(el, '--rede-fio'),
+    no: lerCor(el, '--rede-no'),
+    mistura: ehMistura(mistura) ? mistura : 'source-over',
+  }
+}
+
+export function Tela({ cena, onSelecionar, controle, folgas }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const camera = useRef<Camera>({ x: 0, y: 0, escala: 1 })
+  const cores = useRef<CoresDaRede | null>(null)
   const ponteiros = useRef(new Map<number, { x: number; y: number }>())
   const arrastou = useRef(0)
   const cenaRef = useRef(cena)
@@ -55,40 +94,53 @@ export function Tela({ cena, onSelecionar, controle }: Props) {
       canvas.height = Math.round(altura * dpr)
     }
 
-    const cores: CoresDaRede = {
-      sala: lerCor(canvas, '--sala'),
-      papel: lerCor(canvas, '--papel'),
-      poeira: lerCor(canvas, '--poeira'),
-      ouro: lerCor(canvas, '--ouro'),
-      linha: lerCor(canvas, '--linha'),
-    }
+    cores.current ??= lerCores(canvas)
 
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
-    desenhar(ctx, { ...cenaRef.current, cores }, camera.current, largura, altura)
+    desenhar(ctx, { ...cenaRef.current, cores: cores.current }, camera.current, largura, altura)
   }, [])
 
+  /**
+   * Enquadra pelos próprios pontos, e não por limites calculados com rótulo —
+   * a constelação não escreve nome de livro. A área útil é a tela menos o que
+   * fica por cima dela, e o centro desce ou sobe pela diferença entre as folgas.
+   */
   const enquadrar = useCallback(() => {
     const canvas = canvasRef.current
     if (!canvas) return
 
-    const { minX, minY, maxX, maxY } = cenaRef.current.mapa.limites
-    const largura = Math.max(1, maxX - minX)
-    const altura = Math.max(1, maxY - minY)
-    const margem = 56
+    let minX = Infinity
+    let minY = Infinity
+    let maxX = -Infinity
+    let maxY = -Infinity
+    for (const p of cenaRef.current.mapa.posicoes.values()) {
+      if (!Number.isFinite(p.x) || !Number.isFinite(p.y)) continue
+      minX = Math.min(minX, p.x)
+      minY = Math.min(minY, p.y)
+      maxX = Math.max(maxX, p.x)
+      maxY = Math.max(maxY, p.y)
+    }
+    if (minX === Infinity) {
+      camera.current = { x: 0, y: (folgas.topo - folgas.base) / 2, escala: 1 }
+      pintar()
+      return
+    }
 
+    const larguraUtil = Math.max(1, canvas.clientWidth - 2 * folgas.lados)
+    const alturaUtil = Math.max(1, canvas.clientHeight - folgas.topo - folgas.base)
     const cabe = Math.min(
-      (canvas.clientWidth - margem) / largura,
-      (canvas.clientHeight - margem) / altura,
+      larguraUtil / Math.max(1, maxX - minX),
+      alturaUtil / Math.max(1, maxY - minY),
     )
     const escala = Math.min(Math.max(cabe, ESCALA_MINIMA), ESCALA_MAXIMA)
 
     camera.current = {
       escala,
       x: -((minX + maxX) / 2) * escala,
-      y: -((minY + maxY) / 2) * escala,
+      y: -((minY + maxY) / 2) * escala + (folgas.topo - folgas.base) / 2,
     }
     pintar()
-  }, [pintar])
+  }, [pintar, folgas])
 
   useImperativeHandle(controle, () => ({ enquadrar }), [enquadrar])
 
@@ -141,6 +193,7 @@ export function Tela({ cena, onSelecionar, controle }: Props) {
   useEffect(() => {
     const consulta = window.matchMedia('(prefers-color-scheme: dark)')
     const aoTrocarDeTema = (): void => {
+      cores.current = null
       pintar()
     }
 
@@ -228,9 +281,8 @@ export function Tela({ cena, onSelecionar, controle }: Props) {
         ponteiros.current.delete(e.pointerId)
         if (!eraUmDedoSo || arrastou.current > TOLERANCIA_DO_TOQUE) return
 
-        // Alvo de toque maior que o desenho: um nó de 5 px é impossível de acertar.
         const mundo = paraOMundo(e.clientX, e.clientY)
-        const raioDeToque = Math.max(22 / camera.current.escala, raioDoNeuronio(14))
+        const raioDeToque = RAIO_DO_TOQUE / camera.current.escala
         onSelecionar(neuronioEm(mundo, cena.mapa.posicoes, cena.neuronios, raioDeToque))
       }}
       onPointerCancel={(e) => {

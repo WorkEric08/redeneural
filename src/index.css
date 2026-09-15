@@ -123,6 +123,14 @@
   /* 4,33:1 antes; 5,3:1 agora. */
   --destructive: oklch(0.5 0.19 25);
 
+  /* A Rede de dia (Rede.tsx, desenhar.ts). Luz só se soma no escuro: sobre a
+     sala clara os fios são tinta, e onde muitos se cruzam a tinta se acumula
+     e escurece — o mesmo "aglomerado acende" da noite, ao contrário. O canvas
+     lê `--rede-mistura` como `globalCompositeOperation`. */
+  --rede-fio: oklch(0.42 0.07 262);
+  --rede-no: oklch(0.3 0.045 262);
+  --rede-mistura: multiply;
+
   --radius: 0.625rem;
 
   /* Tipografia da passada final: Literata (títulos) e Source Sans 3
@@ -170,6 +178,12 @@
     --lombada-6: oklch(0.63 0.13 145);
 
     --destructive: oklch(0.68 0.19 25);
+
+    /* À noite os fios são luz: `lighter` soma, e onde muitos se cruzam o
+       aglomerado acende sozinho. Azul-violeta, e nunca ouro — ouro é a ponte. */
+    --rede-fio: oklch(0.72 0.085 272);
+    --rede-no: oklch(0.95 0.02 262);
+    --rede-mistura: lighter;
   }
 }
 
@@ -197,6 +211,10 @@
   --lombada-6: oklch(0.63 0.13 145);
 
   --destructive: oklch(0.68 0.19 25);
+
+  --rede-fio: oklch(0.72 0.085 272);
+  --rede-no: oklch(0.95 0.02 262);
+  --rede-mistura: lighter;
 }
 
 /* Congeladas até serem refeitas (pedido do usuário, 13/09/2026): a estante — com
