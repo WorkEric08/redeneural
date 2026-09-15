@@ -2129,6 +2129,83 @@ gzipped.
 Faltam os itens 3 (tocar acende a vizinhança, nomes ao aproximar, duplo
 toque, busca leva a câmera) e 4 (arrastar neurônio) do plano da Rede.
 
+## A Rede reage ao toque (15/09/2026)
+
+Item 3 dos 4 do plano da Rede (ver "A Rede como constelação"): tocar um
+neurônio acende a vizinhança dele e apaga o resto; aproximar revela nomes,
+dos mais conectados primeiro; duplo toque foca a câmera; a busca aprendeu a
+levar a câmera até um neurônio.
+
+### Vizinhança ao tocar
+
+`vizinhancaDe(selecionado, conexoes)` (`features/rede/layout.ts`, puro,
+testado) devolve o próprio selecionado mais quem tem aresta direta com ele —
+um salto só, não dois. `desenhar.ts` unificou essa checagem com a que já
+existia para foco de livro num único `montarChecagens(cena)`: um nó ou
+aresta apaga se o foco de livro apaga ele **ou** se há um selecionado e ele
+não participa da vizinhança. A mesma função que já decidia "isso é do livro
+em foco?" passou a decidir as duas coisas de uma vez — são o mesmo tipo de
+filtro visual, dimming, nunca remoção.
+
+### Nomes ao aproximar
+
+Rótulo ambiente novo, por cima da pintura de sempre: cada neurônio (não
+apagado, não o selecionado — que já tem etiqueta própria) ganha o nome
+quando o zoom passa de um limiar que **cai com o grau**
+(`ESCALA_MINIMA_DOS_ROTULOS / (1 + grau * FATOR_DE_GRAU)`) — o hub do
+palácio se revela primeiro, sem precisar aproximar tanto; uma folha isolada
+só ganha nome bem de perto. Colocação gulosa por prioridade (grau
+decrescente, id crescente para ser determinístico) com checagem de colisão
+por caixa delimitadora — até 40 rótulos, nunca sobrepostos.
+
+**Cresce com o zoom, de propósito — o oposto da etiqueta do selecionado.** A
+etiqueta do selecionado sempre foi calculada em pixels de tela puro, fora da
+transformação da câmera, porque o nome de quem você escolheu não pode
+encolher (ver "A rede", Fase 7). Os rótulos ambiente são o contrário: ficam
+dentro da mesma `ctx.scale()` que desenha o resto do mundo, sem dividir por
+`escala` — um zoom maior não só aproxima como literalmente aumenta o texto,
+revelando detalhe. É o comportamento certo para "olhar de perto revela o que
+estava genérico de longe" (mesma ideia da lavagem da estante), errado para
+uma seleção que a pessoa já fez.
+
+### Duplo toque
+
+Um `ref` guarda `{tempo, x, y}` do último toque solto; um novo toque dentro
+de 350 ms e 40 px do anterior conta como duplo. Em cima de um neurônio,
+foca a câmera nele (zoom mínimo 2,4×, ou o que já estava se for maior); no
+vazio, dá um passo de zoom (1,9×) centrado no dedo. **O primeiro toque nunca
+espera** — seleciona ou desmarca na hora, como sempre; o duplo toque só soma
+comportamento por cima quando detectado, para o toque comum não ganhar
+350 ms de atraso perceptível.
+
+`ControleDaTela` ganhou `focar(id)`, usado tanto pelo duplo toque quanto
+pela busca, a seguir.
+
+### Busca leva a câmera
+
+`Busca.tsx` lê `?de=rede`: vindo daqui, o resultado de um neurônio aponta
+para `/rede?centralizar=<id>` em vez de `/neuronio/:id` — quem buscou a
+partir da Rede quer voltar para lá, não abrir a ficha. `Rede.tsx` lê
+`?centralizar` já na inicialização do `useState` (o mesmo padrão do
+`?chegou=` da estante) para a seleção nascer correta sem passar por um
+efeito — só a chamada de `focar()` (que mexe na câmera, um sistema externo
+ao React) precisa de efeito de verdade, e roda depois do enquadramento
+inicial da própria `Tela` porque efeito de filho comita antes do efeito do
+pai.
+
+### Verificado
+
+Com toque de verdade (CDP): tocar acende só o selecionado e vizinhos de 1
+salto, o resto apaga; duplo toque num neurônio foca e no vazio dá zoom;
+busca a partir da Rede volta com `?centralizar=`, a câmera centra no
+neurônio certo e o parâmetro some da URL depois de usado (voltar cai em
+`/busca?de=rede`, confirmando navegação por push, não por replace). Num
+palácio sintético de 149-150 neurônios, nos dois temas. 239 testes,
+typecheck e lint limpos. Bundle principal: 126,7 KB gzipped.
+
+Falta só o item 4 (arrastar neurônio: vizinhos acompanham, assenta ~1 s,
+grava) do plano da Rede.
+
 ## Fases
 
 0. ✅ Esqueleto (Vite/React/TS/Tailwind/PWA/Capacitor)
@@ -2162,6 +2239,7 @@ toque, busca leva a câmera) e 4 (arrastar neurônio) do plano da Rede.
 21. ✅ Estante em lugares fixos, com enfeite que se tira e se põe — revisita a
     escolha da Fase 10
 22. ✅ Abrir o livro com animação — o livro sai da estante, vira de capa e abre
-23. 🟡 Rede como constelação — **partes 1 e 2 de 4 feitas** (tela cheia e
-    nova pintura; organização por significado com posições gravadas);
-    faltam tocar/aproximar e arrastar neurônio
+23. 🟡 Rede como constelação — **partes 1, 2 e 3 de 4 feitas** (tela cheia e
+    nova pintura; organização por significado com posições gravadas; tocar
+    acende a vizinhança, nomes ao aproximar, duplo toque e busca leva a
+    câmera); falta arrastar neurônio
