@@ -2206,6 +2206,91 @@ typecheck e lint limpos. Bundle principal: 126,7 KB gzipped.
 Falta só o item 4 (arrastar neurônio: vizinhos acompanham, assenta ~1 s,
 grava) do plano da Rede.
 
+## Arrastar um neurônio (15/09/2026)
+
+Item 4 e último do plano da Rede (ver "A Rede como constelação"): tocar um
+neurônio e arrastar move só ele; os vizinhos de 1 salto acompanham; ao
+soltar, a vizinhança assenta na física de verdade e grava.
+
+### Duas fases, dois tipos de física
+
+**Enquanto o dedo se move** é só uma pista visual, não física: o nó
+arrastado segue o dedo exatamente, e cada vizinho de 1 salto anda uma fração
+do mesmo deslocamento proporcional ao score da conexão
+(`posicoesDoArrasto`, `features/rede/layout.ts`, puro e testado) — uma
+conexão fraca quase não acompanha. Calcular a física de verdade a cada
+`pointermove` seria caro à toa: o usuário ainda está decidindo onde soltar,
+e o resultado final não depende do caminho, só do ponto de chegada.
+
+**Ao soltar** é a física de verdade, e a mesma de sempre: o ponto do soltar
+vira a âncora daquele neurônio, e `calcularLayoutDaRede` roda com partida
+quente (as posições gravadas de todo mundo, exceto o alvo, que aponta para
+onde a mão o deixou) e 26 iterações — o mesmo "assenta e para" de qualquer
+escrita incremental (ver "A Rede se organiza por significado"). Como
+`ancoragemPropria` é fraca (0,4), o próprio alvo pode derivar um pouco do
+pixel exato onde soltou — ele está assentando num equilíbrio físico, não
+preso a um ponto.
+
+### Nenhuma mudança no núcleo
+
+`moverNeuronioNaRede(id, ponto)` — novo método de ponta a ponta (porta
+`ConnectionEngine` → protocolo do Worker → `motor.worker.ts` → store) —
+reaproveita exatamente a função e a tabela que a Fase 23-2 já tinha: lê
+`repo.getPosicoesDaRede()`, substitui a entrada do alvo pelo ponto do
+soltar, roda `calcularLayoutDaRede` com `ITERACOES_LAYOUT_INCREMENTAL` e
+grava o resultado inteiro. Não mexe em `conexoes` — arrastar não muda quem
+é vizinho de quem, só onde a constelação decide desenhar isso.
+
+### A animação de ~900ms, e por que ela não é a física em si
+
+`quadroDoAssentamento(inicio, alvo, k)` interpola, ponto a ponto, do quadro
+onde o dedo soltou até o resultado que o motor devolveu — com
+`easeOutCubic` para começar rápido e desacelerar, como qualquer coisa que
+assenta. Ela **não** anima os passos internos do relaxamento (o motor
+devolve só o resultado final, síncrono), e sim uma interpolação de tela
+entre "onde parou" e "onde devia estar" — mais barato, e visualmente
+indistinguível de animar a física passo a passo, porque o motor já roda em
+poucos milissegundos (o mesmo custo de qualquer escrita incremental).
+
+Um arrasto novo no meio de um assentamento anterior cancela o anterior
+(`execucao.cancelado`) em vez de os dois brigarem pelo mesmo overlay de
+posições.
+
+**Diverge de "sem laço de animação" (Fase 7)** — apontado no plano desde
+14/09/2026 ("Movimento: assenta e para... diverge do 'não tem simulação
+viva' registrado"). A diferença para o `requestAnimationFrame` eterno que a
+Fase 7 rejeitou: este só roda por `DURACAO_DO_ASSENTAMENTO` (900ms) e para
+sozinho — pinta quando algo muda, e só, como sempre; só que agora "algo
+muda" inclui um relógio de 900ms depois de um arrasto, não um laço
+contínuo.
+
+### Detalhe de gesto: o mesmo teste de tolerância decide arrastar nó ou tocar
+
+O toque no `pointerdown` faz o mesmo teste de acerto (`neuronioEm`) que já
+existia para selecionar — só que agora, se acertar um nó, guarda um
+candidato a arrasto. O `pointerup` decide o que aconteceu com o mesmo
+`arrastou.current > TOLERANCIA_DO_TOQUE` que já separava toque de arrastar
+a câmera: abaixo do limiar é toque (seleciona, participa do duplo toque);
+acima, foi arrasto de verdade (assenta e grava). Um segundo dedo no meio
+cancela o arrasto de nó e devolve o gesto para a pinça, como sempre.
+
+### Verificado
+
+Com toque de verdade (CDP, arrasto com passos intermediários — não um
+salto direto, que o Chromium headless pode engolir): arrastar um neurônio
+move-o em tempo real, com os fios para os vizinhos esticando junto;
+soltar aciona o motor de verdade e a posição gravada em `meta` muda de
+forma mensurável (~73px de deslocamento total no palácio de teste), com
+pelo menos um vizinho de 1 salto também se deslocando; a posição nova
+sobrevive a um reload completo da página (não é só otimismo de tela); um
+toque comum (sem arrastar) continua selecionando normalmente — regressão
+checada depois do arrasto. Num palácio sintético de 149-150 neurônios, tema
+escuro. 248 testes (9 novos: `posicoesDoArrasto`, `quadroDoAssentamento`,
+`easeOutCubic`), typecheck e lint limpos. Bundle principal: 127,5 KB
+gzipped.
+
+Com este item, os 4 do plano da Rede como constelação estão completos.
+
 ## Fases
 
 0. ✅ Esqueleto (Vite/React/TS/Tailwind/PWA/Capacitor)
@@ -2239,7 +2324,7 @@ grava) do plano da Rede.
 21. ✅ Estante em lugares fixos, com enfeite que se tira e se põe — revisita a
     escolha da Fase 10
 22. ✅ Abrir o livro com animação — o livro sai da estante, vira de capa e abre
-23. 🟡 Rede como constelação — **partes 1, 2 e 3 de 4 feitas** (tela cheia e
-    nova pintura; organização por significado com posições gravadas; tocar
-    acende a vizinhança, nomes ao aproximar, duplo toque e busca leva a
-    câmera); falta arrastar neurônio
+23. ✅ Rede como constelação — tela cheia e nova pintura; organização por
+    significado com posições gravadas; tocar acende a vizinhança, nomes ao
+    aproximar, duplo toque e busca leva a câmera; arrastar neurônio com os
+    vizinhos acompanhando e assentando
