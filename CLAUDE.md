@@ -953,6 +953,13 @@ troca é `replace`, para voltar cair na estante e não no menu.
 `<dialog>` nativo com `showModal`: fica na camada do topo, fora do `transform` de
 `.animar-entrada`, prende o foco e fecha no Esc, sem dependência.
 
+**A posição da folha zera a cada abertura** (corrigido em 15/09/2026). Fechar
+puxando a alça deixa o `<dialog>` com `translateY` até fora da tela, e isso
+só era zerado quando o rótulo mudava — o que na estante sempre acontece, mas
+não nos filtros da Rede, de rótulo fixo. Lá, a segunda abertura mostrava só o
+fundo desfocado, com o painel preso abaixo da tela e nenhuma saída a não ser
+voltar.
+
 ### Distância desbota, agora como comportamento
 
 A ideia guardada para a passada final virou regra: na prateleira a cor do pano
@@ -1229,6 +1236,12 @@ Um stepper de "Prateleiras", no mesmo padrão visual das outras seções da
 tela. Recusa diminuir com aviso quando sobraria livro numa prateleira que
 deixaria de existir — usa o `Aviso` flutuante que já existia, sem componente
 novo.
+
+**Teto de 6 desde 15/09/2026** (pedido do usuário): `MAXIMO_DE_PRATELEIRAS`
+em `core/domain/ordem.ts`. O "+" para em 6 e o repositório recusa mais que
+isso. Quem já tinha mais de 6 não perde nada — só não sobe além, e pode
+diminuir normalmente. (O `MAXIMO_DE_PRATELEIRAS` de `estanteAntiga.ts`, 14,
+é outro: congelado, só da migração.)
 
 ### Verificado
 
