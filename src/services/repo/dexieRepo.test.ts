@@ -452,6 +452,11 @@ describe('quantidade de prateleiras', () => {
     expect(await repo.getQuantidadeDePrateleiras()).toBe(4)
   })
 
+  it('recusa passar de 6 prateleiras', async () => {
+    await expect(repo.definirQuantidadeDePrateleiras(7)).rejects.toThrow(/6/)
+    expect(await repo.getQuantidadeDePrateleiras()).toBe(4)
+  })
+
   it('aceita diminuir quando nenhum livro fica para trás', async () => {
     await repo.upsertLivro(livro('l1', 'Psicologia', 0, 1))
 

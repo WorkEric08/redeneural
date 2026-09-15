@@ -10,6 +10,7 @@ import {
   livroToSnapshot,
   LUGARES_POR_PRATELEIRA,
   moverLivroNaEstante,
+  MAXIMO_DE_PRATELEIRAS,
   MINIMO_DE_PRATELEIRAS,
   neuronioFromSnapshot,
   neuronioToSnapshot,
@@ -157,6 +158,9 @@ export function createDexieRepo(db: PalacioDB = defaultDb): PalacioRepo {
     },
 
     async definirQuantidadeDePrateleiras(quantidade) {
+      if (quantidade > MAXIMO_DE_PRATELEIRAS) {
+        throw new Error(`a estante tem no máximo ${String(MAXIMO_DE_PRATELEIRAS)} prateleiras`)
+      }
       await db.transaction('rw', db.livros, db.meta, db.vagas, async () => {
         const ocupada = await db.livros.where('prateleira').aboveOrEqual(quantidade).count()
         if (ocupada > 0) {

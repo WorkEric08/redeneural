@@ -25,6 +25,9 @@ import type { Id, Vaga } from './types'
  */
 export const LUGARES_POR_PRATELEIRA = 26
 
+/** O teto que Ajustes deixa escolher — decisão do usuário (15/09/2026). */
+export const MAXIMO_DE_PRATELEIRAS = 6
+
 interface NoLugar {
   id: Id
   prateleira: number

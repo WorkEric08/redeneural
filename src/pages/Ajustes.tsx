@@ -5,7 +5,7 @@ import { Link } from 'react-router-dom'
 import { botao } from '@/components/botao'
 import { BarraDeTopo } from '@/components/BarraDeTopo'
 import { EtiquetaProcessando } from '@/components/EtiquetaProcessando'
-import { INTENSIDADE_DA_LUZ_MAXIMA, INTENSIDADE_DA_LUZ_MINIMA } from '@/core'
+import { INTENSIDADE_DA_LUZ_MAXIMA, INTENSIDADE_DA_LUZ_MINIMA, MAXIMO_DE_PRATELEIRAS } from '@/core'
 import { usePalacio } from '@/store/palacio'
 
 /** Ajustes do palácio: quantidade de prateleiras e intensidade da luz. */
@@ -86,7 +86,7 @@ export default function Ajustes() {
                   type="button"
                   aria-label="Mais uma prateleira"
                   className={botao({ tipo: 'secundario', tamanho: 'icone' })}
-                  disabled={travado}
+                  disabled={travado || quantidadeDePrateleiras >= MAXIMO_DE_PRATELEIRAS}
                   onClick={() => void definirQuantidadeDePrateleiras(quantidadeDePrateleiras + 1)}
                 >
                   <Plus size={16} aria-hidden />
