@@ -723,6 +723,10 @@ isso tira o O(N²) global do caminho.
 
 ### Desenho
 
+> **Substituído em 14/09/2026** pela constelação — ver "A Rede como
+> constelação". Ficam valendo: pontes em ouro por cima, score zero tracejado e a
+> etiqueta do selecionado em pixels de tela.
+
 - Fios internos na cor da lombada, pontes em ouro **por cima** e com brilho: a ponte
   é o achado e não pode ficar debaixo de nada.
 - Espessura e opacidade seguem o score; score zero é tracejado.
@@ -1020,7 +1024,9 @@ valores saem do RGB dela, que é o que bate com as amostras.
 
 ### O que não mudou, e como isso está garantido
 
-- **A estante e o retângulo da Rede ficaram com as cores de antes.**
+- **A estante e o retângulo da Rede ficaram com as cores de antes.** (A Rede
+  deixou de ficar em 14/09/2026: virou constelação em tela cheia e segue a
+  paleta atual — ver "A Rede como constelação".)
   `.cores-de-antes` (em `index.css`) devolve os tokens antigos ao `.movel`, ao
   fantasma do arrasto, à lombada de amostra do formulário e ao retângulo do
   canvas (que lê as cores do próprio elemento). Comparação pixel a pixel antes e
@@ -1846,6 +1852,82 @@ nos dois temas, 320×568 e 1440×900; movimento reduzido abrindo direto; voltar
 no meio da animação ficando na estante. 232 testes (5 novos, da geometria),
 typecheck e lint limpos. Bundle principal: 122 KB gzipped.
 
+## A Rede como constelação (14/09/2026)
+
+O usuário mandou uma imagem de referência — centenas de pontos claros, milhares
+de fios finos azul-violeta, aglomerados orgânicos, nenhum rótulo — e perguntou
+como melhorar a Rede no que ela exibe, em como age e em como se mexe nela.
+
+### Decisões dele
+
+Quatro pontos da imagem batiam em decisões registradas; perguntei antes de
+mexer:
+
+| Ponto     | Escolha                                | O que contrariava                                                     |
+| --------- | -------------------------------------- | --------------------------------------------------------------------- |
+| Fundo     | **Paleta atual, segue o tema**         | nada — a imagem é preto, e "Sempre noite" ficou de fora               |
+| Pontes    | **Ouro**, como sempre                  | nada — o ciano da imagem vira ouro                                    |
+| Layout    | **Por significado, posições gravadas** | o layout da Fase 7 (livros em círculo, com regiões)                   |
+| Movimento | **Assenta e para**                     | "não tem simulação viva" — só se mexe ao criar ou arrastar, e congela |
+
+Plano em quatro partes, uma por vez: (1) tela cheia e nova pintura, (2)
+organização por significado com posições gravadas, (3) tocar acende a vizinhança
+e nomes aparecem ao aproximar, (4) arrastar neurônio. Aviso dado: a densidade da
+imagem só aparece com centenas de neurônios — o motor mantém ~6 vizinhos por
+neurônio, e o desenho não inventa conexão.
+
+### Parte 1: tela cheia e nova pintura
+
+O layout continua o da Fase 7; mudam a tela e a pintura.
+
+- **Tela cheia.** O canvas é `fixed` por baixo de tudo (à direita da coluna de
+  navegação no desktop), e fora de `.animar-entrada`: o `transform` da
+  animação viraria referência para o `fixed`. A barra de topo fica por cima,
+  com o desfoque de sempre; enquadrar e filtros flutuam no pé, à esquerda, na
+  altura do botão de criar. A página trava a rolagem, como a estante.
+- **Filtros numa folha, na URL** (`?filtros=1`): o voltar do Android fecha a
+  folha antes de sair da Rede. O botão fica pressionado enquanto há filtro, e a
+  contagem diz qual.
+- **Pontos em pixels de tela** (1,25–2,6 px, pelo grau), não do mundo: numa
+  constelação o ponto continua ponto quando você aproxima. Por isso a escala
+  máxima subiu para 6 — aproximar só afasta os pontos. O alvo de toque é de 22
+  px de tela. Sem halo em volta do ponto: num aglomerado denso eles se somavam
+  em manchas.
+- **Luz de noite, tinta de dia.** Os fios usam `--rede-mistura`: `lighter` à
+  noite (onde muitos se cruzam o aglomerado acende) e `multiply` de dia (a
+  tinta se acumula e escurece). Luz somando sobre fundo claro não aparece — é
+  o mesmo efeito, ao contrário.
+- **Um toque da cor do livro** por cima de cada ponto, a 38%: reconhece-se o
+  livro de perto sem virar mapa de cores. Saem os halos de região e os nomes de
+  livro.
+- **Pontes em ouro com brilho sem `shadowBlur`:** um halo largo e fraco na
+  mistura dos fios e o fio fino por cima em tinta normal — somado à luz de
+  baixo, o ouro estouraria para branco. Uma ponte só apaga no foco se os dois
+  lados estão fora dele.
+- **Fios em lotes:** seis faixas de brilho, um `stroke()` por faixa em vez de um
+  por fio. Numa WebView, milhares de traços separados engasgam.
+- **Cores lidas uma vez** e relidas só quando o tema troca: `getComputedStyle`
+  força recálculo de estilo, e arrastar pinta a cada quadro — antes eram cinco
+  por quadro.
+- **Enquadrar pelos próprios pontos**, com folga para o que cobre a tela
+  (barra e contagem em cima, controles embaixo), e não pelos limites com
+  rótulo de livro do layout.
+
+Tokens novos, nos três blocos de tema: `--rede-fio`, `--rede-no` e
+`--rede-mistura`. O `.cores-de-antes` saiu do retângulo da Rede.
+
+Verificado com um palácio sintético de 320 neurônios e 1.106 conexões (193
+pontes) gravado direto no IndexedDB do navegador de teste, nos dois temas, em
+412×892 e 1440×900: tocar seleciona, folha de filtros abre e fecha pelo
+voltar, "só as pontes" apaga os fios internos, trocar o tema com a Rede aberta
+repinta, arrastar move a câmera; e com o seed de verdade (9 neurônios, nenhuma
+conexão) em 320×568. Sem rolagem lateral. 232 testes, typecheck e lint limpos.
+Bundle principal: 123 KB gzipped.
+
+Com o layout da Fase 7 cada livro fica longe dos outros, e toda ponte vira uma
+linha comprida atravessando o vazio — o ouro pesa mais do que vai pesar quando a
+parte 2 aproximar quem conversa.
+
 ## Fases
 
 0. ✅ Esqueleto (Vite/React/TS/Tailwind/PWA/Capacitor)
@@ -1879,3 +1961,6 @@ typecheck e lint limpos. Bundle principal: 122 KB gzipped.
 21. ✅ Estante em lugares fixos, com enfeite que se tira e se põe — revisita a
     escolha da Fase 10
 22. ✅ Abrir o livro com animação — o livro sai da estante, vira de capa e abre
+23. 🟡 Rede como constelação — **parte 1 de 4 feita** (tela cheia e nova
+    pintura); faltam organização por significado, tocar/aproximar e arrastar
+    neurônio
