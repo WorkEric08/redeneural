@@ -896,6 +896,15 @@ folha (`--mv-prateleiras`).
 Verificado sem rolagem em 320×568, 390×844, 768×1024 e 1440×900, nos dois temas.
 O bundle principal ficou em 117 KB gzipped, contra o teto de 200 KB do mestre.
 
+**Respiro do topo, no celular: 5px (13/09/2026) → 0px (15/09/2026), os dois
+pedidos do usuário.** É o `pt-*` de `<main>` em `App.tsx`, só na rota da
+estante (`naEstante`) — as outras telas têm `BarraDeTopo` e usam a área segura
+do aparelho, esta não. A cornija do móvel encosta no topo real da tela agora;
+laterais (5px) e o respiro de baixo (24px) não mudaram. Verificado sem
+rolagem em 320×568, 390×844 e 412×892 — `--mv-fora` (144px, o que na fileira
+não é prateleira) não precisou mudar, a folga a mais só sobra embaixo do
+móvel, sem cortar nada.
+
 ## A estante na mão (12/09/2026)
 
 A estante deixou de ser vitrine: o livro é um objeto que se pega. Pedido do
