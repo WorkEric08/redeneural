@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import type { Conexao, NeuronioNaTela } from '@/core'
 
-import { grausDoMapa, neuronioEm } from './layout'
+import { grausDoMapa, neuronioEm, vizinhancaDe } from './layout'
 
 const T0 = new Date('2026-01-01T12:00:00.000Z')
 
@@ -47,6 +47,27 @@ describe('grausDoMapa', () => {
     expect(grau.get('p1')).toBe(2)
     expect(grau.get('p3')).toBe(1)
     expect(grau.get('m1')).toBeUndefined()
+  })
+})
+
+describe('vizinhancaDe', () => {
+  it('sem seleção, não tem vizinhança — ninguém apaga', () => {
+    expect(vizinhancaDe(null, CONEXOES)).toBeNull()
+  })
+
+  it('inclui o próprio selecionado e os vizinhos diretos, só isso', () => {
+    const vizinhanca = vizinhancaDe('p1', CONEXOES)
+    expect(vizinhanca).not.toBeNull()
+    expect([...vizinhanca!].sort()).toEqual(['g1', 'p1', 'p2'])
+  })
+
+  it('não inclui vizinho de vizinho — só um salto', () => {
+    // g1 é vizinho de p1, mas g2 (vizinho de g1) não deve aparecer.
+    expect(vizinhancaDe('p1', CONEXOES)!.has('g2')).toBe(false)
+  })
+
+  it('quem não tem aresta nenhuma fica sozinho no próprio conjunto', () => {
+    expect([...vizinhancaDe('m1', CONEXOES)!]).toEqual(['m1'])
   })
 })
 

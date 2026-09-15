@@ -1,5 +1,7 @@
 import type { Conexao, Id, Livro, NeuronioNaTela, Ponto } from '@/core'
 
+import { vizinhancaDe } from './layout'
+
 /**
  * O desenho da rede, em canvas: uma constelação.
  *
@@ -41,6 +43,7 @@ export interface Cena {
   livroEmFoco: Id | null
   /** Só as pontes: some com tudo que não atravessa livro. */
   soAsPontes: boolean
+  /** Tocar um neurônio acende ele e a vizinhança dele; o resto apaga. */
   selecionado: Id | null
   cores: CoresDaRede
 }
@@ -61,6 +64,36 @@ const FAIXAS = 6
  */
 export function raioNaTela(grau: number): number {
   return 1.25 + Math.min(grau, 12) * 0.11
+}
+
+/**
+ * As checagens de "isto apaga?", montadas uma vez por pintura. Duas razões
+ * independentes, sempre combinadas com OU: fora do livro em foco, ou fora da
+ * vizinhança de quem está selecionado.
+ *
+ * Uma ponte só apaga pelo livro se os dois lados estiverem fora — ela é
+ * justamente o que liga o livro em foco aos outros. Já a vizinhança é mais
+ * estrita: só o fio que toca o selecionado fica aceso, não os fios entre dois
+ * vizinhos dele (isso seria "vizinhança de vizinhança").
+ */
+function montarChecagens(cena: Cena) {
+  const vizinhanca = vizinhancaDe(cena.selecionado, cena.conexoes)
+
+  const apagadoPeloLivro = (livroId: Id | undefined): boolean =>
+    cena.livroEmFoco !== null && cena.livroEmFoco !== livroId
+
+  const arestaApagadaPelaVizinhanca = (aId: Id, bId: Id): boolean =>
+    cena.selecionado !== null && aId !== cena.selecionado && bId !== cena.selecionado
+
+  return {
+    internaApagada: (livroId: Id | undefined, aId: Id, bId: Id): boolean =>
+      apagadoPeloLivro(livroId) || arestaApagadaPelaVizinhanca(aId, bId),
+    ponteApagada: (livroA: Id | undefined, livroB: Id | undefined, aId: Id, bId: Id): boolean =>
+      (apagadoPeloLivro(livroA) && apagadoPeloLivro(livroB)) ||
+      arestaApagadaPelaVizinhanca(aId, bId),
+    noApagado: (n: NeuronioNaTela): boolean =>
+      apagadoPeloLivro(n.livroId) || (vizinhanca !== null && !vizinhanca.has(n.id)),
+  }
 }
 
 export function desenhar(
@@ -84,13 +117,13 @@ export function desenhar(
   // qualquer zoom.
   const px = 1 / camera.escala
   const livroDoNeuronio = new Map(cena.neuronios.map((n) => [n.id, n.livroId]))
-  const apagado = (livroId: Id | undefined): boolean =>
-    cena.livroEmFoco !== null && cena.livroEmFoco !== livroId
+  const { internaApagada, ponteApagada, noApagado } = montarChecagens(cena)
 
   ctx.lineCap = 'round'
-  if (!cena.soAsPontes) desenharFios(ctx, cena, livroDoNeuronio, apagado, px)
-  desenharPontes(ctx, cena, livroDoNeuronio, apagado, px)
-  desenharNeuronios(ctx, cena, apagado, px)
+  if (!cena.soAsPontes) desenharFios(ctx, cena, livroDoNeuronio, internaApagada, px)
+  desenharPontes(ctx, cena, livroDoNeuronio, ponteApagada, px)
+  desenharNeuronios(ctx, cena, noApagado, px)
+  desenharRotulosAmbiente(ctx, cena, camera.escala, noApagado)
 
   ctx.restore()
 
@@ -143,7 +176,7 @@ function desenharFios(
   ctx: CanvasRenderingContext2D,
   cena: Cena,
   livroDoNeuronio: ReadonlyMap<Id, Id>,
-  apagado: (livroId: Id | undefined) => boolean,
+  apagada: (livroId: Id | undefined, aId: Id, bId: Id) => boolean,
   px: number,
 ): void {
   const { posicoes } = cena
@@ -156,7 +189,7 @@ function desenharFios(
     if (!finito(a) || !finito(b)) continue
 
     const faixa = Math.min(FAIXAS - 1, Math.floor(c.score * FAIXAS))
-    const longe = apagado(livroDoNeuronio.get(c.aId))
+    const longe = apagada(livroDoNeuronio.get(c.aId), c.aId, c.bId)
     const tracejado = c.score === 0
     const forca = (faixa + 0.5) / FAIXAS
 
@@ -188,7 +221,7 @@ function desenharPontes(
   ctx: CanvasRenderingContext2D,
   cena: Cena,
   livroDoNeuronio: ReadonlyMap<Id, Id>,
-  apagado: (livroId: Id | undefined) => boolean,
+  apagada: (livroA: Id | undefined, livroB: Id | undefined, aId: Id, bId: Id) => boolean,
   px: number,
 ): void {
   const { posicoes } = cena
@@ -202,9 +235,7 @@ function desenharPontes(
     if (!finito(a) || !finito(b)) continue
 
     const faixa = Math.min(FAIXAS - 1, Math.floor(c.score * FAIXAS))
-    // Uma ponte só se apaga se os dois lados estão fora do foco: ela é justamente
-    // o que liga o livro em foco aos outros.
-    const longe = apagado(livroDoNeuronio.get(c.aId)) && apagado(livroDoNeuronio.get(c.bId))
+    const longe = apagada(livroDoNeuronio.get(c.aId), livroDoNeuronio.get(c.bId), c.aId, c.bId)
     const tracejado = c.score === 0
     const forca = (faixa + 0.5) / FAIXAS
     const chave = `${String(faixa)}:${String(longe)}:${String(tracejado)}`
@@ -243,7 +274,7 @@ function desenharPontes(
 function desenharNeuronios(
   ctx: CanvasRenderingContext2D,
   cena: Cena,
-  apagado: (livroId: Id | undefined) => boolean,
+  apagado: (n: NeuronioNaTela) => boolean,
   px: number,
 ): void {
   const corDoLivro = new Map(cena.livros.map((l) => [l.id, l.cor]))
@@ -255,7 +286,7 @@ function desenharNeuronios(
   for (const n of cena.neuronios) {
     const p = cena.posicoes.get(n.id)
     if (!finito(p)) continue
-    const longe = apagado(n.livroId)
+    const longe = apagado(n)
     const chave = `${n.livroId}:${String(longe)}`
     const raio = raioNaTela(cena.graus.get(n.id) ?? 0) * px
     const grupo = grupos.get(chave)
@@ -298,6 +329,78 @@ function desenharNeuronios(
     ctx.arc(escolhido.x, escolhido.y, raio + 5 * px, 0, 2 * Math.PI)
     ctx.stroke()
   }
+}
+
+/** Em unidades do mundo, não de tela: crescer com o zoom é o próprio ponto —
+ *  é o que faz "aproximar" revelar um nome que não cabia antes. */
+const FONTE_DO_ROTULO = 7
+/** Zoom mínimo para o nome de um nó sem conexão nenhuma aparecer. */
+const ESCALA_MINIMA_DOS_ROTULOS = 1.9
+/** Cada conexão a mais adianta o quanto falta aproximar para o nome surgir. */
+const FATOR_DE_GRAU = 0.3
+/** Não sobrecarrega a pintura, mesmo num aglomerado com centenas de nós à mostra. */
+const MAX_ROTULOS_AMBIENTE = 40
+
+function limiarDeEscala(grau: number): number {
+  return ESCALA_MINIMA_DOS_ROTULOS / (1 + grau * FATOR_DE_GRAU)
+}
+
+/**
+ * Zoom revela nomes, e os mais conectados aparecem primeiro — são os hubs, o
+ * que mais orienta ao se aproximar. Sem disputar espaço: cada candidato (do
+ * mais conectado ao menos) só ganha o rótulo se a caixa dele não bater na de
+ * alguém que já ganhou nesta mesma pintura.
+ */
+function desenharRotulosAmbiente(
+  ctx: CanvasRenderingContext2D,
+  cena: Cena,
+  escala: number,
+  apagado: (n: NeuronioNaTela) => boolean,
+): void {
+  const candidatos: { n: NeuronioNaTela; p: Ponto; grau: number }[] = []
+  for (const n of cena.neuronios) {
+    if (n.id === cena.selecionado || apagado(n)) continue
+    const p = cena.posicoes.get(n.id)
+    if (!finito(p)) continue
+    const grau = cena.graus.get(n.id) ?? 0
+    if (escala < limiarDeEscala(grau)) continue
+    candidatos.push({ n, p, grau })
+  }
+  if (candidatos.length === 0) return
+
+  candidatos.sort((a, b) => b.grau - a.grau || (a.n.id < b.n.id ? -1 : 1))
+
+  ctx.font = `${String(FONTE_DO_ROTULO)}px ui-sans-serif, system-ui, sans-serif`
+  ctx.textAlign = 'center'
+  ctx.textBaseline = 'top'
+  ctx.fillStyle = cena.cores.papel
+  ctx.globalAlpha = 0.85
+
+  const folga = FONTE_DO_ROTULO * 0.45
+  const ocupados: { x0: number; y0: number; x1: number; y1: number }[] = []
+
+  for (const { n, p, grau } of candidatos) {
+    if (ocupados.length >= MAX_ROTULOS_AMBIENTE) break
+
+    const largo = ctx.measureText(n.titulo).width
+    const y0 = p.y + raioNaTela(grau) / escala + 2
+    const caixa = {
+      x0: p.x - largo / 2 - folga,
+      y0: y0 - folga,
+      x1: p.x + largo / 2 + folga,
+      y1: y0 + FONTE_DO_ROTULO + folga,
+    }
+
+    const bate = ocupados.some(
+      (o) => caixa.x0 < o.x1 && caixa.x1 > o.x0 && caixa.y0 < o.y1 && caixa.y1 > o.y0,
+    )
+    if (bate) continue
+
+    ocupados.push(caixa)
+    ctx.fillText(n.titulo, p.x, y0)
+  }
+
+  ctx.globalAlpha = 1
 }
 
 /**

@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 
 import { BarraDeTopo } from '@/components/BarraDeTopo'
 import { buscar } from '@/features/busca/buscar'
@@ -13,6 +13,12 @@ import { usePalacio } from '@/store/palacio'
 export default function Busca() {
   const { livros, neuronios } = usePalacio()
   const [consulta, setConsulta] = useState('')
+
+  // Quem abriu a busca a partir da Rede quer voltar pra lá com a câmera no
+  // neurônio, não abrir a tela dele — o link do resultado muda de destino,
+  // o resto da busca é o mesmo de sempre.
+  const [busca] = useSearchParams()
+  const daRede = busca.get('de') === 'rede'
 
   const resultados = useMemo(
     () => buscar(consulta, livros, neuronios),
@@ -72,7 +78,9 @@ export default function Busca() {
               ) : (
                 <li key={`neuronio-${r.neuronio.id}`} className="linha-de-lista p-0">
                   <Link
-                    to={`/neuronio/${r.neuronio.id}`}
+                    to={
+                      daRede ? `/rede?centralizar=${r.neuronio.id}` : `/neuronio/${r.neuronio.id}`
+                    }
                     className="flex min-h-14 w-full min-w-0 flex-col justify-center gap-0.5 px-4 py-2.5"
                   >
                     <span className="truncate text-[0.95rem] font-medium">{r.neuronio.titulo}</span>

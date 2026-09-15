@@ -1,5 +1,5 @@
 import { Maximize2, Search, SlidersHorizontal, Waypoints } from 'lucide-react'
-import { useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 
 import { BarraDeTopo } from '@/components/BarraDeTopo'
@@ -31,17 +31,24 @@ export default function Rede() {
 
   const { livros, neuronios, conexoes, posicoesDaRede, carregado } = usePalacio()
 
-  const [livroEmFoco, setLivroEmFoco] = useState<string | null>(null)
-  const [soAsPontes, setSoAsPontes] = useState(false)
-  const [selecionado, setSelecionado] = useState<string | null>(null)
-  const controle = useRef<ControleDaTela>(null)
-
   // A folha dos filtros mora na URL, como os painéis da estante: o voltar do
-  // Android fecha a folha antes de sair da Rede.
-  const [busca] = useSearchParams()
+  // Android fecha a folha antes de sair da Rede. A busca manda para cá com
+  // `?centralizar=<id>` pelo mesmo motivo do `?chegou=` da estante: lida já
+  // na inicialização do estado (nunca de dentro de um efeito, que dispararia
+  // um segundo render síncrono à toa), para não precisar reler depois que o
+  // efeito mais abaixo limpa a URL.
+  const [busca, setBusca] = useSearchParams()
   const navegar = useNavigate()
   const { key } = useLocation()
   const filtrosAbertos = busca.get('filtros') === '1'
+  const [centralizarId] = useState<string | null>(() => busca.get('centralizar'))
+
+  const [livroEmFoco, setLivroEmFoco] = useState<string | null>(null)
+  const [soAsPontes, setSoAsPontes] = useState(false)
+  // Já nasce selecionado se a busca mandou para cá — o cartão de baixo e a
+  // vizinhança acesa aparecem no mesmo instante da câmera se movendo.
+  const [selecionado, setSelecionado] = useState<string | null>(() => centralizarId)
+  const controle = useRef<ControleDaTela>(null)
 
   function fecharFiltros(): void {
     // O React Router chama de 'default' a primeira entrada da sessão.
@@ -49,11 +56,27 @@ export default function Rede() {
     else void navegar(-1)
   }
 
+  useEffect(() => {
+    if (!busca.get('centralizar')) return
+    const proxima = new URLSearchParams(busca)
+    proxima.delete('centralizar')
+    setBusca(proxima, { replace: true })
+  }, [busca, setBusca])
+
   // O cálculo pesado já aconteceu no Worker (`@/core/motor/redeLayout`) — aqui
   // só converte o formato de transporte (plano, serializável) para o Map que o
   // canvas usa.
   const posicoes = useMemo(() => new Map(Object.entries(posicoesDaRede)), [posicoesDaRede])
   const graus = useMemo(() => grausDoMapa(conexoes), [conexoes])
+
+  // Leva a câmera até o neurônio que a busca escolheu. Roda depois do
+  // enquadramento inicial da Tela (efeito de filho comita antes do efeito do
+  // pai), então sobrescreve a câmera corretamente. Só a câmera, e não a
+  // seleção: essa já nasceu certa lá em cima, sem depender de um efeito.
+  useEffect(() => {
+    if (!centralizarId) return
+    controle.current?.focar(centralizarId)
+  }, [centralizarId])
 
   const pontes = conexoes.filter((c) => c.cross).length
   const escolhido = neuronios.find((n) => n.id === selecionado)
@@ -88,8 +111,10 @@ export default function Rede() {
         voltarPara="/"
         titulo="Rede do palácio"
         acoes={
+          // `de=rede`: um resultado de neurônio volta para cá centralizado,
+          // em vez de abrir a tela dele — é a Rede que pediu a busca.
           <Link
-            to="/busca"
+            to="/busca?de=rede"
             aria-label="Buscar"
             className={botao({ tipo: 'fantasma', tamanho: 'icone' })}
           >

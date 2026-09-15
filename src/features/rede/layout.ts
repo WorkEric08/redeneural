@@ -22,6 +22,25 @@ export function grausDoMapa(conexoes: readonly Conexao[]): Map<Id, number> {
 }
 
 /**
+ * O próprio selecionado e todo mundo que tem uma aresta direta com ele — é
+ * quem "acende" quando você toca um ponto (ver `desenhar.ts`). `null` sem
+ * seleção nenhuma, para o desenho saber que não há nada para apagar.
+ */
+export function vizinhancaDe(
+  selecionado: Id | null,
+  conexoes: readonly Conexao[],
+): ReadonlySet<Id> | null {
+  if (selecionado === null) return null
+
+  const vizinhanca = new Set<Id>([selecionado])
+  for (const c of conexoes) {
+    if (c.aId === selecionado) vizinhanca.add(c.bId)
+    else if (c.bId === selecionado) vizinhanca.add(c.aId)
+  }
+  return vizinhanca
+}
+
+/**
  * O neurônio sob o dedo, se houver.
  *
  * Percorre do fim para o começo para que o de cima ganhe, e usa um raio de toque

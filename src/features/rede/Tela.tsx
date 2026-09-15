@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useImperativeHandle, useRef, type RefObject } from 'react'
 
+import type { Id } from '@/core'
+
 import { desenhar, type Camera, type Cena, type CoresDaRede } from './desenhar'
 import { neuronioEm } from './layout'
 
@@ -21,9 +23,21 @@ const ESCALA_MAXIMA = 6
 const TOLERANCIA_DO_TOQUE = 8
 /** Alvo de toque em pixels de tela: um ponto de 2 px é impossível de acertar com o dedo. */
 const RAIO_DO_TOQUE = 22
+/** O mesmo par de números que qualquer duplo toque neste app usa: uma segunda
+ *  batida perto e rápida da primeira. */
+const JANELA_DO_DUPLO_TOQUE = 350
+const RAIO_DO_DUPLO_TOQUE = 40
+/** Quanto um duplo toque no vazio aproxima — mais forte que a roda do mouse,
+ *  porque é um gesto único, não repetido. */
+const ZOOM_DO_DUPLO_TOQUE = 1.9
+/** Para onde a busca e o duplo toque num neurônio levam a câmera — perto o
+ *  bastante para os rótulos ambiente já aparecerem (ver `desenhar.ts`). */
+const ESCALA_DE_FOCO = 2.4
 
 export interface ControleDaTela {
   enquadrar: () => void
+  /** Centraliza a câmera num neurônio, aproximando até `ESCALA_DE_FOCO` — nunca afasta. */
+  focar: (id: Id) => void
 }
 
 /** O que cobre a tela por cima do canvas — barra de topo, controles —, em px. */
@@ -78,6 +92,8 @@ export function Tela({ cena, onSelecionar, controle, folgas }: Props) {
   const cores = useRef<CoresDaRede | null>(null)
   const ponteiros = useRef(new Map<number, { x: number; y: number }>())
   const arrastou = useRef(0)
+  /** O último toque solto, para reconhecer um segundo logo em seguida como duplo. */
+  const ultimoToque = useRef<{ tempo: number; x: number; y: number } | null>(null)
   const cenaRef = useRef(cena)
 
   const pintar = useCallback(() => {
@@ -142,7 +158,30 @@ export function Tela({ cena, onSelecionar, controle, folgas }: Props) {
     pintar()
   }, [pintar, folgas])
 
-  useImperativeHandle(controle, () => ({ enquadrar }), [enquadrar])
+  /**
+   * Centraliza num neurônio, sem afastar se a câmera já estiver mais perto —
+   * dar zoom out para focar seria o oposto do que "focar" promete. Sem efeito
+   * se a posição ainda não chegou (mesmo padrão do resto: um desenho
+   * incompleto nunca quebra, só fica quieto).
+   */
+  const focar = useCallback(
+    (id: Id) => {
+      const canvas = canvasRef.current
+      const p = cenaRef.current.posicoes.get(id)
+      if (!canvas || !p || !Number.isFinite(p.x) || !Number.isFinite(p.y)) return
+
+      const escala = Math.min(Math.max(camera.current.escala, ESCALA_DE_FOCO), ESCALA_MAXIMA)
+      camera.current = {
+        escala,
+        x: -p.x * escala,
+        y: -p.y * escala + (folgas.topo - folgas.base) / 2,
+      }
+      pintar()
+    },
+    [pintar, folgas],
+  )
+
+  useImperativeHandle(controle, () => ({ enquadrar, focar }), [enquadrar, focar])
 
   /**
    * Um efeito só, e nesta ordem: a cena vai para o ref **antes** de enquadrar.
@@ -283,7 +322,26 @@ export function Tela({ cena, onSelecionar, controle, folgas }: Props) {
 
         const mundo = paraOMundo(e.clientX, e.clientY)
         const raioDeToque = RAIO_DO_TOQUE / camera.current.escala
-        onSelecionar(neuronioEm(mundo, cena.posicoes, cena.neuronios, raioDeToque))
+        const alvo = neuronioEm(mundo, cena.posicoes, cena.neuronios, raioDeToque)
+        onSelecionar(alvo)
+
+        // Duplo toque: perto e rápido do anterior. O primeiro toque já
+        // selecionou normalmente — isto só soma o zoom, sem atrasar o toque
+        // único de todo mundo à espera de um segundo que talvez não venha.
+        const agora = performance.now()
+        const anterior = ultimoToque.current
+        const duplo =
+          anterior !== null &&
+          agora - anterior.tempo < JANELA_DO_DUPLO_TOQUE &&
+          Math.hypot(e.clientX - anterior.x, e.clientY - anterior.y) < RAIO_DO_DUPLO_TOQUE
+
+        if (duplo) {
+          ultimoToque.current = null
+          if (alvo) focar(alvo)
+          else aplicarZoom(ZOOM_DO_DUPLO_TOQUE, e.clientX, e.clientY)
+        } else {
+          ultimoToque.current = { tempo: agora, x: e.clientX, y: e.clientY }
+        }
       }}
       onPointerCancel={(e) => {
         ponteiros.current.delete(e.pointerId)
