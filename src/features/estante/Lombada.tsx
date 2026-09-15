@@ -32,7 +32,7 @@ interface Props {
   estado: EstadoDaLombada
   /** O livro embaixo do dedo de quem arrasta outro: soltar ali o empurra para o lado. */
   alvo: boolean
-  /** Tem fio dourado com o livro que está na mão ou no painel. */
+  /** Tem fio de ponte com o livro que está na mão ou no painel. */
   ponte: boolean
   /** Acabou de nascer: chega à prateleira em vez de só aparecer nela. */
   chegando: boolean
@@ -97,7 +97,7 @@ export function Lombada({
     >
       <span className="lombada-titulo">{item.livro.titulo}</span>
 
-      {item.saindo > 0 && <span className="lombada-ponto brilho-ouro" aria-hidden />}
+      {item.saindo > 0 && <span className="lombada-ponto brilho-ponte" aria-hidden />}
       {selecionado ? (
         <span className="lombada-selecionado" aria-hidden>
           <Check size={11} strokeWidth={3} aria-hidden />

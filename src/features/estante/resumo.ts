@@ -8,7 +8,7 @@ import type { Conexao, Id, Livro, NeuronioNaTela } from '@/core'
  */
 
 /**
- * Quantos fios dourados ligam cada par de livros: `mapa.get(a).get(b)`.
+ * Quantos fios de ponte ligam cada par de livros: `mapa.get(a).get(b)`.
  *
  * É o que a estante acende quando se segura um livro, e o que o "espiar" lista.
  * Sai inteiro de uma vez para os dois lerem dele sem recontar a cada toque.
@@ -47,7 +47,7 @@ export interface LivroNaEstante {
   neuronios: number
   /** Conexões que ficam dentro deste livro. */
   internas: number
-  /** Fios dourados que saem daqui para outro livro. */
+  /** Fios de ponte que saem daqui para outro livro. */
   saindo: number
   /** Altura da lombada, 0..1 — a única métrica que a estante mostra sem abrir nada. */
   altura: number
@@ -74,7 +74,7 @@ export function montarEstante(
     if (a === b) {
       internas.set(a, (internas.get(a) ?? 0) + 1)
     } else {
-      // Uma conexão dourada sai dos dois livros: cada lado a enxerga saindo dele.
+      // Uma conexão de ponte sai dos dois livros: cada lado a enxerga saindo dele.
       saindo.set(a, (saindo.get(a) ?? 0) + 1)
       saindo.set(b, (saindo.get(b) ?? 0) + 1)
     }
@@ -95,7 +95,7 @@ export interface VizinhoDoNeuronio {
   conexao: Conexao
   outroId: string
   outroTitulo: string
-  /** Nome do livro do outro lado — só interessa quando o fio é dourado. */
+  /** Nome do livro do outro lado — só interessa quando o fio é de ponte. */
   outroLivro: string
 }
 

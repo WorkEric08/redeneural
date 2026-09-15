@@ -10,7 +10,9 @@ import type { Mapa, Ponto } from './layout'
  *
  * Pontos pequenos e fios finíssimos, que à noite **somam luz** (`lighter`) e de
  * dia **acumulam tinta** (`multiply`) — onde muitos se cruzam, o aglomerado
- * aparece sozinho. As pontes continuam ouro, por cima de tudo: ouro é a ponte.
+ * aparece sozinho. As pontes continuam por cima de tudo, na cor de ponte —
+ * ouro até 15/09/2026, azul claro desde então (pedido do usuário — ver
+ * CLAUDE.md, "A ponte muda de ouro para azul").
  *
  * Aqui não há estado nem `useEffect` — é uma função que recebe a cena e pinta.
  */
@@ -18,7 +20,7 @@ import type { Mapa, Ponto } from './layout'
 export interface CoresDaRede {
   sala: string
   papel: string
-  ouro: string
+  ponte: string
   fio: string
   no: string
   mistura: GlobalCompositeOperation
@@ -179,8 +181,8 @@ function desenharFios(
 }
 
 /**
- * A ponte é o achado e não pode ficar debaixo de nada. O ouro é luz, então ela
- * brilha — duas passadas, um halo largo e fraco e o fio fino e forte, em vez de
+ * A ponte é o achado e não pode ficar debaixo de nada, e ela brilha — duas
+ * passadas, um halo largo e fraco e o fio fino e forte, em vez de
  * `shadowBlur`, que numa WebView custa um desfoque por traço.
  */
 function desenharPontes(
@@ -226,10 +228,10 @@ function desenharPontes(
   }
 
   ctx.globalCompositeOperation = cena.cores.mistura
-  ctx.strokeStyle = cena.cores.ouro
+  ctx.strokeStyle = cena.cores.ponte
   tracarLotes(ctx, halos, px)
-  // O fio de ouro por cima é tinta normal: somado à luz dos fios de baixo ele
-  // estouraria para branco, e ouro tem que continuar ouro.
+  // O fio de ponte por cima é tinta normal: somado à luz dos fios de baixo ele
+  // estouraria para uma cor lavada, e a ponte tem que continuar reconhecível.
   ctx.globalCompositeOperation = 'source-over'
   tracarLotes(ctx, fios, px)
 }

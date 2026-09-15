@@ -89,7 +89,7 @@ describe('montarEstante', () => {
     expect(psi.saindo).toBe(1)
   })
 
-  it('a conexão dourada sai dos dois livros', () => {
+  it('a conexão de ponte sai dos dois livros', () => {
     const estante = montarEstante(LIVROS, NEURONIOS, [conexao('p1', 'g1', true)])
 
     expect(estante.find((e) => e.livro.id === 'psi')!.saindo).toBe(1)
@@ -149,7 +149,7 @@ describe('vizinhosPorNeuronio', () => {
 describe('pontesEntreLivros', () => {
   const MUSICA = neuronio('m1', 'mus')
 
-  it('conta os fios dourados de cada par, enxergados pelos dois lados', () => {
+  it('conta os fios de ponte de cada par, enxergados pelos dois lados', () => {
     const mapa = pontesEntreLivros(
       [...NEURONIOS, MUSICA],
       [conexao('p1', 'g1', true), conexao('p2', 'g1', true), conexao('p3', 'm1', true)],

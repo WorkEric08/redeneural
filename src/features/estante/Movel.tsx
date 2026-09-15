@@ -15,7 +15,7 @@ interface Props {
   estante: readonly LivroNaEstante[]
   /** Os lugares deixados abertos — sem livro e sem enfeite. */
   vagas: readonly Vaga[]
-  /** `pontesEntreLivros`: quantos fios dourados ligam cada par de livros. */
+  /** `pontesEntreLivros`: quantos fios de ponte ligam cada par de livros. */
   pontes: ReadonlyMap<Id, ReadonlyMap<Id, number>>
   /** O livro do painel aberto — espiando, no menu, sendo editado ou apagado. */
   selecionadoId: string | null

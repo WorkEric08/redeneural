@@ -33,8 +33,8 @@ import {
  *
  * Da referência vieram o anel escuro de cunhas, o botão serrilhado no centro, a
  * cunha em destaque hachurada e o fio fino levando ao nome da opção. O que
- * **não** veio foi o halo quente: aqui ouro significa uma coisa só — conexão
- * que atravessa livros —, então a luz do botão é de papel.
+ * **não** veio foi o halo quente: aqui a cor de ponte significa uma coisa só —
+ * conexão que atravessa livros —, então a luz do botão é de papel.
  */
 
 const DESTINOS = [

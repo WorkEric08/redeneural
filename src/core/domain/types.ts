@@ -119,7 +119,7 @@ export interface Conexao {
   emb: number
   /** Componente do reranker, 0..1. `null` quando o reranker não estava disponível. */
   rr: number | null
-  /** Livros diferentes — a conexão dourada, o "achado". */
+  /** Livros diferentes — a conexão de ponte, o "achado". */
   cross: boolean
   /**
    * Qual dos dois lados mantém esta aresta na própria vizinhança.

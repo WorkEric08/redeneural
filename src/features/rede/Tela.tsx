@@ -65,7 +65,7 @@ function lerCores(el: HTMLElement): CoresDaRede {
   return {
     sala: lerCor(el, '--sala'),
     papel: lerCor(el, '--papel'),
-    ouro: lerCor(el, '--ouro'),
+    ponte: lerCor(el, '--ponte'),
     fio: lerCor(el, '--rede-fio'),
     no: lerCor(el, '--rede-no'),
     mistura: ehMistura(mistura) ? mistura : 'source-over',

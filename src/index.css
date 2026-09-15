@@ -96,10 +96,12 @@
   --papel: var(--paleta-rich-black);
   --poeira: var(--paleta-yinmn-blue);
   --linha: color-mix(in oklab, var(--paleta-silver-lake) 45%, transparent);
-  /* O ouro de antes dava 2,97:1 como texto sobre sala clara — ilegível. Este
-     passa de 4,9:1 e continua lendo como ouro. */
-  --ouro: oklch(0.5 0.1 75);
-  --ouro-luz: oklch(0.62 0.11 78 / 0.2);
+  /* Pedido do usuário (15/09/2026): a ponte deixou de ser ouro e virou azul
+     claro — ver CLAUDE.md, "A ponte muda de ouro para azul". `--ponte` é o
+     texto/traço com contraste de leitura (4,73:1 sobre a sala clara);
+     `--ponte-luz` é a luz de verdade, sem o escurecimento que o texto precisa. */
+  --ponte: oklch(0.48 0.16 230);
+  --ponte-luz: oklch(0.6 0.16 230 / 0.2);
   --estante: oklch(1 0 0);
   --sombra-cartao: 0 1px 2px rgb(13 27 42 / 0.05), 0 6px 20px rgb(13 27 42 / 0.06);
   /* O aviso flutuante é o inverso da sala: escuro no dia, para não sumir entre
@@ -163,8 +165,8 @@
     --papel: var(--paleta-platinum);
     --poeira: var(--paleta-silver-lake);
     --linha: color-mix(in oklab, var(--paleta-yinmn-blue) 60%, transparent);
-    --ouro: oklch(0.84 0.13 82);
-    --ouro-luz: oklch(0.84 0.13 82 / 0.22);
+    --ponte: oklch(0.78 0.12 230);
+    --ponte-luz: oklch(0.78 0.12 230 / 0.24);
     /* O valor da sala de antes, e não `var(--sala)`: a lavagem é da estante, que
        ficou com as cores de antes (ver `.cores-de-antes`). */
     --lavagem: oklch(0.16 0.032 262);
@@ -198,8 +200,8 @@
   --papel: var(--paleta-platinum);
   --poeira: var(--paleta-silver-lake);
   --linha: color-mix(in oklab, var(--paleta-yinmn-blue) 60%, transparent);
-  --ouro: oklch(0.84 0.13 82);
-  --ouro-luz: oklch(0.84 0.13 82 / 0.22);
+  --ponte: oklch(0.78 0.12 230);
+  --ponte-luz: oklch(0.78 0.12 230 / 0.24);
   --lavagem: oklch(0.16 0.032 262);
   --ouro-gravado: oklch(0.84 0.13 82);
 
@@ -217,10 +219,15 @@
   --rede-mistura: lighter;
 }
 
-/* Congeladas até serem refeitas (pedido do usuário, 13/09/2026): a estante — com
-   a lombada de amostra e o fantasma do arrasto — e o retângulo da Rede. Eles
-   leem os mesmos tokens do resto do app, então os valores de antes da paleta
-   ficam presos aqui: mudar o app não pode mudá-los por tabela. */
+/* Congeladas até serem refeitas (pedido do usuário, 13/09/2026): a estante —
+   com a lombada de amostra e o fantasma do arrasto. Eles leem os mesmos
+   tokens do resto do app, então os valores de antes da paleta ficam presos
+   aqui: mudar o app não pode mudá-los por tabela.
+   (O retângulo da Rede saiu daqui em 14/09/2026, quando virou constelação em
+   tela cheia — ver "A Rede como constelação".)
+   Sem `--ponte`/`--ponte-luz`: o ponto de ponte da lombada (`.lombada-ponto`)
+   é o único elemento daqui que precisa da cor, e ele deixa `--ponte` cair da
+   cascata — a mesma azul viva do resto do app, e não uma presa no tempo. */
 .cores-de-antes {
   --sala: oklch(0.96 0.008 250);
   --parede: oklch(0.99 0.004 250);
@@ -228,8 +235,6 @@
   --papel: oklch(0.24 0.03 265);
   --poeira: oklch(0.52 0.03 265);
   --linha: oklch(0.88 0.014 255);
-  --ouro: oklch(0.62 0.11 78);
-  --ouro-luz: oklch(0.62 0.11 78 / 0.16);
   --lavagem: oklch(0.3 0.035 262);
 }
 
@@ -241,8 +246,6 @@
     --papel: oklch(0.94 0.008 85);
     --poeira: oklch(0.66 0.028 262);
     --linha: oklch(0.32 0.045 262);
-    --ouro: oklch(0.84 0.13 82);
-    --ouro-luz: oklch(0.84 0.13 82 / 0.22);
     --lavagem: oklch(0.16 0.032 262);
   }
 }
@@ -254,8 +257,6 @@
   --papel: oklch(0.94 0.008 85);
   --poeira: oklch(0.66 0.028 262);
   --linha: oklch(0.32 0.045 262);
-  --ouro: oklch(0.84 0.13 82);
-  --ouro-luz: oklch(0.84 0.13 82 / 0.22);
   --lavagem: oklch(0.16 0.032 262);
 }
 
@@ -267,8 +268,8 @@
   --color-papel: var(--papel);
   --color-poeira: var(--poeira);
   --color-linha: var(--linha);
-  --color-ouro: var(--ouro);
-  --color-ouro-luz: var(--ouro-luz);
+  --color-ponte: var(--ponte);
+  --color-ponte-luz: var(--ponte-luz);
   --color-ouro-gravado: var(--ouro-gravado);
   --color-destructive: var(--destructive);
 
@@ -283,23 +284,24 @@
 }
 
 @layer utilities {
-  /* O ouro é luz: sangra para fora do que ilumina, não é só pigmento sólido.
-     Reservado para a conexão que atravessa livros — ver seção "Direção
-     visual" do CLAUDE.md. */
-  .brilho-ouro {
+  /* A ponte é luz: sangra para fora do que ilumina, não é só pigmento sólido
+     (era ouro até 14/09/2026 — ver "A ponte muda de ouro para azul"; a regra
+     de sangrar continua a mesma, só a cor mudou). Reservado para a conexão
+     que atravessa livros — ver seção "Direção visual" do CLAUDE.md. */
+  .brilho-ponte {
     box-shadow:
-      0 0 0 1px var(--ouro-luz),
-      0 0 14px 2px var(--ouro-luz);
+      0 0 0 1px var(--ponte-luz),
+      0 0 14px 2px var(--ponte-luz);
   }
 
-  .brilho-ouro-texto {
-    text-shadow: 0 0 10px var(--ouro-luz);
+  .brilho-ponte-texto {
+    text-shadow: 0 0 10px var(--ponte-luz);
   }
 
   /* Mesma luz, halo mais fechado — para texto pequeno (contadores, badges),
      onde um blur largo vira neblina em vez de brilho. */
-  .brilho-ouro-texto-sm {
-    text-shadow: 0 0 4px var(--ouro-luz);
+  .brilho-ponte-texto-sm {
+    text-shadow: 0 0 4px var(--ponte-luz);
   }
 }
 
@@ -836,14 +838,15 @@ img {
   opacity: 0.2;
 }
 
-/* A ponte. Ouro é luz (CLAUDE.md, "Direção visual"): o livro do outro lado do
-   fio acende, em vez de só mudar de cor — e significa exatamente o que o ouro
-   sempre significou. */
+/* A ponte. A cor de ponte é luz (CLAUDE.md, "Direção visual"): o livro do
+   outro lado do fio acende, em vez de só mudar de cor — e significa
+   exatamente o que ela sempre significou (ouro até 14/09/2026, azul claro
+   desde 15/09/2026). */
 .lombada--livro[data-ponte] {
   z-index: 1;
   box-shadow:
-    0 0 0 1px color-mix(in oklab, var(--ouro) 60%, transparent),
-    0 0 20px 4px color-mix(in oklab, var(--ouro) 36%, transparent),
+    0 0 0 1px color-mix(in oklab, var(--ponte) 60%, transparent),
+    0 0 20px 4px color-mix(in oklab, var(--ponte) 36%, transparent),
     0 -2px 4px rgb(0 0 0 / 0.35);
   animation: ponte-acender 480ms ease-out;
 }
@@ -857,8 +860,8 @@ img {
   }
 }
 
-/* Onde ele vai cair: o outro livro dá um passo à frente, em luz de papel. Ouro
-   aqui diria "ponte", e trocar de lugar não é ponte.
+/* Onde ele vai cair: o outro livro dá um passo à frente, em luz de papel. A
+   cor de ponte aqui diria "ponte", e trocar de lugar não é ponte.
 
    Vem depois da ponte de propósito: largar sobre um livro que também é ponte é
    o caso comum (é justamente o que acende), e o anel de papel é a resposta ao
@@ -875,7 +878,7 @@ img {
 .lombada--livro[data-alvo][data-ponte] {
   box-shadow:
     0 0 0 2px color-mix(in oklab, var(--papel) 80%, transparent),
-    0 0 22px 5px color-mix(in oklab, var(--ouro) 36%, transparent),
+    0 0 22px 5px color-mix(in oklab, var(--ponte) 36%, transparent),
     0 10px 18px rgb(0 0 0 / 0.5);
 }
 
@@ -1020,6 +1023,10 @@ img {
   writing-mode: vertical-rl;
 }
 
+/* O sinal de ponte, e não decoração da lombada — por isso `--ponte`, não
+   `--ouro-gravado` (que é só o título gravado, igual em todo livro, tenha
+   ponte ou não). Até 14/09/2026 os dois liam a mesma cor por coincidência;
+   separar os tokens é o que deixa o ponto virar azul sem mudar o título. */
 .lombada-ponto {
   position: absolute;
   top: 6px;
@@ -1028,7 +1035,7 @@ img {
   height: 4px;
   transform: translateX(-50%);
   border-radius: 50%;
-  background: var(--ouro-gravado);
+  background: var(--ponte);
 }
 
 /* Seleção múltipla: o mesmo anel de papel do alvo de arrasto, porque os dois

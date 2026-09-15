@@ -154,7 +154,7 @@ function Espiar({ livro, livros, neuronios, pontes, onAbrirLivro }: Props & { li
         {totalDePontes > 0 && (
           <>
             {' · '}
-            <span className="text-ouro brilho-ouro-texto-sm">
+            <span className="text-ponte brilho-ponte-texto-sm">
               {contar(totalDePontes, 'ponte', 'pontes')}
             </span>
           </>
@@ -203,7 +203,7 @@ function Espiar({ livro, livros, neuronios, pontes, onAbrirLivro }: Props & { li
             {ligacoes.map(({ outro, quantas }) => (
               <li
                 key={outro.id}
-                className="border-ouro/35 flex h-9 items-center gap-2 rounded-full border pr-3 pl-2.5 text-sm"
+                className="border-ponte/35 flex h-9 items-center gap-2 rounded-full border pr-3 pl-2.5 text-sm"
               >
                 <span
                   className="size-2 shrink-0 rounded-full"
@@ -211,7 +211,7 @@ function Espiar({ livro, livros, neuronios, pontes, onAbrirLivro }: Props & { li
                   aria-hidden
                 />
                 {outro.titulo}
-                <span className="text-ouro font-dado text-xs tabular-nums">{quantas}</span>
+                <span className="text-ponte font-dado text-xs tabular-nums">{quantas}</span>
               </li>
             ))}
           </ul>

@@ -28,7 +28,7 @@ export function Fios({ lista }: { lista: readonly VizinhoDoNeuronio[] }) {
               <span
                 className={
                   v.conexao.cross
-                    ? 'text-ouro brilho-ouro-texto-sm block truncate text-sm'
+                    ? 'text-ponte brilho-ponte-texto-sm block truncate text-sm'
                     : 'text-papel block truncate text-sm'
                 }
               >
@@ -61,12 +61,12 @@ function Fio({ score, cross }: { score: number; cross: boolean }) {
         y1="6"
         x2="25"
         y2="6"
-        stroke={cross ? 'var(--ouro)' : 'var(--poeira)'}
+        stroke={cross ? 'var(--ponte)' : 'var(--poeira)'}
         strokeWidth={score === 0 ? 1 : 1 + score * 2.6}
         strokeLinecap="round"
         strokeDasharray={score === 0 ? '2 3' : undefined}
         opacity={score === 0 ? 0.45 : 0.35 + score * 0.6}
-        style={cross ? { filter: 'drop-shadow(0 0 3px var(--ouro-luz))' } : undefined}
+        style={cross ? { filter: 'drop-shadow(0 0 3px var(--ponte-luz))' } : undefined}
       />
     </svg>
   )

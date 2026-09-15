@@ -53,7 +53,7 @@ export default function Rede() {
   const mapa = useMemo(() => montarMapa(livros, neuronios, conexoes), [livros, neuronios, conexoes])
   const graus = useMemo(() => grausDoMapa(conexoes), [conexoes])
 
-  const douradas = conexoes.filter((c) => c.cross).length
+  const pontes = conexoes.filter((c) => c.cross).length
   const escolhido = neuronios.find((n) => n.id === selecionado)
   const livroDoEscolhido = livros.find((l) => l.id === escolhido?.livroId)
   const filtrando = livroEmFoco !== null || soAsPontes
@@ -102,8 +102,8 @@ export default function Rede() {
           ? `${contar(neuronios.length, 'neurônio', 'neurônios')} · ${contar(conexoes.length, 'conexão', 'conexões')} · `
           : 'Abrindo…'}
         {carregado && (
-          <span className="text-ouro brilho-ouro-texto-sm">
-            {contar(douradas, 'ponte', 'pontes')}
+          <span className="text-ponte brilho-ponte-texto-sm">
+            {contar(pontes, 'ponte', 'pontes')}
           </span>
         )}
         {livroFocado && ` · foco em ${livroFocado.titulo}`}
@@ -171,12 +171,12 @@ export default function Rede() {
               aria-pressed={soAsPontes}
               className={botao({ tipo: 'secundario', tamanho: 'pequeno' })}
             >
-              {/* O ícone acende em ouro porque é o desenho da ponte — o botão
-                  em si continua sem ouro. */}
+              {/* O ícone acende na cor de ponte porque é o desenho da ponte —
+                  o botão em si continua sem ela. */}
               <Waypoints
                 size={16}
                 aria-hidden
-                className={soAsPontes ? 'text-ouro' : 'text-poeira'}
+                className={soAsPontes ? 'text-ponte' : 'text-poeira'}
               />
               Só as pontes
             </button>

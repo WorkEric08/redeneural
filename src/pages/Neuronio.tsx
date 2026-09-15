@@ -244,11 +244,11 @@ function Nasceu({ vizinhos }: { vizinhos: readonly VizinhoDoNeuronio[] }) {
   }
 
   return (
-    <div className="border-ouro/40 bg-ouro-luz brilho-ouro animar-achado flex gap-3 rounded-2xl border px-4 py-3.5">
-      <Sparkles size={18} aria-hidden className="text-ouro mt-0.5 shrink-0" />
+    <div className="border-ponte/40 bg-ponte-luz brilho-ponte animar-achado flex gap-3 rounded-2xl border px-4 py-3.5">
+      <Sparkles size={18} aria-hidden className="text-ponte mt-0.5 shrink-0" />
       <div className="flex min-w-0 flex-col gap-1.5 text-sm leading-relaxed">
         <p>
-          <span className="text-ouro brilho-ouro-texto font-semibold">
+          <span className="text-ponte brilho-ponte-texto font-semibold">
             {pontes.length === 1 ? 'Achou uma ponte' : `Achou ${String(pontes.length)} pontes`}
           </span>{' '}
           — {listar(pontes.map((p) => `${p.outroTitulo}, em ${p.outroLivro}`))}.

@@ -10,8 +10,8 @@
  * - `secundario`: superfície com borda — as outras ações. Ligado
  *   (`aria-pressed`), vira realce.
  * - `fantasma`: só texto em Silver Lake Blue — voltar, fechar, ações de barra.
- * - `perigo`: apagar. Vermelho é, como o ouro, cor de significado fora da
- *   paleta.
+ * - `perigo`: apagar. Vermelho é, como a cor de ponte, cor de significado fora
+ *   da paleta.
  *
  * O primário desabilitado vira realce com texto apagado, e não Platinum
  * translúcido: meio transparente sobre a sala ele virava um bloco cinza que

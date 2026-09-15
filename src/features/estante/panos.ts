@@ -28,9 +28,12 @@ export function pano(
  * com claro e escuro — quem segue o tema é a lavagem aplicada por cima (ver
  * CLAUDE.md, "A estante"). Os três primeiros são os do seed.
  *
- * Nenhum cai na faixa do ouro: um livro amarelado se confundiria com uma ponte.
- * E todos são tons de pano, meio apagados — sob a luz da sala uma cor pura não
- * desbota, grita.
+ * Até 14/09/2026 nenhum caía na faixa do ouro, para um livro amarelado não se
+ * confundir com uma ponte. Desde 15/09/2026 a ponte é azul claro (pedido do
+ * usuário — ver CLAUDE.md, "A ponte muda de ouro para azul"), e **este risco
+ * voltou**: "Azul" e "Ardósia" agora caem perto da faixa da ponte — sinalizado
+ * ao usuário, decisão dele manter ou trocar. Todos são tons de pano, meio
+ * apagados — sob a luz da sala uma cor pura não desbota, grita.
  */
 export const PANOS = [
   { nome: 'Violeta', cor: '#7b6ae0' },

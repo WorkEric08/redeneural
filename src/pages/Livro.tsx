@@ -14,7 +14,7 @@ import { usePalacio } from '@/store/palacio'
  * Um livro aberto: os neurônios dele e os fios que saem de cada um.
  *
  * Cada neurônio é um cartão — o título e o começo do texto levam ao neurônio, e
- * os fios embaixo levam a quem ele está ligado. O fio dourado leva o nome do
+ * os fios embaixo levam a quem ele está ligado. O fio de ponte leva o nome do
  * livro do outro lado: sem isso, "atravessa livros" não quer dizer nada para
  * quem está lendo.
  */
@@ -88,7 +88,7 @@ export default function Livro() {
         <p className="text-poeira px-1 pt-5 pb-4 text-sm">
           {contar(meus.length, 'neurônio', 'neurônios')}
           {saindo > 0 && (
-            <span className="text-ouro brilho-ouro-texto-sm">
+            <span className="text-ponte brilho-ponte-texto-sm">
               {' '}
               · {contar(saindo, 'fio saindo', 'fios saindo')}
             </span>
