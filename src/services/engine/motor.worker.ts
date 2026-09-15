@@ -122,13 +122,18 @@ async function estadoAtual(): Promise<EstadoDoPalacio> {
  * organização de todas (nenhuma posição gravada ainda) é fria de verdade.
  */
 async function recalcularPosicoesDaRede(
-  nos: readonly NoDoGrafo[],
   conexoes: readonly { aId: Id; bId: Id; score: number }[],
 ): Promise<void> {
-  const anteriores = await repo.getPosicoesDaRede()
+  // Todo neurônio que existe, com vetor ou sem: o layout só precisa do id e das
+  // arestas. Pelos nós do grafo (só quem já tem embedding), quem ainda não
+  // passou pelo modelo ficava sem lugar — e invisível na Rede.
+  const [neuronios, anteriores] = await Promise.all([
+    repo.listNeuronios(),
+    repo.getPosicoesDaRede(),
+  ])
   const partidaFria = Object.keys(anteriores).length === 0
   const posicoes = calcularLayoutDaRede(
-    nos.map((n) => ({ id: n.id })),
+    neuronios.map((n) => ({ id: n.id })),
     conexoes.map((c) => ({ aId: c.aId, bId: c.bId, score: c.score })),
     new Map(Object.entries(anteriores)),
     {
@@ -140,6 +145,19 @@ async function recalcularPosicoesDaRede(
   const gravado: Record<Id, Ponto> = {}
   for (const [id, p] of posicoes) gravado[id] = p
   await repo.setPosicoesDaRede(gravado)
+}
+
+/**
+ * Garante, ao abrir, que todo neurônio tem lugar na Rede. As posições só eram
+ * calculadas numa escrita — então um palácio de antes delas (15/09/2026), que
+ * não teve neurônio criado, editado ou apagado desde então, abria a Rede com a
+ * contagem certa e nenhum ponto. Quem já tem lugar não se mexe: é a mesma
+ * partida quente de sempre.
+ */
+async function darLugarAQuemFalta(): Promise<void> {
+  const [neuronios, posicoes] = await Promise.all([repo.listNeuronios(), repo.getPosicoesDaRede()])
+  if (neuronios.every((n) => n.id in posicoes)) return
+  await recalcularPosicoesDaRede(await repo.listConexoes())
 }
 
 /** Calcula e grava o embedding que faltava. Devolve o neurônio já com vetor. */
@@ -181,7 +199,7 @@ async function reprocessarTudo(): Promise<EstadoDoPalacio> {
 
   await repo.replaceTodasConexoes(arestas.map((a) => arestaParaConexao(a, agora)))
   await repo.setPerfil(perfil, nos.length)
-  await recalcularPosicoesDaRede(nos, arestas)
+  await recalcularPosicoesDaRede(arestas)
 
   return estadoAtual()
 }
@@ -245,7 +263,7 @@ async function escrever(
   // A Rede reage ao grafo já assentado, com o que sobrou de antes como
   // partida quente — só este neurônio (e quem estava perto dele) se acomoda,
   // ninguém mais reembaralha.
-  await recalcularPosicoesDaRede(nos, await repo.listConexoes())
+  await recalcularPosicoesDaRede(await repo.listConexoes())
 
   const depois = await estadoAtual()
   return {
@@ -323,13 +341,13 @@ async function moverLivro(id: Id, prateleira: number, lugar: number): Promise<Es
  * há por que reprocessar o grafo por causa de um arrasto.
  */
 async function moverNeuronioNaRede(id: Id, ponto: Ponto): Promise<Readonly<Record<Id, Ponto>>> {
-  const nos = nosDeNeuronios(await repo.listNeuronios())
+  const neuronios = await repo.listNeuronios()
   const conexoes = await repo.listConexoes()
   const anteriores = await repo.getPosicoesDaRede()
   const partida = { ...anteriores, [id]: ponto }
 
   const posicoes = calcularLayoutDaRede(
-    nos.map((n) => ({ id: n.id })),
+    neuronios.map((n) => ({ id: n.id })),
     conexoes.map((c) => ({ aId: c.aId, bId: c.bId, score: c.score })),
     new Map(Object.entries(partida)),
     { ...OPCOES_LAYOUT_DA_REDE, iteracoes: ITERACOES_LAYOUT_INCREMENTAL },
@@ -346,6 +364,7 @@ async function responder(msg: ParaMotor): Promise<DoMotor> {
     switch (msg.tipo) {
       case 'carregar':
         await seedPalacio(repo)
+        await darLugarAQuemFalta()
         return { req: msg.req, ok: true, dados: await estadoAtual() }
 
       case 'criarNeuronio':
