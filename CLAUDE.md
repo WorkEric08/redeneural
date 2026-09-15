@@ -2064,6 +2064,18 @@ pelo mesmo motivo **fora do backup**: é derivado do grafo, recalculado na
 chegada. Nenhuma tabela nova, nenhum bump de versão do Dexie (o `meta` só
 indexa a chave, não o formato do documento).
 
+**Corrigido em 15/09/2026, visto no celular do usuário:** as posições só eram
+calculadas numa escrita, então um palácio de antes delas — sem neurônio
+criado, editado ou apagado desde então — abria a Rede com a contagem certa e
+**nenhum ponto**. E o layout recebia `nosDeNeuronios` (só quem tem
+embedding), deixando sem lugar quem ainda não passou pelo modelo. Agora o
+layout recebe todo neurônio que existe, e `carregar` chama
+`darLugarAQuemFalta`: se algum neurônio não tem posição, recalcula com
+partida quente — quem já tinha lugar não se mexe. Verificado com o seed de
+verdade (9 neurônios sem vetor) e um palácio de 60 com conexões e sem
+posições: os dois abriam com zero pixels desenhados e passaram a desenhar
+todos; reabrir não muda nenhuma posição.
+
 ### Dois bugs achados no caminho, os dois com teste de regressão
 
 - **A posição de um neurônio apagado sobrevivia no mapa.** A partida quente
