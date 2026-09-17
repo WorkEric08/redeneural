@@ -76,6 +76,11 @@ export function FormularioDeLivro({
           onEnviar({ titulo: titulo.trim(), cor, emblema, larguraLombada, comprimentoLombada })
         }
       }}
+      // O `autocomplete` do form, e não só do campo: é o sinal mais forte
+      // que a web tem contra o autofill do Android/Gboard (chave, cartão,
+      // localização) — pedido do usuário, 17/09/2026. Nenhum campo daqui é
+      // login, pagamento ou endereço.
+      autoComplete="off"
     >
       <div className="flex items-end gap-4">
         <label className="flex min-w-0 flex-1 flex-col">

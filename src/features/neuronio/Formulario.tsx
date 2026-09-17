@@ -156,6 +156,11 @@ export function Formulario({
           e.preventDefault()
           if (podeEnviar) onEnviar({ livroId, titulo, conteudo })
         }}
+        // O `autocomplete` do form, e não só de cada campo: é o sinal mais
+        // forte que a web tem contra o autofill do Android/Gboard (chave,
+        // cartão, localização) — pedido do usuário, 17/09/2026. Nenhum campo
+        // daqui é login, pagamento ou endereço.
+        autoComplete="off"
         className="flex min-h-dvh flex-col"
       >
         <BarraDeTopo
@@ -238,6 +243,7 @@ export function Formulario({
             }}
             aria-label="Com suas palavras"
             placeholder="Escreva com suas palavras."
+            autoComplete="off"
             className="placeholder:text-poeira [field-sizing:content] w-full flex-1 resize-none bg-transparent px-1 pt-4 pb-2 text-base leading-relaxed outline-none"
           />
         </div>

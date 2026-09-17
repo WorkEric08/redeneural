@@ -2840,6 +2840,46 @@ o ritmo (450ms de pausa, 850ms de animação) está bom, se a câmera enquadra
 o par (nó + vizinho) de um jeito que não corta nada, e se um toque no meio
 da sequência cancela limpo.
 
+## O autofill do Android/Gboard nos campos de texto (17/09/2026)
+
+Pedido do usuário, a partir de duas capturas: o teclado do Android mostra uma
+fileira de ícones (chave, cartão, localização) por cima dos campos de nome de
+livro e título de neurônio — o autofill do sistema oferecendo senhas, cartões
+e endereços salvos para campos que não são nada disso.
+
+**Isto não é o site.** É o Android Autofill Framework, do sistema
+operacional — o mesmo mecanismo que preenche login e cartão em qualquer app,
+não só no navegador. `autocomplete="off"` no campo é o sinal que a própria
+especificação HTML dá para "não me preencha", e já estava nos dois campos das
+capturas — mas o sinal mais forte que a web tem é o **mesmo atributo no
+`<form>` que envolve o campo**, não só nele: Chromium (a base do WebView
+Android) trata o `autocomplete` do formulário como o sinal de mais peso para
+decidir se avisa o Android que aquele conjunto de campos é autofillável.
+Nenhum dos dois `<form>` do app (`FormularioDeLivro.tsx`, o de livro;
+`Formulario.tsx`, o de neurônio) tinha isso — só os campos individuais.
+Corrigido nos dois, e fechada a última lacuna: a `<textarea>` do conteúdo do
+neurônio, que não tinha `autocomplete` nenhum.
+
+**Com isso, todo campo de texto do projeto tem `autocomplete="off"`** — os
+dois formulários (agora form **e** campo) e a busca (`Busca.tsx`, que já
+tinha o conjunto mais completo: `autoComplete`, `autoCorrect`,
+`autoCapitalize`, `spellCheck={false}`, por não viver dentro de um `<form>`).
+
+**Limite honesto:** isto é o que a web consegue controlar. Se o ícone
+continuar aparecendo mesmo assim, a causa está fora do alcance do código
+deste projeto — depende da versão do WebView/Chrome do aparelho e de qual
+serviço de autofill está ativo em Ajustes → Sistema → Idiomas e entrada →
+Serviço de preenchimento automático no Android do usuário. O controle
+realmente definitivo (`importantForAutofill` na `WebView` nativa) só existe
+depois de o app virar APK de verdade (Fase 9) — é um arquivo de
+`android/`, que este projeto não edita à mão por ser gerado pelo Capacitor;
+fica anotado aqui para quando essa fase acontecer, se o ícone persistir.
+
+**Não verificado num navegador de verdade nesta sessão** — mesma ressalva de
+sempre; esta em particular só se confirma vendo o teclado de um Android real,
+que é exatamente onde o problema foi visto. Typecheck, lint e os 270 testes
+continuam limpos (mudança sem lógica nova — só atributos).
+
 ## Fases
 
 0. ✅ Esqueleto (Vite/React/TS/Tailwind/PWA/Capacitor)
