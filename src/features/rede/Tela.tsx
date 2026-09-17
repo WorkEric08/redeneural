@@ -560,8 +560,10 @@ export function Tela({
         noArrastado.current = null
 
         if (alvoDoArrasto && eraUmDedoSo && arrastou.current > TOLERANCIA_DO_TOQUE) {
+          // Reposicionar não seleciona (pedido do usuário, 16/09/2026): soltar
+          // depois de arrastar só assenta a vizinhança. Abrir as informações é
+          // coisa de toque, no ramo abaixo — não de reposicionar.
           const mundo = paraOMundo(e.clientX, e.clientY)
-          onSelecionar(alvoDoArrasto.id)
           ultimoToque.current = null
           assentar(alvoDoArrasto.id, {
             x: alvoDoArrasto.origem.x + (mundo.x - alvoDoArrasto.mundoInicial.x),

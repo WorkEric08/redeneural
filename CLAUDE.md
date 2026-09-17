@@ -2453,6 +2453,16 @@ verdade. Typecheck, lint e os 249 testes automatizados continuam limpos —
 não há teste novo para a física do deslize, pelo mesmo padrão do resto do
 gesto de pinça/arrasto desta tela, que também não tem teste automatizado.
 
+## Reposicionar um neurônio não abre mais as informações dele (16/09/2026)
+
+Pedido do usuário. Soltar depois de arrastar um neurônio para outro lugar
+sempre chamava `onSelecionar`, então todo reposicionamento também acendia o
+cartão de informações lá embaixo — mesmo quando a intenção era só mover o
+nó. Removida a chamada em `Tela.tsx`: o ramo de soltar-depois-de-arrastar
+agora só assenta a vizinhança (`assentar`), sem selecionar nada. Um toque
+comum (sem arrastar de verdade, abaixo de `TOLERANCIA_DO_TOQUE`) continua
+selecionando normalmente — esse ramo do gesto não mudou.
+
 ## Fases
 
 0. ✅ Esqueleto (Vite/React/TS/Tailwind/PWA/Capacitor)
