@@ -3281,6 +3281,58 @@ em dois lugares: inline no livro (`ChevronDown`) e na Rede.
 sempre. Typecheck, lint e os 258 testes automatizados continuam limpos
 (sem teste novo — é remoção de JSX e imports, sem lógica pura nova).
 
+## URLs dentro do texto viram link (17/09/2026)
+
+Pedido do usuário: colar um link externo (o exemplo dado foi um vídeo do
+YouTube) dentro do texto de um neurônio e conseguir abri-lo, sem fugir do
+layout atual da tela de leitura.
+
+**Sem mexer no dado.** `conteudo` continua `string` pura de ponta a ponta —
+o mesmo motivo já registrado para o markdown em texto puro ("A barra de
+escrita acima do teclado": é o contrato do núcleo, o que o modelo de
+embedding lê, o que vai no backup). `dividirEmSegmentos` (nova,
+`features/neuronio/links.ts`, pura e testada — 7 testes) só olha o texto na
+hora de **desenhar** e separa em trechos comuns e URLs (`http://`/
+`https://`), sem gravar marcação nenhuma de volta no texto. Uma URL colada
+no meio de uma frase, com pontuação de frase colada nela (`"veja
+https://x.com/y, legal"`, `"(veja https://x.com/y)"`), tem a pontuação
+reconhecida como parte da frase, não da URL — testado com vírgula, ponto,
+parênteses e combinações.
+
+**`TextoComLinks`** (novo componente) substitui o `<p>` simples que
+desenhava `neuronio.conteudo` na tela cheia do neurônio: mesmas classes de
+sempre no `<p>` (`texto-do-usuario`, tamanho, `whitespace-pre-wrap`), só que
+agora o texto vem fatiado em segmentos, e cada URL vira um `<a target=
+"_blank" rel="noopener noreferrer">` no meio do fluxo — o texto ao redor
+não muda de posição nem de tamanho de caixa, só a URL ganha sublinhado.
+
+**Por que não fugiu do layout:** `break-all` só no `<a>`, não no parágrafo
+inteiro. `whitespace-pre-wrap` já quebra linha nos espaços normais de uma
+frase; uma URL longa não tem espaço nenhum para quebrar e, sem uma regra de
+quebra forçada, ela empurraria a caixa de texto para fora da tela (o mesmo
+tipo de estouro horizontal que o app evita em toda tela desde a Fase 6).
+Com `break-all` só na URL, ela quebra no meio de si mesma quando precisa,
+sem alterar como o resto do texto quebra.
+
+**Escopo: só a tela cheia do neurônio.** A prévia de duas linhas dentro do
+livro (`line-clamp-2` em `Livro.tsx`) continua mostrando o texto puro, sem
+linkificar — um link cortado no meio por `line-clamp` (mostrando só
+"https://youtu.be/abc" sem o resto, ou pior, cortando o próprio texto ao
+redor) seria mais confuso que útil ali, e tocar aquele cartão já abre os
+fios/a tela cheia, não o link.
+
+**Limite assumido:** só reconhece `http://`/`https://` — o caso pedido
+(colar um link) sempre vem com o protocolo. Um texto tipo "www.exemplo.com"
+sem protocolo continua texto puro.
+
+**Não verificado num navegador de verdade nesta sessão** — mesma ressalva
+de sempre: a quebra de linha da URL comprida foi conferida lendo o CSS
+(`break-all` vs. o `whitespace-pre-wrap` do parágrafo), não vista numa tela
+de verdade. Vale colar um link comprido de verdade e confirmar que ele
+quebra dentro da caixa, e que tocar nele abre numa aba nova. Typecheck,
+lint e os 265 testes automatizados (7 novos, de `links.ts`) continuam
+limpos.
+
 ## Fases
 
 0. ✅ Esqueleto (Vite/React/TS/Tailwind/PWA/Capacitor)

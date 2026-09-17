@@ -9,6 +9,7 @@ import { EtiquetaProcessando } from '@/components/EtiquetaProcessando'
 import { Folha } from '@/components/Folha'
 import type { NeuronioNaTela } from '@/core'
 import { vizinhosPorNeuronio } from '@/features/estante/resumo'
+import { TextoComLinks } from '@/features/neuronio/TextoComLinks'
 import { usePalacio } from '@/store/palacio'
 
 /** O que a confirmação guarda no histórico para saber como sair depois de apagar. */
@@ -177,9 +178,10 @@ export default function Neuronio() {
         </header>
 
         {neuronio.conteudo && (
-          <p className="texto-do-usuario px-1 text-[1.03rem] leading-[1.7] whitespace-pre-wrap">
-            {neuronio.conteudo}
-          </p>
+          <TextoComLinks
+            texto={neuronio.conteudo}
+            className="texto-do-usuario px-1 text-[1.03rem] leading-[1.7] whitespace-pre-wrap"
+          />
         )}
       </article>
 
