@@ -65,12 +65,6 @@ interface PalacioStore {
   apagarLivro: (id: string) => Promise<boolean>
   /** Põe o livro no lugar `(prateleira, lugar)`, empurrando se já houver livro ali. */
   moverLivro: (id: string, prateleira: number, lugar: number) => Promise<void>
-  /**
-   * Põe vários livros a partir de um lugar, cada um no próximo buraco, na mesma
-   * ordem relativa que já tinham entre si — um por vez, reaproveitando
-   * `moverLivro` (a mesma trava de "nunca perder livro" já vale ali).
-   */
-  moverVariosLivros: (ids: readonly string[], prateleira: number, lugar: number) => Promise<void>
   /** Tira o enfeite de um lugar sem livro: fica a madeira à mostra. */
   tirarEnfeite: (prateleira: number, lugar: number) => Promise<void>
   /** Devolve um enfeite a um lugar aberto. */
@@ -330,32 +324,6 @@ export const usePalacio = create<PalacioStore>()((set, get) => {
         set({ vagas: await engine.porEnfeite(prateleira, lugar) })
       } catch (e) {
         set({ vagas: antes, erro: mensagem(e) })
-      }
-    },
-
-    async moverVariosLivros(ids, prateleira, lugar) {
-      // Preserva a ordem relativa entre quem foi selecionado — do primeiro ao
-      // último na estante de hoje, e não na ordem em que foram tocados.
-      const porId = new Map(get().livros.map((l) => [l.id, l] as const))
-      const ordenados = [...ids].sort((a, b) => {
-        const la = porId.get(a)
-        const lb = porId.get(b)
-        if (!la || !lb) return 0
-        return la.prateleira - lb.prateleira || la.ordem - lb.ordem
-      })
-
-      // Cada um no próximo buraco a partir do lugar tocado: mover em grupo não
-      // empurra ninguém que já estava na prateleira.
-      let aPartirDe = lugar
-      for (const id of ordenados) {
-        const outros = get().livros.filter((l) => l.id !== id)
-        const destino = primeiroLugarLivre(outros, prateleira, aPartirDe)
-        if (destino === null) {
-          set({ aviso: `A prateleira ${String(prateleira + 1)} não tem lugar sem livro.` })
-          return
-        }
-        await get().moverLivro(id, prateleira, destino)
-        aPartirDe = destino + 1
       }
     },
 

@@ -33,12 +33,6 @@ interface Props {
   /** 0-100: para a amostra mostrar a mesma lavagem da estante. */
   intensidadeDaLuz: number
   onEnviar: (dados: NovoLivro) => void
-  /**
-   * Ausente numa tela cheia: sair é o "fechar" da barra de topo, como no
-   * formulário de neurônio — não precisa de um "Cancelar" a mais ocupando
-   * espaço. Presente na folha de editar, que não tem essa barra.
-   */
-  onCancelar?: () => void
 }
 
 /**
@@ -48,6 +42,10 @@ interface Props {
  * A amostra ao lado é a lombada como ela vai ficar na estante, com a mesma
  * lavagem de luz. Um quadradinho de cor pura enganaria: na prateleira nenhum
  * pano aparece com a cor que tem.
+ *
+ * Sempre tela cheia (pedido do usuário, 17/09/2026 — antes editar era uma
+ * folha, com um "Cancelar" ao lado do enviar): sair é o "fechar" da barra de
+ * topo, como o formulário de neurônio.
  */
 export function FormularioDeLivro({
   inicial,
@@ -55,7 +53,6 @@ export function FormularioDeLivro({
   ocupado = false,
   intensidadeDaLuz,
   onEnviar,
-  onCancelar,
 }: Props) {
   const [titulo, setTitulo] = useState(inicial.titulo)
   const [cor, setCor] = useState(inicial.cor)
@@ -230,34 +227,15 @@ export function FormularioDeLivro({
         </div>
       </fieldset>
 
-      {onCancelar ? (
-        <div className="grid grid-cols-2 gap-3">
-          <button
-            type="button"
-            onClick={onCancelar}
-            className={botao({ tipo: 'secundario', largo: true })}
-          >
-            Cancelar
-          </button>
-          <button
-            type="submit"
-            disabled={!podeEnviar}
-            className={botao({ tipo: 'primario', largo: true })}
-          >
-            {rotuloDeEnvio}
-          </button>
-        </div>
-      ) : (
-        <div className="barra-de-acao md:flex md:justify-end">
-          <button
-            type="submit"
-            disabled={!podeEnviar}
-            className={`${botao({ tipo: 'primario', largo: true })} md:w-auto md:min-w-44`}
-          >
-            {rotuloDeEnvio}
-          </button>
-        </div>
-      )}
+      <div className="barra-de-acao md:flex md:justify-end">
+        <button
+          type="submit"
+          disabled={!podeEnviar}
+          className={`${botao({ tipo: 'primario', largo: true })} md:w-auto md:min-w-44`}
+        >
+          {rotuloDeEnvio}
+        </button>
+      </div>
     </form>
   )
 }

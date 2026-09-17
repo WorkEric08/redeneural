@@ -1,4 +1,3 @@
-import { Check } from 'lucide-react'
 import { createPortal } from 'react-dom'
 
 import { contar } from '@/lib/plural'
@@ -36,8 +35,6 @@ interface Props {
   ponte: boolean
   /** Acabou de nascer: chega à prateleira em vez de só aparecer nela. */
   chegando: boolean
-  /** Modo de seleção múltipla ligado e este livro está marcado. */
-  selecionado: boolean
   /** 0-100: o quanto a luz da sala lava a cor do pano em repouso. */
   intensidadeDaLuz: number
   manipular: ManipulacaoDaLombada
@@ -66,13 +63,11 @@ export function Lombada({
   alvo,
   ponte,
   chegando,
-  selecionado,
   intensidadeDaLuz,
   manipular,
 }: Props) {
   const altura =
-    item.livro.comprimentoLombada ??
-    ALTURA_MINIMA + item.altura * (ALTURA_MAXIMA - ALTURA_MINIMA)
+    item.livro.comprimentoLombada ?? ALTURA_MINIMA + item.altura * (ALTURA_MAXIMA - ALTURA_MINIMA)
 
   return (
     <button
@@ -83,28 +78,20 @@ export function Lombada({
       data-alvo={alvo || undefined}
       data-ponte={ponte || undefined}
       data-chegando={chegando || undefined}
-      data-selecionado={selecionado || undefined}
       className="lombada lombada--livro"
       style={{
         ...pano(item.livro.cor, intensidadeDaLuz),
         height: `${String(Math.round(altura * 10) / 10)}%`,
         width: `${String(largura)}px`,
       }}
-      aria-label={`${item.livro.titulo}, ${contar(item.neuronios, 'neurônio', 'neurônios')}${selecionado ? ', selecionado' : ''}`}
-      aria-pressed={selecionado}
+      aria-label={`${item.livro.titulo}, ${contar(item.neuronios, 'neurônio', 'neurônios')}`}
       aria-haspopup="dialog"
       {...manipular}
     >
       <span className="lombada-titulo">{item.livro.titulo}</span>
 
       {item.saindo > 0 && <span className="lombada-ponto brilho-ponte" aria-hidden />}
-      {selecionado ? (
-        <span className="lombada-selecionado" aria-hidden>
-          <Check size={11} strokeWidth={3} aria-hidden />
-        </span>
-      ) : (
-        <EmblemaDaLombada chave={item.livro.emblema} />
-      )}
+      <EmblemaDaLombada chave={item.livro.emblema} />
     </button>
   )
 }

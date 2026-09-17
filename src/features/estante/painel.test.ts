@@ -9,7 +9,6 @@ describe('painel da estante na URL', () => {
     const paineis: Painel[] = [
       { tipo: 'espiar', livroId: '382f8b34-7e8e-4074-ab84-ad134110b691' },
       { tipo: 'acoes', livroId: 'abc' },
-      { tipo: 'editar', livroId: 'abc' },
       { tipo: 'apagar', livroId: 'abc' },
     ]
 

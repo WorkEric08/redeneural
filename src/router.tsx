@@ -4,6 +4,7 @@ import App from '@/App'
 import Ajustes from '@/pages/Ajustes'
 import Busca from '@/pages/Busca'
 import Editar from '@/pages/Editar'
+import EditarLivro from '@/pages/EditarLivro'
 import Estante from '@/pages/Estante'
 import Livro from '@/pages/Livro'
 import Neuronio from '@/pages/Neuronio'
@@ -25,6 +26,7 @@ export const router = createBrowserRouter([
     children: [
       { index: true, element: <Estante /> },
       { path: 'livro/:livroId', element: <Livro /> },
+      { path: 'livro/:livroId/editar', element: <EditarLivro /> },
       { path: 'rede', element: <Rede /> },
       { path: 'novo', element: <Novo /> },
       { path: 'novo-livro', element: <NovoLivro /> },

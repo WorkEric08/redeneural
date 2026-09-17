@@ -8,14 +8,14 @@
  * baixo do painel.
  */
 
-export type TipoComLivro = 'espiar' | 'acoes' | 'editar' | 'apagar'
+export type TipoComLivro = 'espiar' | 'acoes' | 'apagar'
 
 export type Painel =
   | { tipo: TipoComLivro; livroId: string }
   /** O menu de um lugar sem livro: criar ali, pôr ou tirar o enfeite. */
   | { tipo: 'lugar'; prateleira: number; lugar: number }
 
-const COM_LIVRO: readonly TipoComLivro[] = ['espiar', 'acoes', 'editar', 'apagar']
+const COM_LIVRO: readonly TipoComLivro[] = ['espiar', 'acoes', 'apagar']
 
 /** `?lugar=2-7`: prateleira e lugar, contados do zero como no banco. */
 const LUGAR = /^(\d{1,3})-(\d{1,3})$/

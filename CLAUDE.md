@@ -3080,6 +3080,59 @@ fundo real (dá para confiar nisso), mas a barra de status e a splash screen
 de verdade só se veem num Android de verdade. Typecheck, lint e os 273
 testes continuam limpos (mudança de assets e configuração, sem lógica nova).
 
+## Editar livro vira rota própria, e a seleção múltipla sai (17/09/2026)
+
+Dois pedidos do usuário sobre o menu de ações de um livro (segurar na
+estante): trocar o texto de "Renomear e trocar o pano" para "Renomear e
+editar livro", tirar "Selecionar vários" do menu, e fazer o editar abrir
+como tela cheia — a mesma forma de `/novo-livro` — em vez da folha que
+abria hoje.
+
+### Editar livro: de folha-dentro-de-folha para rota
+
+`editar` saiu do tipo `Painel` (`painel.ts`) e virou `/livro/:livroId/editar`
+(nova página, `EditarLivro.tsx`, espelhando `NovoLivro.tsx` ponta a ponta:
+mesma barra de topo, mesmo `FormularioDeLivro`, só com `inicial` vindo do
+livro existente em vez de vazio). O botão no menu de ações virou `<Link
+replace>`, no mesmo padrão de "Novo neurônio neste livro" — `replace` para o
+painel de ações não ficar no histórico atrás da tela de editar; voltar dali
+cai direto na estante.
+
+**`FormularioDeLivro` perdeu o `onCancelar`.** Ele existia só para a folha
+de editar ter um botão "Cancelar" ao lado do salvar — sem folha, virou
+código morto (ninguém mais passa essa prop). Removido dos dois lados: o
+prop e o ramo condicional que desenhava os dois botões lado a lado. O
+formulário agora só tem o caminho de tela cheia — o mesmo que
+`NovoLivro.tsx` sempre usou.
+
+### Seleção múltipla (Fase 14) removida por completo
+
+"Selecionar vários" era a **única** porta para o modo de seleção — sem ela,
+nada mais no app liga `selecionando` a `true`. Deixar o resto ligado seria
+código sem uso concreto (regra 7 do mestre), o mesmo raciocínio das
+remoções de 14/09/2026 (modo organizar, ordenar, nome de prateleira):
+melhor tirar tudo agora do que deixar meio-removido.
+
+Saiu de ponta a ponta: `Estante.tsx` (estado `selecionados`, a fileira de
+baixo alternativa "N livros selecionados · toque num lugar..."),
+`Movel.tsx` (a prop e o desvio no gesto — tocar sempre espia agora, nunca
+mais alterna seleção), `Lombada.tsx` (o selo de check no pé da lombada — o
+emblema, que dividia aquele lugar com ele, agora aparece sempre), `index.css`
+(`.lombada-selecionado`, `.lombada--livro[data-selecionado]`), e
+`moverVariosLivros` da store (`palacio.ts`) — a única coisa que ele fazia
+era mover o grupo marcado, e não existe mais grupo marcado.
+
+**Ficou:** `primeiroLugarLivre` (o helper que `moverVariosLivros` usava) —
+continua servindo `criarLivro`, `motor.worker.ts` e `dexieRepo.ts`, então
+não tinha por que sair.
+
+**Não verificado num navegador de verdade nesta sessão** — mesma ressalva de
+sempre. Vale conferir: o menu de ações mostra só "Renomear e editar livro",
+"Novo neurônio neste livro" e "Apagar livro"; tocar em editar abre a tela
+cheia com os dados certos; salvar volta para a estante; voltar sem salvar
+também cai na estante, não no menu. Typecheck, lint e os 273 testes
+continuam limpos.
+
 ## Fases
 
 0. ✅ Esqueleto (Vite/React/TS/Tailwind/PWA/Capacitor)

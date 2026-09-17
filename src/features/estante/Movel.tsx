@@ -28,16 +28,8 @@ interface Props {
   quantidadeDePrateleiras: number
   /** 0-100: o quanto a luz da sala lava a cor do pano em repouso. */
   intensidadeDaLuz: number
-  /**
-   * Quem está marcado para mover em grupo. Não vazio liga o modo de seleção:
-   * tocar um livro marca/desmarca em vez de espiar, e tocar um lugar sem livro
-   * põe o grupo inteiro ali em vez de criar um livro novo.
-   */
-  selecionados: ReadonlySet<string>
   onEspiar: (livroId: string) => void
   onAcoes: (livroId: string) => void
-  onAlternarSelecao: (livroId: string) => void
-  onMoverSelecionadosPara: (prateleira: number, lugar: number) => void
   /** Põe o livro no lugar `(prateleira, lugar)` — mesma assinatura da store. */
   onMover: (livroId: string, prateleira: number, lugar: number) => void
   onNovo: (prateleira: number, lugar: number) => void
@@ -68,34 +60,25 @@ export function Movel({
   chegandoId,
   quantidadeDePrateleiras,
   intensidadeDaLuz,
-  selecionados,
   onEspiar,
   onAcoes,
-  onAlternarSelecao,
-  onMoverSelecionadosPara,
   onMover,
   onNovo,
   onAcoesDoLugar,
 }: Props) {
-  const selecionando = selecionados.size > 0
-
   const prateleiras = useMemo(
     () => montarPrateleiras(estante, vagas, quantidadeDePrateleiras),
     [estante, vagas, quantidadeDePrateleiras],
   )
   const { gesto, lugarSegurado, manipular, manipularLugar, registrarFantasma } = useManipularLivros(
     {
-      // Selecionando, tocar marca/desmarca em vez de espiar — o resto do gesto
-      // (segurar, arrastar um livro só) continua igual, sem precisar o hook
-      // saber que existe seleção.
-      onEspiar: selecionando ? onAlternarSelecao : onEspiar,
+      onEspiar,
       onAcoes,
       onMover: (livroId, alvo) => {
         onMover(livroId, alvo.prateleira, alvo.lugar)
       },
       onTocarLugar: ({ prateleira, lugar }) => {
-        if (selecionando) onMoverSelecionadosPara(prateleira, lugar)
-        else onNovo(prateleira, lugar)
+        onNovo(prateleira, lugar)
       },
       onAcoesDoLugar: ({ prateleira, lugar }) => {
         onAcoesDoLugar(prateleira, lugar)
@@ -144,7 +127,6 @@ export function Movel({
                     }
                     ponte={(pontesDoFoco?.get(lugar.item.livro.id) ?? 0) > 0}
                     chegando={chegandoId === lugar.item.livro.id}
-                    selecionado={selecionados.has(lugar.item.livro.id)}
                     intensidadeDaLuz={intensidadeDaLuz}
                     manipular={manipular(lugar.item.livro.id)}
                   />
@@ -158,7 +140,6 @@ export function Movel({
                       mesmoLugar(lugarSegurado, prateleira, lugar.indice) ||
                       mesmoLugar(lugarEscolhido, prateleira, lugar.indice)
                     }
-                    selecionando={selecionando}
                     manipular={manipularLugar({ prateleira, lugar: lugar.indice })}
                   />
                 ),
@@ -194,7 +175,6 @@ function LugarSemLivro({
   prateleira,
   alvo,
   realce,
-  selecionando,
   manipular,
 }: {
   lugar: Exclude<Lugar, { tipo: 'livro' }>
@@ -203,7 +183,6 @@ function LugarSemLivro({
   alvo: boolean
   /** Segurado agora, ou com o menu aberto. */
   realce: boolean
-  selecionando: boolean
   manipular: ManipulacaoDaLombada
 }) {
   const nome = `Prateleira ${String(prateleira + 1)}, lugar ${String(lugar.indice + 1)}`
@@ -217,11 +196,7 @@ function LugarSemLivro({
       data-realce={realce || undefined}
       className={`lugar lugar--${lugar.tipo}`}
       style={{ width: `${String(lugar.largura)}px` }}
-      aria-label={
-        selecionando
-          ? `${nome}: pôr os livros marcados aqui`
-          : `${nome}, ${oQueTem}: criar um livro aqui`
-      }
+      aria-label={`${nome}, ${oQueTem}: criar um livro aqui`}
       {...manipular}
     >
       {lugar.tipo === 'enfeite' && (

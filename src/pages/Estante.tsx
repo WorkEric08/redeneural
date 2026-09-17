@@ -1,4 +1,4 @@
-import { Search, X } from 'lucide-react'
+import { Search } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 
@@ -36,9 +36,7 @@ export default function Estante() {
     quantidadeDePrateleiras,
     intensidadeDaLuz,
     moverLivro,
-    editarLivro,
     apagarLivro,
-    moverVariosLivros,
     tirarEnfeite,
     porEnfeite,
   } = usePalacio()
@@ -50,10 +48,6 @@ export default function Estante() {
   // busca já na inicialização, e não numa reação a ela (o efeito abaixo só
   // limpa a URL, sem repetir esta leitura).
   const [chegandoId, setChegandoId] = useState<string | null>(() => busca.get('chegou'))
-  // Vazio: modo de seleção desligado. Ganhar o primeiro id já liga o modo —
-  // não precisa de uma flag a mais (ver Movel.tsx).
-  const [selecionados, setSelecionados] = useState<ReadonlySet<string>>(new Set())
-  const selecionando = selecionados.size > 0
 
   const estante = useMemo(
     () => montarEstante(livros, neuronios, conexoes),
@@ -111,15 +105,6 @@ export default function Estante() {
   const lugarEscolhido =
     painel?.tipo === 'lugar' ? { prateleira: painel.prateleira, lugar: painel.lugar } : null
 
-  function alternarSelecao(livroId: string): void {
-    setSelecionados((atual) => {
-      const proximo = new Set(atual)
-      if (proximo.has(livroId)) proximo.delete(livroId)
-      else proximo.add(livroId)
-      return proximo
-    })
-  }
-
   return (
     <div className="animar-entrada flex flex-col gap-5">
       {/* A altura mínima é a tela inteira menos o respiro do `<main>` (0px no
@@ -139,7 +124,6 @@ export default function Estante() {
           chegandoId={chegandoId}
           quantidadeDePrateleiras={quantidadeDePrateleiras}
           intensidadeDaLuz={intensidadeDaLuz}
-          selecionados={selecionados}
           onEspiar={(livroId) => {
             // Um espiar novo nunca herda a abertura de um anterior que foi
             // desistida no meio — senão ela recomeçaria sozinha.
@@ -148,12 +132,6 @@ export default function Estante() {
           }}
           onAcoes={(livroId) => {
             abrir({ tipo: 'acoes', livroId })
-          }}
-          onAlternarSelecao={alternarSelecao}
-          onMoverSelecionadosPara={(prateleira, lugar) => {
-            void moverVariosLivros([...selecionados], prateleira, lugar).then(() => {
-              setSelecionados(new Set())
-            })
           }}
           onMover={(livroId, prateleira, lugar) => {
             void moverLivro(livroId, prateleira, lugar)
@@ -166,45 +144,24 @@ export default function Estante() {
           }}
         />
 
-        {selecionando ? (
-          <div className="mt-auto flex h-14 items-center gap-3">
-            {/* Substitui a fileira normal — a mesma folga do botão de criar
-                (Dial) no canto inferior direito vale aqui também. */}
-            <button
-              type="button"
-              aria-label="Cancelar seleção"
-              className={botao({ tipo: 'secundario', tamanho: 'icone' })}
-              onClick={() => {
-                setSelecionados(new Set())
-              }}
-            >
-              <X size={18} aria-hidden />
-            </button>
-            <p className="text-poeira min-w-0 flex-1 truncate text-xs">
-              {contar(selecionados.size, 'livro selecionado', 'livros selecionados')} · toque num
-              lugar sem livro para pôr ali
-            </p>
-          </div>
-        ) : (
-          <div className="mt-auto flex h-14 items-center gap-3">
-            {/* O botão vem antes do texto, e não depois: o botão de criar
-                (Dial) mora fixo no canto inferior direito, e um botão
-                colocado depois de um `flex-1` acaba empurrado até lá —
-                ficaria atrás dele, inalcançável. */}
-            <Link
-              to="/busca"
-              aria-label="Buscar"
-              className={botao({ tipo: 'secundario', tamanho: 'icone' })}
-            >
-              <Search size={18} aria-hidden />
-            </Link>
-            <p className="text-poeira min-w-0 flex-1 truncate text-xs">
-              {carregado
-                ? `${contar(livros.length, 'livro', 'livros')} · ${contar(neuronios.length, 'neurônio', 'neurônios')} · ${contar(conexoes.length, 'conexão', 'conexões')}`
-                : 'Abrindo o palácio…'}
-            </p>
-          </div>
-        )}
+        <div className="mt-auto flex h-14 items-center gap-3">
+          {/* O botão vem antes do texto, e não depois: o botão de criar
+              (Dial) mora fixo no canto inferior direito, e um botão
+              colocado depois de um `flex-1` acaba empurrado até lá —
+              ficaria atrás dele, inalcançável. */}
+          <Link
+            to="/busca"
+            aria-label="Buscar"
+            className={botao({ tipo: 'secundario', tamanho: 'icone' })}
+          >
+            <Search size={18} aria-hidden />
+          </Link>
+          <p className="text-poeira min-w-0 flex-1 truncate text-xs">
+            {carregado
+              ? `${contar(livros.length, 'livro', 'livros')} · ${contar(neuronios.length, 'neurônio', 'neurônios')} · ${contar(conexoes.length, 'conexão', 'conexões')}`
+              : 'Abrindo o palácio…'}
+          </p>
+        </div>
       </div>
 
       <PaineisDaEstante
@@ -218,14 +175,9 @@ export default function Estante() {
         neuronios={neuronios}
         pontes={pontes}
         ocupado={ocupado}
-        intensidadeDaLuz={intensidadeDaLuz}
         onFechar={fechar}
         onTrocarPainel={trocar}
-        onEditar={editarLivro}
         onApagar={apagarLivro}
-        onIniciarSelecao={(livroId) => {
-          setSelecionados(new Set([livroId]))
-        }}
         onAbrirLivro={abrirLivro}
         onTirarEnfeite={tirarEnfeite}
         onPorEnfeite={porEnfeite}

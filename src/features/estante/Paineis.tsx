@@ -1,11 +1,4 @@
-import {
-  CheckSquare,
-  ChevronRight,
-  PencilLine,
-  Plus,
-  RectangleVertical,
-  Trash2,
-} from 'lucide-react'
+import { ChevronRight, PencilLine, Plus, RectangleVertical, Trash2 } from 'lucide-react'
 import { useState, type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 
@@ -22,9 +15,7 @@ import {
   type Vaga,
 } from '@/core'
 import { contar } from '@/lib/plural'
-import type { NovoLivro } from '@/store/palacio'
 
-import { FormularioDeLivro } from './FormularioDeLivro'
 import type { Painel } from './painel'
 
 interface Props {
@@ -35,13 +26,9 @@ interface Props {
   neuronios: readonly NeuronioNaTela[]
   pontes: ReadonlyMap<Id, ReadonlyMap<Id, number>>
   ocupado: boolean
-  /** 0-100: para a amostra do formulário mostrar a mesma lavagem da estante. */
-  intensidadeDaLuz: number
   onFechar: () => void
   onTrocarPainel: (painel: Painel) => void
-  onEditar: (livroId: string, dados: NovoLivro) => Promise<boolean>
   onApagar: (livroId: string) => Promise<boolean>
-  onIniciarSelecao: (livroId: string) => void
   /** "Abrir o livro": quem chama anima o livro saindo da estante e só então troca de tela. */
   onAbrirLivro: (livroId: string) => void
   onTirarEnfeite: (prateleira: number, lugar: number) => Promise<void>
@@ -70,7 +57,7 @@ function rotuloDo(painel: Painel | null, livros: readonly Livro[]): string {
   if (painel.tipo === 'lugar') return nomeDoLugar(painel.prateleira, painel.lugar)
 
   const titulo = livros.find((l) => l.id === painel.livroId)?.titulo ?? 'livro'
-  const acao = { espiar: 'Espiar', acoes: 'Ações de', editar: 'Editar', apagar: 'Apagar' }
+  const acao = { espiar: 'Espiar', acoes: 'Ações de', apagar: 'Apagar' }
   return `${acao[painel.tipo]} ${titulo}`
 }
 
@@ -88,31 +75,10 @@ function Conteudo(props: Props & { painel: Painel }) {
   const livro = livros.find((l) => l.id === painel.livroId)
   if (!livro) return <Sumiu onFechar={onFechar} />
 
+  // Só sobra 'acoes' depois dos ifs acima — 'editar' virou rota própria
+  // (/livro/:livroId/editar, pedido do usuário, 17/09/2026), não painel.
   if (painel.tipo === 'espiar') return <Espiar {...props} livro={livro} />
-  if (painel.tipo === 'acoes') return <Acoes {...props} livro={livro} />
-
-  return (
-    <div className="flex flex-col gap-6">
-      <Cabecalho livro={livro}>Renomear e trocar o pano</Cabecalho>
-      <FormularioDeLivro
-        inicial={{
-          titulo: livro.titulo,
-          cor: livro.cor,
-          emblema: livro.emblema,
-          larguraLombada: livro.larguraLombada,
-          comprimentoLombada: livro.comprimentoLombada,
-        }}
-        rotuloDeEnvio="Salvar"
-        intensidadeDaLuz={props.intensidadeDaLuz}
-        onCancelar={onFechar}
-        onEnviar={(dados) => {
-          void props.onEditar(livro.id, dados).then((ok) => {
-            if (ok) onFechar()
-          })
-        }}
-      />
-    </div>
-  )
+  return <Acoes {...props} livro={livro} />
 }
 
 function Cabecalho({ livro, children }: { livro: Livro; children?: ReactNode }) {
@@ -235,14 +201,7 @@ function Espiar({ livro, livros, neuronios, pontes, onAbrirLivro }: Props & { li
   )
 }
 
-function Acoes({
-  livro,
-  neuronios,
-  ocupado,
-  onTrocarPainel,
-  onFechar,
-  onIniciarSelecao,
-}: Props & { livro: Livro }) {
+function Acoes({ livro, neuronios, ocupado, onTrocarPainel }: Props & { livro: Livro }) {
   const quantos = neuronios.filter((n) => n.livroId === livro.id).length
 
   return (
@@ -251,16 +210,18 @@ function Acoes({
 
       <ul className="cartao flex flex-col">
         <li className="linha-de-lista p-0">
-          <button
-            type="button"
-            className="flex min-h-14 w-full items-center gap-3.5 px-4 text-left"
-            onClick={() => {
-              onTrocarPainel({ tipo: 'editar', livroId: livro.id })
-            }}
+          {/* Rota própria, e não um painel: a tela cheia de editar precisa
+              das mesmas informações do livro que /novo-livro tem para criar
+              (pedido do usuário, 17/09/2026). `replace`: o painel de ações
+              não fica no histórico atrás dela. */}
+          <Link
+            to={`/livro/${livro.id}/editar`}
+            replace
+            className="flex min-h-14 w-full items-center gap-3.5 px-4"
           >
             <PencilLine size={19} aria-hidden className="text-poeira" />
-            Renomear e trocar o pano
-          </button>
+            Renomear e editar livro
+          </Link>
         </li>
         <li className="linha-de-lista p-0">
           <Link
@@ -271,19 +232,6 @@ function Acoes({
             <Plus size={19} aria-hidden className="text-poeira" />
             Novo neurônio neste livro
           </Link>
-        </li>
-        <li className="linha-de-lista p-0">
-          <button
-            type="button"
-            className="flex min-h-14 w-full items-center gap-3.5 px-4 text-left"
-            onClick={() => {
-              onIniciarSelecao(livro.id)
-              onFechar()
-            }}
-          >
-            <CheckSquare size={19} aria-hidden className="text-poeira" />
-            Selecionar vários
-          </button>
         </li>
         <li className="linha-de-lista p-0">
           {/* Apagar durante um processamento deixaria o motor gravando o vetor de

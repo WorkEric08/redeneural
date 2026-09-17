@@ -997,35 +997,10 @@ img {
   background: var(--ponte);
 }
 
-/* Seleção múltipla: o mesmo anel de papel do alvo de arrasto, porque os dois
-   dizem "este aqui" sem depender de cor — ver `.lombada--livro[data-alvo]`. */
-.lombada--livro[data-selecionado] {
-  box-shadow:
-    0 0 0 2px color-mix(in oklab, var(--papel) 80%, transparent),
-    0 -2px 4px rgb(0 0 0 / 0.35);
-}
-
-/* O selo no pé da lombada — o ponto de ponte já ocupa o topo. */
-.lombada-selecionado {
-  position: absolute;
-  bottom: 6px;
-  left: 50%;
-  display: grid;
-  width: 16px;
-  height: 16px;
-  transform: translateX(-50%);
-  place-items: center;
-  border-radius: 50%;
-  background: var(--papel);
-  color: var(--sala);
-}
-
-/* O emblema — um ícone extra opcional (Fase 16), no mesmo pé da lombada que o
-   selo de "selecionado" ocupa durante a seleção múltipla; os dois nunca
-   aparecem juntos (`Lombada.tsx` só desenha o emblema quando não está
-   selecionado). Cor fixa e clara, não um token de tema: a lombada é sempre um
-   objeto escuro nos dois temas, e um ícone teria de ser sempre claro também —
-   nunca dourado, que é só da ponte. */
+/* O emblema — um ícone extra opcional (Fase 16), no pé da lombada. Cor fixa e
+   clara, não um token de tema: a lombada é sempre um objeto escuro nos dois
+   temas, e um ícone teria de ser sempre claro também — nunca dourado, que é
+   só da ponte. */
 .lombada-emblema {
   position: absolute;
   bottom: 7px;
