@@ -120,6 +120,40 @@ describe('DexieRepo', () => {
     expect(await repo.listNeuronios()).toHaveLength(2)
   })
 
+  it('lista neurônios do mais recente para o mais antigo, não na ordem do uuid', async () => {
+    await repo.upsertLivro(livro('l1', 'Psicologia'))
+    // Fora de ordem de propósito, e com ids cuja ordem alfabética contraria a
+    // cronológica: sem ordenação, a lista sairia na ordem da chave primária.
+    await repo.upsertNeuronio({ ...neuronio('a', 'l1'), createdAt: new Date('2026-02-01') })
+    await repo.upsertNeuronio({ ...neuronio('c', 'l1'), createdAt: new Date('2026-03-01') })
+    await repo.upsertNeuronio({ ...neuronio('b', 'l1'), createdAt: new Date('2026-01-01') })
+
+    expect((await repo.listNeuronios()).map((n) => n.id)).toEqual(['c', 'a', 'b'])
+    expect((await repo.listNeuronios('l1')).map((n) => n.id)).toEqual(['c', 'a', 'b'])
+  })
+
+  it('editar não muda o lugar na lista — a ordem é de criação, não de alteração', async () => {
+    await repo.upsertLivro(livro('l1', 'Psicologia'))
+    const velho = { ...neuronio('a', 'l1'), createdAt: new Date('2026-01-01') }
+    await repo.upsertNeuronio(velho)
+    await repo.upsertNeuronio({ ...neuronio('b', 'l1'), createdAt: new Date('2026-02-01') })
+
+    await repo.upsertNeuronio({ ...velho, titulo: 'corrigido', updatedAt: new Date('2026-03-01') })
+
+    expect((await repo.listNeuronios()).map((n) => n.id)).toEqual(['b', 'a'])
+  })
+
+  it('dois neurônios do mesmo instante não trocam de lugar entre leituras', async () => {
+    await repo.upsertLivro(livro('l1', 'Psicologia'))
+    const mesmoInstante = new Date('2026-02-01')
+    await repo.upsertNeuronio({ ...neuronio('z', 'l1'), createdAt: mesmoInstante })
+    await repo.upsertNeuronio({ ...neuronio('y', 'l1'), createdAt: mesmoInstante })
+
+    const primeira = (await repo.listNeuronios()).map((n) => n.id)
+    expect(primeira).toEqual(['y', 'z'])
+    expect((await repo.listNeuronios()).map((n) => n.id)).toEqual(primeira)
+  })
+
   it('guarda o embedding como Float32Array, não como array JSON', async () => {
     const embedding = new Float32Array([0.1, -0.2, 0.3])
     await repo.upsertLivro(livro('l1', 'Psicologia'))

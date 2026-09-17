@@ -3333,6 +3333,110 @@ quebra dentro da caixa, e que tocar nele abre numa aba nova. Typecheck,
 lint e os 265 testes automatizados (7 novos, de `links.ts`) continuam
 limpos.
 
+## Três correções saídas de uma revisão crítica (17/09/2026)
+
+O usuário pediu uma análise crítica do projeto — o que valeria melhorar em
+design, layout ou funcionalidade —, com o pedido explícito de não inventar
+ideia só para prolongar o trabalho. Levantei cinco pontos lendo o código (não
+este arquivo); ele mandou fazer três. Os outros dois ficam registrados no fim
+desta seção, como decisão pendente e não como pendência esquecida.
+
+### 1. O palácio podia ser despejado pelo navegador, sem cópia nenhuma
+
+`navigator.storage.persist()` nunca era chamado. Sem isso o IndexedDB é
+"best-effort": sob pressão de armazenamento o navegador pode apagar os dados
+do site sem avisar. Junte-se a isso que a UI de backup saiu em 14/09 e o
+resultado é que **a única cópia dos dados vivia num lugar que o navegador tem
+permissão de limpar**, sem via de recuperação.
+
+`services/native/armazenamento.ts` (novo) pede armazenamento durável uma vez,
+em `main.tsx`, ao lado de `travarGestosDeNavegador` — mesmo critério de pasta
+de `gestos.ts` e `arquivos.ts`: existe porque o ambiente é um navegador, não
+porque o palácio precisa. Pergunta antes se já é durável (`persisted()`), para
+não repetir o pedido; falha em silêncio, porque não é uma ação que ninguém
+pediu — nem o sucesso nem a recusa viram aviso na tela. No Chrome (a base da
+WebView do Android) a decisão é automática e sem diálogo; o Firefox pergunta,
+e a recusa não quebra nada.
+
+**Zero botão novo**, de propósito: isto é a metade invisível do problema.
+A metade visível — um jeito de exportar o backup — continua fora, que foi a
+decisão do usuário em 14/09; o custo está apontado, e a escolha é dele.
+
+### 2. A lista de neurônios de um livro estava ordenada por uuid
+
+`listNeuronios` fazia `toArray()` sem ordenação, então a ordem era a da chave
+primária: um uuid v4, ou seja, ordem nenhuma. Escrever três neurônios seguidos
+e vê-los aparecer embaralhados contradiz o que o projeto defende em todo outro
+lugar — a estante tem ordem gravada desde a Fase 10, a Rede tem posição
+gravada desde 15/09, e justamente a lista mais textual não tinha ordem.
+
+Agora ordena por `porMaisRecente` no repositório — **o mais recente primeiro**,
+escolha do usuário entre alfabética, mais recente e mais antigo. Dois detalhes
+que não são óbvios:
+
+- **Por `createdAt`, não pelo `updatedAt` que é indexado.** Corrigir um typo
+  não pode fazer o neurônio saltar para o topo do livro. Como `createdAt` não
+  é índice, a ordenação é em JS — mesmo padrão dos campos não indexados das
+  Fases 16/17/19, sem bump de versão do Dexie.
+- **O id desempata.** Dois neurônios criados no mesmo milissegundo trocariam
+  de lugar entre sessões, de novo pela ordem crua do banco — o desempate
+  determinístico é a mesma promessa de "a mobília não anda" que o resto do app
+  faz.
+
+Ordenar no repositório, e não na tela, faz a ordem valer de uma vez para todo
+consumidor (a lista do livro, a busca, a Rede), porque `estadoAtual()` no
+Worker monta `neuronios` a partir de `listNeuronios()`. Seguro para o núcleo:
+o motor de grafo e o de layout são explicitamente independentes da ordem dos
+arrays (Fase 7, com teste cobrindo) — foi por não poder confiar na ordem do
+IndexedDB que eles nasceram assim.
+
+Na store, o insert otimista passou a entrar **no topo** da lista, não no fim:
+senão o neurônio recém-escrito aparecia embaixo e saltava para o topo quando a
+inferência terminasse.
+
+### 3. A busca abria vazia
+
+Com o campo vazio, `/busca` mostrava só uma frase explicativa — a tela com
+autofoco, a rota mais rápida do app, não respondia à pergunta mais comum de um
+caderno: "o que eu escrevi ultimamente?". Não havia caminho nenhum para isso —
+a estante é por assunto, a Rede é por significado, e o livro só mostra o que
+está dentro dele.
+
+Agora o estado vazio lista os 8 últimos neurônios escritos, já ordenados pelo
+repositório (item 2 acima) — a tela só recorta. A frase explicativa saiu
+quando há o que mostrar: o `placeholder` do campo já diz o que se busca ali,
+e o projeto já tinha tirado frases desse tipo do formulário de neurônio em
+16/09. Num palácio ainda sem neurônio nenhum a frase volta, porque aí não há
+lista para pôr no lugar.
+
+`LinhaDeNeuronio` saiu daqui: a mesma linha desenha um resultado e um
+recente, e o destino (`/neuronio/:id` ou `/rede?centralizar=` para quem veio
+da Rede) passou a ser calculado num lugar só — sem isso, os recentes teriam
+que repetir a regra do `?de=rede` por fora.
+
+### Os dois pontos que ficaram sem decisão
+
+- **O markdown virou letra morta nas duas pontas.** A convenção registrada é
+  "markdown em texto puro", mas a barra que o inseria saiu em 17/09 e a tela de
+  leitura nunca renderizou — nada escreve e nada lê. Ou a leitura passa a
+  renderizar (já há precedente: o link é interpretado ali desde hoje), ou a
+  convenção sai deste arquivo. Ficar no meio é o único caminho ruim.
+- **A porta cobra um toque a cada abertura do app.** São 840 ms mais um toque
+  deliberado, sempre. No arranque frio ela é útil, porque mascara o
+  carregamento (que roda em paralelo — o `useEffect` do `carregar` dispara
+  antes do retorno antecipado que mostra a porta); no arranque quente é
+  pedágio sobre o gesto mais frequente de uma ferramenta de captura. A decisão
+  é se ela aparece sempre ou só na primeira abertura da sessão.
+
+**Não verificado num navegador de verdade nesta sessão** — mesma ressalva de
+sempre. O que mais merece um olho no aparelho: se os recentes cabem sem
+empurrar o campo de busca para fora da tela em 320 px, e se o Chrome do
+Android concede mesmo a persistência (dá para conferir no console com
+`navigator.storage.persisted()`). Typecheck, lint e 268 testes automatizados
+limpos — 3 novos, todos do repositório: a ordem do mais recente para o mais
+antigo, editar não mudando o lugar na lista, e dois neurônios do mesmo
+instante não trocando de lugar entre leituras.
+
 ## Fases
 
 0. ✅ Esqueleto (Vite/React/TS/Tailwind/PWA/Capacitor)

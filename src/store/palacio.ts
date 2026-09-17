@@ -136,7 +136,11 @@ export const usePalacio = create<PalacioStore>()((set, get) => {
         updatedAt: agora,
       }
 
-      set((s) => ({ neuronios: [...s.neuronios, provisorio], ocupado: true, erro: null }))
+      // No topo, não no fim: a lista é "o mais recente primeiro" (ver
+      // `porMaisRecente` no dexieRepo), e o otimismo tem que nascer já no
+      // lugar onde o motor vai devolvê-lo — senão o neurônio aparece no fim e
+      // salta para o topo quando a inferência termina.
+      set((s) => ({ neuronios: [provisorio, ...s.neuronios], ocupado: true, erro: null }))
 
       try {
         const { neuronios, conexoes, posicoesDaRede } = await engine.criarNeuronio({

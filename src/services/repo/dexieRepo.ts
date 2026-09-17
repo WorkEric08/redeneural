@@ -30,6 +30,19 @@ import {
 import { conexaoSchema, livroSchema, neuronioSchema, snapshotSchema, vagaSchema } from './schemas'
 
 /**
+ * O mais recente primeiro (escolha do usuário, 17/09/2026). Sem isto a lista
+ * saía na ordem da chave primária — um uuid v4, ou seja, ordem nenhuma.
+ *
+ * Por `createdAt`, e não pelo `updatedAt` que é indexado: corrigir um typo não
+ * pode fazer o neurônio pular para o topo do livro. O id desempata para dois
+ * neurônios criados no mesmo milissegundo não trocarem de lugar entre sessões
+ * — a mesma promessa de "a mobília não anda" que a estante e a Rede já fazem.
+ */
+function porMaisRecente(a: Neuronio, b: Neuronio): number {
+  return b.createdAt.getTime() - a.createdAt.getTime() || (a.id < b.id ? -1 : 1)
+}
+
+/**
  * Junta, lugar a lugar, os livros do arquivo (`primeiro`) com os que só
  * existem aqui (`depois`). Os do arquivo ficam no lugar que tinham — o mesmo
  * "arquivo vence" de título e cor. Os daqui ficam no deles se ainda estiver
@@ -202,8 +215,11 @@ export function createDexieRepo(db: PalacioDB = defaultDb): PalacioRepo {
     },
 
     async listNeuronios(livroId) {
-      if (livroId === undefined) return db.neuronios.toArray()
-      return db.neuronios.where('livroId').equals(livroId).toArray()
+      const todos =
+        livroId === undefined
+          ? await db.neuronios.toArray()
+          : await db.neuronios.where('livroId').equals(livroId).toArray()
+      return todos.sort(porMaisRecente)
     },
 
     async getNeuronio(id) {
