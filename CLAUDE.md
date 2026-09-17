@@ -2707,6 +2707,139 @@ sozinha ao escolher. Typecheck, lint e os 265 testes automatizados continuam
 limpos (não há teste novo — é composição de peças já testadas, `Folha` e o
 resto do formulário, sem lógica pura nova).
 
+## A barra de escrita parava de dar acesso a "Criar neurônio" (17/09/2026)
+
+Bug relatado pelo usuário: com o teclado aberto no celular, a barra de
+formatação cobria o botão de criar, sem jeito de salvar o texto.
+
+**Duas causas, as duas na mesma área:**
+
+1. `.barra-de-escrita` tinha `position: sticky; bottom: 0` na regra base e
+   **nunca resetava isso no desktop** (`@media (min-width: 768px)` só
+   ajustava margem/borda) — diferente de `.barra-de-acao`, que vira `static`
+   ali. A barra de escrita ficava presa ao pé da viewport por cima de
+   qualquer coisa que estivesse no fluxo normal embaixo dela, tablet/desktop
+   inclusive.
+2. No celular, o botão de criar era escondido de propósito enquanto
+   `escrevendo` (`max-md:hidden`) — a ideia original era "o pé é de quem
+   estiver com foco", mas isso significava que **não havia como tocar
+   "Criar neurônio" enquanto o teclado estava aberto**, exatamente o
+   problema relatado.
+
+**Corrigido nos dois pontos:** `.barra-de-escrita` ganhou `position: static`
+no breakpoint de desktop, igual a `.barra-de-acao`. E no celular os dois
+passaram a **empilhar** em vez de um substituir o outro — envoltos por
+`.rodape-de-escrita` (novo, `index.css`), que é quem gruda no pé da tela;
+os dois filhos voltam a ser fluxo normal dentro dele, então não competem
+pelo mesmo `bottom: 0`. Botão de criar sempre alcançável agora, com ou sem
+teclado.
+
+**Não verificado num navegador de verdade nesta sessão** — mesma ressalva de
+sempre. A causa 1 foi encontrada lendo o CSS (a media query que faltava);
+vale confirmar no aparelho que as duas barras aparecem empilhadas, sem
+sobrepor, com o teclado de verdade aberto. Typecheck, lint e os 265 testes
+continuam limpos.
+
+## Criar um neurônio leva para a Rede, com uma animação (17/09/2026)
+
+Pedido do usuário: depois de criar, em vez de abrir a tela do próprio
+neurônio, o app leva para a Rede e mostra, com uma animação, quem ele acabou
+de conhecer. Antes de escrever qualquer linha, perguntei os quatro pontos que
+mudavam o tamanho do trabalho — as quatro respostas do usuário foram as
+recomendadas:
+
+1. **A Rede substitui a tela do neurônio como destino** — o aviso de texto
+   "Achou 2 pontes…" saiu; ver o fio se formar é o que substitui.
+2. **Espera o processamento terminar antes de animar** — sem "meio
+   processando" na Rede.
+3. **Sem conexão nenhuma, só a entrada do nó** — nenhum aviso, nenhum
+   destaque de vizinhança.
+4. **A câmera começa afastada** (o palácio inteiro) **e aproxima** até o
+   novo neurônio.
+
+### Por que a resposta 2 não precisou de código nenhum
+
+`criarNeuronio` na store já é `async` e só resolve **depois** de
+`engine.criarNeuronio(...)` voltar do Worker com o palácio inteiro
+processado — embedding, conexões e posição na Rede já gravados (ver "Como o
+fluxo funciona", Fase 4: "uma escrita devolve o palácio inteiro"). `Novo.tsx`
+só navega depois que essa Promise resolve, então a Rede nunca abre com o
+neurônio recém-criado "no meio do processamento" — não existia isso para
+esperar.
+
+### `revelar`, o novo método de `ControleDaTela`
+
+`Tela.tsx` já enquadra o palácio inteiro sozinha ao montar (o efeito que lê
+`assinatura` sempre enquadra na primeira vez — nenhuma posição gravada ainda
+conta como "forma nova"). `revelar(id)` parte dali:
+
+1. Espera `PAUSA_ANTES_DE_REVELAR` (450ms) — só para o "palácio inteiro" da
+   resposta 4 ter um instante de existir aos olhos de quem está vendo, antes
+   de a câmera se mexer.
+2. Anima até um alvo: se o neurônio tem vizinho, `camaraParaEnquadrar` (nova,
+   pura, `layout.ts`) enquadra ele **e** seus vizinhos de 1 salto juntos —
+   não um zoom apertado só no ponto, que deixaria os fios que acabaram de
+   nascer fora do quadro. Sem vizinho, centraliza nele sozinho, na mesma
+   escala de `focar`.
+3. Ao terminar, **só seleciona se havia vizinho** (resposta 3): selecionar
+   um nó sem ninguém ligado apagaria — via `vizinhancaDe`, que sempre inclui
+   pelo menos o próprio nó — o resto do palácio inteiro para "destacar" uma
+   vizinhança de um elemento só. Nesse caso a revelação é só a câmera
+   chegando; o usuário ainda pode tocar o nó depois, normalmente.
+
+### `camaraParaEnquadrar`: extraído de `enquadrar`, não inventado do zero
+
+A matemática (caixa delimitadora dos pontos, escala que cabe, centro pela
+diferença de folgas) já existia dentro de `enquadrar()`. Virou função pura
+e testada em `layout.ts` — `enquadrar` agora só chama ela com **todos** os
+pontos da cena, e `revelar` chama a mesma função com só o nó e seus
+vizinhos. Nenhuma duplicação de fórmula entre as duas.
+
+### `animarCamera`: a terceira animação de câmera, agora uma função só
+
+`animarAssentamento` (posições de nós) e o antigo deslize embutido em
+`iniciarDeslize` (câmera) já repetiam o mesmo laço `rAF` com
+`easeOutCubic`, cancelável por uma referência `{ cancelado }` — cada um com
+a própria cópia. Com a revelação virando a terceira animação de câmera do
+arquivo, a duplicação passou de "aceitável" para "vale extrair" (regra de
+três): `animarCamera(alvo, duração, execucaoRef, aoTerminar?)` generaliza o
+laço, e `iniciarDeslize` foi reescrito por cima dela — ficou um terço do
+tamanho. `animarAssentamento` continua separada, porque anima **posições de
+nós** (um `Map` inteiro via `quadroDoAssentamento`), não a câmera — são
+formas diferentes de interpolar.
+
+### O aviso de "conectou com…" saiu de `Neuronio.tsx`
+
+Como `Novo.tsx` não navega mais para `/neuronio/:id?nasceu=1`, esse caminho
+ficou inalcançável — removidos o componente `Nasceu`, `acabouDeNascer`, os
+imports que só ele usava (`Sparkles`, `listar`, o tipo `VizinhoDoNeuronio`) e
+a animação `.animar-achado`/`@keyframes achado` do CSS, que também não tinha
+mais chamador. Mesmo padrão de sempre: código sem uso concreto sai (regra 7
+do mestre), não fica desligado "para o caso de".
+
+### Cancelamento
+
+Um toque novo na tela cancela a revelação em curso — tanto a pausa
+(`window.clearTimeout`) quanto a animação já iniciada (`cancelado = true`,
+o mesmo padrão do deslize) —, porque segurar a tela é sempre "para agora"
+neste arquivo, nunca "espera terminar". `prefers-reduced-motion: reduce`
+pula a pausa e a animação inteira e vai direto para onde a câmera terminaria
+— o mesmo respeito de "abrir o livro" (Fase 22).
+
+### Verificado
+
+`camaraParaEnquadrar` é pura e testada: câmera neutra sem pontos, um ponto
+só centralizado, o lado que aperta decidindo a escala, o teto de escala
+respeitado com pontos colados, pontos não-finitos ignorados sem quebrar — 5
+testes novos (270 no total). Typecheck e lint limpos.
+
+**Não verificado num navegador de verdade nesta sessão** — mesma ressalva de
+sempre, e aqui pesa mais: é uma sequência temporizada (pausa + animação +
+seleção) que só se confirma vendo de verdade. Vale conferir no aparelho se
+o ritmo (450ms de pausa, 850ms de animação) está bom, se a câmera enquadra
+o par (nó + vizinho) de um jeito que não corta nada, e se um toque no meio
+da sequência cancela limpo.
+
 ## Fases
 
 0. ✅ Esqueleto (Vite/React/TS/Tailwind/PWA/Capacitor)

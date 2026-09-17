@@ -4,10 +4,12 @@ import type { Id, Ponto } from '@/core'
 
 import { desenhar, type Camera, type Cena, type CoresDaRede } from './desenhar'
 import {
+  camaraParaEnquadrar,
   neuronioEm,
   posicoesDoArrasto,
   quadroDoAssentamento,
   easeOutCubic,
+  vizinhancaDe,
   type NoArrastado,
 } from './layout'
 
@@ -62,10 +64,29 @@ const PROJECAO_DO_DESLIZE_MS = 220
 const DISTANCIA_MAXIMA_DO_DESLIZE = 200 // px — "desliza um pouco", não sai voando com um flick forte
 const DURACAO_DO_DESLIZE = 300
 
+/**
+ * A revelação de um neurônio recém-criado (pedido do usuário, 17/09/2026):
+ * a Tela já enquadra tudo sozinha ao montar (ver o efeito de `assinatura`
+ * mais abaixo) — a pausa é só para esse "palácio inteiro" ter tempo de ser
+ * visto antes de a câmera aproximar. Ver `revelar`.
+ */
+const PAUSA_ANTES_DE_REVELAR = 450
+const DURACAO_DA_REVELACAO = 850
+/** Menor que `ESCALA_MAXIMA`: um par bem próximo não pode virar um zoom
+ *  absurdo só porque a caixa que os enquadra é minúscula. */
+const ESCALA_MAXIMA_DA_REVELACAO = 3.2
+
 export interface ControleDaTela {
   enquadrar: () => void
   /** Centraliza a câmera num neurônio, aproximando até `ESCALA_DE_FOCO` — nunca afasta. */
   focar: (id: Id) => void
+  /**
+   * A câmera, já enquadrando tudo, aproxima até este neurônio — e se ele tiver
+   * algum vizinho, seleciona ao chegar (acendendo o fio que acabou de nascer).
+   * Sem vizinho nenhum, só centraliza: selecionar um nó sem ninguém ligado
+   * apagaria o resto do palácio à toa (ver `vizinhancaDe`).
+   */
+  revelar: (id: Id) => void
 }
 
 /** O que cobre a tela por cima do canvas — barra de topo, controles —, em px. */
@@ -135,6 +156,11 @@ export function Tela({ cena, onSelecionar, onArrastarNeuronio, controle, folgas 
   const velocidadeDoArrasto = useRef({ vx: 0, vy: 0 })
   const ultimoQuadroDoArrasto = useRef(0)
   const deslizeEmAndamento = useRef<{ cancelado: boolean } | null>(null)
+  /** A pausa entre montar enquadrando tudo e a câmera aproximar do neurônio
+   *  revelado — ver `revelar`. Um `setTimeout`, não um `rAF`: não pinta nada
+   *  enquanto espera. */
+  const pausaDaRevelacao = useRef<number | null>(null)
+  const revelacaoEmAndamento = useRef<{ cancelado: boolean } | null>(null)
 
   /** O neurônio sob o dedo desde o toque, se o toque começou em cima de um —
    *  `null` enquanto o gesto é (ou ainda pode virar) arrastar a câmera. */
@@ -185,37 +211,14 @@ export function Tela({ cena, onSelecionar, onArrastarNeuronio, controle, folgas 
   const enquadrar = useCallback(() => {
     const canvas = canvasRef.current
     if (!canvas) return
-
-    let minX = Infinity
-    let minY = Infinity
-    let maxX = -Infinity
-    let maxY = -Infinity
-    for (const p of cenaRef.current.posicoes.values()) {
-      if (!Number.isFinite(p.x) || !Number.isFinite(p.y)) continue
-      minX = Math.min(minX, p.x)
-      minY = Math.min(minY, p.y)
-      maxX = Math.max(maxX, p.x)
-      maxY = Math.max(maxY, p.y)
-    }
-    if (minX === Infinity) {
-      camera.current = { x: 0, y: (folgas.topo - folgas.base) / 2, escala: 1 }
-      pintar()
-      return
-    }
-
-    const larguraUtil = Math.max(1, canvas.clientWidth - 2 * folgas.lados)
-    const alturaUtil = Math.max(1, canvas.clientHeight - folgas.topo - folgas.base)
-    const cabe = Math.min(
-      larguraUtil / Math.max(1, maxX - minX),
-      alturaUtil / Math.max(1, maxY - minY),
+    camera.current = camaraParaEnquadrar(
+      [...cenaRef.current.posicoes.values()],
+      canvas.clientWidth,
+      canvas.clientHeight,
+      folgas,
+      ESCALA_MINIMA,
+      ESCALA_MAXIMA,
     )
-    const escala = Math.min(Math.max(cabe, ESCALA_MINIMA), ESCALA_MAXIMA)
-
-    camera.current = {
-      escala,
-      x: -((minX + maxX) / 2) * escala,
-      y: -((minY + maxY) / 2) * escala + (folgas.topo - folgas.base) / 2,
-    }
     pintar()
   }, [pintar, folgas])
 
@@ -240,6 +243,51 @@ export function Tela({ cena, onSelecionar, onArrastarNeuronio, controle, folgas 
       pintar()
     },
     [pintar, folgas],
+  )
+
+  /**
+   * Anima a câmera de onde ela está até um alvo, com `easeOutCubic` — o mesmo
+   * "assenta e para" de tudo nesta tela, generalizado: é a terceira animação
+   * de câmera/posição do arquivo (depois de `animarAssentamento` e o antigo
+   * deslize embutido), e as três repetiam o mesmo laço de `rAF` cancelável.
+   * `execucaoRef` é de quem chama — cada animação tem a própria, para uma
+   * nova não brigar com uma anterior pelo mesmo `camera.current`.
+   */
+  const animarCamera = useCallback(
+    (
+      alvo: Camera,
+      duracaoMs: number,
+      execucaoRef: { current: { cancelado: boolean } | null },
+      aoTerminar?: () => void,
+    ) => {
+      if (execucaoRef.current) execucaoRef.current.cancelado = true
+      const execucao = { cancelado: false }
+      execucaoRef.current = execucao
+
+      const origem = { ...camera.current }
+      const t0 = performance.now()
+
+      const quadro = (agora: number): void => {
+        if (execucao.cancelado) return
+        const k = easeOutCubic(Math.min(1, (agora - t0) / duracaoMs))
+
+        camera.current = {
+          x: origem.x + (alvo.x - origem.x) * k,
+          y: origem.y + (alvo.y - origem.y) * k,
+          escala: origem.escala + (alvo.escala - origem.escala) * k,
+        }
+        pintar()
+
+        if (agora - t0 < duracaoMs) requestAnimationFrame(quadro)
+        else {
+          execucaoRef.current = null
+          aoTerminar?.()
+        }
+      }
+
+      requestAnimationFrame(quadro)
+    },
+    [pintar],
   )
 
   /**
@@ -286,37 +334,19 @@ export function Tela({ cena, onSelecionar, onArrastarNeuronio, controle, folgas 
       const velocidade = Math.hypot(vx, vy)
       if (velocidade < VELOCIDADE_MINIMA_DO_DESLIZE) return
 
-      if (deslizeEmAndamento.current) deslizeEmAndamento.current.cancelado = true
-      const execucao = { cancelado: false }
-      deslizeEmAndamento.current = execucao
-
       const distancia = Math.min(DISTANCIA_MAXIMA_DO_DESLIZE, velocidade * PROJECAO_DO_DESLIZE_MS)
       const escala = distancia / velocidade
-      const origemX = camera.current.x
-      const origemY = camera.current.y
-      const alvoX = origemX + vx * escala
-      const alvoY = origemY + vy * escala
-      const t0 = performance.now()
-
-      const quadro = (agora: number): void => {
-        if (execucao.cancelado) return
-        const t = Math.min(1, (agora - t0) / DURACAO_DO_DESLIZE)
-        const suavizado = easeOutCubic(t)
-
-        camera.current = {
-          ...camera.current,
-          x: origemX + (alvoX - origemX) * suavizado,
-          y: origemY + (alvoY - origemY) * suavizado,
-        }
-        pintar()
-
-        if (t < 1) requestAnimationFrame(quadro)
-        else deslizeEmAndamento.current = null
-      }
-
-      requestAnimationFrame(quadro)
+      animarCamera(
+        {
+          x: camera.current.x + vx * escala,
+          y: camera.current.y + vy * escala,
+          escala: camera.current.escala,
+        },
+        DURACAO_DO_DESLIZE,
+        deslizeEmAndamento,
+      )
     },
-    [pintar],
+    [animarCamera],
   )
 
   /**
@@ -349,7 +379,66 @@ export function Tela({ cena, onSelecionar, onArrastarNeuronio, controle, folgas 
     [pintar, onArrastarNeuronio, animarAssentamento],
   )
 
-  useImperativeHandle(controle, () => ({ enquadrar, focar }), [enquadrar, focar])
+  /**
+   * O neurônio que acabou de nascer: a câmera já está enquadrando o palácio
+   * inteiro (a Tela enquadra sozinha ao montar), então espera um instante
+   * para isso ser visto, aproxima até ele — e até seus vizinhos, se houver
+   * algum, para o fio que acabou de nascer caber no quadro — e seleciona ao
+   * chegar. Sem vizinho nenhum, só centraliza: selecionar apagaria o resto do
+   * palácio à toa para destacar uma vizinhança que não existe.
+   */
+  const revelar = useCallback(
+    (id: Id) => {
+      const canvas = canvasRef.current
+      const p = cenaRef.current.posicoes.get(id)
+      if (!canvas || !p || !Number.isFinite(p.x) || !Number.isFinite(p.y)) return
+
+      const vizinhanca = vizinhancaDe(id, cenaRef.current.conexoes) ?? new Set([id])
+      const pontos = [...vizinhanca]
+        .map((vid) => cenaRef.current.posicoes.get(vid))
+        .filter(
+          (pt): pt is Ponto => pt !== undefined && Number.isFinite(pt.x) && Number.isFinite(pt.y),
+        )
+      const temVizinhos = pontos.length > 1
+
+      const alvo: Camera = temVizinhos
+        ? camaraParaEnquadrar(
+            pontos,
+            canvas.clientWidth,
+            canvas.clientHeight,
+            folgas,
+            ESCALA_MINIMA,
+            ESCALA_MAXIMA_DA_REVELACAO,
+          )
+        : {
+            escala: ESCALA_DE_FOCO,
+            x: -p.x * ESCALA_DE_FOCO,
+            y: -p.y * ESCALA_DE_FOCO + (folgas.topo - folgas.base) / 2,
+          }
+
+      const concluir = (): void => {
+        if (temVizinhos) onSelecionar(id)
+      }
+
+      // O mesmo respeito de "abrir o livro" (Fase 22): sem laço nenhum, vai
+      // direto para onde a animação terminaria.
+      if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+        camera.current = alvo
+        pintar()
+        concluir()
+        return
+      }
+
+      if (pausaDaRevelacao.current !== null) window.clearTimeout(pausaDaRevelacao.current)
+      pausaDaRevelacao.current = window.setTimeout(() => {
+        pausaDaRevelacao.current = null
+        animarCamera(alvo, DURACAO_DA_REVELACAO, revelacaoEmAndamento, concluir)
+      }, PAUSA_ANTES_DE_REVELAR)
+    },
+    [pintar, folgas, animarCamera, onSelecionar],
+  )
+
+  useImperativeHandle(controle, () => ({ enquadrar, focar, revelar }), [enquadrar, focar, revelar])
 
   /**
    * Um efeito só, e nesta ordem: a cena vai para o ref **antes** de enquadrar.
@@ -452,9 +541,14 @@ export function Tela({ cena, onSelecionar, onArrastarNeuronio, controle, folgas 
       onPointerDown={(e) => {
         e.currentTarget.setPointerCapture(e.pointerId)
 
-        // Um toque novo interrompe qualquer deslize ainda em curso — segurar
-        // a tela é sempre "para agora", nunca "espera o deslize acabar".
+        // Um toque novo interrompe qualquer deslize ou revelação ainda em
+        // curso — segurar a tela é sempre "para agora", nunca "espera acabar".
         if (deslizeEmAndamento.current) deslizeEmAndamento.current.cancelado = true
+        if (revelacaoEmAndamento.current) revelacaoEmAndamento.current.cancelado = true
+        if (pausaDaRevelacao.current !== null) {
+          window.clearTimeout(pausaDaRevelacao.current)
+          pausaDaRevelacao.current = null
+        }
         velocidadeDoArrasto.current = { vx: 0, vy: 0 }
         ultimoQuadroDoArrasto.current = 0
 

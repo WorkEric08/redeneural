@@ -3,7 +3,14 @@ import { useNavigate, useSearchParams } from 'react-router-dom'
 import { Formulario } from '@/features/neuronio/Formulario'
 import { usePalacio } from '@/store/palacio'
 
-/** Criar um neurônio. Ao terminar, leva direto para o que nasceu. */
+/**
+ * Criar um neurônio. Ao terminar, leva para a Rede — não para a tela do
+ * neurônio (pedido do usuário, 17/09/2026): é lá que o app mostra, com uma
+ * animação, com quem o que acabou de nascer conversa (ver `revelar` em
+ * Tela.tsx). `criarNeuronio` só resolve depois de o Worker terminar a
+ * inferência inteira (embedding, conexões e posição já gravados), então a
+ * Rede nunca abre com o neurônio "no meio do processamento".
+ */
 export default function Novo() {
   const [busca] = useSearchParams()
   const navegar = useNavigate()
@@ -24,7 +31,7 @@ export default function Novo() {
         void criarNeuronio(dados).then((id) => {
           // `replace`: voltar depois de criar tem que sair do formulário, não
           // trazê-lo de volta vazio.
-          if (id) void navegar(`/neuronio/${id}?nasceu=1`, { replace: true })
+          if (id) void navegar(`/rede?novo=${id}`, { replace: true })
         })
       }}
     />

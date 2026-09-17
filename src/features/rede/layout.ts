@@ -119,3 +119,49 @@ export function quadroDoAssentamento(
 export function easeOutCubic(t: number): number {
   return 1 - Math.pow(1 - t, 3)
 }
+
+/**
+ * A câmera que enquadra um conjunto de pontos — todo o grafo (`enquadrar`,
+ * em Tela.tsx) ou só um neurônio e seus vizinhos (a revelação de quem acabou
+ * de nascer, ver `revelar`). Pura: só matemática sobre pontos, sem canvas.
+ *
+ * Sem nenhum ponto válido, devolve a câmera neutra (centro do mundo, escala
+ * 1) — o mesmo "vazio" que `enquadrar` já tratava antes de virar esta função.
+ */
+export function camaraParaEnquadrar(
+  pontos: readonly Ponto[],
+  larguraDaTela: number,
+  alturaDaTela: number,
+  folgas: { topo: number; base: number; lados: number },
+  escalaMinima: number,
+  escalaMaxima: number,
+): { x: number; y: number; escala: number } {
+  let minX = Infinity
+  let minY = Infinity
+  let maxX = -Infinity
+  let maxY = -Infinity
+  for (const p of pontos) {
+    if (!Number.isFinite(p.x) || !Number.isFinite(p.y)) continue
+    minX = Math.min(minX, p.x)
+    minY = Math.min(minY, p.y)
+    maxX = Math.max(maxX, p.x)
+    maxY = Math.max(maxY, p.y)
+  }
+  if (minX === Infinity) {
+    return { x: 0, y: (folgas.topo - folgas.base) / 2, escala: 1 }
+  }
+
+  const larguraUtil = Math.max(1, larguraDaTela - 2 * folgas.lados)
+  const alturaUtil = Math.max(1, alturaDaTela - folgas.topo - folgas.base)
+  const cabe = Math.min(
+    larguraUtil / Math.max(1, maxX - minX),
+    alturaUtil / Math.max(1, maxY - minY),
+  )
+  const escala = Math.min(Math.max(cabe, escalaMinima), escalaMaxima)
+
+  return {
+    escala,
+    x: -((minX + maxX) / 2) * escala,
+    y: -((minY + maxY) / 2) * escala + (folgas.topo - folgas.base) / 2,
+  }
+}

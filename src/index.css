@@ -312,13 +312,6 @@
   }
 }
 
-@keyframes achado {
-  from {
-    opacity: 0;
-    transform: scale(0.97);
-  }
-}
-
 @keyframes luz-da-porta {
   0%,
   100% {
@@ -335,12 +328,6 @@
      para dentro do bundle. */
   .animar-entrada {
     animation: entrada 260ms ease-out both;
-  }
-
-  /* O momento em que o palácio responde: entra maior que o resto, porque é o
-     que o produto promete entregar. */
-  .animar-achado {
-    animation: achado 360ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
   }
 }
 
@@ -2265,10 +2252,35 @@ img {
 
   @media (min-width: 768px) {
     .barra-de-escrita {
+      /* Sem isto ela continuava presa ao pé da viewport (herdado da regra
+         base) mesmo com `.barra-de-acao` já `static` aqui — as duas
+         colidiam no mesmo canto, a de escrita por cima do botão de criar.
+         Vira item normal do fluxo, como o botão. */
+      position: static;
       margin-inline: 0;
       border-radius: 12px;
       border: 1px solid var(--linha);
       padding-bottom: 4px;
+    }
+  }
+
+  /* A barra de escrita e o botão de enviar aparecem juntos no celular
+     enquanto se escreve (ver Formulario.tsx — sem isso não havia como tocar
+     "Criar neurônio" com o teclado aberto, pedido do usuário, 17/09/2026).
+     Cada um sozinho com `position: sticky; bottom: 0` gruda no mesmo canto
+     da tela e um cobre o outro; este invólucro é quem gruda, e os dois
+     voltam a ser fluxo normal (empilhado) dentro dele. Só no celular: do
+     tablet em diante os dois já são estáticos, no fim do formulário. */
+  @media (max-width: 767px) {
+    .rodape-de-escrita {
+      position: sticky;
+      bottom: 0;
+      z-index: 10;
+    }
+
+    .rodape-de-escrita .barra-de-escrita,
+    .rodape-de-escrita .barra-de-acao {
+      position: static;
     }
   }
 

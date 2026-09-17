@@ -1,4 +1,4 @@
-import { PencilLine, Search, Sparkles, Trash2 } from 'lucide-react'
+import { PencilLine, Search, Trash2 } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { Link, useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 
@@ -8,9 +8,9 @@ import { Confirmacao } from '@/components/Confirmacao'
 import { EtiquetaProcessando } from '@/components/EtiquetaProcessando'
 import { Folha } from '@/components/Folha'
 import type { NeuronioNaTela } from '@/core'
-import { vizinhosPorNeuronio, type VizinhoDoNeuronio } from '@/features/estante/resumo'
+import { vizinhosPorNeuronio } from '@/features/estante/resumo'
 import { Fios } from '@/features/neuronio/Fios'
-import { contar, listar } from '@/lib/plural'
+import { contar } from '@/lib/plural'
 import { usePalacio } from '@/store/palacio'
 
 /** O que a confirmação guarda no histórico para saber como sair depois de apagar. */
@@ -22,9 +22,9 @@ interface EstadoDaConfirmacao {
 /**
  * Um neurônio e o que ele encontrou.
  *
- * Quando chega com `?nasceu=1`, mostra primeiro o aviso do que acabou de
- * conectar. É o momento em que o produto entrega o que prometeu — o usuário só
- * escreveu um texto, e o palácio respondeu com quem ele conversa.
+ * O aviso de "conectou com…" morou aqui até 17/09/2026 — quem entrega esse
+ * momento agora é a Rede, com uma animação (ver `revelar` em Tela.tsx e
+ * `Novo.tsx`), então esta tela nunca mais é o destino de logo-depois-de-criar.
  *
  * Apagar pergunta antes, numa folha que mora na URL (`?apagar=1`), pelo mesmo
  * motivo dos painéis da estante: voltar fecha a pergunta.
@@ -77,7 +77,6 @@ export default function Neuronio() {
 
   const meus = vizinhos.get(neuronio.id) ?? []
   const fios = apagando?.fios ?? meus.length
-  const acabouDeNascer = busca.get('nasceu') === '1'
   const perguntando = busca.get('apagar') === '1'
   const saida = livro ? `/livro/${livro.id}` : '/'
 
@@ -179,8 +178,6 @@ export default function Neuronio() {
           {neuronio.processando && <EtiquetaProcessando texto="procurando conexões" />}
         </header>
 
-        {acabouDeNascer && !neuronio.processando && <Nasceu vizinhos={meus} />}
-
         {neuronio.conteudo && (
           <p className="texto-do-usuario px-1 text-[1.03rem] leading-[1.7] whitespace-pre-wrap">
             {neuronio.conteudo}
@@ -212,53 +209,6 @@ export default function Neuronio() {
           }}
         />
       </Folha>
-    </div>
-  )
-}
-
-/**
- * O aviso de "conectou com…".
- *
- * A ponte entre livros vem primeiro e sozinha quando existe: é o achado, e
- * misturá-la com as conexões de dentro do próprio livro apagaria justamente o
- * que tem de raro nela.
- */
-function Nasceu({ vizinhos }: { vizinhos: readonly VizinhoDoNeuronio[] }) {
-  if (vizinhos.length === 0) {
-    return (
-      <p className="cartao text-poeira px-4 py-3.5 text-sm leading-relaxed">
-        Nasceu sozinho por enquanto. Assim que houver algo parecido no palácio, o fio aparece.
-      </p>
-    )
-  }
-
-  const pontes = vizinhos.filter((v) => v.conexao.cross)
-  const dentro = vizinhos.filter((v) => !v.conexao.cross)
-
-  if (pontes.length === 0) {
-    return (
-      <p className="cartao text-poeira px-4 py-3.5 text-sm leading-relaxed">
-        Conectou com <span className="text-papel">{listar(dentro.map((d) => d.outroTitulo))}</span>.
-      </p>
-    )
-  }
-
-  return (
-    <div className="border-ponte/40 bg-ponte-luz brilho-ponte animar-achado flex gap-3 rounded-2xl border px-4 py-3.5">
-      <Sparkles size={18} aria-hidden className="text-ponte mt-0.5 shrink-0" />
-      <div className="flex min-w-0 flex-col gap-1.5 text-sm leading-relaxed">
-        <p>
-          <span className="text-ponte brilho-ponte-texto font-semibold">
-            {pontes.length === 1 ? 'Achou uma ponte' : `Achou ${String(pontes.length)} pontes`}
-          </span>{' '}
-          — {listar(pontes.map((p) => `${p.outroTitulo}, em ${p.outroLivro}`))}.
-        </p>
-        {dentro.length > 0 && (
-          <p className="text-poeira">
-            E dentro do livro: {listar(dentro.map((d) => d.outroTitulo))}.
-          </p>
-        )}
-      </div>
     </div>
   )
 }

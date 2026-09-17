@@ -43,11 +43,16 @@ export default function Rede() {
   const { key } = useLocation()
   const filtrosAbertos = busca.get('filtros') === '1'
   const [centralizarId] = useState<string | null>(() => busca.get('centralizar'))
+  // O neurônio recém-criado (`Novo.tsx` manda para cá em vez de para a tela
+  // dele — pedido do usuário, 17/09/2026): ver `revelar` em Tela.tsx.
+  const [novoId] = useState<string | null>(() => busca.get('novo'))
 
   const [livroEmFoco, setLivroEmFoco] = useState<string | null>(null)
   const [soAsPontes, setSoAsPontes] = useState(false)
   // Já nasce selecionado se a busca mandou para cá — o cartão de baixo e a
-  // vizinhança acesa aparecem no mesmo instante da câmera se movendo.
+  // vizinhança acesa aparecem no mesmo instante da câmera se movendo. O
+  // recém-criado **não** entra aqui: ele só seleciona (se tiver vizinho) ao
+  // fim da própria animação de revelação, não no instante em que a tela monta.
   const [selecionado, setSelecionado] = useState<string | null>(() => centralizarId)
   const controle = useRef<ControleDaTela>(null)
 
@@ -58,9 +63,10 @@ export default function Rede() {
   }
 
   useEffect(() => {
-    if (!busca.get('centralizar')) return
+    if (!busca.get('centralizar') && !busca.get('novo')) return
     const proxima = new URLSearchParams(busca)
     proxima.delete('centralizar')
+    proxima.delete('novo')
     setBusca(proxima, { replace: true })
   }, [busca, setBusca])
 
@@ -78,6 +84,14 @@ export default function Rede() {
     if (!centralizarId) return
     controle.current?.focar(centralizarId)
   }, [centralizarId])
+
+  // O neurônio recém-criado: mesma ordem de motivos do efeito acima — a Tela
+  // já monta enquadrando tudo sozinha, e é sobre essa câmera que a revelação
+  // parte quando aproxima até ele (e seleciona, se tiver vizinho).
+  useEffect(() => {
+    if (!novoId) return
+    controle.current?.revelar(novoId)
+  }, [novoId])
 
   const pontes = conexoes.filter((c) => c.cross).length
   const escolhido = neuronios.find((n) => n.id === selecionado)

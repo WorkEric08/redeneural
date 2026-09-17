@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest'
 import type { Conexao, NeuronioNaTela } from '@/core'
 
 import {
+  camaraParaEnquadrar,
   easeOutCubic,
   grausDoMapa,
   neuronioEm,
@@ -170,5 +171,69 @@ describe('easeOutCubic', () => {
 
   it('é mais rápido no início que no fim — passou de metade do caminho antes de t=0,5', () => {
     expect(easeOutCubic(0.5)).toBeGreaterThan(0.5)
+  })
+})
+
+describe('camaraParaEnquadrar', () => {
+  const FOLGAS = { topo: 100, base: 100, lados: 20 }
+
+  it('sem pontos válidos, devolve a câmera neutra', () => {
+    expect(camaraParaEnquadrar([], 800, 600, FOLGAS, 0.1, 6)).toEqual({
+      x: 0,
+      y: 0,
+      escala: 1,
+    })
+  })
+
+  it('centraliza um único ponto', () => {
+    const c = camaraParaEnquadrar([{ x: 50, y: 50 }], 800, 600, FOLGAS, 0.1, 6)
+    expect(c.x).toBeCloseTo(-50 * c.escala)
+  })
+
+  it('encaixa a escala pelo lado que mais aperta', () => {
+    // 400 de largura por 40 de altura: a altura útil (400) sobra, a largura
+    // útil (760) aperta primeiro.
+    const c = camaraParaEnquadrar(
+      [
+        { x: -200, y: -20 },
+        { x: 200, y: 20 },
+      ],
+      800,
+      600,
+      FOLGAS,
+      0.1,
+      6,
+    )
+    expect(c.escala).toBeCloseTo(760 / 400)
+  })
+
+  it('nunca passa do teto de escala, mesmo com os pontos colados', () => {
+    const c = camaraParaEnquadrar(
+      [
+        { x: 0, y: 0 },
+        { x: 0.001, y: 0.001 },
+      ],
+      800,
+      600,
+      FOLGAS,
+      0.1,
+      3,
+    )
+    expect(c.escala).toBe(3)
+  })
+
+  it('ignora pontos não-finitos sem quebrar', () => {
+    const c = camaraParaEnquadrar(
+      [
+        { x: NaN, y: NaN },
+        { x: 10, y: 10 },
+      ],
+      800,
+      600,
+      FOLGAS,
+      0.1,
+      6,
+    )
+    expect(c.x).toBeCloseTo(-10 * c.escala)
   })
 })

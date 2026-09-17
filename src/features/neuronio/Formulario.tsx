@@ -242,27 +242,29 @@ export function Formulario({
           />
         </div>
 
-        {escrevendo && (
-          <BarraDeEscrita
-            onAcao={executar}
-            podeDesfazer={texto.podeDesfazer}
-            podeRefazer={texto.podeRefazer}
-          />
-        )}
+        {/* Empilhados, e não um no lugar do outro: com o teclado aberto no
+            celular, "Criar neurônio" precisa continuar alcançável enquanto
+            se escreve — sem isso não havia como salvar (pedido do usuário,
+            17/09/2026). `.rodape-de-escrita` é quem gruda no pé da tela; os
+            dois filhos ficam em fluxo normal dentro dele (ver index.css). */}
+        <div className="rodape-de-escrita">
+          {escrevendo && (
+            <BarraDeEscrita
+              onAcao={executar}
+              podeDesfazer={texto.podeDesfazer}
+              podeRefazer={texto.podeRefazer}
+            />
+          )}
 
-        {/* Enquanto a barra está aberta, o pé do celular é dela: o botão volta
-          quando o teclado fecha. No tablet em diante o botão já é estático no
-          fim do formulário, então os dois cabem. */}
-        <div
-          className={`barra-de-acao md:flex md:justify-end ${escrevendo ? 'max-md:hidden' : ''}`}
-        >
-          <button
-            type="submit"
-            disabled={!podeEnviar}
-            className={`${botao({ tipo: 'primario', largo: true })} md:w-auto md:min-w-44`}
-          >
-            {ocupado ? 'Processando…' : rotuloDeEnvio}
-          </button>
+          <div className="barra-de-acao md:flex md:justify-end">
+            <button
+              type="submit"
+              disabled={!podeEnviar}
+              className={`${botao({ tipo: 'primario', largo: true })} md:w-auto md:min-w-44`}
+            >
+              {ocupado ? 'Processando…' : rotuloDeEnvio}
+            </button>
+          </div>
         </div>
       </form>
 
