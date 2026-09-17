@@ -1,5 +1,5 @@
-import { Check, ChevronDown } from 'lucide-react'
-import { useEffectEvent, useLayoutEffect, useRef, useState } from 'react'
+import { Check, ChevronDown, Minus, Plus } from 'lucide-react'
+import { useState } from 'react'
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 
 import { BarraDeTopo } from '@/components/BarraDeTopo'
@@ -8,15 +8,10 @@ import { Folha } from '@/components/Folha'
 import type { Livro } from '@/core'
 import type { NovoNeuronio } from '@/store/palacio'
 
-import { BarraDeEscrita, type AcaoDeEscrita } from './BarraDeEscrita'
-import {
-  alternarEnvolvido,
-  alternarLista,
-  ciclarTitulo,
-  mudarRecuo,
-  type Selecao,
-} from './marcacao'
-import { useTextoComHistorico } from './useTextoComHistorico'
+const FONTE_MINIMA_PX = 14
+const FONTE_MAXIMA_PX = 28
+const FONTE_PADRAO_PX = 16
+const PASSO_DA_FONTE_PX = 2
 
 /**
  * A folha de escrever — o mesmo formulário serve para criar e para editar.
@@ -41,8 +36,13 @@ import { useTextoComHistorico } from './useTextoComHistorico'
  * linhas a menos de folha.
  *
  * Sair é o "fechar" da barra, como o voltar do Android — não há "Cancelar" ao
- * lado do enviar, que fica preso no pé no celular (`.barra-de-acao`), onde o
- * Notes põe a própria barra de ferramentas.
+ * lado do enviar, que fica preso no pé no celular (`.barra-de-acao`).
+ *
+ * **Sem barra de formatação** (removida em 17/09/2026, pedido do usuário — ver
+ * CLAUDE.md, "A barra de escrita sai"): o único controle fora do texto em si é
+ * o tamanho de fonte, sempre visível junto da etiqueta do livro — não um
+ * acessório que aparece com o teclado, porque ajustar a leitura faz sentido
+ * também com o teclado fechado.
  */
 
 interface Props {
@@ -57,30 +57,6 @@ interface Props {
   onEnviar: (dados: NovoNeuronio) => void
 }
 
-/** Cada botão da barra e a marcação que ele aplica (ver `marcacao.ts`). */
-function marcar(acao: Exclude<AcaoDeEscrita, 'desfazer' | 'refazer'>, s: Selecao): Selecao {
-  switch (acao) {
-    case 'negrito':
-      return alternarEnvolvido(s, '**')
-    case 'italico':
-      return alternarEnvolvido(s, '*')
-    case 'tachado':
-      return alternarEnvolvido(s, '~~')
-    case 'titulo':
-      return ciclarTitulo(s)
-    case 'marcador':
-      return alternarLista(s, 'marcador')
-    case 'numero':
-      return alternarLista(s, 'numero')
-    case 'tarefa':
-      return alternarLista(s, 'tarefa')
-    case 'recuar':
-      return mudarRecuo(s, 1)
-    case 'desrecuar':
-      return mudarRecuo(s, -1)
-  }
-}
-
 export function Formulario({
   livros,
   inicial,
@@ -92,10 +68,8 @@ export function Formulario({
 }: Props) {
   const [livroEscolhido, setLivroEscolhido] = useState(inicial?.livroId ?? '')
   const [titulo, setTitulo] = useState(inicial?.titulo ?? '')
-  const texto = useTextoComHistorico(inicial?.conteudo ?? '')
-  /** A barra de ferramentas existe enquanto o dedo está no texto. */
-  const [escrevendo, setEscrevendo] = useState(false)
-  const campo = useRef<HTMLTextAreaElement>(null)
+  const [conteudo, setConteudo] = useState(inicial?.conteudo ?? '')
+  const [fontePx, setFontePx] = useState(FONTE_PADRAO_PX)
 
   // A folha de escolher livro mora na URL, como qualquer outro painel do app
   // (filtros da Rede, apagar do neurônio): o voltar do Android fecha a folha
@@ -105,7 +79,6 @@ export function Formulario({
   const { key } = useLocation()
   const escolhendoLivro = busca.get('livros') === '1'
 
-  const conteudo = texto.passo.texto
   const livroId = livroEscolhido || (livros[0]?.id ?? '')
   const livro = livros.find((l) => l.id === livroId)
   const podeEnviar = titulo.trim().length > 0 && livroId !== '' && !ocupado
@@ -120,33 +93,8 @@ export function Formulario({
     else void navegar(-1)
   }
 
-  // Um passo vindo de botão (marcar, desfazer, refazer) reescreve o campo
-  // inteiro, e o navegador joga o cursor para o fim. Repor a seleção é o que
-  // deixa marcar três palavras e continuar com elas marcadas.
-  const reporOCursor = useEffectEvent(() => {
-    campo.current?.focus()
-    campo.current?.setSelectionRange(texto.passo.inicio, texto.passo.fim)
-  })
-
-  useLayoutEffect(() => {
-    if (texto.acao > 0) reporOCursor()
-  }, [texto.acao])
-
-  function executar(acao: AcaoDeEscrita): void {
-    if (acao === 'desfazer') {
-      texto.desfazer()
-      return
-    }
-    if (acao === 'refazer') {
-      texto.refazer()
-      return
-    }
-
-    const alvo = campo.current
-    if (!alvo) return
-    texto.aplicar(
-      marcar(acao, { texto: conteudo, inicio: alvo.selectionStart, fim: alvo.selectionEnd }),
-    )
+  function mudarFonte(delta: number): void {
+    setFontePx((atual) => Math.min(FONTE_MAXIMA_PX, Math.max(FONTE_MINIMA_PX, atual + delta)))
   }
 
   return (
@@ -185,7 +133,7 @@ export function Formulario({
         />
 
         <div className="animar-entrada flex flex-1 flex-col">
-          <div className="flex items-center pt-3">
+          <div className="flex items-center justify-between gap-3 pt-3">
             {livros.length === 0 ? (
               <span className="text-poeira text-xs leading-relaxed">
                 Nenhum livro na estante ainda. Toque numa lombada escura para criar o primeiro.
@@ -212,6 +160,37 @@ export function Formulario({
                 />
               </span>
             )}
+
+            {/* Tamanho de fonte: sempre à mostra, e não um acessório do
+                teclado — ajustar a leitura faz sentido mesmo de tela
+                fechada (pedido do usuário, 17/09/2026). */}
+            <span className="flex shrink-0 items-center gap-1">
+              <button
+                type="button"
+                onClick={() => {
+                  mudarFonte(-PASSO_DA_FONTE_PX)
+                }}
+                disabled={fontePx <= FONTE_MINIMA_PX}
+                aria-label="Diminuir a fonte"
+                className={botao({ tipo: 'fantasma', tamanho: 'icone' })}
+              >
+                <Minus size={16} aria-hidden />
+              </button>
+              <span className="text-poeira w-6 text-center text-xs tabular-nums" aria-hidden>
+                {fontePx}
+              </span>
+              <button
+                type="button"
+                onClick={() => {
+                  mudarFonte(PASSO_DA_FONTE_PX)
+                }}
+                disabled={fontePx >= FONTE_MAXIMA_PX}
+                aria-label="Aumentar a fonte"
+                className={botao({ tipo: 'fantasma', tamanho: 'icone' })}
+              >
+                <Plus size={16} aria-hidden />
+              </button>
+            </span>
           </div>
 
           {aviso !== undefined && (
@@ -221,56 +200,26 @@ export function Formulario({
           {/* A folha: cresce com o texto e, enquanto o texto é curto, ocupa o que
             sobra da tela — tocar em qualquer ponto dela já põe o cursor. */}
           <textarea
-            ref={campo}
             value={conteudo}
             onChange={(e) => {
-              texto.digitar({
-                texto: e.target.value,
-                inicio: e.target.selectionStart,
-                fim: e.target.selectionEnd,
-              })
-            }}
-            onFocus={() => {
-              setEscrevendo(true)
-            }}
-            onBlur={(e) => {
-              // Tocar num botão da barra não tira o foco (o botão recusa o
-              // `pointerdown`), mas o Tab do teclado tira — e aí a barra precisa
-              // continuar de pé para receber o foco que está indo para ela.
-              const indo = e.relatedTarget
-              if (indo instanceof Element && indo.closest('[data-barra-de-escrita]')) return
-              setEscrevendo(false)
+              setConteudo(e.target.value)
             }}
             aria-label="Com suas palavras"
             placeholder="Escreva com suas palavras."
             autoComplete="off"
-            className="placeholder:text-poeira [field-sizing:content] w-full flex-1 resize-none bg-transparent px-1 pt-4 pb-2 text-base leading-relaxed outline-none"
+            style={{ fontSize: `${String(fontePx)}px` }}
+            className="placeholder:text-poeira [field-sizing:content] w-full flex-1 resize-none bg-transparent px-1 pt-4 pb-2 leading-relaxed outline-none"
           />
         </div>
 
-        {/* Empilhados, e não um no lugar do outro: com o teclado aberto no
-            celular, "Criar neurônio" precisa continuar alcançável enquanto
-            se escreve — sem isso não havia como salvar (pedido do usuário,
-            17/09/2026). `.rodape-de-escrita` é quem gruda no pé da tela; os
-            dois filhos ficam em fluxo normal dentro dele (ver index.css). */}
-        <div className="rodape-de-escrita">
-          {escrevendo && (
-            <BarraDeEscrita
-              onAcao={executar}
-              podeDesfazer={texto.podeDesfazer}
-              podeRefazer={texto.podeRefazer}
-            />
-          )}
-
-          <div className="barra-de-acao md:flex md:justify-end">
-            <button
-              type="submit"
-              disabled={!podeEnviar}
-              className={`${botao({ tipo: 'primario', largo: true })} md:w-auto md:min-w-44`}
-            >
-              {ocupado ? 'Processando…' : rotuloDeEnvio}
-            </button>
-          </div>
+        <div className="barra-de-acao md:flex md:justify-end">
+          <button
+            type="submit"
+            disabled={!podeEnviar}
+            className={`${botao({ tipo: 'primario', largo: true })} md:w-auto md:min-w-44`}
+          >
+            {ocupado ? 'Processando…' : rotuloDeEnvio}
+          </button>
         </div>
       </form>
 

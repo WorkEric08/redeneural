@@ -2209,56 +2209,6 @@ img {
     }
   }
 
-  /* A fileira de ferramentas de escrita (BarraDeEscrita.tsx), presa logo acima
-   do teclado — o teclado encolhe a viewport (`interactive-widget=resizes-content`),
-   então "o pé da tela" já é "acima do teclado". Sangra as laterais como a barra
-   de ação, para a faixa atravessar a tela inteira como na referência. */
-  .barra-de-escrita {
-    position: sticky;
-    bottom: 0;
-    z-index: 10;
-    display: flex;
-    align-items: center;
-    margin-inline: -16px;
-    padding: 4px 8px calc(4px + env(safe-area-inset-bottom));
-    border-top: 1px solid var(--linha);
-    background: var(--parede);
-  }
-
-  @media (min-width: 768px) {
-    .barra-de-escrita {
-      /* Sem isto ela continuava presa ao pé da viewport (herdado da regra
-         base) mesmo com `.barra-de-acao` já `static` aqui — as duas
-         colidiam no mesmo canto, a de escrita por cima do botão de criar.
-         Vira item normal do fluxo, como o botão. */
-      position: static;
-      margin-inline: 0;
-      border-radius: 12px;
-      border: 1px solid var(--linha);
-      padding-bottom: 4px;
-    }
-  }
-
-  /* A barra de escrita e o botão de enviar aparecem juntos no celular
-     enquanto se escreve (ver Formulario.tsx — sem isso não havia como tocar
-     "Criar neurônio" com o teclado aberto, pedido do usuário, 17/09/2026).
-     Cada um sozinho com `position: sticky; bottom: 0` gruda no mesmo canto
-     da tela e um cobre o outro; este invólucro é quem gruda, e os dois
-     voltam a ser fluxo normal (empilhado) dentro dele. Só no celular: do
-     tablet em diante os dois já são estáticos, no fim do formulário. */
-  @media (max-width: 767px) {
-    .rodape-de-escrita {
-      position: sticky;
-      bottom: 0;
-      z-index: 10;
-    }
-
-    .rodape-de-escrita .barra-de-escrita,
-    .rodape-de-escrita .barra-de-acao {
-      position: static;
-    }
-  }
-
   /* O aviso flutuante (Aviso.tsx). Popover, e não uma div com z-index: com um
    painel aberto, só o que está na camada do topo aparece por cima do fundo
    desfocado, e um erro de "criar livro" nasce justamente com o painel aberto.

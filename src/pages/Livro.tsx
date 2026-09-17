@@ -1,4 +1,4 @@
-import { BookOpen, ChevronDown, Search } from 'lucide-react'
+import { BookOpen, ChevronDown, ChevronRight, Search } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 
@@ -13,11 +13,13 @@ import { usePalacio } from '@/store/palacio'
 /**
  * Um livro aberto: os neurônios dele e os fios que saem de cada um.
  *
- * Cada neurônio é um cartão. Os fios ficam escondidos até o toque (pedido do
- * usuário, 17/09/2026) — a seta diz que há algo ali; antes ficavam sempre
- * abertos, e uma lista de 10+ fios por neurônio engolia a tela. O fio de
- * ponte leva o nome do livro do outro lado: sem isso, "atravessa livros" não
- * quer dizer nada para quem está lendo.
+ * Cada neurônio é um cartão com duas setas, de dois toques diferentes:
+ * `ChevronDown` expande os fios ali mesmo (ficam escondidos até o toque —
+ * pedido do usuário, 17/09/2026; antes ficavam sempre abertos, e uma lista
+ * de 10+ fios por neurônio engolia a tela), e `ChevronRight`, sempre visível,
+ * abre a tela cheia do neurônio — é como se lê o texto inteiro, não só a
+ * prévia de duas linhas daqui. O fio de ponte leva o nome do livro do outro
+ * lado: sem isso, "atravessa livros" não quer dizer nada para quem está lendo.
  */
 export default function Livro() {
   const { livroId } = useParams()
@@ -129,47 +131,54 @@ export default function Livro() {
               const aberto = abertos.has(n.id)
               return (
                 <li key={n.id} className="cartao">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      alternar(n.id)
-                    }}
-                    aria-expanded={aberto}
-                    className="active:bg-realce hover:bg-realce/60 flex w-full flex-col gap-1.5 px-4 pt-4 pb-3 text-left transition-colors"
-                  >
-                    <span className="flex items-start justify-between gap-3">
-                      <span className="font-titulo text-[1.05rem] leading-snug font-semibold">
-                        {n.titulo}
+                  <div className="flex items-stretch">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        alternar(n.id)
+                      }}
+                      aria-expanded={aberto}
+                      className="active:bg-realce hover:bg-realce/60 flex min-w-0 flex-1 flex-col gap-1.5 px-4 pt-4 pb-3 text-left transition-colors"
+                    >
+                      <span className="flex items-start justify-between gap-3">
+                        <span className="font-titulo min-w-0 truncate text-[1.05rem] leading-snug font-semibold">
+                          {n.titulo}
+                        </span>
+                        <span className="flex shrink-0 items-center gap-2">
+                          {n.processando && <EtiquetaProcessando />}
+                          {/* A seta dos fios: só o indicador de que há algo
+                              ali — o toque é no botão inteiro, não só nela. */}
+                          <ChevronDown
+                            size={18}
+                            aria-hidden
+                            className={`text-poeira shrink-0 transition-transform ${aberto ? 'rotate-180' : ''}`}
+                          />
+                        </span>
                       </span>
-                      <span className="flex shrink-0 items-center gap-2">
-                        {n.processando && <EtiquetaProcessando />}
-                        {/* A seta: só o indicador de que há fios para ver — o
-                            toque é no cartão inteiro, não só nela. */}
-                        <ChevronDown
-                          size={18}
-                          aria-hidden
-                          className={`text-poeira shrink-0 transition-transform ${aberto ? 'rotate-180' : ''}`}
-                        />
-                      </span>
-                    </span>
-                    {n.conteudo && (
-                      <span className="text-poeira line-clamp-2 text-sm leading-relaxed">
-                        {n.conteudo}
-                      </span>
-                    )}
-                  </button>
+                      {n.conteudo && (
+                        <span className="text-poeira line-clamp-2 text-sm leading-relaxed">
+                          {n.conteudo}
+                        </span>
+                      )}
+                    </button>
+
+                    {/* A segunda seta, sempre à mostra — não escondida atrás
+                        de expandir: é o caminho direto para ler o texto
+                        inteiro na tela do neurônio (pedido do usuário,
+                        17/09/2026). Alvo de toque à parte do botão de
+                        expandir, para os dois gestos não disputarem o dedo. */}
+                    <Link
+                      to={`/neuronio/${n.id}`}
+                      aria-label={`Abrir ${n.titulo}`}
+                      className="hover:bg-realce/60 active:bg-realce flex shrink-0 items-center px-4 transition-colors"
+                    >
+                      <ChevronRight size={20} aria-hidden className="text-poeira" />
+                    </Link>
+                  </div>
 
                   {aberto && (
-                    <div className="border-linha border-t px-2 py-1">
+                    <div className="border-linha border-t px-2 py-2">
                       <Fios lista={vizinhos.get(n.id) ?? []} />
-                      <div className="flex justify-end px-2 pt-1 pb-2">
-                        <Link
-                          to={`/neuronio/${n.id}`}
-                          className={botao({ tipo: 'secundario', tamanho: 'pequeno' })}
-                        >
-                          Abrir
-                        </Link>
-                      </div>
                     </div>
                   )}
                 </li>

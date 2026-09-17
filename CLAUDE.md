@@ -2520,12 +2520,12 @@ Pedido do usuário, com o Samsung Notes como referência (duas capturas): a tela
 de escrever era três campos empilhados — cada um com rótulo por cima, borda e
 fundo —, mais duas frases explicativas. Virou um app de notas.
 
-| Peça      | Antes                                          | Agora                                                            |
-| --------- | ---------------------------------------------- | ---------------------------------------------------------------- |
-| Título    | campo com borda e rótulo "Título", no corpo    | `input` na **barra de topo**, no lugar do nome da tela           |
-| Livro     | `select` de 52 px com rótulo "Livro"           | etiqueta (`.chip`) com o ponto da cor, logo abaixo da barra      |
-| Texto     | `textarea` com borda, fundo e rótulo           | a folha: sem caixa, ocupando o que sobra da tela                 |
-| Explicação| "As conexões nascem sozinhas" + "Escreva livre…" | saíram as duas                                                 |
+| Peça       | Antes                                            | Agora                                                       |
+| ---------- | ------------------------------------------------ | ----------------------------------------------------------- |
+| Título     | campo com borda e rótulo "Título", no corpo      | `input` na **barra de topo**, no lugar do nome da tela      |
+| Livro      | `select` de 52 px com rótulo "Livro"             | etiqueta (`.chip`) com o ponto da cor, logo abaixo da barra |
+| Texto      | `textarea` com borda, fundo e rótulo             | a folha: sem caixa, ocupando o que sobra da tela            |
+| Explicação | "As conexões nascem sozinhas" + "Escreva livre…" | saíram as duas                                              |
 
 **O título na barra é o que devolve a tela para o texto.** `BarraDeTopo` já
 aceitava `ReactNode` como título, então o `input` entra ali sem componente
@@ -2581,16 +2581,16 @@ protocolo do Worker, sanitização) ou só atalhos sem formatação.
 embedding nem no backup; a marcação fica à vista enquanto se escreve. O que
 isso custou em fidelidade à referência está na tabela:
 
-| Ícone da referência         | Aqui                                              |
-| --------------------------- | ------------------------------------------------- |
-| B, itálico, tachado         | `**`, `*`, `~~` — alternam, não empilham          |
-| Listas, numerada, checklist | `- `, `1. `, `- [ ] `                             |
-| Recuo ↔                     | dois espaços por passo                            |
-| Desfazer / refazer          | histórico próprio (ver abaixo)                    |
-| "Aa" e tamanho "15"         | viraram **um** botão: ciclo `#` → `##` → `###`    |
-| Sublinhado                  | **fora** — markdown não tem                       |
-| Alinhamento, caixa de texto | **fora** — markdown não tem                       |
-| Caneta de desenho           | **fora** — não existe em texto puro               |
+| Ícone da referência         | Aqui                                           |
+| --------------------------- | ---------------------------------------------- |
+| B, itálico, tachado         | `**`, `*`, `~~` — alternam, não empilham       |
+| Listas, numerada, checklist | `- `, `1. `, `- [ ] `                          |
+| Recuo ↔                     | dois espaços por passo                         |
+| Desfazer / refazer          | histórico próprio (ver abaixo)                 |
+| "Aa" e tamanho "15"         | viraram **um** botão: ciclo `#` → `##` → `###` |
+| Sublinhado                  | **fora** — markdown não tem                    |
+| Alinhamento, caixa de texto | **fora** — markdown não tem                    |
+| Caneta de desenho           | **fora** — não existe em texto puro            |
 
 ### O que não é óbvio
 
@@ -3060,7 +3060,7 @@ profundo, não... preto... preto puro não tem profundidade") e de uma
 decisão registrada na Fase 8/"A paleta e a interface" (a barra de status
 seguia a sala — Rich Black à noite, Platinum de dia, trocada ao passar pela
 porta). Pedido explícito do usuário, duas vezes ("no padrão, preto") — a
-regra de ouro não mudou para o *app*, só a barra de status parou de segui-la.
+regra de ouro não mudou para o _app_, só a barra de status parou de segui-la.
 
 Como "padrão" também significou "sem condição nenhuma": as três metas
 `theme-color` de `index.html` (a da porta + duas por `prefers-color-scheme`)
@@ -3162,6 +3162,97 @@ mesma tela para criar um livro por qualquer caminho (enfeite, vaga vazia,
 com Violeta/Verde-azulado em uso; com Azul já em uso, cai para o primeiro
 pano livre (Verde-azulado); com tudo em uso, continua sugerindo algo da
 paleta. 1 teste novo (274 no total), typecheck e lint limpos.
+
+## A lista de neurônios do livro ganha duas setas (17/09/2026)
+
+Pedido do usuário: dentro de um livro, cada neurônio tinha só um alvo de
+toque — o cartão inteiro expandia os fios. Chegar à tela cheia do neurônio
+(para ler o texto completo) exigia expandir primeiro e achar o "Abrir"
+pequeno escondido lá dentro, no fim da lista de fios.
+
+Agora o cartão tem duas setas lado a lado, cada uma com o próprio alvo de
+toque: `ChevronDown` continua abrindo os fios ali mesmo, sem trocar de tela
+(o comportamento de expandir ficou como estava — só o botão de abrir que
+morava dentro dele mudou de lugar); `ChevronRight`, **sempre visível**, é um
+`Link` direto para `/neuronio/:id`. Os dois vivem em `flex items-stretch`
+dentro do `<li>`, cada um com sua própria área de toque (`px-4`), para
+expandir e abrir não disputarem o dedo um do outro.
+
+O "Abrir" antigo — um botão pequeno e secundário dentro do bloco expandido
+de fios — foi removido: a nova seta substitui essa função e fica visível o
+tempo todo, sem precisar expandir primeiro para achá-la.
+
+**Não verificado num navegador de verdade nesta sessão** — sem ferramenta de
+automação de navegador disponível no ambiente desta conversa. Verificado com
+typecheck, lint e os 274 testes automatizados (nenhum teste novo — é JSX e
+CSS, sem lógica pura nova para testar, mesmo padrão de mudanças de layout
+anteriores).
+
+## A barra de escrita sai, entra um controle de tamanho de fonte (17/09/2026)
+
+Pedido do usuário: a barra de formatação da seção anterior ("A barra de
+escrita acima do teclado") saiu — junto com `BarraDeEscrita.tsx`,
+`marcacao.ts`/`marcacao.test.ts` e `useTextoComHistorico.ts`, removidos por
+inteiro, não só desconectados da tela. No lugar, um controle de tamanho de
+fonte, fora do fluxo de foco/teclado.
+
+**Por que a remoção foi total, não parcial.** A barra existia só para
+escrever markdown num campo que é `string` pura — o motivo registrado na
+seção anterior. Sem ela, `marcacao.ts` (as funções de marcar/desmarcar
+`**`, `*`, `~~`, listas, títulos, recuo) e `useTextoComHistorico` (o
+histórico de desfazer/refazer feito à mão, porque o desfazer nativo do
+navegador não sobrevive a um campo controlado) perdem o único motivo de
+existir: nada mais no app precisa de histórico próprio de texto ou de
+marcação de markdown. `conteudo` em `Formulario.tsx` voltou a ser um
+`useState<string>` simples — sem `digitar`/`aplicar`/`desfazer`/`refazer`,
+sem o `useEffectEvent` que repunha o cursor depois de um botão reescrever o
+campo (não existe mais botão reescrevendo o campo).
+
+**O controle de fonte:** um par de botões "A−"/"A+" (`Minus`/`Plus`) com o
+tamanho atual entre eles, junto da etiqueta do livro — mesma linha, abaixo
+da barra de topo, fora de `.rodape-de-escrita` (que também saiu: sem a
+barra, o rodapé voltou a ser só `.barra-de-acao`, como era antes da seção
+anterior). `fonteEmPx` é `useState<number>` local (não persistido — é
+ajuste de leitura da sessão, não preferência do palácio, mesmo critério do
+modo organizar e da visão geral da estante), aplicado via `style={{
+fontSize }}` no `<textarea>`. Faixa 14–28px, passo de 2px — abaixo de 14 o
+texto fica difícil de mirar com o dedo, acima de 28 uma linha comum já
+quebra demais numa tela de 320px.
+
+**Por que não ficou atrelado ao foco:** o pedido foi explícito — "em algum
+outro local sem ser esse atalho" — porque a barra antiga só aparecia com o
+teclado em cima, e cada vez que o campo perdia o foco (rolar, tocar fora) o
+controle sumia. O tamanho de fonte é preferência de leitura, faz sentido
+mesmo com o teclado fechado (por exemplo, revendo o texto depois de
+escrever), então fica sempre visível, sem `escrevendo`/`onFocus`/`onBlur`
+— esse estado e os dois manipuladores saíram de `Formulario.tsx` inteiros,
+sem chamador que sobrasse.
+
+### A lupa do Android não tem API web
+
+O segundo pedido — "melhore a lupa que ajuda a ver um texto quando
+selecionado uma parte do texto" — é sobre a lupa nativa que o Android
+desenha sozinho ao arrastar as alças de seleção de texto: ela amplia o
+trecho embaixo do dedo enquanto ele se move. **Não existe API web para
+estilizar, reposicionar ou de qualquer forma customizar essa lupa** — é
+desenhada pela WebView/Chrome no nível do sistema, no mesmo grupo de coisas
+fora do alcance da web que já apareceram nesta sessão (cor da barra de
+navegação, força do autofill do Gboard). Não há gambiarra CSS ou JS que a
+alcance.
+
+O que o controle de fonte novo faz por tabela: a lupa amplia o que já está
+desenhado na tela — texto maior na fonte de origem significa um trecho mais
+legível dentro da lupa também, embora indiretamente (ela não fica "melhor",
+o material que ela amplia é que fica mais fácil de ler para começo de
+conversa). É a única alavanca que a web dá sobre esse comportamento.
+
+**Não verificado num navegador de verdade nesta sessão** — mesma ressalva
+de sempre: sem ferramenta de automação disponível, a remoção da barra e o
+novo controle foram conferidos lendo o código e a cascata do CSS, não numa
+tela de verdade. Vale conferir no celular se o controle de fonte fica bem
+posicionado com o teclado aberto, e se a lupa nativa de fato amplia o texto
+maior como esperado. Verificado com typecheck, lint e a suíte de testes
+(que perde os 16 testes de `marcacao.test.ts`, removidos junto do arquivo).
 
 ## Fases
 
