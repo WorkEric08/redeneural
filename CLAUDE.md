@@ -3549,6 +3549,60 @@ variante do botão foram conferidas lendo classe a classe, não vistas lado a
 lado numa tela. Typecheck, lint e os 268 testes automatizados continuam
 limpos — mudança sem lógica nova, só classes.
 
+## A splash screen também vira preta (17/09/2026)
+
+Pedido do usuário: a cor de fundo da splash screen do PWA (`background_color`
+do manifest) muda de Rich Black (`#0d1b2a`) para preto (`#000000`), igual à
+barra de status.
+
+**Conflito apontado antes de mexer:** a Fase 6 registra que o fundo do app é
+"azul-marinho profundo, não preto — preto puro não tem profundidade", e a
+seção "Os ícones do app tinham um fundo cravado" (17/09/2026, mais cedo nesta
+sessão) tratou `background_color` e `theme_color` como propositalmente
+diferentes — a barra de status virou preta ali, e a splash **ficou** Rich
+Black, de propósito. Pedido explícito agora; a regra de ouro não mudou para o
+resto do app, só a splash deixou de segui-la, do mesmo jeito que a barra de
+status já tinha deixado.
+
+### Os ícones opacos precisaram ser refeitos, não só o manifest
+
+`logo-maskable-512.png` e `apple-touch-icon.png` tinham o fundo achatado em
+`#0d1b2a` (a correção de mais cedo hoje) — só trocar `background_color` sem
+mexer neles recriaria a mesma costura que aquela correção resolveu: um
+quadrado da cor antiga por trás do ícone, agora contra um fundo preto.
+
+Confirmado por pixel que os dois nasceram da mesma arte de `logo-512.png`
+(que já é transparente): nas mesmas coordenadas, um pixel totalmente opaco
+tem o valor idêntico nos dois arquivos, e só a borda antisserrilhada
+(alpha parcial) varia por frações de tom — a assinatura de "mesma arte,
+achatada sobre fundo sólido". Refeitos com `sharp().flatten({ background:
+'#000000' })` a partir de `logo-512.png`, em vez de recolorir o arquivo
+antigo pixel a pixel: `flatten` já faz a mistura alfa correta na borda, sem
+o halo que apareceu na primeira tentativa de transparência desta sessão.
+Verificado pixel a pixel: canto em `(0,0,0)`, pixel central do ícone idêntico
+ao arquivo anterior.
+
+`logo-192.png`/`logo-512.png`/`favicon.png` não precisaram de nada — já são
+transparentes desde a correção de mais cedo, e um fundo transparente não tem
+costura com nenhuma cor por trás.
+
+### A cor pareada em `capacitor.config.ts` foi junto
+
+`android.backgroundColor` (a cor da WebView nativa, o equivalente do splash
+para quando o app virar APK — Fase 9, ainda não compilado) também era
+`#0d1b2a`. Atualizado para `#000000` na mesma leva: as três cores (barra de
+status, splash do PWA, fundo da WebView nativa) tinham nascido iguais como
+Rich Black, e deixar uma murcha para trás criaria uma divergência sem
+motivo entre o caminho web e o caminho nativo — o tipo de trilha que a
+instrução permanente de não fechar esse caminho pede para evitar, mesmo sem
+poder testar num APK real nesta máquina.
+
+**Não verificado num navegador de verdade nesta sessão** — mesma ressalva de
+sempre. A splash screen de verdade só se vê reinstalando o PWA num Android; o
+que dava para confirmar sem isso (valor do manifest, pixels dos ícones
+recompostos) foi conferido. Typecheck, lint e os 268 testes automatizados
+continuam limpos — mudança de assets e configuração, sem lógica nova.
+
 ## Fases
 
 0. ✅ Esqueleto (Vite/React/TS/Tailwind/PWA/Capacitor)

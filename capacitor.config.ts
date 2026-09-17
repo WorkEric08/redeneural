@@ -6,7 +6,9 @@ const config: CapacitorConfig = {
   webDir: 'dist',
   android: {
     // A inferência roda em Worker/WASM; sem isso a WebView pode matar o processo em background.
-    backgroundColor: '#0d1b2a',
+    // Preto, para bater com a barra de status e a splash screen do PWA — os
+    // três eram Rich Black até 17/09/2026 (ver vite.config.ts).
+    backgroundColor: '#000000',
   },
 }
 

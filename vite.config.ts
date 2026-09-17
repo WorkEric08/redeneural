@@ -53,12 +53,16 @@ export default defineConfig({
         orientation: 'portrait',
         start_url: '/',
         scope: '/',
-        // A barra de status fica preta, sempre — pedido do usuário,
-        // 17/09/2026, sem seguir o tema (antes era Rich Black, a cor da
-        // sala). `background_color` continua Rich Black: é a cor da
-        // splash screen do PWA, coisa diferente da barra de status.
+        // Barra de status e splash screen, as duas pretas — pedido do
+        // usuário, 17/09/2026, sem seguir o tema (antes as duas eram Rich
+        // Black, a cor da sala). `logo-maskable-512.png` e
+        // `apple-touch-icon.png` (os dois ícones opacos, que não podem ficar
+        // transparentes) foram recompostos com fundo preto na mesma leva,
+        // senão a splash mostraria o quadrado antigo de `#0d1b2a` por trás
+        // do ícone — a mesma costura corrigida em "Os ícones do app tinham
+        // um fundo cravado".
         theme_color: '#000000',
-        background_color: '#0d1b2a',
+        background_color: '#000000',
         icons: [
           { src: '/logo-192.png', sizes: '192x192', type: 'image/png', purpose: 'any' },
           { src: '/logo-512.png', sizes: '512x512', type: 'image/png', purpose: 'any' },
