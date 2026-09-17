@@ -4,6 +4,7 @@ import type { Id, Ponto } from '@/core'
 
 import { desenhar, type Camera, type Cena, type CoresDaRede } from './desenhar'
 import {
+  balanco,
   camaraParaEnquadrar,
   neuronioEm,
   posicoesDoArrasto,
@@ -16,9 +17,18 @@ import {
 /**
  * A tela da rede: canvas, câmera e dedo.
  *
- * A câmera mora num `ref` e o redesenho é imperativo. Não há laço de animação —
- * pinta quando alguma coisa muda, e só. Num celular, um `requestAnimationFrame`
- * eterno é bateria queimando para mostrar uma imagem parada.
+ * A câmera mora num `ref` e o redesenho é imperativo. Historicamente sem laço
+ * de animação — pintava quando alguma coisa mudava, e só; um
+ * `requestAnimationFrame` eterno é bateria queimando para mostrar uma imagem
+ * parada.
+ *
+ * **Isso mudou em 17/09/2026, como teste do usuário:** agora há um laço
+ * contínuo, só enquanto esta tela está montada (começa ao abrir, para ao
+ * sair — nunca em segundo plano), para o "balanço" leve dos neurônios (ver
+ * `balanco`, em `layout.ts`, e o `useEffect` mais abaixo). É a primeira
+ * exceção de verdade a "sem laço de animação" — as outras (assentamento,
+ * deslize, revelação) são todas limitadas no tempo e param sozinhas; esta
+ * roda o tempo todo que a tela estiver na frente.
  */
 
 /**
@@ -75,6 +85,14 @@ const DURACAO_DA_REVELACAO = 850
 /** Menor que `ESCALA_MAXIMA`: um par bem próximo não pode virar um zoom
  *  absurdo só porque a caixa que os enquadra é minúscula. */
 const ESCALA_MAXIMA_DA_REVELACAO = 3.2
+
+/**
+ * O quanto o balanço desloca cada neurônio, em pixels de **tela** — não de
+ * mundo. Dividido pela escala da câmera na hora de pintar (ver `pintar`),
+ * então "leve" quer dizer a mesma coisa em qualquer zoom, do mesmo jeito que
+ * o próprio ponto já é desenhado em tamanho de tela (`raioNaTela`).
+ */
+const AMPLITUDE_DO_BALANCO_PX = 2.5
 
 export interface ControleDaTela {
   enquadrar: () => void
@@ -187,11 +205,25 @@ export function Tela({ cena, onSelecionar, onArrastarNeuronio, controle, folgas 
 
     cores.current ??= lerCores(canvas)
 
+    // O balanço: soma um deslocamento pequeno e periódico (puramente visual,
+    // nunca gravado — ver `balanco` em layout.ts) em cima de cada posição
+    // real, antes do overlay de arrasto/assentamento — um nó sendo arrastado
+    // não balança, a posição dele é a mão de quem arrasta.
+    const agora = performance.now()
+    const amplitude = AMPLITUDE_DO_BALANCO_PX / Math.max(camera.current.escala, 0.001)
+    const balancadas = new Map<Id, Ponto>()
+    for (const [id, p] of cenaRef.current.posicoes) {
+      if (!Number.isFinite(p.x) || !Number.isFinite(p.y)) {
+        balancadas.set(id, p)
+        continue
+      }
+      const b = balanco(id, agora)
+      balancadas.set(id, { x: p.x + b.x * amplitude, y: p.y + b.y * amplitude })
+    }
+
     const overlay = posicoesArrastadas.current
     const posicoes =
-      overlay && overlay.size > 0
-        ? new Map<Id, Ponto>([...cenaRef.current.posicoes, ...overlay])
-        : cenaRef.current.posicoes
+      overlay && overlay.size > 0 ? new Map<Id, Ponto>([...balancadas, ...overlay]) : balancadas
 
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
     desenhar(
@@ -496,6 +528,32 @@ export function Tela({ cena, onSelecionar, onArrastarNeuronio, controle, folgas 
     consulta.addEventListener('change', aoTrocarDeTema)
     return () => {
       consulta.removeEventListener('change', aoTrocarDeTema)
+    }
+  }, [pintar])
+
+  /**
+   * O laço do balanço: roda enquanto esta tela está montada, e só — começa
+   * ao abrir a Rede, para ao sair dela (nunca em segundo plano). É a exceção
+   * de verdade a "sem laço de animação" (ver o comentário do arquivo).
+   * `prefers-reduced-motion` desliga inteiro: quem pediu menos movimento não
+   * pediu um balanço perpétuo de fundo.
+   */
+  useEffect(() => {
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
+
+    let ativo = true
+    let quadroId: number
+
+    const quadro = (): void => {
+      if (!ativo) return
+      pintar()
+      quadroId = requestAnimationFrame(quadro)
+    }
+    quadroId = requestAnimationFrame(quadro)
+
+    return () => {
+      ativo = false
+      cancelAnimationFrame(quadroId)
     }
   }, [pintar])
 

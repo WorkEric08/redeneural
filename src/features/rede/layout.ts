@@ -1,4 +1,5 @@
 import type { Conexao, Id, NeuronioNaTela, Ponto } from '@/core'
+import { semente } from '@/lib/semente'
 
 /**
  * O que a UI da Rede ainda precisa calcular do próprio lado.
@@ -163,5 +164,32 @@ export function camaraParaEnquadrar(
     escala,
     x: -((minX + maxX) / 2) * escala,
     y: -((minY + maxY) / 2) * escala + (folgas.topo - folgas.base) / 2,
+  }
+}
+
+/**
+ * O balanço da Rede: um teste do usuário, 17/09/2026, puramente visual — a
+ * posição gravada de cada neurônio **nunca** muda por causa disto (ver
+ * `lib/semente.ts`: "o palácio não pode se remexer"). Quem chama soma este
+ * vetor, já na amplitude de tela que quiser, em cima da posição de verdade
+ * a cada quadro; fechar e abrir a Rede de novo volta exatamente ao lugar
+ * gravado.
+ *
+ * A fase e o período saem da semente do id, não de `Math.random` nem do
+ * relógio sozinho — determinístico como o resto do arquivo, só que agora
+ * "determinístico" quer dizer "o mesmo balanço", não "parado". Período e
+ * frequência de cada eixo variam por nó (a semente decide) para não
+ * balançarem em cardume, todos preços à mesma vez.
+ */
+export function balanco(id: Id, tempoMs: number): Ponto {
+  const [a, b] = semente(id)
+  const periodoMs = 3200 + a * 2200 // 3,2-5,4s: vivo, mas devagar o bastante para ser "leve"
+  const fase = b * 2 * Math.PI
+  const angulo = (tempoMs / periodoMs) * 2 * Math.PI + fase
+  return {
+    x: Math.sin(angulo),
+    // Frequência um pouco diferente da de x: uma órbita que muda de forma
+    // devagar, não um círculo perfeito se repetindo.
+    y: Math.cos(angulo * 0.87),
   }
 }

@@ -2920,6 +2920,67 @@ sempre; vale conferir o toque abrindo/fechando e a seta girando num aparelho
 de verdade. Typecheck, lint e os 270 testes continuam limpos (sem teste
 novo — é composição de UI e um `Set` local, sem função pura nova).
 
+## O balanço: um teste com movimento contínuo na Rede (17/09/2026)
+
+Pedido do usuário: "os neurônios podem se mexer levemente", como teste.
+Isso esbarra em duas decisões já registradas — "o layout é determinístico...
+você precisa reencontrar o conceito no mesmo canto amanhã" (Fase 7) e "sem
+laço de animação... um `requestAnimationFrame` eterno é bateria queimando
+para mostrar imagem parada" (também Fase 7, repetido a cada animação nova
+desde então). Apontei as duas antes de mexer, com uma pergunta para cada:
+
+1. **A posição gravada muda de verdade, ou é só visual?** Escolha do
+   usuário: só visual, nunca grava. "Reencontrar amanhã" continua valendo —
+   fechar e abrir a Rede de novo, ela volta exatamente onde a física por
+   significado deixou.
+2. **Vale o custo de bateria de um laço contínuo enquanto a tela está
+   aberta?** Escolha do usuário: sim, mas só enquanto a Rede está na tela —
+   nunca em segundo plano.
+
+### Como fica sem quebrar a promessa
+
+`balanco(id, tempoMs)` (`layout.ts`, pura e testada) devolve um vetor em
+`[-1, 1]` por eixo — período (3,2-5,4s) e fase tirados da `semente` do id
+(o mesmo utilitário que a estante usa para não repetir cada lombada igual),
+não de `Math.random`: o balanço de um neurônio é sempre o mesmo desenho no
+tempo, só que "sempre o mesmo" agora quer dizer "o mesmo movimento", não "o
+mesmo ponto parado". Frequências de x e y levemente diferentes (`* 0.87` em
+y) desenham uma órbita que muda de forma devagar, não um círculo repetindo.
+
+`pintar()` soma esse vetor — já na amplitude de **tela** (`AMPLITUDE_DO_
+BALANCO_PX`, 2,5px, dividida pela escala da câmera a cada quadro, do mesmo
+jeito que o próprio ponto já é desenhado em tamanho de tela) — em cima da
+posição real de cada neurônio, **antes** do overlay de arrasto/assentamento:
+um nó sendo arrastado não balança, a posição dele é a mão de quem arrasta.
+A posição gravada em `meta.posicoesDaRede` nunca é tocada — o balanço não
+existe fora do quadro que acabou de ser pintado.
+
+### A exceção de verdade a "sem laço de animação"
+
+As outras animações desta tela (assentamento, deslize, revelação) são todas
+limitadas no tempo e param sozinhas — "assenta e para". O balanço é
+diferente: um `useEffect` novo inicia um `requestAnimationFrame` contínuo
+ao montar e cancela ao desmontar, sem duração — a primeira vez que este
+arquivo tem um laço que não para sozinho. `prefers-reduced-motion: reduce`
+desliga o laço inteiro: quem pediu menos movimento não pediu um balanço de
+fundo perpétuo.
+
+### Verificado
+
+`balanco` é pura e testada: nunca passa de 1 em nenhum eixo, é determinística
+(mesmo id + mesmo instante = mesmo vetor), e dois neurônios não balançam em
+cardume (fases diferentes no mesmo instante) — 3 testes novos (273 no
+total). A etiqueta do selecionado usa o mesmo mapa de posições que o
+desenho, então acompanha o balanço do ponto sem código a mais. Typecheck e
+lint limpos.
+
+**Não verificado num navegador de verdade nesta sessão** — mesma ressalva de
+sempre, e esta é a que mais precisa de um aparelho de verdade: é sensação de
+movimento, bateria e desempenho com centenas de nós, nenhum dos três se mede
+lendo código. Vale conferir se a amplitude (2,5px) está mesmo "leve", se o
+laço contínuo pesa a bateria de um jeito perceptível, e se um palácio grande
+continua fluido com todo mundo balançando a cada quadro.
+
 ## Fases
 
 0. ✅ Esqueleto (Vite/React/TS/Tailwind/PWA/Capacitor)

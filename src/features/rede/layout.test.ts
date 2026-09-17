@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest'
 import type { Conexao, NeuronioNaTela } from '@/core'
 
 import {
+  balanco,
   camaraParaEnquadrar,
   easeOutCubic,
   grausDoMapa,
@@ -235,5 +236,25 @@ describe('camaraParaEnquadrar', () => {
       6,
     )
     expect(c.x).toBeCloseTo(-10 * c.escala)
+  })
+})
+
+describe('balanco', () => {
+  it('nunca passa de 1 em nenhum eixo — quem chama controla a amplitude de verdade', () => {
+    for (let t = 0; t < 20000; t += 137) {
+      const b = balanco('um-neuronio', t)
+      expect(Math.abs(b.x)).toBeLessThanOrEqual(1)
+      expect(Math.abs(b.y)).toBeLessThanOrEqual(1)
+    }
+  })
+
+  it('é determinístico: o mesmo id no mesmo instante sempre balança igual', () => {
+    expect(balanco('a', 1234)).toEqual(balanco('a', 1234))
+  })
+
+  it('dois neurônios não balançam em cardume — fases diferentes no mesmo instante', () => {
+    const a = balanco('a', 1000)
+    const b = balanco('outro-bem-diferente', 1000)
+    expect(a).not.toEqual(b)
   })
 })
