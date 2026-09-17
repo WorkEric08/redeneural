@@ -2645,6 +2645,40 @@ toque nos botões.
 os asteriscos na leitura. Renderizar é o passo seguinte natural (um parser
 pequeno e sem HTML solto), mas não foi pedido aqui.
 
+## "Deslizar navegação" vira o único comportamento da Rede (17/09/2026)
+
+Pedido do usuário: o botão que ligava/desligava o deslize da câmera (ver
+"Deslizar navegação", 16/09/2026) saiu — o comportamento fica **sempre**
+ligado, sem opção de desligar. O botão saiu da seção "Mostrar" dos filtros
+da Rede, e a prop `deslizarNavegacao` saiu de `Tela.tsx` de ponta a ponta
+(interface, desestruturação, o `if` que gateava `iniciarDeslize`): soltar
+arrastando a câmera desliza um pouco, ponto — não há mais um caminho onde
+isso não acontece. `Rede.tsx` também perdeu o `useState` e o ícone `Waves`,
+que ficaram sem uso.
+
+## O comprimento do livro não move mais o formulário (17/09/2026)
+
+Pedido do usuário: trocar o Comprimento na tela de novo livro empurrava o
+resto da tela — a amostra ao lado do campo "Nome" mudava de altura junto com
+a escolha (72px no "Curto", 127px no "Enorme"), e como essa amostra é um item
+da mesma linha flex do campo "Nome", a linha inteira crescia ou encolhia,
+empurrando Pano/Largura/Comprimento/o botão de enviar para cima ou para
+baixo a cada toque.
+
+Corrigido com um invólucro de altura fixa em `REFERENCIA_DA_AMOSTRA_PX`
+(130px — o teto do que qualquer preset produz) ao redor da amostra, com
+`items-end` ancorando-a embaixo, como um livro numa prateleira: a amostra
+continua crescendo e encolhendo por dentro, mas a linha em volta dela não
+muda de tamanho nunca, então nada abaixo se desloca. Custo assumido: a linha
+"Nome" fica com a altura do maior preset possível mesmo quando a amostra é
+menor — mais respiro em cima dela do que antes, na troca por nunca mais
+pular a tela.
+
+**Não verificado num navegador de verdade nesta sessão** — sem ferramenta de
+automação de navegador disponível neste ambiente, a correção foi conferida
+lendo o CSS/flexbox, não vista na tela. Typecheck, lint e os 265 testes
+automatizados continuam limpos.
+
 ## Fases
 
 0. ✅ Esqueleto (Vite/React/TS/Tailwind/PWA/Capacitor)

@@ -49,12 +49,13 @@ const ESCALA_DE_FOCO = 2.2
 const DURACAO_DO_ASSENTAMENTO = 900
 
 /**
- * O deslize da câmera ao soltar arrastando (opção "Deslizar navegação", ligada
- * por quem navega — desligada por padrão, ver Rede.tsx): não é inércia de
- * verdade (que desaceleraria por tempo indefinido, o tipo de laço que este
- * arquivo evita), é um "assenta e para" na direção do gesto — a mesma ideia do
- * assentamento de um neurônio arrastado, só que projetando a posição em vez de
- * pedir ao motor.
+ * O deslize da câmera ao soltar arrastando — padrão sempre ligado desde
+ * 17/09/2026 (era opcional, atrás de um botão nos filtros; virou o único
+ * comportamento depois que o usuário decidiu ficar sempre com ele). Não é
+ * inércia de verdade (que desaceleraria por tempo indefinido, o tipo de laço
+ * que este arquivo evita), é um "assenta e para" na direção do gesto — a
+ * mesma ideia do assentamento de um neurônio arrastado, só que projetando a
+ * posição em vez de pedir ao motor.
  */
 const VELOCIDADE_MINIMA_DO_DESLIZE = 0.12 // px/ms — abaixo disso, soltar já era "parar", não "arremessar"
 const PROJECAO_DO_DESLIZE_MS = 220
@@ -86,9 +87,6 @@ interface Props {
   controle?: RefObject<ControleDaTela | null>
   /** Estável entre renders (constante de módulo): enquadrar depende dela. */
   folgas: Folgas
-  /** Soltar arrastando a câmera desliza um pouco na direção do gesto, em vez
-   *  de parar exatamente onde o dedo soltou (ver `DISTANCIA_MAXIMA_DO_DESLIZE`). */
-  deslizarNavegacao: boolean
 }
 
 const MISTURAS = ['lighter', 'multiply', 'screen', 'source-over'] as const
@@ -122,14 +120,7 @@ function lerCores(el: HTMLElement): CoresDaRede {
   }
 }
 
-export function Tela({
-  cena,
-  onSelecionar,
-  onArrastarNeuronio,
-  controle,
-  folgas,
-  deslizarNavegacao,
-}: Props) {
+export function Tela({ cena, onSelecionar, onArrastarNeuronio, controle, folgas }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const camera = useRef<Camera>({ x: 0, y: 0, escala: 1 })
   const cores = useRef<CoresDaRede | null>(null)
@@ -544,9 +535,7 @@ export function Tela({
         }
         pintar()
 
-        // Velocidade suavizada (px/ms) para decidir o deslize ao soltar — só
-        // importa quando "Deslizar navegação" está ligada, mas é barato o
-        // bastante para não valer a pena gatear.
+        // Velocidade suavizada (px/ms) para decidir o deslize ao soltar.
         const agora = performance.now()
         const dt = ultimoQuadroDoArrasto.current ? agora - ultimoQuadroDoArrasto.current : 16
         ultimoQuadroDoArrasto.current = agora
@@ -582,8 +571,8 @@ export function Tela({
 
         if (!eraUmDedoSo || arrastou.current > TOLERANCIA_DO_TOQUE) {
           // Soltou arrastando a câmera de verdade (não um nó, não uma pinça
-          // terminando): com a opção ligada, desliza mais um pouco.
-          if (deslizarNavegacao && !alvoDoArrasto && eraUmDedoSo) {
+          // terminando): desliza mais um pouco.
+          if (!alvoDoArrasto && eraUmDedoSo) {
             iniciarDeslize(velocidadeDoArrasto.current.vx, velocidadeDoArrasto.current.vy)
           }
           return

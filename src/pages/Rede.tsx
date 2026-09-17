@@ -1,4 +1,4 @@
-import { Maximize2, Search, SlidersHorizontal, Waves, Waypoints } from 'lucide-react'
+import { Maximize2, Search, SlidersHorizontal, Waypoints } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 
@@ -46,12 +46,6 @@ export default function Rede() {
 
   const [livroEmFoco, setLivroEmFoco] = useState<string | null>(null)
   const [soAsPontes, setSoAsPontes] = useState(false)
-  // Desligado por padrão: a câmera para exatamente onde o dedo soltou, como
-  // sempre. Ligado, soltar arrastando a rede projeta um pouco de deslize na
-  // direção do gesto — pedido do usuário, 16/09/2026. Sem persistência, como
-  // os outros filtros desta folha: é um jeito de navegar agora, não uma
-  // preferência gravada do palácio.
-  const [deslizarNavegacao, setDeslizarNavegacao] = useState(false)
   // Já nasce selecionado se a busca mandou para cá — o cartão de baixo e a
   // vizinhança acesa aparecem no mesmo instante da câmera se movendo.
   const [selecionado, setSelecionado] = useState<string | null>(() => centralizarId)
@@ -112,7 +106,6 @@ export default function Rede() {
           onArrastarNeuronio={moverNeuronioNaRede}
           controle={controle}
           folgas={FOLGAS}
-          deslizarNavegacao={deslizarNavegacao}
         />
       </div>
 
@@ -216,17 +209,6 @@ export default function Rede() {
                   className={soAsPontes ? 'text-ponte' : 'text-poeira'}
                 />
                 Só as pontes
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setDeslizarNavegacao((v) => !v)
-                }}
-                aria-pressed={deslizarNavegacao}
-                className={botao({ tipo: 'secundario', tamanho: 'pequeno' })}
-              >
-                <Waves size={16} aria-hidden />
-                Deslizar navegação
               </button>
             </div>
           </section>

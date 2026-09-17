@@ -93,20 +93,28 @@ export function FormularioDeLivro({
           />
         </label>
 
-        <span
-          aria-hidden
-          className="lombada lombada--amostra cores-de-antes"
-          style={{
-            ...pano(cor, intensidadeDaLuz),
-            ...(larguraLombada !== null && { width: `${String(larguraLombada)}px` }),
-            ...(comprimentoLombada !== null && {
-              height: `${String(Math.round((comprimentoLombada / 100) * REFERENCIA_DA_AMOSTRA_PX))}px`,
-            }),
-          }}
-        >
-          <span className="lombada-titulo">{titulo.trim() || '…'}</span>
-          <EmblemaDaLombada chave={emblema} />
-        </span>
+        {/* Altura fixa no teto do que a amostra pode medir (o "Enorme" dos
+            presets, ~127px, cabe dentro de 130): sem isto, trocar o
+            Comprimento mudava a altura da própria linha e empurrava o resto
+            do formulário para baixo — pedido do usuário, 17/09/2026. A
+            amostra fica ancorada embaixo (`items-end`), como um livro em pé
+            numa prateleira: cresce para cima, nunca desloca o que vem depois. */}
+        <div className="flex items-end" style={{ height: `${String(REFERENCIA_DA_AMOSTRA_PX)}px` }}>
+          <span
+            aria-hidden
+            className="lombada lombada--amostra cores-de-antes"
+            style={{
+              ...pano(cor, intensidadeDaLuz),
+              ...(larguraLombada !== null && { width: `${String(larguraLombada)}px` }),
+              ...(comprimentoLombada !== null && {
+                height: `${String(Math.round((comprimentoLombada / 100) * REFERENCIA_DA_AMOSTRA_PX))}px`,
+              }),
+            }}
+          >
+            <span className="lombada-titulo">{titulo.trim() || '…'}</span>
+            <EmblemaDaLombada chave={emblema} />
+          </span>
+        </div>
       </div>
 
       <fieldset className="flex flex-col">
