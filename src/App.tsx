@@ -28,12 +28,6 @@ export default function App() {
     void carregar()
   }, [carregar])
 
-  // Passou pela porta: a barra do sistema deixa de ser noite e segue o tema da
-  // sala (as metas com `media` em index.html).
-  useEffect(() => {
-    if (!naPorta) document.getElementById('cor-da-porta')?.remove()
-  }, [naPorta])
-
   // Toda troca de tela começa do topo — nunca no meio ou no fim (pedido do
   // usuário, 17/09/2026, sem exceção até ele pedir uma). `useLayoutEffect`,
   // não `useEffect`: roda antes do navegador pintar, para não haver um

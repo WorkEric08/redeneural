@@ -3016,6 +3016,70 @@ abrir uma folha (apagar, filtros) não faz a página pular por baixo dela.
 Typecheck, lint e os 273 testes continuam limpos (mudança de efeito único,
 sem lógica pura nova para testar).
 
+## Os ícones do app tinham um fundo cravado, e a barra de status vira preta (17/09/2026)
+
+Dois pedidos do usuário, depois de uma conversa identificando as partes do
+PWA que o Android desenha por cima do app: splash screen e barra de status.
+
+### A "borda escura" da splash screen
+
+Não era falta de centralização — medi a forma da porta dentro do canvas de
+512×512 (`sharp`, num script descartável) e ela já estava quase perfeita
+(399×421px de conteúdo, margens de 56/57px e 45/46px, 1px de diferença,
+imperceptível). A causa real: os cinco arquivos de ícone (`logo-192`,
+`logo-512`, `logo-maskable-512`, `favicon`, `apple-touch-icon`) tinham um
+fundo quase preto (`#101010`) **cravado no PNG**, diferente do
+`background_color` do manifest (`#0d1b2a`, Rich Black) — a splash screen
+pinta a cor do manifest atrás do ícone, e o quadrado escuro do próprio
+arquivo aparecia como uma borda que não batia com o resto.
+
+**Corrigido por tipo de ícone, não do mesmo jeito para todos:**
+
+- `logo-192.png`, `logo-512.png`, `favicon.png` (propósito "any" — ou sem
+  propósito): fundo virou **transparente**. O navegador preenche por baixo
+  com `background_color`, sem costura nenhuma.
+- `logo-maskable-512.png` e `apple-touch-icon.png`: **precisam** continuar
+  opacos — o padrão maskable proíbe transparência, e o iOS pinta
+  transparência de preto sozinho. Recoloridos de `#101010` para `#0d1b2a`
+  em vez de removidos.
+
+**O detalhe que quase passou batido:** a primeira versão do script só
+ajustava o alfa dos pixels de borda (antialiasing), mantendo a cor RGB
+original — que ainda carregava a mistura com o preto antigo. Resultado: um
+halo escuro fino sobrevivendo na borda mesmo com o fundo "transparente".
+Corrigido despremultiplicando a cor (tirando a contribuição do fundo antigo
+do RGB do pixel, não só do alfa) antes de salvar — só assim a borda
+recompõe limpa sobre qualquer fundo novo. Verificado compondo o resultado
+sobre o azul real do manifest antes de aceitar (visualmente limpo, sem
+frame).
+
+### A barra de status vira preta, sempre
+
+**Isto diverge da "Direção visual"** (Fase 6: "o fundo é azul-marinho
+profundo, não... preto... preto puro não tem profundidade") e de uma
+decisão registrada na Fase 8/"A paleta e a interface" (a barra de status
+seguia a sala — Rich Black à noite, Platinum de dia, trocada ao passar pela
+porta). Pedido explícito do usuário, duas vezes ("no padrão, preto") — a
+regra de ouro não mudou para o *app*, só a barra de status parou de segui-la.
+
+Como "padrão" também significou "sem condição nenhuma": as três metas
+`theme-color` de `index.html` (a da porta + duas por `prefers-color-scheme`)
+viraram uma só, `#000000`, fixa. `theme_color` no manifest (`vite.config.ts`)
+foi para o mesmo preto — é ele que vale para o app instalado, não a meta do
+HTML. `background_color` do manifest **não mudou**: continua Rich Black,
+porque é a cor da splash screen, uma coisa diferente da barra de status.
+
+**Código morto removido junto:** o `useEffect` em `App.tsx` que tirava a
+meta `id="cor-da-porta"` ao passar pela porta não tinha mais função — com
+uma cor só, não há mais meta para trocar. Saiu, pelo mesmo motivo de sempre
+(regra 7 do mestre).
+
+**Não verificado num navegador de verdade nesta sessão** — mesma ressalva
+de sempre; os ícones foram conferidos lendo os pixels e compondo sobre o
+fundo real (dá para confiar nisso), mas a barra de status e a splash screen
+de verdade só se veem num Android de verdade. Typecheck, lint e os 273
+testes continuam limpos (mudança de assets e configuração, sem lógica nova).
+
 ## Fases
 
 0. ✅ Esqueleto (Vite/React/TS/Tailwind/PWA/Capacitor)

@@ -14,12 +14,11 @@
       name="viewport"
       content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover, interactive-widget=resizes-content"
     />
-    <!-- A porta é noite nos dois temas: até entrar, a barra do sistema também é
-         (App.tsx tira a primeira meta ao passar por ela). Depois a barra segue a
-         sala — Rich Black no escuro, Platinum no claro. -->
-    <meta name="theme-color" content="#0d1b2a" id="cor-da-porta" />
-    <meta name="theme-color" media="(prefers-color-scheme: light)" content="#e5e7e6" />
-    <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#0d1b2a" />
+    <!-- Preto fixo, sempre — não segue mais o tema nem a porta (pedido do
+         usuário, 17/09/2026; antes era Rich Black à noite/Platinum de dia,
+         trocada por App.tsx ao passar da porta). "Padrão" aqui quer dizer
+         uma cor só, sem condição nenhuma. -->
+    <meta name="theme-color" content="#000000" />
     <meta
       name="description"
       content="Seu palácio mental: conceitos viram neurônios dentro de livros e se conectam sozinhos por significado."

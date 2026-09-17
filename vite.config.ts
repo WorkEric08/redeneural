@@ -53,8 +53,11 @@ export default defineConfig({
         orientation: 'portrait',
         start_url: '/',
         scope: '/',
-        // Rich Black, da paleta: é a sala no escuro e o que a porta tem em volta.
-        theme_color: '#0d1b2a',
+        // A barra de status fica preta, sempre — pedido do usuário,
+        // 17/09/2026, sem seguir o tema (antes era Rich Black, a cor da
+        // sala). `background_color` continua Rich Black: é a cor da
+        // splash screen do PWA, coisa diferente da barra de status.
+        theme_color: '#000000',
         background_color: '#0d1b2a',
         icons: [
           { src: '/logo-192.png', sizes: '192x192', type: 'image/png', purpose: 'any' },
