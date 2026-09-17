@@ -603,34 +603,6 @@ img {
   transform: translateY(-4px);
 }
 
-/* Visão geral (Fase 18): em vez de rolar ou cortar quem não coube, a estante
-   inteira encolhe — o piso da fileira cai de 92px para 24px, cabendo bem mais
-   prateleira de uma vez. É o "minimapa": não tem para onde rolar (a estante
-   nunca rola — ver useTravarRolagem), então ver tudo de uma vez de longe já
-   resolve o que um minimapa resolveria. `padding-left` continua o mesmo: é o
-   que deixa o primeiro livro livre da pilastra esquerda (24px de largura, ver
-   `.movel-pilastra`), não depende do tamanho da fileira. */
-.movel[data-visao-geral] .movel-fila {
-  height: clamp(
-    24px,
-    calc(
-      (100dvh - var(--mv-fora) - env(safe-area-inset-bottom) - var(--mv-bordas)) /
-        var(--mv-prateleiras) - 7px
-    ),
-    132px
-  );
-}
-
-/* Nesse tamanho, título, selo, emblema e marca de seleção não caberiam
-   legíveis — em vez de espremer texto ilegível, some tudo e sobra só a cor de
-   cada livro, a mesma leitura de um minimapa de editor de código. */
-.movel[data-visao-geral] .lombada-titulo,
-.movel[data-visao-geral] .lombada-ponto,
-.movel[data-visao-geral] .lombada-selecionado,
-.movel[data-visao-geral] .lombada-emblema {
-  display: none;
-}
-
 /* A sombra que a tábua de cima joga sobre o topo dos livros. É ela que dá
    fundura à prateleira; sem isso o móvel vira um quadro. */
 .movel-penumbra {

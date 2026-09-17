@@ -1,4 +1,4 @@
-import { Search, X, ZoomIn, ZoomOut } from 'lucide-react'
+import { Search, X } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 
@@ -50,9 +50,6 @@ export default function Estante() {
   // busca já na inicialização, e não numa reação a ela (o efeito abaixo só
   // limpa a URL, sem repetir esta leitura).
   const [chegandoId, setChegandoId] = useState<string | null>(() => busca.get('chegou'))
-  // Sem persistência de propósito: é um jeito de olhar a estante agora, não uma
-  // preferência gravada — cada visita volta ao tamanho normal.
-  const [visaoGeral, setVisaoGeral] = useState(false)
   // Vazio: modo de seleção desligado. Ganhar o primeiro id já liga o modo —
   // não precisa de uma flag a mais (ver Movel.tsx).
   const [selecionados, setSelecionados] = useState<ReadonlySet<string>>(new Set())
@@ -142,7 +139,6 @@ export default function Estante() {
           chegandoId={chegandoId}
           quantidadeDePrateleiras={quantidadeDePrateleiras}
           intensidadeDaLuz={intensidadeDaLuz}
-          visaoGeral={visaoGeral}
           selecionados={selecionados}
           onEspiar={(livroId) => {
             // Um espiar novo nunca herda a abertura de um anterior que foi
@@ -191,21 +187,10 @@ export default function Estante() {
           </div>
         ) : (
           <div className="mt-auto flex h-14 items-center gap-3">
-            {/* Os dois botões vêm antes do texto, e não depois: o botão de
-                criar (Dial) mora fixo no canto inferior direito, e um botão
+            {/* O botão vem antes do texto, e não depois: o botão de criar
+                (Dial) mora fixo no canto inferior direito, e um botão
                 colocado depois de um `flex-1` acaba empurrado até lá —
                 ficaria atrás dele, inalcançável. */}
-            <button
-              type="button"
-              aria-pressed={visaoGeral}
-              aria-label={visaoGeral ? 'Voltar ao tamanho normal' : 'Ver a estante inteira'}
-              className={botao({ tipo: 'secundario', tamanho: 'icone' })}
-              onClick={() => {
-                setVisaoGeral((v) => !v)
-              }}
-            >
-              {visaoGeral ? <ZoomIn size={18} aria-hidden /> : <ZoomOut size={18} aria-hidden />}
-            </button>
             <Link
               to="/busca"
               aria-label="Buscar"

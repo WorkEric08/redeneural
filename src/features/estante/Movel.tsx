@@ -29,11 +29,6 @@ interface Props {
   /** 0-100: o quanto a luz da sala lava a cor do pano em repouso. */
   intensidadeDaLuz: number
   /**
-   * Visão geral ligada: fileiras bem mais baixas, sem título/emblema/selo —
-   * só a cor de cada livro —, para caber muito mais prateleira de uma vez.
-   */
-  visaoGeral: boolean
-  /**
    * Quem está marcado para mover em grupo. Não vazio liga o modo de seleção:
    * tocar um livro marca/desmarca em vez de espiar, e tocar um lugar sem livro
    * põe o grupo inteiro ali em vez de criar um livro novo.
@@ -73,7 +68,6 @@ export function Movel({
   chegandoId,
   quantidadeDePrateleiras,
   intensidadeDaLuz,
-  visaoGeral,
   selecionados,
   onEspiar,
   onAcoes,
@@ -128,7 +122,6 @@ export function Movel({
     // se medir pela tela (ver .movel-fila em index.css).
     <div
       className="movel cores-de-antes"
-      data-visao-geral={visaoGeral || undefined}
       style={{ '--mv-prateleiras': prateleiras.length } as CSSProperties}
     >
       <span className="movel-cornija" aria-hidden />

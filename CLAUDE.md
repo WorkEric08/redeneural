@@ -2338,6 +2338,68 @@ gzipped.
 
 Com este item, os 4 do plano da Rede como constelação estão completos.
 
+## "Ver a estante inteira" sai, fica só a busca (16/09/2026)
+
+Pedido do usuário. O botão de visão geral (Fase 18, ícone de lupa com
+`+`/`-` — `ZoomIn`/`ZoomOut`) foi removido da fileira de baixo da estante:
+sobrava só ele e a busca ali, e os dois lidos rápido pareciam a mesma
+função. No lugar dele ficou só o botão de busca global (Fase 12), que já
+existia ao lado — a contagem de livros, neurônios e conexões continua na
+mesma fileira, como sempre.
+
+Removido de ponta a ponta, não só escondido: o estado `visaoGeral` e o botão
+saíram de `Estante.tsx`, a prop `visaoGeral` e o atributo `data-visao-geral`
+saíram de `Movel.tsx`, e as regras `.movel[data-visao-geral]` saíram do
+`index.css`. Mesmo padrão das remoções de 14/09/2026 (modo organizar,
+ordenar, nome de prateleira): mais barato de reverter do que meia-remoção.
+
+**Não verificado num navegador de verdade nesta sessão** — sem ferramenta de
+automação de navegador disponível no ambiente desta conversa. Typecheck,
+lint e os 249 testes automatizados continuam limpos; vale conferir
+visualmente antes de dar como fechado.
+
+## O livro nasce em tamanho normal, e o formulário cabe sem rolar (16/09/2026)
+
+Dois pedidos do usuário na mesma sessão.
+
+### O padrão de um livro novo é Largura e Comprimento "Normal"
+
+Desde as Fases 19 e 20 um livro nascia com `larguraLombada`/
+`comprimentoLombada` em `null` — "Automática", a largura/altura que varia
+pela semente do id e pela quantidade de neurônios. Agora `NovoLivro.tsx`
+inicia os dois em `LARGURA_PADRAO`/`COMPRIMENTO_PADRAO` (novo, em
+`larguras.ts`/`comprimentos.ts`: o `px`/`percentual` da opção `'normal'` de
+cada lista, não um número solto duplicado). Só a criação muda — editar
+continua carregando o que o livro já tem gravado, `null` incluso para quem
+nasceu antes desta mudança.
+
+### O formulário de livro parava de caber na tela do celular sem rolar
+
+A causa não era o valor padrão (a amostra "Automática" já tinha
+altura parecida com "Normal"): era que o seletor de Comprimento **sempre**
+desenha as cinco opções, e a pré-visualização de cada uma usava a mesma
+referência de 130px da amostra principal — "Enorme" (98%) virava uma caixa
+de 127px de altura só como ícone de opção. Num viewport de 320px de largura,
+isso também empurrava "Enorme" para quebrar numa segunda linha (a soma das
+larguras dos cinco rótulos não cabe em 320px com `gap-4`), e duas linhas
+com uma caixa de 127px numa delas passava de 300px só naquele fieldset.
+
+Corrigido com uma referência bem menor (`REFERENCIA_DAS_OPCOES_PX`, 56px) só
+para as pré-visualizações do seletor — a amostra de verdade ao lado do nome
+continua em 130px, que é onde a proporção precisa comunicar como o livro vai
+ficar de verdade. Junto: `gap-4` → `gap-2` nas linhas de Largura e
+Comprimento (a diferença que faz os cinco rótulos caberem numa linha só a
+320px de largura), `gap-6` → `gap-5` no formulário inteiro, e `pt-5` → `pt-4`
+no respiro do topo em `NovoLivro.tsx`.
+
+**Não verificado num navegador de verdade nesta sessão** — sem Playwright
+nem outra ferramenta de automação de navegador disponível no ambiente desta
+conversa, diferente do padrão anterior do projeto ("verificado com toque de
+verdade", CDP). A conta acima (alturas de linha, quebra de largura a 320px)
+foi feita lendo o CSS e o layout, não medida ao vivo; typecheck, lint e os
+249 testes automatizados continuam limpos. Vale conferir visualmente no
+celular antes de dar como fechado.
+
 ## Fases
 
 0. ✅ Esqueleto (Vite/React/TS/Tailwind/PWA/Capacitor)
