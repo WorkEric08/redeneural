@@ -2400,6 +2400,16 @@ foi feita lendo o CSS e o layout, não medida ao vivo; typecheck, lint e os
 249 testes automatizados continuam limpos. Vale conferir visualmente no
 celular antes de dar como fechado.
 
+## A alça do bottom sheet ganha mais área de toque (16/09/2026)
+
+Pedido do usuário. A alça (`Folha.tsx`, usada por todo bottom sheet do
+app — estante, ajustes, filtros da Rede) já media 44px de altura de ponta a
+ponta (28px de conteúdo + 8px de respiro em cada lado), o mínimo recomendado
+de alvo de toque. Aumentada para 60px (altura de conteúdo 36px + 12px de
+respiro), num único lugar (`.folha-alca` em `index.css`) — vale para todos os
+painéis do app de uma vez, porque todos passam pelo mesmo componente. A
+barra visível continua fina (4px): só a área que responde ao dedo cresceu.
+
 ## Fases
 
 0. ✅ Esqueleto (Vite/React/TS/Tailwind/PWA/Capacitor)

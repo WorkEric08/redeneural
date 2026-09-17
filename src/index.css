@@ -1824,15 +1824,16 @@ img {
 }
 
 /* A alça: fora de `.folha-corpo` de propósito, para continuar alcançável
-   mesmo com a lista rolada. O alvo de toque (44px) é bem maior que a barra
-   visível (4px) — arrastar uma tira fina é o tipo de coisa que erra sempre. */
+   mesmo com a lista rolada. O alvo de toque (60px, pedido do usuário,
+   16/09/2026 — antes 44px) é bem maior que a barra visível (4px) — arrastar
+   uma tira fina é o tipo de coisa que erra sempre. */
 .folha-alca {
   display: flex;
   flex: none;
   align-items: center;
   justify-content: center;
-  height: 28px;
-  padding-block: 8px;
+  height: 36px;
+  padding-block: 12px;
   touch-action: none;
   cursor: grab;
 }
