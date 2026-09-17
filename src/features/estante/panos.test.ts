@@ -19,8 +19,17 @@ describe('pano', () => {
 })
 
 describe('panoSugerido', () => {
-  it('sugere o primeiro pano que nenhum livro usa', () => {
-    expect(panoSugerido([{ cor: '#7b6ae0' }, { cor: '#3E9A93' }])).toBe('#c8734a')
+  const AZUL = PANOS.find((p) => p.nome === 'Azul')!.cor
+  const VIOLETA = PANOS.find((p) => p.nome === 'Violeta')!.cor
+  const VERDE_AZULADO = PANOS.find((p) => p.nome === 'Verde-azulado')!.cor
+
+  it('sugere Azul, o padrão de um livro novo, enquanto ele não estiver em uso', () => {
+    expect(panoSugerido([])).toBe(AZUL)
+    expect(panoSugerido([{ cor: VIOLETA }, { cor: VERDE_AZULADO }])).toBe(AZUL)
+  })
+
+  it('com Azul em uso, cai para o primeiro pano que nenhum livro usa', () => {
+    expect(panoSugerido([{ cor: VIOLETA }, { cor: AZUL }])).toBe(VERDE_AZULADO)
   })
 
   it('com todos em uso, continua sugerindo um pano da paleta', () => {

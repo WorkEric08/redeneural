@@ -3133,6 +3133,36 @@ cheia com os dados certos; salvar volta para a estante; voltar sem salvar
 também cai na estante, não no menu. Typecheck, lint e os 273 testes
 continuam limpos.
 
+## O pano sugerido de um livro novo é Azul (17/09/2026)
+
+Pedido do usuário: criar um livro (tocando um enfeite, uma vaga, ou pelo
+menu) sempre sugeria Vinho. Causa: `panoSugerido` (`panos.ts`) pega "o
+primeiro pano que nenhum livro ainda usa" — no palácio do usuário, Violeta,
+Verde-azulado, Terracota e Azul já estavam todos em uso, e Vinho era o
+próximo da lista. Não era um valor fixo em Vinho, era essa lista que sempre
+parava ali para aquele palácio específico.
+
+**Corrigido ancorando em Azul primeiro:** `panoSugerido` agora sugere Azul
+sempre que ele ainda não estiver em uso — o caso comum — e só cai para a
+lógica antiga (primeiro pano livre, depois o resto por variedade) quando
+Azul já está em uso por outro livro. Mantém o motivo de existir da lógica
+antiga ("o novo nasce diferente dos vizinhos") como reserva, em vez de
+substituí-la por um valor sempre fixo.
+
+**Largura e comprimento já estavam certos:** `NovoLivro.tsx` já inicia os
+dois em `LARGURA_PADRAO`/`COMPRIMENTO_PADRAO` ("Normal") desde 16/09/2026 —
+nada para mudar aí, só confirmado.
+
+Único ponto de uso: `panoSugerido` só é chamada em `NovoLivro.tsx`, a
+mesma tela para criar um livro por qualquer caminho (enfeite, vaga vazia,
+"Novo livro" pelo menu) — a correção vale para todos de uma vez.
+
+**Verificado com teste automatizado** (diferente das últimas sessões — este
+é lógica pura, sem tela): `panoSugerido` sugere Azul com a estante vazia e
+com Violeta/Verde-azulado em uso; com Azul já em uso, cai para o primeiro
+pano livre (Verde-azulado); com tudo em uso, continua sugerindo algo da
+paleta. 1 teste novo (274 no total), typecheck e lint limpos.
+
 ## Fases
 
 0. ✅ Esqueleto (Vite/React/TS/Tailwind/PWA/Capacitor)

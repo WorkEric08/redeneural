@@ -46,12 +46,18 @@ export const PANOS = [
   { nome: 'Ardósia', cor: '#6f7f96' },
 ] as const
 
+/** O pano padrão de um livro novo (pedido do usuário, 17/09/2026). */
+const PANO_PADRAO = PANOS.find((p) => p.nome === 'Azul')!.cor
+
 /**
- * O primeiro pano que ainda nenhum livro usa, para o novo já nascer diferente
- * dos vizinhos. Com todos em uso, a volta recomeça pela quantidade de livros.
+ * Azul primeiro — o padrão de um livro novo — e só se ele já estiver em uso
+ * é que entra a variedade: o primeiro pano que ainda nenhum livro usa, para
+ * o novo nascer diferente dos vizinhos. Com todos em uso, a volta recomeça
+ * pela quantidade de livros.
  */
 export function panoSugerido(livros: readonly Pick<Livro, 'cor'>[]): string {
   const usadas = new Set(livros.map((l) => l.cor.toLowerCase()))
+  if (!usadas.has(PANO_PADRAO)) return PANO_PADRAO
   const livre = PANOS.find((p) => !usadas.has(p.cor))
   return (livre ?? PANOS[livros.length % PANOS.length] ?? PANOS[0]).cor
 }
