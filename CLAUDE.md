@@ -2564,6 +2564,12 @@ Typecheck, lint e os 249 testes continuam limpos.
 
 ## A barra de escrita acima do teclado (16/09/2026)
 
+> **Revogada em 17/09/2026.** A barra saiu a pedido do usuário e, com ela, a
+> convenção de markdown que esta seção estabeleceu — o conteúdo de um neurônio
+> é **texto, e só**. Ver "O conteúdo é texto puro, sem convenção de marcação".
+> O que segue fica como registro do que foi construído e por quê, não como
+> regra vigente.
+
 Pedido do usuário, com três capturas da barra do Samsung Notes: uma fileira de
 ferramentas sempre acima do teclado, para editar o texto sem sair dele.
 
@@ -2644,6 +2650,10 @@ toque nos botões.
 **A tela do neurônio ainda não renderiza o markdown** — `**assim**` aparece com
 os asteriscos na leitura. Renderizar é o passo seguinte natural (um parser
 pequeno e sem HTML solto), mas não foi pedido aqui.
+
+> Esse passo seguinte nunca aconteceu, e agora não vai: em 17/09/2026 a barra
+> foi removida e a convenção, revogada. Era exatamente esta pendência que
+> deixava o markdown sem nenhuma das duas pontas.
 
 ## "Deslizar navegação" vira o único comportamento da Rede (17/09/2026)
 
@@ -3414,13 +3424,8 @@ recente, e o destino (`/neuronio/:id` ou `/rede?centralizar=` para quem veio
 da Rede) passou a ser calculado num lugar só — sem isso, os recentes teriam
 que repetir a regra do `?de=rede` por fora.
 
-### Os dois pontos que ficaram sem decisão
+### O ponto que ficou sem decisão
 
-- **O markdown virou letra morta nas duas pontas.** A convenção registrada é
-  "markdown em texto puro", mas a barra que o inseria saiu em 17/09 e a tela de
-  leitura nunca renderizou — nada escreve e nada lê. Ou a leitura passa a
-  renderizar (já há precedente: o link é interpretado ali desde hoje), ou a
-  convenção sai deste arquivo. Ficar no meio é o único caminho ruim.
 - **A porta cobra um toque a cada abertura do app.** São 840 ms mais um toque
   deliberado, sempre. No arranque frio ela é útil, porque mascara o
   carregamento (que roda em paralelo — o `useEffect` do `carregar` dispara
@@ -3436,6 +3441,59 @@ Android concede mesmo a persistência (dá para conferir no console com
 limpos — 3 novos, todos do repositório: a ordem do mais recente para o mais
 antigo, editar não mudando o lugar na lista, e dois neurônios do mesmo
 instante não trocando de lugar entre leituras.
+
+## O conteúdo é texto puro, sem convenção de marcação (17/09/2026)
+
+Decisão do usuário, fechando o ponto que a revisão crítica tinha deixado em
+aberto: **a convenção de markdown está revogada.** O conteúdo de um neurônio é
+texto, e só.
+
+### Por que apagar, e não renderizar
+
+As duas saídas eram legítimas — escrever um parser pequeno na tela de leitura,
+ou tirar a convenção do papel. O que decidiu foi um detalhe prático: **a barra
+de escrita era o que tornava o markdown plausível.** Ninguém digita `**` na mão
+num teclado de Android para deixar uma palavra em negrito, e sem a barra
+(removida hoje, a pedido) era exatamente isso que sobraria. Manter no papel um
+formato que não tem como ser escrito é carregar dívida por nada — e um parser
+meio-feito seria pior que nenhum: negrito renderizado ao lado de `- item`
+literal é mais confuso que texto cru inteiro.
+
+### O que isso quer dizer, exatamente
+
+- `conteudo` continua `string`, como sempre foi — **isto nunca foi o problema**
+  e nada muda no banco, no embedding, no backup ou no protocolo do Worker.
+- **O que você digita é o que você lê.** Nenhum caractere é interpretado,
+  escondido ou transformado na exibição. Quebra de linha e parágrafo continuam
+  funcionando (`whitespace-pre-wrap`), que é de longe a formatação que uma nota
+  curta realmente usa.
+- **Uma exceção, e ela é deliberada:** uma URL vira link clicável na tela de
+  leitura (ver "URLs dentro do texto viram link"). Não contradiz o que está
+  aqui porque ela não interpreta nada — o texto continua à mostra, caractere
+  por caractere, exatamente como foi escrito; só ganha toque. Marcação de
+  verdade seria o contrário: `**` some da tela e vira um estilo.
+
+### O que não foi feito, de propósito
+
+**Nenhuma migração de dado.** Se algum neurônio foi escrito com a barra
+enquanto ela existiu (16 e 17/09), os `**` e `- ` estão gravados ali e
+continuam aparecendo como caracteres comuns. Sair reescrevendo o texto da
+pessoa para limpar marcadores é pior que deixar: é texto dela, o app não tem
+como saber o que era marcação e o que era um asterisco de propósito, e o
+estrago seria irreversível.
+
+### Para quem ler isto numa sessão futura
+
+Não trate `conteudo` como markdown, e não "restaure" a convenção por achar
+que ela sumiu por engano — ela foi revogada. Se formatação voltar a ser pedida,
+é decisão nova, e ela precisa responder de novo a pergunta de 16/09 ("onde a
+formatação vive"), sabendo que: uma `<textarea>` não renderiza estilo nenhum
+enquanto se escreve, e o caminho de rich text de verdade (`contentEditable`)
+foi avaliado duas vezes e recusado duas vezes pelo custo.
+
+Nenhuma linha de código mudou nesta decisão — só o comentário de `links.ts`,
+que citava a convenção como parente do que ele faz, e este arquivo. Typecheck,
+lint e os 268 testes continuam limpos.
 
 ## Fases
 

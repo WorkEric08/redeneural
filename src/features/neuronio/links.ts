@@ -1,9 +1,14 @@
 /**
  * Divide o texto de um neurônio em trechos comuns e URLs, para a tela de
  * leitura poder desenhar as URLs como link sem o `conteudo` deixar de ser
- * `string` pura — o mesmo espírito do markdown em texto puro (ver CLAUDE.md,
- * "A barra de escrita acima do teclado"): nenhuma marcação entra no dado,
- * só a exibição reconhece o que já está lá.
+ * `string` pura: nada é gravado de volta no texto, só a exibição reconhece o
+ * que já está lá.
+ *
+ * É a **única** exceção à regra de que o conteúdo é texto puro sem marcação
+ * (ver CLAUDE.md, "O conteúdo é texto puro, sem convenção de marcação") — e
+ * cabe como exceção justamente por não interpretar nada: a URL continua à
+ * mostra, caractere por caractere, como foi escrita; só ganha toque. Marcação
+ * de verdade faria o contrário — o marcador sumiria da tela e viraria estilo.
  *
  * Só reconhece `http://`/`https://` — o caso pedido (colar um link do
  * YouTube) sempre vem com o protocolo.
