@@ -1,5 +1,5 @@
-import { BookOpen, Search } from 'lucide-react'
-import { useMemo } from 'react'
+import { BookOpen, ChevronDown, Search } from 'lucide-react'
+import { useMemo, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 
 import { BarraDeTopo } from '@/components/BarraDeTopo'
@@ -13,10 +13,11 @@ import { usePalacio } from '@/store/palacio'
 /**
  * Um livro aberto: os neurônios dele e os fios que saem de cada um.
  *
- * Cada neurônio é um cartão — o título e o começo do texto levam ao neurônio, e
- * os fios embaixo levam a quem ele está ligado. O fio de ponte leva o nome do
- * livro do outro lado: sem isso, "atravessa livros" não quer dizer nada para
- * quem está lendo.
+ * Cada neurônio é um cartão. Os fios ficam escondidos até o toque (pedido do
+ * usuário, 17/09/2026) — a seta diz que há algo ali; antes ficavam sempre
+ * abertos, e uma lista de 10+ fios por neurônio engolia a tela. O fio de
+ * ponte leva o nome do livro do outro lado: sem isso, "atravessa livros" não
+ * quer dizer nada para quem está lendo.
  */
 export default function Livro() {
   const { livroId } = useParams()
@@ -28,6 +29,18 @@ export default function Livro() {
     () => vizinhosPorNeuronio(neuronios, livros, conexoes),
     [neuronios, livros, conexoes],
   )
+  // Cada cartão abre e fecha por conta própria — ver os fios de dois
+  // neurônios ao mesmo tempo, comparando, é um uso legítimo desta tela.
+  const [abertos, setAbertos] = useState<ReadonlySet<string>>(new Set())
+
+  function alternar(id: string): void {
+    setAbertos((atual) => {
+      const proximo = new Set(atual)
+      if (proximo.has(id)) proximo.delete(id)
+      else proximo.add(id)
+      return proximo
+    })
+  }
 
   if (!livro) {
     return (
@@ -112,30 +125,56 @@ export default function Livro() {
           </div>
         ) : (
           <ul className="flex flex-col gap-3">
-            {meus.map((n) => (
-              <li key={n.id} className="cartao">
-                <Link
-                  to={`/neuronio/${n.id}`}
-                  className="active:bg-realce hover:bg-realce/60 flex flex-col gap-1.5 px-4 pt-4 pb-3 transition-colors"
-                >
-                  <span className="flex items-start justify-between gap-3">
-                    <span className="font-titulo text-[1.05rem] leading-snug font-semibold">
-                      {n.titulo}
+            {meus.map((n) => {
+              const aberto = abertos.has(n.id)
+              return (
+                <li key={n.id} className="cartao">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      alternar(n.id)
+                    }}
+                    aria-expanded={aberto}
+                    className="active:bg-realce hover:bg-realce/60 flex w-full flex-col gap-1.5 px-4 pt-4 pb-3 text-left transition-colors"
+                  >
+                    <span className="flex items-start justify-between gap-3">
+                      <span className="font-titulo text-[1.05rem] leading-snug font-semibold">
+                        {n.titulo}
+                      </span>
+                      <span className="flex shrink-0 items-center gap-2">
+                        {n.processando && <EtiquetaProcessando />}
+                        {/* A seta: só o indicador de que há fios para ver — o
+                            toque é no cartão inteiro, não só nela. */}
+                        <ChevronDown
+                          size={18}
+                          aria-hidden
+                          className={`text-poeira shrink-0 transition-transform ${aberto ? 'rotate-180' : ''}`}
+                        />
+                      </span>
                     </span>
-                    {n.processando && <EtiquetaProcessando />}
-                  </span>
-                  {n.conteudo && (
-                    <span className="text-poeira line-clamp-2 text-sm leading-relaxed">
-                      {n.conteudo}
-                    </span>
-                  )}
-                </Link>
+                    {n.conteudo && (
+                      <span className="text-poeira line-clamp-2 text-sm leading-relaxed">
+                        {n.conteudo}
+                      </span>
+                    )}
+                  </button>
 
-                <div className="border-linha border-t px-2 py-1">
-                  <Fios lista={vizinhos.get(n.id) ?? []} />
-                </div>
-              </li>
-            ))}
+                  {aberto && (
+                    <div className="border-linha border-t px-2 py-1">
+                      <Fios lista={vizinhos.get(n.id) ?? []} />
+                      <div className="flex justify-end px-2 pt-1 pb-2">
+                        <Link
+                          to={`/neuronio/${n.id}`}
+                          className={botao({ tipo: 'secundario', tamanho: 'pequeno' })}
+                        >
+                          Abrir
+                        </Link>
+                      </div>
+                    </div>
+                  )}
+                </li>
+              )
+            })}
           </ul>
         )}
       </div>

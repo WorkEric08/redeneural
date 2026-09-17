@@ -38,8 +38,11 @@ export function Fios({ lista }: { lista: readonly VizinhoDoNeuronio[] }) {
                 <span className="text-poeira block truncate text-xs">em {v.outroLivro}</span>
               )}
             </span>
+            {/* 0-100, não a fração de 3 casas de antes: é o grau de
+                compatibilidade entre os dois assuntos, não um número de
+                cientista (pedido do usuário, 17/09/2026). */}
             <span className="text-poeira font-dado shrink-0 text-xs tabular-nums">
-              {v.conexao.score.toFixed(3)}
+              {Math.round(v.conexao.score * 100)}%
             </span>
           </Link>
         </li>

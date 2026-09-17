@@ -2880,6 +2880,46 @@ sempre; esta em particular só se confirma vendo o teclado de um Android real,
 que é exatamente onde o problema foi visto. Typecheck, lint e os 270 testes
 continuam limpos (mudança sem lógica nova — só atributos).
 
+## Os fios do livro escondem até o toque, e o score vira 0-100 (17/09/2026)
+
+Pedido do usuário, a partir de uma captura da tela do livro: cada neurônio
+listado ali já mostrava todos os fios abertos, sempre — um neurônio com 10
+conexões virava um cartão gigante, e a tela inteira era só isso.
+
+**Os fios agora escondem por padrão.** Cada cartão controla a própria
+abertura (`abertos`, um `Set` de ids em `Livro.tsx` — ver mais fundo);
+tocar em qualquer parte dele (título ou prévia do texto, não só uma área
+pequena) alterna. A seta (`ChevronDown`, gira 180° quando aberto — "uma seta
+padrão mesmo", como o usuário pediu) é só o indicador; o alvo de toque é o
+cartão inteiro, do mesmo jeito que o resto do app trata alvo de toque pequeno
+como erro certo.
+
+**O que isso custava, e como foi coberto:** o cartão era um `Link` para a
+tela do próprio neurônio — virando um `button` (o toque precisa alternar, não
+navegar), esse caminho sumia. Adicionado um botão "Abrir" pequeno, dentro da
+área expandida, abaixo dos fios — o mesmo padrão que o cartão do neurônio
+selecionado na Rede já usa (título + "Abrir"). Sem isso, a única forma de
+chegar à tela de um neurônio a partir do livro seria tocar num fio de outro
+neurônio primeiro.
+
+**Cada cartão abre e fecha por conta própria**, não um por vez: comparar os
+fios de dois neurônios ao mesmo tempo é um uso razoável desta tela, e nada
+no pedido disse "um só aberto".
+
+### O score virou 0-100
+
+`Fios.tsx` é compartilhado entre esta tela e a do próprio neurônio — mudar
+ali resolveu os dois lugares de uma vez. Era `score.toFixed(3)` (`0.922`);
+virou `Math.round(score * 100)` com `%` (`92%`) — o grau de compatibilidade
+entre os dois assuntos, não uma fração de cientista. O desenho do fio (a
+linha, espessura e tracejado por score zero) não mudou — só o número ao
+lado.
+
+**Não verificado num navegador de verdade nesta sessão** — mesma ressalva de
+sempre; vale conferir o toque abrindo/fechando e a seta girando num aparelho
+de verdade. Typecheck, lint e os 270 testes continuam limpos (sem teste
+novo — é composição de UI e um `Set` local, sem função pura nova).
+
 ## Fases
 
 0. ✅ Esqueleto (Vite/React/TS/Tailwind/PWA/Capacitor)
