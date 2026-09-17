@@ -2463,6 +2463,27 @@ agora só assenta a vizinhança (`assentar`), sem selecionar nada. Um toque
 comum (sem arrastar de verdade, abaixo de `TOLERANCIA_DO_TOQUE`) continua
 selecionando normalmente — esse ramo do gesto não mudou.
 
+## O botão de criar não precisa mais de dois toques (16/09/2026)
+
+Pedido do usuário: às vezes precisava tocar duas vezes o "+" para entrar na
+tela de criar neurônio. Rastreado até uma corrida entre o toque e o
+temporizador de segurar (`ESPERA`, 380ms, o mesmo valor do resto do app —
+ver `useManipularLivros.ts`): um toque um pouco mais longo que o normal (o
+suficiente para cruzar 380ms, o que acontece de vez em quando com um dedo
+real, sem ser um "segurar" deliberado) faz o anel abrir em vez de criar. Até
+aqui era esperado — mas o `onClick` do botão então tratava um segundo toque
+comum no centro (o botão já mostrando "X") como só "fechar o anel", com
+`preventDefault()` — nunca criava. Corrigido: o toque no centro com o anel
+já aberto fecha o anel **e** deixa o `Link` navegar para `/novo`, porque
+quem tocou o centro (não uma cunha) ainda quer criar. Fechar sem criar
+continua possível — tocar fora do anel (o véu) ou Esc.
+
+**Não verificado num navegador de verdade nesta sessão** — mesma ressalva
+das seções anteriores: a corrida foi reconstruída lendo o código (a ordem
+dos `if` em `aoSoltar` e no `onClick`), não reproduzida com um dedo de
+verdade. Typecheck, lint e os 249 testes continuam limpos; Dial.tsx não tem
+teste automatizado (nunca teve, mesmo padrão do resto do gesto de segurar).
+
 ## Fases
 
 0. ✅ Esqueleto (Vite/React/TS/Tailwind/PWA/Capacitor)

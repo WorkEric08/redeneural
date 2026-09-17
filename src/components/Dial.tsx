@@ -236,10 +236,13 @@ export function Dial() {
               evento.preventDefault()
               return
             }
-            if (fase === 'aberto') {
-              evento.preventDefault()
-              fechar()
-            }
+            // O anel já estava aberto (por exemplo, de um segurar que passou
+            // um pouco do tempo por acaso) e este foi um toque comum no botão
+            // central — fecha o anel, mas continua criando: quem tocou o
+            // centro, e não uma cunha, ainda quer o de sempre. Sem isto o
+            // usuário tinha que tocar mais uma vez depois de fechar (pedido
+            // do usuário, 16/09/2026: "não precise apertar duas vezes").
+            if (fase === 'aberto') fechar()
           }}
         >
           {/* Traço mais grosso que o padrão do lucide: gravado num disco de
