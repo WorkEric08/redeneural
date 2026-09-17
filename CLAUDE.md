@@ -2562,6 +2562,89 @@ layout foi conferido lendo o CSS (a cascata de `.chip` contra os utilitários
 de padding, o `flex-1` da folha dentro do `min-h-dvh`), não visto na tela.
 Typecheck, lint e os 249 testes continuam limpos.
 
+## A barra de escrita acima do teclado (16/09/2026)
+
+Pedido do usuário, com três capturas da barra do Samsung Notes: uma fileira de
+ferramentas sempre acima do teclado, para editar o texto sem sair dele.
+
+### A pergunta que decidiu tudo: onde a formatação vive
+
+Os ícones da referência (negrito, itálico, tachado, "Aa", tamanho "15") só
+existem se o texto guardar formatação — e `conteudo` é `string` de ponta a
+ponta: é o contrato do núcleo (`core/ports/engine.ts`), é o que o modelo lê
+(`"query: " + titulo + ". " + conteudo`) e é o que a tela do neurônio pinta com
+`whitespace-pre-wrap`. Perguntei antes de escrever código, com três caminhos:
+markdown em texto puro, rich text de verdade (Dexie v10, migração, snapshot,
+protocolo do Worker, sanitização) ou só atalhos sem formatação.
+
+**Escolha do usuário: markdown no texto puro.** Nada mudou no banco, no
+embedding nem no backup; a marcação fica à vista enquanto se escreve. O que
+isso custou em fidelidade à referência está na tabela:
+
+| Ícone da referência         | Aqui                                              |
+| --------------------------- | ------------------------------------------------- |
+| B, itálico, tachado         | `**`, `*`, `~~` — alternam, não empilham          |
+| Listas, numerada, checklist | `- `, `1. `, `- [ ] `                             |
+| Recuo ↔                     | dois espaços por passo                            |
+| Desfazer / refazer          | histórico próprio (ver abaixo)                    |
+| "Aa" e tamanho "15"         | viraram **um** botão: ciclo `#` → `##` → `###`    |
+| Sublinhado                  | **fora** — markdown não tem                       |
+| Alinhamento, caixa de texto | **fora** — markdown não tem                       |
+| Caneta de desenho           | **fora** — não existe em texto puro               |
+
+### O que não é óbvio
+
+**Nenhum botão da barra pode tirar o foco do campo.** Cada um recusa o
+`pointerdown` **e** o `mousedown` — é o `mousedown` que move o foco, e o toque
+o dispara por compatibilidade. Sem isso, tocar em "negrito" faria a barra sumir
+antes de o toque virar clique, e não haveria seleção para marcar. Prevenir esses
+dois não impede o `click`, que é o que dispara a ação.
+
+**O desfazer do navegador morre num campo controlado:** para ele, cada
+`setState` é um texto novo caído do céu, não uma edição — e a barra reescreve o
+campo o tempo todo. Daí `useTextoComHistorico`: digitar agrupa teclas dentro de
+600 ms num passo só (senão desfazer apagaria letra por letra), e um botão da
+barra sempre abre um passo próprio (desfazer um negrito tira o negrito, não a
+palavra anterior). O passo inicial nunca é engolido pelo agrupamento — é ele
+que deixa voltar até o começo.
+
+**O cursor é reposto na mão, e só depois de um botão.** Reescrever o campo joga
+o cursor para o fim; um `useLayoutEffect` repõe a seleção. Ele observa um
+contador `acao` que **não** sobe ao digitar: forçar `setSelectionRange` a cada
+tecla atrapalharia a composição do teclado do Android.
+
+**A marcação de linha vale a linha inteira**, mesmo que o dedo só tenha pegado
+uma palavra no meio dela, e só desmarca quando **todas** as linhas tocadas já
+são daquele tipo — com uma linha de fora, marca todas. Senão o botão vira
+loteria numa seleção de cinco linhas.
+
+**No celular a barra ocupa o lugar do botão de enviar**, que volta quando o
+teclado fecha: duas faixas presas no pé comeriam metade do que sobra da tela
+com o teclado aberto. Do tablet em diante as duas cabem, e a barra vira uma
+ilha com borda.
+
+**Desfazer e refazer ficam fora da faixa que rola.** A fileira de formatação
+rola de lado num aparelho de 320 px; desfazer é o botão que mais se procura com
+pressa e não pode estar escondido além da borda.
+
+### Verificado
+
+`marcacao.ts` é puro e testado: 16 testes novos (265 no total) cobrindo marcar
+e desmarcar por dentro e por fora, troca de tipo de lista sem empilhar
+marcador, recuo preservado, o ciclo de títulos e o cursor andando junto com o
+marcador. Typecheck e lint limpos.
+
+**A parte de tela não foi verificada num navegador de verdade** — mesma
+ressalva das seções anteriores. O que mais merece um olho no aparelho: se a
+barra fica mesmo colada acima do teclado do Android e se o foco sobrevive ao
+toque nos botões.
+
+### O que ficou de fora, de propósito
+
+**A tela do neurônio ainda não renderiza o markdown** — `**assim**` aparece com
+os asteriscos na leitura. Renderizar é o passo seguinte natural (um parser
+pequeno e sem HTML solto), mas não foi pedido aqui.
+
 ## Fases
 
 0. ✅ Esqueleto (Vite/React/TS/Tailwind/PWA/Capacitor)

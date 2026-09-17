@@ -1,10 +1,20 @@
 import { ChevronDown } from 'lucide-react'
-import { useState } from 'react'
+import { useEffectEvent, useLayoutEffect, useRef, useState } from 'react'
 
 import { BarraDeTopo } from '@/components/BarraDeTopo'
 import { botao } from '@/components/botao'
 import type { Livro } from '@/core'
 import type { NovoNeuronio } from '@/store/palacio'
+
+import { BarraDeEscrita, type AcaoDeEscrita } from './BarraDeEscrita'
+import {
+  alternarEnvolvido,
+  alternarLista,
+  ciclarTitulo,
+  mudarRecuo,
+  type Selecao,
+} from './marcacao'
+import { useTextoComHistorico } from './useTextoComHistorico'
 
 /**
  * A folha de escrever — o mesmo formulário serve para criar e para editar.
@@ -43,6 +53,30 @@ interface Props {
   onEnviar: (dados: NovoNeuronio) => void
 }
 
+/** Cada botão da barra e a marcação que ele aplica (ver `marcacao.ts`). */
+function marcar(acao: Exclude<AcaoDeEscrita, 'desfazer' | 'refazer'>, s: Selecao): Selecao {
+  switch (acao) {
+    case 'negrito':
+      return alternarEnvolvido(s, '**')
+    case 'italico':
+      return alternarEnvolvido(s, '*')
+    case 'tachado':
+      return alternarEnvolvido(s, '~~')
+    case 'titulo':
+      return ciclarTitulo(s)
+    case 'marcador':
+      return alternarLista(s, 'marcador')
+    case 'numero':
+      return alternarLista(s, 'numero')
+    case 'tarefa':
+      return alternarLista(s, 'tarefa')
+    case 'recuar':
+      return mudarRecuo(s, 1)
+    case 'desrecuar':
+      return mudarRecuo(s, -1)
+  }
+}
+
 export function Formulario({
   livros,
   inicial,
@@ -54,11 +88,44 @@ export function Formulario({
 }: Props) {
   const [livroEscolhido, setLivroEscolhido] = useState(inicial?.livroId ?? '')
   const [titulo, setTitulo] = useState(inicial?.titulo ?? '')
-  const [conteudo, setConteudo] = useState(inicial?.conteudo ?? '')
+  const texto = useTextoComHistorico(inicial?.conteudo ?? '')
+  /** A barra de ferramentas existe enquanto o dedo está no texto. */
+  const [escrevendo, setEscrevendo] = useState(false)
+  const campo = useRef<HTMLTextAreaElement>(null)
 
+  const conteudo = texto.passo.texto
   const livroId = livroEscolhido || (livros[0]?.id ?? '')
   const livro = livros.find((l) => l.id === livroId)
   const podeEnviar = titulo.trim().length > 0 && livroId !== '' && !ocupado
+
+  // Um passo vindo de botão (marcar, desfazer, refazer) reescreve o campo
+  // inteiro, e o navegador joga o cursor para o fim. Repor a seleção é o que
+  // deixa marcar três palavras e continuar com elas marcadas.
+  const reporOCursor = useEffectEvent(() => {
+    campo.current?.focus()
+    campo.current?.setSelectionRange(texto.passo.inicio, texto.passo.fim)
+  })
+
+  useLayoutEffect(() => {
+    if (texto.acao > 0) reporOCursor()
+  }, [texto.acao])
+
+  function executar(acao: AcaoDeEscrita): void {
+    if (acao === 'desfazer') {
+      texto.desfazer()
+      return
+    }
+    if (acao === 'refazer') {
+      texto.refazer()
+      return
+    }
+
+    const alvo = campo.current
+    if (!alvo) return
+    texto.aplicar(
+      marcar(acao, { texto: conteudo, inicio: alvo.selectionStart, fim: alvo.selectionEnd }),
+    )
+  }
 
   return (
     <form
@@ -130,9 +197,25 @@ export function Formulario({
         {/* A folha: cresce com o texto e, enquanto o texto é curto, ocupa o que
             sobra da tela — tocar em qualquer ponto dela já põe o cursor. */}
         <textarea
+          ref={campo}
           value={conteudo}
           onChange={(e) => {
-            setConteudo(e.target.value)
+            texto.digitar({
+              texto: e.target.value,
+              inicio: e.target.selectionStart,
+              fim: e.target.selectionEnd,
+            })
+          }}
+          onFocus={() => {
+            setEscrevendo(true)
+          }}
+          onBlur={(e) => {
+            // Tocar num botão da barra não tira o foco (o botão recusa o
+            // `pointerdown`), mas o Tab do teclado tira — e aí a barra precisa
+            // continuar de pé para receber o foco que está indo para ela.
+            const indo = e.relatedTarget
+            if (indo instanceof Element && indo.closest('[data-barra-de-escrita]')) return
+            setEscrevendo(false)
           }}
           aria-label="Com suas palavras"
           placeholder="Escreva com suas palavras."
@@ -140,7 +223,18 @@ export function Formulario({
         />
       </div>
 
-      <div className="barra-de-acao md:flex md:justify-end">
+      {escrevendo && (
+        <BarraDeEscrita
+          onAcao={executar}
+          podeDesfazer={texto.podeDesfazer}
+          podeRefazer={texto.podeRefazer}
+        />
+      )}
+
+      {/* Enquanto a barra está aberta, o pé do celular é dela: o botão volta
+          quando o teclado fecha. No tablet em diante o botão já é estático no
+          fim do formulário, então os dois cabem. */}
+      <div className={`barra-de-acao md:flex md:justify-end ${escrevendo ? 'max-md:hidden' : ''}`}>
         <button
           type="submit"
           disabled={!podeEnviar}
