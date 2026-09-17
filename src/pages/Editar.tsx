@@ -24,35 +24,27 @@ export default function Editar() {
   }
 
   return (
-    <div className="flex min-h-dvh flex-col">
-      <BarraDeTopo voltarPara={`/neuronio/${neuronio.id}`} icone="fechar" titulo="Editar" />
-
-      <div className="animar-entrada flex flex-1 flex-col">
-        <p className="text-poeira px-1 pt-5 text-sm">
-          Mudar o texto refaz o embedding — as conexões podem mudar.
-        </p>
-
-        <Formulario
-          livros={livros}
-          inicial={{
-            livroId: neuronio.livroId,
-            titulo: neuronio.titulo,
-            conteudo: neuronio.conteudo,
-          }}
-          ocupado={ocupado}
-          rotuloDeEnvio="Salvar"
-          onEnviar={(dados) => {
-            void editarNeuronio(neuronio.id, dados).then((deuCerto) => {
-              if (!deuCerto) return
-              // A tela do neurônio já está logo atrás no histórico: voltar para
-              // ela, e não empilhar outra igual — senão o voltar seguinte
-              // mostraria o mesmo neurônio duas vezes.
-              if (key === 'default') void navegar(`/neuronio/${neuronio.id}`, { replace: true })
-              else void navegar(-1)
-            })
-          }}
-        />
-      </div>
-    </div>
+    <Formulario
+      livros={livros}
+      inicial={{
+        livroId: neuronio.livroId,
+        titulo: neuronio.titulo,
+        conteudo: neuronio.conteudo,
+      }}
+      ocupado={ocupado}
+      rotuloDeEnvio="Salvar"
+      voltarPara={`/neuronio/${neuronio.id}`}
+      aviso="Mudar o texto refaz o embedding — as conexões podem mudar."
+      onEnviar={(dados) => {
+        void editarNeuronio(neuronio.id, dados).then((deuCerto) => {
+          if (!deuCerto) return
+          // A tela do neurônio já está logo atrás no histórico: voltar para
+          // ela, e não empilhar outra igual — senão o voltar seguinte
+          // mostraria o mesmo neurônio duas vezes.
+          if (key === 'default') void navegar(`/neuronio/${neuronio.id}`, { replace: true })
+          else void navegar(-1)
+        })
+      }}
+    />
   )
 }

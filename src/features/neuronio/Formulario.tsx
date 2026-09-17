@@ -1,20 +1,34 @@
 import { ChevronDown } from 'lucide-react'
 import { useState } from 'react'
 
+import { BarraDeTopo } from '@/components/BarraDeTopo'
 import { botao } from '@/components/botao'
 import type { Livro } from '@/core'
 import type { NovoNeuronio } from '@/store/palacio'
 
 /**
- * O mesmo formulário serve para criar e para editar.
+ * A folha de escrever — o mesmo formulário serve para criar e para editar.
  *
  * Editar não é um caso menor: mudar o texto refaz o embedding e pode mudar as
  * conexões. Os dois caminhos terminam no mesmo lugar, então usam a mesma tela.
  *
- * Sair é o "fechar" da barra de topo, como o voltar do Android — não há
- * "Cancelar" ao lado do botão de enviar, que fica preso no pé da tela no
- * celular (`.barra-de-acao`). O campo do texto cresce com o que se escreve, e
- * no celular ocupa a tela que sobra: é uma folha de escrever, não uma caixa.
+ * Desenhada como um app de notas (pedido do usuário, 16/09/2026, com o Samsung
+ * Notes como referência), e não como um formulário empilhado:
+ *
+ * - **o título mora na barra de topo**, no lugar do nome da tela — é o que a
+ *   barra do Notes faz, e devolve uma tela inteira para o texto;
+ * - **o livro é uma etiqueta**, não um campo de 52 px com rótulo por cima;
+ * - **o texto não tem caixa**: sem borda e sem fundo, ele é a folha, e a folha
+ *   é o que sobra da tela. Uma caixa dentro de uma tela que já é só escrever
+ *   desenha uma moldura em volta do nada.
+ *
+ * Por isso esta tela é a única sem `.rotulo-de-secao`: o `placeholder` de cada
+ * campo já diz o que ele é, e três rótulos sobre uma folha de escrever são três
+ * linhas a menos de folha.
+ *
+ * Sair é o "fechar" da barra, como o voltar do Android — não há "Cancelar" ao
+ * lado do enviar, que fica preso no pé no celular (`.barra-de-acao`), onde o
+ * Notes põe a própria barra de ferramentas.
  */
 
 interface Props {
@@ -22,10 +36,22 @@ interface Props {
   inicial?: NovoNeuronio
   ocupado: boolean
   rotuloDeEnvio: string
+  /** Para onde o "fechar" leva quando o app abriu direto nesta tela. */
+  voltarPara: string
+  /** Uma linha acima da folha. Só o editar tem uma — criar entra limpo. */
+  aviso?: string
   onEnviar: (dados: NovoNeuronio) => void
 }
 
-export function Formulario({ livros, inicial, ocupado, rotuloDeEnvio, onEnviar }: Props) {
+export function Formulario({
+  livros,
+  inicial,
+  ocupado,
+  rotuloDeEnvio,
+  voltarPara,
+  aviso,
+  onEnviar,
+}: Props) {
   const [livroEscolhido, setLivroEscolhido] = useState(inicial?.livroId ?? '')
   const [titulo, setTitulo] = useState(inicial?.titulo ?? '')
   const [conteudo, setConteudo] = useState(inicial?.conteudo ?? '')
@@ -40,19 +66,39 @@ export function Formulario({ livros, inicial, ocupado, rotuloDeEnvio, onEnviar }
         e.preventDefault()
         if (podeEnviar) onEnviar({ livroId, titulo, conteudo })
       }}
-      className="flex flex-1 flex-col"
+      className="flex min-h-dvh flex-col"
     >
-      <div className="flex flex-1 flex-col gap-5 pt-5 pb-2">
-        <label className="flex flex-col">
-          <span className="rotulo-de-secao">Livro</span>
+      <BarraDeTopo
+        voltarPara={voltarPara}
+        icone="fechar"
+        titulo={
+          // A fonte da barra não atravessa para dentro de um `input` (o
+          // navegador dá a dele), então as classes repetem o que
+          // `.barra-de-topo-titulo` já diz para o texto comum.
+          <input
+            value={titulo}
+            onChange={(e) => {
+              setTitulo(e.target.value)
+            }}
+            aria-label="Título"
+            placeholder="Título"
+            // A lista de preenchimento do navegador é coisa de formulário web.
+            autoComplete="off"
+            className="font-titulo placeholder:text-poeira min-w-0 flex-1 bg-transparent text-lg font-semibold outline-none placeholder:font-normal"
+          />
+        }
+      />
+
+      <div className="animar-entrada flex flex-1 flex-col">
+        <div className="flex items-center pt-3">
           {livros.length === 0 ? (
-            <span className="cartao text-poeira px-4 py-3.5 text-sm">
+            <span className="text-poeira text-xs leading-relaxed">
               Nenhum livro na estante ainda. Toque numa lombada escura para criar o primeiro.
             </span>
           ) : (
-            <span className="relative flex items-center">
+            <span className="relative flex min-w-0 items-center">
               <span
-                className="pointer-events-none absolute left-4 h-5 w-1 rounded-full"
+                className="pointer-events-none absolute left-3.5 size-2 shrink-0 rounded-full"
                 style={{ background: livro?.cor }}
                 aria-hidden
               />
@@ -61,7 +107,8 @@ export function Formulario({ livros, inicial, ocupado, rotuloDeEnvio, onEnviar }
                 onChange={(e) => {
                   setLivroEscolhido(e.target.value)
                 }}
-                className="campo h-13 appearance-none pr-11 pl-8 text-base"
+                aria-label="Livro"
+                className="chip text-papel min-w-0 appearance-none truncate pr-8 pl-7"
               >
                 {livros.map((l) => (
                   <option key={l.id} value={l.id}>
@@ -70,44 +117,27 @@ export function Formulario({ livros, inicial, ocupado, rotuloDeEnvio, onEnviar }
                 ))}
               </select>
               <ChevronDown
-                size={18}
+                size={14}
                 aria-hidden
-                className="text-poeira pointer-events-none absolute right-4"
+                className="text-poeira pointer-events-none absolute right-3"
               />
             </span>
           )}
-        </label>
+        </div>
 
-        <label className="flex flex-col">
-          <span className="rotulo-de-secao">Título</span>
-          <input
-            value={titulo}
-            onChange={(e) => {
-              setTitulo(e.target.value)
-            }}
-            // Curto de propósito: a 320 px, na fonte de título, um texto maior
-            // é cortado no meio da palavra.
-            placeholder="Curto, para achar depois"
-            // A lista de preenchimento do navegador é coisa de formulário web.
-            autoComplete="off"
-            className="campo font-titulo h-13 px-4 text-lg"
-          />
-        </label>
+        {aviso !== undefined && <p className="text-poeira pt-3 text-xs leading-relaxed">{aviso}</p>}
 
-        <label className="flex flex-1 flex-col">
-          <span className="rotulo-de-secao">Com suas palavras</span>
-          <textarea
-            value={conteudo}
-            onChange={(e) => {
-              setConteudo(e.target.value)
-            }}
-            placeholder="Um roteiro, um pensamento desenvolvido — o que vier."
-            className="campo [field-sizing:content] min-h-56 flex-1 resize-none px-4 py-3 text-base leading-relaxed md:min-h-80"
-          />
-          <span className="text-poeira mt-2 px-1 text-xs leading-relaxed">
-            Escreva livre e à vontade — é esse texto que o modelo lê para achar as conexões.
-          </span>
-        </label>
+        {/* A folha: cresce com o texto e, enquanto o texto é curto, ocupa o que
+            sobra da tela — tocar em qualquer ponto dela já põe o cursor. */}
+        <textarea
+          value={conteudo}
+          onChange={(e) => {
+            setConteudo(e.target.value)
+          }}
+          aria-label="Com suas palavras"
+          placeholder="Escreva com suas palavras."
+          className="placeholder:text-poeira [field-sizing:content] w-full flex-1 resize-none bg-transparent px-1 pt-4 pb-2 text-base leading-relaxed outline-none"
+        />
       </div>
 
       <div className="barra-de-acao md:flex md:justify-end">

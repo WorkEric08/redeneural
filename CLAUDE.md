@@ -2514,6 +2514,54 @@ descartar que um grafo mais espalhado peça um terceiro.
 na tela. Vale conferir num palácio de verdade se o ritmo ficou bom; typecheck,
 lint e os 249 testes continuam limpos.
 
+## Escrever um neurônio vira uma folha, não um formulário (16/09/2026)
+
+Pedido do usuário, com o Samsung Notes como referência (duas capturas): a tela
+de escrever era três campos empilhados — cada um com rótulo por cima, borda e
+fundo —, mais duas frases explicativas. Virou um app de notas.
+
+| Peça      | Antes                                          | Agora                                                            |
+| --------- | ---------------------------------------------- | ---------------------------------------------------------------- |
+| Título    | campo com borda e rótulo "Título", no corpo    | `input` na **barra de topo**, no lugar do nome da tela           |
+| Livro     | `select` de 52 px com rótulo "Livro"           | etiqueta (`.chip`) com o ponto da cor, logo abaixo da barra      |
+| Texto     | `textarea` com borda, fundo e rótulo           | a folha: sem caixa, ocupando o que sobra da tela                 |
+| Explicação| "As conexões nascem sozinhas" + "Escreva livre…" | saíram as duas                                                 |
+
+**O título na barra é o que devolve a tela para o texto.** `BarraDeTopo` já
+aceitava `ReactNode` como título, então o `input` entra ali sem componente
+novo — e a barra desta tela deixa de dizer "Novo neurônio"/"Editar", como no
+Notes. Custo assumido: é a única tela interna sem nome próprio na barra. A
+fonte não atravessa para dentro de um `input` (o navegador dá a dele), então
+as classes repetem o que `.barra-de-topo-titulo` já diz.
+
+**O texto sem caixa não é só estética:** uma borda em volta de um campo que
+ocupa a tela inteira desenha moldura em volta do nada, e encolhe a folha em
+dois pixels de cada lado por nada. Sem borda, tocar em qualquer ponto da área
+já põe o cursor — que é o gesto do Notes.
+
+**Esta é a única tela sem `.rotulo-de-secao`**, e de propósito: o
+`placeholder` de cada campo já diz o que ele é, e três rótulos sobre uma folha
+de escrever são três linhas a menos de folha. O leitor de tela continua
+servido pelos `aria-label`.
+
+**O `Formulario` passou a ser a tela inteira**, com barra de topo e tudo —
+`Novo.tsx` e `Editar.tsx` ficaram só com os dados. O título vive no mesmo
+componente que guarda o estado dele; a alternativa era elevar o estado para as
+duas páginas só para a barra poder desenhá-lo. A barra continua **fora** de
+`.animar-entrada`, pelo motivo de sempre (ancestral com animação vira raiz do
+desfoque — ver "A paleta e a interface").
+
+**O aviso do editar ficou** ("Mudar o texto refaz o embedding — as conexões
+podem mudar"), agora como prop `aviso` e em letra miúda acima da folha: o
+pedido de remover frases era sobre as duas da tela de criar, e esta diz uma
+consequência real. Criar entra limpo, sem nenhuma.
+
+**Não verificado num navegador de verdade nesta sessão** — mesma ressalva das
+seções anteriores: sem ferramenta de automação de navegador neste ambiente, o
+layout foi conferido lendo o CSS (a cascata de `.chip` contra os utilitários
+de padding, o `flex-1` da folha dentro do `min-h-dvh`), não visto na tela.
+Typecheck, lint e os 249 testes continuam limpos.
+
 ## Fases
 
 0. ✅ Esqueleto (Vite/React/TS/Tailwind/PWA/Capacitor)
