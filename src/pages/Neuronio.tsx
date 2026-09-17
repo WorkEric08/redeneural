@@ -169,7 +169,7 @@ export default function Neuronio() {
         }
       />
 
-      <article className="animar-entrada flex flex-col gap-6 pt-6">
+      <article className="animar-entrada flex flex-col gap-6 pt-5">
         <header className="flex flex-col items-start gap-2.5 px-1">
           <h1 className="texto-do-usuario font-titulo text-[1.75rem] leading-tight font-semibold tracking-tight text-balance">
             {neuronio.titulo}

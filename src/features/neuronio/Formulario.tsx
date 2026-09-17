@@ -120,8 +120,8 @@ export function Formulario({
           }
         />
 
-        <div className="animar-entrada flex flex-1 flex-col">
-          <div className="flex items-center pt-3">
+        <div className="animar-entrada flex flex-1 flex-col pt-4">
+          <div className="flex items-center">
             {livros.length === 0 ? (
               <span className="text-poeira text-xs leading-relaxed">
                 Nenhum livro na estante ainda. Toque numa lombada escura para criar o primeiro.

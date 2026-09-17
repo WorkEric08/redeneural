@@ -152,9 +152,9 @@ export default function Estante() {
           <Link
             to="/busca"
             aria-label="Buscar"
-            className={botao({ tipo: 'secundario', tamanho: 'icone' })}
+            className={botao({ tipo: 'fantasma', tamanho: 'icone' })}
           >
-            <Search size={18} aria-hidden />
+            <Search size={20} aria-hidden />
           </Link>
           <p className="text-poeira min-w-0 flex-1 truncate text-xs">
             {carregado

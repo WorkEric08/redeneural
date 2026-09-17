@@ -3495,6 +3495,60 @@ Nenhuma linha de código mudou nesta decisão — só o comentário de `links.ts
 que citava a convenção como parente do que ele faz, e este arquivo. Typecheck,
 lint e os 268 testes continuam limpos.
 
+## Duas divergências visuais corrigidas por auditoria (17/09/2026)
+
+Pedido do usuário: revisar o projeto inteiro por Design, Layout, UX e UI e
+deixar tudo de forma padrão — sem inventar funcionalidade nova, só corrigir o
+que já existe. Levantei o achado lendo o código (`Grep` por `size={}`,
+`botao(...)`, `pt-*` em toda tela), não este arquivo, e só toquei no que tinha
+divergência real e sem motivo registrado — nada de gosto.
+
+### O botão de busca da estante tinha variante e tamanho fora do padrão
+
+Seis das sete telas que levam para `/busca` usam
+`botao({ tipo: 'fantasma', tamanho: 'icone' })` com `Search` de 20px — a
+`Estante.tsx` era a única com `tipo: 'secundario'` e 18px. Sobra da Fase 12
+("Busca global"): o ícone nasceu **ao lado** dos botões de modo organizar e
+ordenar, que precisavam de `secundario` para mostrar o estado ligado com
+borda. Os dois saíram em 14/09/2026 ("A estante fica mais simples"), e o botão
+de busca ficou sozinho na fileira — mas ninguém devolveu o estilo dele ao
+padrão que toda outra tela usa para a mesma ação. Corrigido para `fantasma` +
+20px, igual ao resto do app.
+
+### O respiro abaixo da barra de topo variava sem motivo documentado
+
+`pt-3`, `pt-4`, `pt-5` e `pt-6` conviviam nas telas internas, cada uma criada
+numa sessão diferente sem comparar com as outras. Só uma divergência tinha
+motivo escrito: `pt-4` em `NovoLivro.tsx`/`EditarLivro.tsx`, ajustado em
+16/09/2026 para o formulário caber sem rolar em 320px — essa ficou como
+estava. As outras três viraram duas, por papel de tela:
+
+- **`pt-5`** nas telas de leitura/navegação: `Ajustes.tsx` e `Busca.tsx` já
+  usavam; `Livro.tsx` tinha o mesmo valor, só que aplicado no filho (`<p>`) em
+  vez do wrapper `.animar-entrada` — moveu para o wrapper, mesmo padrão de
+  código das outras; `Neuronio.tsx` estava em `pt-6`, o único ponto fora
+  desse grupo, e desceu para `pt-5`.
+- **`pt-4`** nas telas de formulário em tela cheia: `Formulario.tsx` (Novo/
+  Editar neurônio) estava em `pt-3` — o menor valor do app, e no filho em vez
+  do wrapper —, e é estruturalmente a mesma categoria de tela que
+  `NovoLivro.tsx`/`EditarLivro.tsx` (barra de topo com "fechar", formulário
+  que preenche a tela). Subiu para `pt-4` e moveu para o wrapper.
+
+Regra que fica valendo: o respiro sob a barra de topo mora sempre no wrapper
+`.animar-entrada`, nunca num filho interno — é o que faz a próxima tela nova
+começar do padrão certo em vez de inventar um terceiro valor sem querer.
+
+**Fora do escopo, por já ter motivo registrado:** a Estante não tem barra de
+topo (decisão da Fase 6) e o respiro de topo dela é 0px no celular por pedido
+explícito do usuário (15/09/2026) — não é a mesma categoria de tela e não foi
+tocada.
+
+**Não verificado num navegador de verdade nesta sessão** — mesma ressalva de
+sempre; a diferença de 4px entre `pt-5` e `pt-6` (Neuronio) e a troca de
+variante do botão foram conferidas lendo classe a classe, não vistas lado a
+lado numa tela. Typecheck, lint e os 268 testes automatizados continuam
+limpos — mudança sem lógica nova, só classes.
+
 ## Fases
 
 0. ✅ Esqueleto (Vite/React/TS/Tailwind/PWA/Capacitor)

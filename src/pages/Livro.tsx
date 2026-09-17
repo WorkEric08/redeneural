@@ -99,8 +99,8 @@ export default function Livro() {
 
       {/* A barra de topo fica fora da animação de entrada: um ancestral animado
           vira a raiz do desfoque dela, e o que rola por baixo deixa de borrar. */}
-      <div className="animar-entrada flex flex-col">
-        <p className="text-poeira px-1 pt-5 pb-4 text-sm">
+      <div className="animar-entrada flex flex-col pt-5">
+        <p className="text-poeira px-1 pb-4 text-sm">
           {contar(meus.length, 'neurônio', 'neurônios')}
           {saindo > 0 && (
             <span className="text-ponte brilho-ponte-texto-sm">
