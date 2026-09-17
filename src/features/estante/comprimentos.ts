@@ -19,3 +19,6 @@ export const COMPRIMENTOS: readonly OpcaoDeComprimento[] = [
   { chave: 'alto', rotulo: 'Alto', percentual: 88 },
   { chave: 'enorme', rotulo: 'Enorme', percentual: 98 },
 ] as const
+
+/** O padrão de um livro novo (pedido do usuário, 16/09/2026): comprimento normal, não automático. */
+export const COMPRIMENTO_PADRAO = COMPRIMENTOS.find((c) => c.chave === 'normal')!.percentual

@@ -18,3 +18,6 @@ export const LARGURAS: readonly OpcaoDeLargura[] = [
   { chave: 'grossa', rotulo: 'Grossa', px: 52 },
   { chave: 'grande', rotulo: 'Grande', px: 68 },
 ] as const
+
+/** O padrão de um livro novo (pedido do usuário, 16/09/2026): largura normal, não automática. */
+export const LARGURA_PADRAO = LARGURAS.find((l) => l.chave === 'normal')!.px

@@ -1,7 +1,9 @@
 import { useNavigate, useSearchParams } from 'react-router-dom'
 
 import { BarraDeTopo } from '@/components/BarraDeTopo'
+import { COMPRIMENTO_PADRAO } from '@/features/estante/comprimentos'
 import { FormularioDeLivro } from '@/features/estante/FormularioDeLivro'
+import { LARGURA_PADRAO } from '@/features/estante/larguras'
 import { panoSugerido } from '@/features/estante/panos'
 import { usePalacio } from '@/store/palacio'
 
@@ -25,14 +27,14 @@ export default function NovoLivro() {
     <div className="flex min-h-dvh flex-col">
       <BarraDeTopo voltarPara="/" icone="fechar" titulo="Novo livro" />
 
-      <div className="animar-entrada flex flex-1 flex-col pt-5">
+      <div className="animar-entrada flex flex-1 flex-col pt-4">
         <FormularioDeLivro
           inicial={{
             titulo: '',
             cor: panoSugerido(livros),
             emblema: null,
-            larguraLombada: null,
-            comprimentoLombada: null,
+            larguraLombada: LARGURA_PADRAO,
+            comprimentoLombada: COMPRIMENTO_PADRAO,
           }}
           rotuloDeEnvio="Criar livro"
           ocupado={ocupado}

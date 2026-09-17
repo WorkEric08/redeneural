@@ -17,6 +17,15 @@ import { PANOS, pano } from './panos'
  */
 const REFERENCIA_DA_AMOSTRA_PX = 130
 
+/**
+ * Mesma conversão, mas para as opções de comprimento — que são um seletor,
+ * não a lombada de verdade. Numa referência de 130px "Enorme" (98%) vira uma
+ * caixa de 127px, alta o bastante para empurrar a tela do celular para fora
+ * sem rolar (pedido do usuário, 16/09/2026). Uma referência bem menor mantém
+ * a proporção entre as opções sem pagar esse custo de altura.
+ */
+const REFERENCIA_DAS_OPCOES_PX = 56
+
 interface Props {
   inicial: NovoLivro
   rotuloDeEnvio: string
@@ -60,7 +69,7 @@ export function FormularioDeLivro({
 
   return (
     <form
-      className="flex flex-col gap-6"
+      className="flex flex-col gap-5"
       onSubmit={(evento) => {
         evento.preventDefault()
         if (podeEnviar) {
@@ -124,7 +133,7 @@ export function FormularioDeLivro({
 
       <fieldset className="flex flex-col">
         <legend className="rotulo-de-secao">Largura</legend>
-        <div className="flex flex-wrap items-end gap-4">
+        <div className="flex flex-wrap items-end gap-2">
           <label className="pano-opcao">
             <input
               type="radio"
@@ -164,7 +173,7 @@ export function FormularioDeLivro({
 
       <fieldset className="flex flex-col">
         <legend className="rotulo-de-secao">Comprimento</legend>
-        <div className="flex flex-wrap items-end gap-4">
+        <div className="flex flex-wrap items-end gap-2">
           <label className="pano-opcao">
             <input
               type="radio"
@@ -175,7 +184,10 @@ export function FormularioDeLivro({
               }}
               className="sr-only"
             />
-            <span className="pano-amostra comprimento-amostra comprimento-amostra--auto" aria-hidden>
+            <span
+              className="pano-amostra comprimento-amostra comprimento-amostra--auto"
+              aria-hidden
+            >
               <Shuffle size={16} aria-hidden />
             </span>
             <span className="text-poeira text-[0.7rem] leading-tight">Automático</span>
@@ -195,7 +207,7 @@ export function FormularioDeLivro({
                 className="pano-amostra comprimento-amostra"
                 aria-hidden
                 style={{
-                  height: `${String(Math.round((c.percentual / 100) * REFERENCIA_DA_AMOSTRA_PX))}px`,
+                  height: `${String(Math.round((c.percentual / 100) * REFERENCIA_DAS_OPCOES_PX))}px`,
                   backgroundColor: cor,
                 }}
               />
