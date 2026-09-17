@@ -3251,6 +3251,36 @@ cascata do CSS, não numa tela de verdade. Verificado com typecheck, lint e
 a suíte de testes (258 testes — perde os 16 de `marcacao.test.ts`,
 removidos junto do arquivo).
 
+## A tela cheia do neurônio deixa de mostrar as conexões (17/09/2026)
+
+Pedido do usuário: dentro de um livro, clicar na seta ">" (que abre a tela
+cheia do neurônio, ver "A lista de neurônios do livro ganha duas setas") não
+deve mostrar as conexões ali.
+
+A tela cheia (`Neuronio.tsx`) tinha uma seção "N conexões" com os mesmos
+`Fios` que o livro já mostra inline ao tocar `ChevronDown` — duplicava o que
+a outra seta já entrega, na mesma tela que a seção anterior redesenhou para
+ser "como se lê o texto inteiro". Removida a seção inteira (o `<h2>` de
+contagem e o `<Fios lista={meus} />`), junto do import de `Fios` e de
+`contar`, que ficaram sem uso ali.
+
+**O que ficou:** `vizinhos`/`meus` continuam existindo no arquivo — não para
+desenhar conexão nenhuma, mas porque a contagem de fios ainda entra na frase
+de confirmação de apagar ("Os N fios que saem dele vão junto..."). Essa
+frase não é a seção visual removida, é aviso de consequência de uma ação
+destrutiva, e continua servindo ao mesmo propósito de sempre.
+
+**Escopo:** a mudança tira a seção de toda a tela cheia do neurônio, não só
+de quem chega até ela pela seta do livro — não existe hoje um jeito de
+diferenciar a origem da navegação nesta tela (a Rede e a Busca também levam
+para cá), e criar esse desvio só para esconder a seção condicionalmente
+seria complexidade que o pedido não trouxe. As conexões continuam visíveis
+em dois lugares: inline no livro (`ChevronDown`) e na Rede.
+
+**Não verificado num navegador de verdade nesta sessão** — mesma ressalva de
+sempre. Typecheck, lint e os 258 testes automatizados continuam limpos
+(sem teste novo — é remoção de JSX e imports, sem lógica pura nova).
+
 ## Fases
 
 0. ✅ Esqueleto (Vite/React/TS/Tailwind/PWA/Capacitor)

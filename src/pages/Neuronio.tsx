@@ -9,8 +9,6 @@ import { EtiquetaProcessando } from '@/components/EtiquetaProcessando'
 import { Folha } from '@/components/Folha'
 import type { NeuronioNaTela } from '@/core'
 import { vizinhosPorNeuronio } from '@/features/estante/resumo'
-import { Fios } from '@/features/neuronio/Fios'
-import { contar } from '@/lib/plural'
 import { usePalacio } from '@/store/palacio'
 
 /** O que a confirmação guarda no histórico para saber como sair depois de apagar. */
@@ -183,13 +181,6 @@ export default function Neuronio() {
             {neuronio.conteudo}
           </p>
         )}
-
-        <section>
-          <h2 className="rotulo-de-secao">{contar(meus.length, 'conexão', 'conexões')}</h2>
-          <div className="cartao px-2 py-1.5">
-            <Fios lista={meus} />
-          </div>
-        </section>
       </article>
 
       <Folha aberta={perguntando} rotulo={`Apagar ${neuronio.titulo}`} onFechar={desistir}>
