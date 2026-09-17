@@ -3188,13 +3188,12 @@ typecheck, lint e os 274 testes automatizados (nenhum teste novo — é JSX e
 CSS, sem lógica pura nova para testar, mesmo padrão de mudanças de layout
 anteriores).
 
-## A barra de escrita sai, entra um controle de tamanho de fonte (17/09/2026)
+## A barra de escrita sai (17/09/2026)
 
 Pedido do usuário: a barra de formatação da seção anterior ("A barra de
 escrita acima do teclado") saiu — junto com `BarraDeEscrita.tsx`,
 `marcacao.ts`/`marcacao.test.ts` e `useTextoComHistorico.ts`, removidos por
-inteiro, não só desconectados da tela. No lugar, um controle de tamanho de
-fonte, fora do fluxo de foco/teclado.
+inteiro, não só desconectados da tela.
 
 **Por que a remoção foi total, não parcial.** A barra existia só para
 escrever markdown num campo que é `string` pura — o motivo registrado na
@@ -3206,53 +3205,51 @@ existir: nada mais no app precisa de histórico próprio de texto ou de
 marcação de markdown. `conteudo` em `Formulario.tsx` voltou a ser um
 `useState<string>` simples — sem `digitar`/`aplicar`/`desfazer`/`refazer`,
 sem o `useEffectEvent` que repunha o cursor depois de um botão reescrever o
-campo (não existe mais botão reescrevendo o campo).
+campo (não existe mais botão reescrevendo o campo). O `<textarea>` voltou a
+ser só texto, sem nenhum controle extra em volta.
 
-**O controle de fonte:** um par de botões "A−"/"A+" (`Minus`/`Plus`) com o
-tamanho atual entre eles, junto da etiqueta do livro — mesma linha, abaixo
-da barra de topo, fora de `.rodape-de-escrita` (que também saiu: sem a
-barra, o rodapé voltou a ser só `.barra-de-acao`, como era antes da seção
-anterior). `fonteEmPx` é `useState<number>` local (não persistido — é
-ajuste de leitura da sessão, não preferência do palácio, mesmo critério do
-modo organizar e da visão geral da estante), aplicado via `style={{
-fontSize }}` no `<textarea>`. Faixa 14–28px, passo de 2px — abaixo de 14 o
-texto fica difícil de mirar com o dedo, acima de 28 uma linha comum já
-quebra demais numa tela de 320px.
+### O controle de tamanho de fonte entrou e saiu na mesma sessão
 
-**Por que não ficou atrelado ao foco:** o pedido foi explícito — "em algum
-outro local sem ser esse atalho" — porque a barra antiga só aparecia com o
-teclado em cima, e cada vez que o campo perdia o foco (rolar, tocar fora) o
-controle sumia. O tamanho de fonte é preferência de leitura, faz sentido
-mesmo com o teclado fechado (por exemplo, revendo o texto depois de
-escrever), então fica sempre visível, sem `escrevendo`/`onFocus`/`onBlur`
-— esse estado e os dois manipuladores saíram de `Formulario.tsx` inteiros,
-sem chamador que sobrasse.
+Um primeiro pedido pediu, no lugar da barra, um controle de tamanho de
+fonte (A−/A+) fora do fluxo de foco/teclado — implementado, verificado
+(typecheck, lint, 258 testes) e documentado. Um pedido seguinte, na mesma
+sessão, revisitou a ideia: o controle deveria valer por trecho de texto
+("uma linha em 16, outra em 20"), não no texto inteiro.
+
+Isso esbarra num limite técnico, não numa escolha de design: uma
+`<textarea>` HTML não tem como renderizar partes do texto em tamanhos
+diferentes enquanto se escreve, não importa que marcação exista por trás —
+é uma propriedade CSS só para o campo inteiro. Fazer isso ao vivo exigiria
+trocar a `<textarea>` por um editor `contentEditable`, o que reabre a
+decisão fechada na seção anterior ("A barra de escrita acima do teclado":
+markdown em texto puro, não rich text, exatamente para não pagar esse
+custo — cursor mais difícil de controlar, teclado do Android menos
+confiável em `contentEditable`). Apontei o limite e as alternativas antes
+de implementar; a resposta do usuário foi **reverter o pedido inteiro**, não
+escolher uma alternativa — o controle de tamanho de fonte saiu por completo
+(`Minus`/`Plus`, `fontePx`, o `style={{ fontSize }}` no `<textarea>`, a
+segunda coluna na linha da etiqueta do livro), devolvendo `Formulario.tsx`
+exatamente ao estado de antes desse pedido.
 
 ### A lupa do Android não tem API web
 
-O segundo pedido — "melhore a lupa que ajuda a ver um texto quando
-selecionado uma parte do texto" — é sobre a lupa nativa que o Android
+Um pedido à parte, ainda de pé: "melhore a lupa que ajuda a ver um texto
+quando selecionado uma parte do texto" é sobre a lupa nativa que o Android
 desenha sozinho ao arrastar as alças de seleção de texto: ela amplia o
 trecho embaixo do dedo enquanto ele se move. **Não existe API web para
 estilizar, reposicionar ou de qualquer forma customizar essa lupa** — é
 desenhada pela WebView/Chrome no nível do sistema, no mesmo grupo de coisas
 fora do alcance da web que já apareceram nesta sessão (cor da barra de
 navegação, força do autofill do Gboard). Não há gambiarra CSS ou JS que a
-alcance.
-
-O que o controle de fonte novo faz por tabela: a lupa amplia o que já está
-desenhado na tela — texto maior na fonte de origem significa um trecho mais
-legível dentro da lupa também, embora indiretamente (ela não fica "melhor",
-o material que ela amplia é que fica mais fácil de ler para começo de
-conversa). É a única alavanca que a web dá sobre esse comportamento.
+alcance — e, com o controle de fonte revertido, não sobra nenhuma alavanca
+indireta sobre ela neste momento.
 
 **Não verificado num navegador de verdade nesta sessão** — mesma ressalva
-de sempre: sem ferramenta de automação disponível, a remoção da barra e o
-novo controle foram conferidos lendo o código e a cascata do CSS, não numa
-tela de verdade. Vale conferir no celular se o controle de fonte fica bem
-posicionado com o teclado aberto, e se a lupa nativa de fato amplia o texto
-maior como esperado. Verificado com typecheck, lint e a suíte de testes
-(que perde os 16 testes de `marcacao.test.ts`, removidos junto do arquivo).
+de sempre: sem ferramenta de automação disponível, a remoção da barra (e,
+depois, a remoção do controle de fonte) foram conferidas lendo o código e a
+cascata do CSS, não numa tela de verdade. Verificado com typecheck, lint e
+a suíte de testes (258 testes — perde os 16 de `marcacao.test.ts`,
+removidos junto do arquivo).
 
 ## Fases
 

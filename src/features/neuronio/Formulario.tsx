@@ -1,4 +1,4 @@
-import { Check, ChevronDown, Minus, Plus } from 'lucide-react'
+import { Check, ChevronDown } from 'lucide-react'
 import { useState } from 'react'
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 
@@ -7,11 +7,6 @@ import { botao } from '@/components/botao'
 import { Folha } from '@/components/Folha'
 import type { Livro } from '@/core'
 import type { NovoNeuronio } from '@/store/palacio'
-
-const FONTE_MINIMA_PX = 14
-const FONTE_MAXIMA_PX = 28
-const FONTE_PADRAO_PX = 16
-const PASSO_DA_FONTE_PX = 2
 
 /**
  * A folha de escrever — o mesmo formulário serve para criar e para editar.
@@ -39,10 +34,8 @@ const PASSO_DA_FONTE_PX = 2
  * lado do enviar, que fica preso no pé no celular (`.barra-de-acao`).
  *
  * **Sem barra de formatação** (removida em 17/09/2026, pedido do usuário — ver
- * CLAUDE.md, "A barra de escrita sai"): o único controle fora do texto em si é
- * o tamanho de fonte, sempre visível junto da etiqueta do livro — não um
- * acessório que aparece com o teclado, porque ajustar a leitura faz sentido
- * também com o teclado fechado.
+ * CLAUDE.md, "A barra de escrita sai"): o texto é só texto, sem nenhum
+ * controle extra em volta dele.
  */
 
 interface Props {
@@ -69,7 +62,6 @@ export function Formulario({
   const [livroEscolhido, setLivroEscolhido] = useState(inicial?.livroId ?? '')
   const [titulo, setTitulo] = useState(inicial?.titulo ?? '')
   const [conteudo, setConteudo] = useState(inicial?.conteudo ?? '')
-  const [fontePx, setFontePx] = useState(FONTE_PADRAO_PX)
 
   // A folha de escolher livro mora na URL, como qualquer outro painel do app
   // (filtros da Rede, apagar do neurônio): o voltar do Android fecha a folha
@@ -91,10 +83,6 @@ export function Formulario({
     // O React Router chama de 'default' a primeira entrada da sessão.
     if (key === 'default') void navegar({ search: '' }, { replace: true })
     else void navegar(-1)
-  }
-
-  function mudarFonte(delta: number): void {
-    setFontePx((atual) => Math.min(FONTE_MAXIMA_PX, Math.max(FONTE_MINIMA_PX, atual + delta)))
   }
 
   return (
@@ -133,7 +121,7 @@ export function Formulario({
         />
 
         <div className="animar-entrada flex flex-1 flex-col">
-          <div className="flex items-center justify-between gap-3 pt-3">
+          <div className="flex items-center pt-3">
             {livros.length === 0 ? (
               <span className="text-poeira text-xs leading-relaxed">
                 Nenhum livro na estante ainda. Toque numa lombada escura para criar o primeiro.
@@ -160,37 +148,6 @@ export function Formulario({
                 />
               </span>
             )}
-
-            {/* Tamanho de fonte: sempre à mostra, e não um acessório do
-                teclado — ajustar a leitura faz sentido mesmo de tela
-                fechada (pedido do usuário, 17/09/2026). */}
-            <span className="flex shrink-0 items-center gap-1">
-              <button
-                type="button"
-                onClick={() => {
-                  mudarFonte(-PASSO_DA_FONTE_PX)
-                }}
-                disabled={fontePx <= FONTE_MINIMA_PX}
-                aria-label="Diminuir a fonte"
-                className={botao({ tipo: 'fantasma', tamanho: 'icone' })}
-              >
-                <Minus size={16} aria-hidden />
-              </button>
-              <span className="text-poeira w-6 text-center text-xs tabular-nums" aria-hidden>
-                {fontePx}
-              </span>
-              <button
-                type="button"
-                onClick={() => {
-                  mudarFonte(PASSO_DA_FONTE_PX)
-                }}
-                disabled={fontePx >= FONTE_MAXIMA_PX}
-                aria-label="Aumentar a fonte"
-                className={botao({ tipo: 'fantasma', tamanho: 'icone' })}
-              >
-                <Plus size={16} aria-hidden />
-              </button>
-            </span>
           </div>
 
           {aviso !== undefined && (
@@ -207,8 +164,7 @@ export function Formulario({
             aria-label="Com suas palavras"
             placeholder="Escreva com suas palavras."
             autoComplete="off"
-            style={{ fontSize: `${String(fontePx)}px` }}
-            className="placeholder:text-poeira [field-sizing:content] w-full flex-1 resize-none bg-transparent px-1 pt-4 pb-2 leading-relaxed outline-none"
+            className="placeholder:text-poeira [field-sizing:content] w-full flex-1 resize-none bg-transparent px-1 pt-4 pb-2 text-base leading-relaxed outline-none"
           />
         </div>
 
