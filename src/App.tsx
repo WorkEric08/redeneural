@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useLayoutEffect, useState } from 'react'
 import { Outlet, useLocation } from 'react-router-dom'
 
 import type { ProgressoDoMotor } from '@/core'
@@ -33,6 +33,17 @@ export default function App() {
   useEffect(() => {
     if (!naPorta) document.getElementById('cor-da-porta')?.remove()
   }, [naPorta])
+
+  // Toda troca de tela começa do topo — nunca no meio ou no fim (pedido do
+  // usuário, 17/09/2026, sem exceção até ele pedir uma). `useLayoutEffect`,
+  // não `useEffect`: roda antes do navegador pintar, para não haver um
+  // instante visível "ainda rolado" antes do salto. Só por `pathname`, não
+  // pela busca inteira: abrir uma folha (`?apagar=1` e companhia, que só
+  // muda a URL sem trocar de rota) não pode jogar a página para cima por
+  // baixo do painel que acabou de abrir.
+  useLayoutEffect(() => {
+    window.scrollTo(0, 0)
+  }, [pathname])
 
   const mostrarCriar = !SEM_BOTAO_DE_CRIAR.includes(pathname) && !pathname.endsWith('/editar')
 

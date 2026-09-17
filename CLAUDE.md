@@ -2981,6 +2981,41 @@ lendo código. Vale conferir se a amplitude (2,5px) está mesmo "leve", se o
 laço contínuo pesa a bateria de um jeito perceptível, e se um palácio grande
 continua fluido com todo mundo balançando a cada quadro.
 
+## Toda troca de tela começa do topo (17/09/2026)
+
+Pedido do usuário: abrir um neurônio (ou qualquer outra tela) não pode
+herdar a rolagem de onde a pessoa estava — sempre do topo para baixo, nunca
+caindo no meio ou no fim de uma tela nova. Pedido como regra geral, sem
+exceção até ele explicitar uma.
+
+**A causa:** este é um SPA — trocar de rota não recarrega a página, então o
+navegador não tem motivo nenhum para mexer no `scrollTop` sozinho. Ler um
+neurônio comprido até o fim e depois tocar num fio para outro neurônio (ou
+voltar para a lista do livro) mantinha a rolagem exatamente onde estava.
+
+**Onde mora, e por que só ali:** um `useLayoutEffect` novo em `App.tsx`,
+disparado por `pathname` — o casco que envolve toda rota, então uma correção
+só resolve o app inteiro, sem repetir a mesma linha em cada página.
+`useLayoutEffect`, não `useEffect`: roda antes do navegador pintar, para não
+piscar "ainda rolado" por um instante antes do salto. **Só por `pathname`,
+não pela busca inteira**: os painéis do app (`?apagar=1`, `?editar=1`,
+`?filtros=1`, e por aí vai) mudam a URL sem trocar de rota, e abrir um deles
+não pode jogar a página para cima por baixo do painel que acabou de subir —
+só a barra de cima ficaria visível, com a folha cobrindo o resto.
+
+**Não conflita com o resto:** a Estante e a Rede já travam a própria rolagem
+(`useTravarRolagem`) e já tinham o próprio `window.scrollTo(0, 0)` só para
+elas — chamar de novo por cima não faz diferença (não há o que rolar). As
+folhas rolam dentro de `.folha-corpo`, um elemento à parte da página; `window.
+scrollTo` nunca toca nelas.
+
+**Não verificado num navegador de verdade nesta sessão** — mesma ressalva de
+sempre. Vale conferir especificamente: ler um neurônio comprido até o fim,
+tocar num fio para outro, e confirmar que a tela nova abre do topo; e que
+abrir uma folha (apagar, filtros) não faz a página pular por baixo dela.
+Typecheck, lint e os 273 testes continuam limpos (mudança de efeito único,
+sem lógica pura nova para testar).
+
 ## Fases
 
 0. ✅ Esqueleto (Vite/React/TS/Tailwind/PWA/Capacitor)
