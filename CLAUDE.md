@@ -2484,6 +2484,36 @@ dos `if` em `aoSoltar` e no `onClick`), não reproduzida com um dedo de
 verdade. Typecheck, lint e os 249 testes continuam limpos; Dial.tsx não tem
 teste automatizado (nunca teve, mesmo padrão do resto do gesto de segurar).
 
+## Zoom da Rede mais leve, e os nomes aparecem todos juntos (16/09/2026)
+
+Dois pedidos do usuário sobre a mesma reclamação: dar duplo toque para
+aproximar de um neurônio ("focar") ou no vazio zoomava demais, e os nomes
+dos neurônios apareciam em momentos diferentes — hub primeiro, folha só bem
+mais perto.
+
+**A causa dos nomes escalonados:** `limiarDeEscala(grau)` (`desenhar.ts`)
+caía com o grau (`ESCALA_MINIMA_DOS_ROTULOS / (1 + grau * FATOR_DE_GRAU)`) —
+um hub bem conectado já cruzava a linha no zoom normal, uma folha sem
+conexão só a 1.9×. Virou um limiar só, `ESCALA_MINIMA_DOS_ROTULOS = 2.2`,
+igual para todo mundo: `FATOR_DE_GRAU` e `limiarDeEscala` saíram por não
+terem mais uso. O grau continua decidindo **quem vence o espaço** quando dois
+rótulos disputam o mesmo lugar (o hub, que orienta mais, ainda desempata
+primeiro) — só não decide mais **quando** o nome pode aparecer.
+
+**O zoom em si:** `ZOOM_DO_DUPLO_TOQUE` (duplo toque no vazio) caiu de 1.9
+para 1.5, e `ESCALA_DE_FOCO` (duplo toque num neurônio, e para onde a busca
+leva a câmera) caiu de 2.4 para 2.2 — o mesmo valor do limiar dos nomes, de
+propósito: focar um neurônio sempre revela todos os nomes de uma vez, nunca
+alguns antes de outros, porque o próprio ato de focar já cruza a linha
+única. Partindo do zoom normal (1×), dois duplo-toques no vazio (1.5² =
+2.25) já passam do limiar — "no segundo zoom", como o usuário pediu, sem
+descartar que um grafo mais espalhado peça um terceiro.
+
+**Não verificado num navegador de verdade nesta sessão** — os números
+(2.2, 1.5, a progressão de dois duplo-toques) foram calculados, não vistos
+na tela. Vale conferir num palácio de verdade se o ritmo ficou bom; typecheck,
+lint e os 249 testes continuam limpos.
+
 ## Fases
 
 0. ✅ Esqueleto (Vite/React/TS/Tailwind/PWA/Capacitor)

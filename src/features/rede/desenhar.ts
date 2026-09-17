@@ -334,22 +334,23 @@ function desenharNeuronios(
 /** Em unidades do mundo, não de tela: crescer com o zoom é o próprio ponto —
  *  é o que faz "aproximar" revelar um nome que não cabia antes. */
 const FONTE_DO_ROTULO = 7
-/** Zoom mínimo para o nome de um nó sem conexão nenhuma aparecer. */
-const ESCALA_MINIMA_DOS_ROTULOS = 1.9
-/** Cada conexão a mais adianta o quanto falta aproximar para o nome surgir. */
-const FATOR_DE_GRAU = 0.3
+/**
+ * Zoom mínimo para os nomes aparecerem — um limiar só, igual para todo
+ * neurônio (pedido do usuário, 16/09/2026: antes um hub aparecia bem antes de
+ * uma folha, porque o limiar caía com o grau; agora todos cruzam a mesma
+ * linha na mesma pintura). O mesmo valor de `ESCALA_DE_FOCO` em `Tela.tsx` —
+ * focar um neurônio (busca ou duplo toque) já tem que chegar aqui.
+ */
+const ESCALA_MINIMA_DOS_ROTULOS = 2.2
 /** Não sobrecarrega a pintura, mesmo num aglomerado com centenas de nós à mostra. */
 const MAX_ROTULOS_AMBIENTE = 40
 
-function limiarDeEscala(grau: number): number {
-  return ESCALA_MINIMA_DOS_ROTULOS / (1 + grau * FATOR_DE_GRAU)
-}
-
 /**
- * Zoom revela nomes, e os mais conectados aparecem primeiro — são os hubs, o
- * que mais orienta ao se aproximar. Sem disputar espaço: cada candidato (do
- * mais conectado ao menos) só ganha o rótulo se a caixa dele não bater na de
- * alguém que já ganhou nesta mesma pintura.
+ * Zoom revela nomes, todos no mesmo instante — não é o pertencimento a um
+ * hub que adianta a revelação, só o zoom. Os mais conectados só vêm primeiro
+ * na fila de espaço: sem disputar posição, cada candidato (do mais conectado
+ * ao menos) ganha o rótulo se a caixa dele não bater na de alguém que já
+ * ganhou nesta mesma pintura — o hub orienta mais, então vence o desempate.
  */
 function desenharRotulosAmbiente(
   ctx: CanvasRenderingContext2D,
@@ -357,14 +358,14 @@ function desenharRotulosAmbiente(
   escala: number,
   apagado: (n: NeuronioNaTela) => boolean,
 ): void {
+  if (escala < ESCALA_MINIMA_DOS_ROTULOS) return
+
   const candidatos: { n: NeuronioNaTela; p: Ponto; grau: number }[] = []
   for (const n of cena.neuronios) {
     if (n.id === cena.selecionado || apagado(n)) continue
     const p = cena.posicoes.get(n.id)
     if (!finito(p)) continue
-    const grau = cena.graus.get(n.id) ?? 0
-    if (escala < limiarDeEscala(grau)) continue
-    candidatos.push({ n, p, grau })
+    candidatos.push({ n, p, grau: cena.graus.get(n.id) ?? 0 })
   }
   if (candidatos.length === 0) return
 

@@ -34,11 +34,16 @@ const RAIO_DO_TOQUE = 22
 const JANELA_DO_DUPLO_TOQUE = 350
 const RAIO_DO_DUPLO_TOQUE = 40
 /** Quanto um duplo toque no vazio aproxima — mais forte que a roda do mouse,
- *  porque é um gesto único, não repetido. */
-const ZOOM_DO_DUPLO_TOQUE = 1.9
-/** Para onde a busca e o duplo toque num neurônio levam a câmera — perto o
- *  bastante para os rótulos ambiente já aparecerem (ver `desenhar.ts`). */
-const ESCALA_DE_FOCO = 2.4
+ *  porque é um gesto único, não repetido. Leve de propósito (pedido do
+ *  usuário, 16/09/2026, era 1.9): dois ou três toques seguidos, não um só,
+ *  fazem o trabalho de aproximar de verdade. */
+const ZOOM_DO_DUPLO_TOQUE = 1.5
+/** Para onde a busca e o duplo toque num neurônio levam a câmera — o mesmo
+ *  valor do limiar único de `ESCALA_MINIMA_DOS_ROTULOS` em `desenhar.ts`, para
+ *  focar sempre revelar todos os nomes de uma vez (nunca alguns antes de
+ *  outros). Reduzido de 2.4 para 2.2 (pedido do usuário, 16/09/2026): o pulo
+ *  ficava forte demais partindo do zoom normal. */
+const ESCALA_DE_FOCO = 2.2
 /** Quanto tempo o assentamento leva depois de soltar — nem instantâneo (o
  *  pulo pareceria bug), nem longo o bastante para atrasar quem já quer seguir. */
 const DURACAO_DO_ASSENTAMENTO = 900
