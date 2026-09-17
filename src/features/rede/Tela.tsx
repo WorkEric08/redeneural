@@ -43,6 +43,19 @@ const ESCALA_DE_FOCO = 2.4
  *  pulo pareceria bug), nem longo o bastante para atrasar quem já quer seguir. */
 const DURACAO_DO_ASSENTAMENTO = 900
 
+/**
+ * O deslize da câmera ao soltar arrastando (opção "Deslizar navegação", ligada
+ * por quem navega — desligada por padrão, ver Rede.tsx): não é inércia de
+ * verdade (que desaceleraria por tempo indefinido, o tipo de laço que este
+ * arquivo evita), é um "assenta e para" na direção do gesto — a mesma ideia do
+ * assentamento de um neurônio arrastado, só que projetando a posição em vez de
+ * pedir ao motor.
+ */
+const VELOCIDADE_MINIMA_DO_DESLIZE = 0.12 // px/ms — abaixo disso, soltar já era "parar", não "arremessar"
+const PROJECAO_DO_DESLIZE_MS = 220
+const DISTANCIA_MAXIMA_DO_DESLIZE = 200 // px — "desliza um pouco", não sai voando com um flick forte
+const DURACAO_DO_DESLIZE = 300
+
 export interface ControleDaTela {
   enquadrar: () => void
   /** Centraliza a câmera num neurônio, aproximando até `ESCALA_DE_FOCO` — nunca afasta. */
@@ -68,6 +81,9 @@ interface Props {
   controle?: RefObject<ControleDaTela | null>
   /** Estável entre renders (constante de módulo): enquadrar depende dela. */
   folgas: Folgas
+  /** Soltar arrastando a câmera desliza um pouco na direção do gesto, em vez
+   *  de parar exatamente onde o dedo soltou (ver `DISTANCIA_MAXIMA_DO_DESLIZE`). */
+  deslizarNavegacao: boolean
 }
 
 const MISTURAS = ['lighter', 'multiply', 'screen', 'source-over'] as const
@@ -101,7 +117,14 @@ function lerCores(el: HTMLElement): CoresDaRede {
   }
 }
 
-export function Tela({ cena, onSelecionar, onArrastarNeuronio, controle, folgas }: Props) {
+export function Tela({
+  cena,
+  onSelecionar,
+  onArrastarNeuronio,
+  controle,
+  folgas,
+  deslizarNavegacao,
+}: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const camera = useRef<Camera>({ x: 0, y: 0, escala: 1 })
   const cores = useRef<CoresDaRede | null>(null)
@@ -110,6 +133,12 @@ export function Tela({ cena, onSelecionar, onArrastarNeuronio, controle, folgas 
   /** O último toque solto, para reconhecer um segundo logo em seguida como duplo. */
   const ultimoToque = useRef<{ tempo: number; x: number; y: number } | null>(null)
   const cenaRef = useRef(cena)
+
+  /** Velocidade do arrasto de câmera (px/ms), suavizada quadro a quadro — só
+   *  para decidir o deslize ao soltar, ver `iniciarDeslize`. */
+  const velocidadeDoArrasto = useRef({ vx: 0, vy: 0 })
+  const ultimoQuadroDoArrasto = useRef(0)
+  const deslizeEmAndamento = useRef<{ cancelado: boolean } | null>(null)
 
   /** O neurônio sob o dedo desde o toque, se o toque começou em cima de um —
    *  `null` enquanto o gesto é (ou ainda pode virar) arrastar a câmera. */
@@ -241,6 +270,52 @@ export function Tela({ cena, onSelecionar, onArrastarNeuronio, controle, folgas 
 
         if (t < 1) requestAnimationFrame(quadro)
         else posicoesArrastadas.current = null
+      }
+
+      requestAnimationFrame(quadro)
+    },
+    [pintar],
+  )
+
+  /**
+   * Soltou arrastando a câmera com alguma velocidade: desliza mais um pouco na
+   * mesma direção, com o mesmo "assenta e para" do resto da tela — não uma
+   * inércia que desacelera por tempo indefinido, e sim um alvo fixo (a
+   * velocidade projetada, com um teto de distância) animado com easeOutCubic.
+   * Abaixo de `VELOCIDADE_MINIMA_DO_DESLIZE` não faz nada: um arrasto que já
+   * estava parando na hora de soltar não deve ganhar vida própria.
+   */
+  const iniciarDeslize = useCallback(
+    (vx: number, vy: number) => {
+      const velocidade = Math.hypot(vx, vy)
+      if (velocidade < VELOCIDADE_MINIMA_DO_DESLIZE) return
+
+      if (deslizeEmAndamento.current) deslizeEmAndamento.current.cancelado = true
+      const execucao = { cancelado: false }
+      deslizeEmAndamento.current = execucao
+
+      const distancia = Math.min(DISTANCIA_MAXIMA_DO_DESLIZE, velocidade * PROJECAO_DO_DESLIZE_MS)
+      const escala = distancia / velocidade
+      const origemX = camera.current.x
+      const origemY = camera.current.y
+      const alvoX = origemX + vx * escala
+      const alvoY = origemY + vy * escala
+      const t0 = performance.now()
+
+      const quadro = (agora: number): void => {
+        if (execucao.cancelado) return
+        const t = Math.min(1, (agora - t0) / DURACAO_DO_DESLIZE)
+        const suavizado = easeOutCubic(t)
+
+        camera.current = {
+          ...camera.current,
+          x: origemX + (alvoX - origemX) * suavizado,
+          y: origemY + (alvoY - origemY) * suavizado,
+        }
+        pintar()
+
+        if (t < 1) requestAnimationFrame(quadro)
+        else deslizeEmAndamento.current = null
       }
 
       requestAnimationFrame(quadro)
@@ -381,6 +456,12 @@ export function Tela({ cena, onSelecionar, onArrastarNeuronio, controle, folgas 
       onPointerDown={(e) => {
         e.currentTarget.setPointerCapture(e.pointerId)
 
+        // Um toque novo interrompe qualquer deslize ainda em curso — segurar
+        // a tela é sempre "para agora", nunca "espera o deslize acabar".
+        if (deslizeEmAndamento.current) deslizeEmAndamento.current.cancelado = true
+        velocidadeDoArrasto.current = { vx: 0, vy: 0 }
+        ultimoQuadroDoArrasto.current = 0
+
         // O primeiro dedo a descer decide: em cima de um neurônio, o gesto
         // pode virar arrastar o nó; em qualquer outro lugar (ou com um
         // segundo dedo já no ar), continua sendo câmera. A decisão de verdade
@@ -421,6 +502,9 @@ export function Tela({ cena, onSelecionar, onArrastarNeuronio, controle, folgas 
           // Um segundo dedo cancela o arrasto de nó — vira pinça, como sempre.
           noArrastado.current = null
           posicoesArrastadas.current = null
+          // E qualquer velocidade de câmera acumulada antes da pinça: soltar
+          // depois de uma pinça não deve deslizar com um número de outro gesto.
+          velocidadeDoArrasto.current = { vx: 0, vy: 0 }
 
           const antes = distanciaEntreDedos()
           ponteiros.current.set(e.pointerId, { x: e.clientX, y: e.clientY })
@@ -454,6 +538,19 @@ export function Tela({ cena, onSelecionar, onArrastarNeuronio, controle, folgas 
           y: camera.current.y + dy,
         }
         pintar()
+
+        // Velocidade suavizada (px/ms) para decidir o deslize ao soltar — só
+        // importa quando "Deslizar navegação" está ligada, mas é barato o
+        // bastante para não valer a pena gatear.
+        const agora = performance.now()
+        const dt = ultimoQuadroDoArrasto.current ? agora - ultimoQuadroDoArrasto.current : 16
+        ultimoQuadroDoArrasto.current = agora
+        const vx = dx / Math.max(1, dt)
+        const vy = dy / Math.max(1, dt)
+        velocidadeDoArrasto.current = {
+          vx: velocidadeDoArrasto.current.vx * 0.7 + vx * 0.3,
+          vy: velocidadeDoArrasto.current.vy * 0.7 + vy * 0.3,
+        }
       }}
       onPointerUp={(e) => {
         const eraUmDedoSo = ponteiros.current.size === 1
@@ -476,7 +573,14 @@ export function Tela({ cena, onSelecionar, onArrastarNeuronio, controle, folgas 
         // moveu, então nada fica preso no overlay.
         if (alvoDoArrasto) posicoesArrastadas.current = null
 
-        if (!eraUmDedoSo || arrastou.current > TOLERANCIA_DO_TOQUE) return
+        if (!eraUmDedoSo || arrastou.current > TOLERANCIA_DO_TOQUE) {
+          // Soltou arrastando a câmera de verdade (não um nó, não uma pinça
+          // terminando): com a opção ligada, desliza mais um pouco.
+          if (deslizarNavegacao && !alvoDoArrasto && eraUmDedoSo) {
+            iniciarDeslize(velocidadeDoArrasto.current.vx, velocidadeDoArrasto.current.vy)
+          }
+          return
+        }
 
         const mundo = paraOMundo(e.clientX, e.clientY)
         const raioDeToque = RAIO_DO_TOQUE / camera.current.escala

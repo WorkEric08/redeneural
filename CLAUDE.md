@@ -2410,6 +2410,49 @@ respiro), num único lugar (`.folha-alca` em `index.css`) — vale para todos os
 painéis do app de uma vez, porque todos passam pelo mesmo componente. A
 barra visível continua fina (4px): só a área que responde ao dedo cresceu.
 
+## "Deslizar navegação": a câmera da Rede desliza um pouco ao soltar (16/09/2026)
+
+Pedido do usuário: soltar arrastando a rede parava exatamente onde o dedo
+soltou — sem sensação de continuidade, diferente do que um mapa ou uma lista
+nativa fazem. Um botão novo, "Deslizar navegação" (`Waves`), entrou ao lado
+de "Só as pontes" na seção "Mostrar" dos filtros da Rede — desligado por
+padrão, como o resto dos filtros daquela folha (estado local, sem
+persistência: um jeito de navegar agora, não uma preferência do palácio).
+
+**Não é inércia física de verdade** — que desaceleraria por tempo
+indefinido, o tipo de laço que este arquivo evita desde a Fase 23 ("Sem laço
+de animação... pinta quando algo muda, e só"). É um "assenta e para": ao
+soltar, a velocidade suavizada do arrasto (`vx`/`vy` em px/ms, calculada a
+cada `pointermove` e amortecida 70/30 contra o quadro anterior para não
+tremer) vira um **alvo fixo** — a posição atual mais a velocidade projetada
+por `PROJECAO_DO_DESLIZE_MS` (220ms), com um teto de `DISTANCIA_MAXIMA_DO_DESLIZE`
+(200px, "desliza um pouco", não sai voando com um flick forte) — e a câmera
+anima até lá com `easeOutCubic` em `DURACAO_DO_DESLIZE` (300ms), a mesma
+função e o mesmo espírito do assentamento de um neurônio arrastado (ver "A
+Rede se organiza por significado"). Abaixo de `VELOCIDADE_MINIMA_DO_DESLIZE`
+(0,12px/ms) não faz nada — soltar devagar já era "parar", não "arremessar".
+
+**Diverge de "Movimento: assenta e para... sem simulação viva"** registrado
+na Fase 23 pelo mesmo motivo que o arrasto de neurônio já divergia: um
+`requestAnimationFrame` que corre por um tempo fixo e para sozinho não é o
+laço eterno que a regra proíbe. Apontado aqui por ser mais uma exceção à
+mesma regra, não por ser uma dúvida em aberto.
+
+**Onde a velocidade é zerada, e por quê:** um novo `pointerdown` cancela
+qualquer deslize em curso (segurar a tela é sempre "para agora"); entrar em
+modo pinça (dois dedos) zera a velocidade acumulada, senão soltar um dedo
+depois de uma pinça deslizaria com o número de um gesto que não foi o de
+navegar; arrastar um neurônio nunca chega a acumular velocidade de câmera,
+porque esse ramo do gesto retorna antes de chegar ao código que a mede.
+
+**Não verificado num navegador de verdade nesta sessão** — mesma ressalva
+da seção anterior: sem ferramenta de automação de navegador disponível
+neste ambiente, a lógica foi conferida lendo o código (os três pontos em que
+a velocidade é zerada, a ordem dos `if` no soltar), não com um dedo de
+verdade. Typecheck, lint e os 249 testes automatizados continuam limpos —
+não há teste novo para a física do deslize, pelo mesmo padrão do resto do
+gesto de pinça/arrasto desta tela, que também não tem teste automatizado.
+
 ## Fases
 
 0. ✅ Esqueleto (Vite/React/TS/Tailwind/PWA/Capacitor)
