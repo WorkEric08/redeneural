@@ -2679,6 +2679,34 @@ automação de navegador disponível neste ambiente, a correção foi conferida
 lendo o CSS/flexbox, não vista na tela. Typecheck, lint e os 265 testes
 automatizados continuam limpos.
 
+## O seletor de livro do neurônio deixa de ser o `<select>` do navegador (17/09/2026)
+
+Pedido do usuário: ao criar/editar um neurônio, tocar no chip do livro abria
+o picker nativo do Android/WebView — uma lista genérica do sistema, fora da
+paleta e da tipografia do app, a única peça da tela que ainda não era "deste
+projeto".
+
+**Virou uma folha**, no mesmo padrão de todo outro painel do app: `cartao` +
+`linha-de-lista` para as linhas (o mesmo desenho do menu de ações de um livro
+na estante), ponto da cor à esquerda, `Check` à direita no livro já
+escolhido, e toca-e-fecha — não precisa de um "confirmar" à parte. O chip que
+abre a folha manteve exatamente a aparência de antes (mesma classe `.chip`,
+mesmo ponto de cor, mesma seta); só o que abre ao tocar mudou.
+
+**Mora na URL** (`?livros=1`), como os filtros da Rede e o "apagar" do
+neurônio: o voltar do Android fecha a folha antes de sair do formulário
+inteiro, em vez de fechar as duas coisas de uma vez. A chave `livros`
+(plural) é de propósito diferente da `livro` que `Novo.tsx` já lê para o
+livro sugerido — os dois nunca colidem porque são lidos por componentes
+diferentes com propósitos diferentes, mas o nome ficou deliberadamente
+distinto para não confundir quem for ler o código depois.
+
+**Não verificado num navegador de verdade nesta sessão** — mesma ressalva das
+seções anteriores. Vale conferir se a folha abre no toque do chip e fecha
+sozinha ao escolher. Typecheck, lint e os 265 testes automatizados continuam
+limpos (não há teste novo — é composição de peças já testadas, `Folha` e o
+resto do formulário, sem lógica pura nova).
+
 ## Fases
 
 0. ✅ Esqueleto (Vite/React/TS/Tailwind/PWA/Capacitor)
