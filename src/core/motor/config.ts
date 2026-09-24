@@ -20,6 +20,11 @@ export interface OpcoesMotor {
   minVizinhos: number
   /** Nunca vira novelo — teto do que **cada nó mantém**, não do grau final. */
   maxVizinhos: number
+  /**
+   * Quantos conceitos um anexo escolhe, no máximo. Sem mínimo: um anexo que
+   * não se parece com nada fica só na pasta (ver `ancorarAnexos`).
+   */
+  maxAncoras: number
 }
 
 export const OPCOES_PADRAO: OpcoesMotor = {
@@ -29,4 +34,5 @@ export const OPCOES_PADRAO: OpcoesMotor = {
   razaoCorte: 0.6,
   minVizinhos: 1,
   maxVizinhos: 6,
+  maxAncoras: 3,
 }

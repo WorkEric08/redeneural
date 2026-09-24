@@ -3603,6 +3603,106 @@ que dava para confirmar sem isso (valor do manifest, pixels dos ícones
 recompostos) foi conferido. Typecheck, lint e os 268 testes automatizados
 continuam limpos — mudança de assets e configuração, sem lógica nova.
 
+## Pastas de acervo: links e imagens presos aos conceitos (24/09/2026)
+
+Pedido do usuário: livros que sirvam de **pasta de links, imagens e vídeos**,
+ligados à Rede — sem saber ainda como isso apareceria nela. Explorei as
+possibilidades antes de escrever código; o plano tem quatro etapas, uma por
+vez, parando para revisão a cada uma.
+
+### O que decidiu o desenho
+
+**O motor só entende texto.** O e5 lê `título + conteúdo`; uma imagem ou um
+vídeo sozinho não significa nada para ele. Todo anexo precisa de uma
+**legenda** — ou, no nativo, de texto tirado da própria mídia (ver a tabela
+abaixo).
+
+**Um anexo não é um neurônio.** Cada conceito mantém no máximo seis vizinhos:
+dez vídeos sobre um conceito tomariam todas as vagas dele, e os fios entre
+conceitos — o produto — sumiriam. E quase todo fio de um anexo atravessa
+livros, então a contagem de pontes viraria ruído.
+
+### Decisões do usuário
+
+| Pergunta               | Escolha                                                                                    |
+| ---------------------- | ------------------------------------------------------------------------------------------ |
+| Como entra na Rede     | **Satélite**: o anexo escolhe conceitos, o conceito nunca perde vizinho por causa dele     |
+| Quando aparece na Rede | Ao aproximar (≥ 2,2×, o mesmo zoom dos nomes) ou ao tocar o conceito dono                  |
+| Mídias agora (web)     | **Links + imagens**. Vídeo entra como link; vídeo do aparelho fica para o nativo           |
+| Onde o conceito mostra | **Só na Rede e na pasta**. A tela do neurônio continua só texto (decisão de 17/09 mantida) |
+
+Opções recusadas: anexo como nó pleno (o problema das seis vagas, acima) e
+anexo fora da Rede com vínculo manual (contraria "as conexões nascem
+sozinhas").
+
+**"Combina com a rede ou não" é regra, não botão:** anexo sem legenda, ou cujo
+melhor score é 0, fica só na pasta. Diferente do "nunca órfão" dos conceitos
+— anexo não ganha fio tracejado forçado.
+
+**Fio de anexo nunca é ponte.** Não entra na contagem, não usa a cor de ponte.
+"Ponte significa uma coisa só" continua valendo: o achado entre conceitos.
+
+### Etapa 1 de 4: o núcleo
+
+- `Anexo`, `MidiaDoAnexo` e `Vinculo` em `core/domain/types.ts`. `Vinculo` tem
+  direção (`anexoId::conceitoId`), sem a ordem canônica de `conexaoId` — é
+  sempre o anexo que escolhe.
+- `ancorarAnexos` (`core/motor/anexos.ts`): a mesma régua das conexões —
+  cosseno centralizado no perfil congelado, `escalaEmbedding` na escala do
+  corpus, corte `razaoCorte × melhor` —, mas **só num sentido**, com teto
+  `OpcoesMotor.maxAncoras` (3) e **sem mínimo**. Sem reranker: legenda é texto
+  curto, e o reranker está fora do MVP de qualquer jeito. Não existe
+  `marcasPerdidas`: nenhum conceito fica sabendo, então o grafo de conceitos é
+  idêntico com ou sem anexo.
+- `Livro.tipo` (`'conceitos' | 'acervo'`) ficou para a Etapa 2, junto da
+  migração do Dexie: entrar agora quebraria todo lugar que monta um `Livro`
+  antes de o banco saber dele.
+
+9 testes novos (277 no total): sem conceito e sem vetor não há vínculo; anexo
+indistinto (igual ao centroide) fica só na pasta; escolhe os conceitos do
+próprio assunto; teto e corte relativo; um anexo não mexe no que o outro
+escolhe; independe da ordem de entrada; não muta as entradas. Typecheck e lint
+limpos.
+
+### As próximas etapas
+
+2. **Dados e motor.** Dexie v10 (`anexos`; `midias` com os bytes à parte, para
+   `listAnexos` não arrastar Blob; `vinculos`; `livros.tipo`), porta do
+   repositório, mensagens do Worker, reancorar tudo depois de toda escrita de
+   conceito (medido num palácio sintético; só vira incremental se ficar
+   lento), apagar anexo ou pasta sem reprocessar nada, export/import (a imagem
+   em base64 como o embedding; vínculos recalculados na chegada, como o
+   perfil).
+3. **A pasta na estante e as telas.** "Livro | Pasta" ao criar, ícone na
+   lombada, grade de cartões (**divergência do §6 aprovada no plano:** 2
+   colunas também no celular, porque é galeria), rotas `/novo-anexo`,
+   `/anexo/:id` e `/anexo/:id/editar`, seletor de imagem em
+   `services/native/midia.ts`, redução para WebP no Worker, e pastas fora da
+   escolha de livro do `/novo`.
+4. **Satélites na Rede.** Posição derivada, não gravada: órbita do conceito
+   mais forte, ângulo pela `semente` do id, raio em pixels de tela, calculada a
+   cada pintura — acompanha balanço e arrasto do conceito sem código a mais.
+   Quadrado para imagem, losango para link.
+
+### Web agora, nativo depois
+
+| Capacidade                         | Web (PWA)                                                          | Nativo (Capacitor)                                |
+| ---------------------------------- | ------------------------------------------------------------------ | ------------------------------------------------- |
+| Link com legenda                   | ✅                                                                 | ✅                                                |
+| Imagem da galeria ou câmera        | ✅ `input file`, Blob no IndexedDB                                 | ✅ `@capacitor/camera`, arquivo no Filesystem     |
+| Título automático de qualquer link | ❌ CORS; só provedores com oEmbed aberto, a testar                 | ✅ `CapacitorHttp` lendo o OpenGraph ao salvar    |
+| Miniatura de link guardada offline | ⚠️ depende de o servidor liberar CORS                              | ✅ baixa pelo nativo, grava no Filesystem         |
+| Vídeo do aparelho                  | ⚠️ só copiando (50–150 MB cada); sem referência durável ao arquivo | ✅ referência ao arquivo da galeria (plugin)      |
+| "Compartilhar → Palácio"           | ✅ Web Share Target, só no PWA instalado (precisa do SW)           | ✅ intent-filter + plugin (o APK não tem SW)      |
+| Entender imagem **sem legenda**    | ❌ 100–300 MB de modelo, fora do espaço do e5                      | ✅ ML Kit no aparelho (rótulos, OCR) → texto → e5 |
+
+Cada linha do nativo é **um adapter novo**: o seletor mora em
+`services/native/`, os bytes passam pela porta do repositório, e o texto tirado
+da mídia entra antes do `embutir`. Nem o núcleo nem a UI mudam.
+
+Sugestões registradas, não incluídas: Web Share Target no PWA, anexos na busca
+global, título automático via oEmbed do YouTube.
+
 ## Fases
 
 0. ✅ Esqueleto (Vite/React/TS/Tailwind/PWA/Capacitor)
@@ -3640,3 +3740,6 @@ continuam limpos — mudança de assets e configuração, sem lógica nova.
     significado com posições gravadas; tocar acende a vizinhança, nomes ao
     aproximar, duplo toque e busca leva a câmera; arrastar neurônio com os
     vizinhos acompanhando e assentando
+24. 🟡 Pastas de acervo — links e imagens como satélites dos conceitos na
+    Rede. **Etapa 1 de 4 (núcleo) feita**; faltam dados/motor, telas e os
+    satélites na Rede

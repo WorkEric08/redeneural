@@ -133,6 +133,44 @@ export interface Conexao {
   updatedAt: Date
 }
 
+/** O que um anexo guarda. Os bytes de uma imagem moram à parte, fora desta linha. */
+export type MidiaDoAnexo =
+  { tipo: 'link'; url: string } | { tipo: 'imagem'; mime: string; largura: number; altura: number }
+
+/**
+ * Um item de uma pasta de acervo: um link ou uma imagem, com a legenda que diz
+ * do que se trata.
+ *
+ * Não é um neurônio, de propósito: cada conceito mantém no máximo seis
+ * vizinhos, e dez vídeos sobre um conceito tomariam todas as vagas dele — os
+ * fios entre conceitos, que são o produto, sumiriam. O anexo escolhe conceitos
+ * (ver `Vinculo`), e nenhum conceito fica sabendo.
+ */
+export interface Anexo {
+  id: Id
+  livroId: Id
+  /** O que o motor lê. Vazia, o anexo fica só na pasta, sem fio nenhum. */
+  legenda: string
+  midia: MidiaDoAnexo
+  /** Vetor da legenda. `null` sem legenda ou enquanto a inferência não terminou. */
+  embedding: Float32Array | null
+  createdAt: Date
+  updatedAt: Date
+}
+
+/**
+ * Um anexo preso a um conceito. Tem direção — é sempre o anexo que escolhe —,
+ * então o id é `anexoId::conceitoId`, sem a ordem canônica de `conexaoId`.
+ */
+export interface Vinculo {
+  id: Id
+  anexoId: Id
+  conceitoId: Id
+  /** 0..1, na mesma escala do `emb` das conexões. */
+  score: number
+  updatedAt: Date
+}
+
 /** O palácio inteiro num objeto serializável. Formato de export/import e de backup. */
 export interface PalacioSnapshot {
   version: 1
