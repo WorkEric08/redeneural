@@ -1,6 +1,8 @@
+import { useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 
 import { BarraDeTopo } from '@/components/BarraDeTopo'
+import type { TipoDeLivro } from '@/core'
 import { COMPRIMENTO_PADRAO } from '@/features/estante/comprimentos'
 import { FormularioDeLivro } from '@/features/estante/FormularioDeLivro'
 import { LARGURA_PADRAO } from '@/features/estante/larguras'
@@ -22,10 +24,13 @@ export default function NovoLivro() {
   // primeiro lugar sem livro da prateleira.
   const lugarNaBusca = busca.get('lugar')
   const lugar = lugarNaBusca === null ? undefined : Number(lugarNaBusca)
+  // Livro de conceitos ou pasta de acervo — decidido aqui, e nunca mais.
+  const [tipo, setTipo] = useState<TipoDeLivro>('conceitos')
+  const ehPasta = tipo === 'acervo'
 
   return (
     <div className="flex min-h-dvh flex-col">
-      <BarraDeTopo voltarPara="/" icone="fechar" titulo="Novo livro" />
+      <BarraDeTopo voltarPara="/" icone="fechar" titulo={ehPasta ? 'Nova pasta' : 'Novo livro'} />
 
       <div className="animar-entrada flex flex-1 flex-col pt-4">
         <FormularioDeLivro
@@ -36,11 +41,12 @@ export default function NovoLivro() {
             larguraLombada: LARGURA_PADRAO,
             comprimentoLombada: COMPRIMENTO_PADRAO,
           }}
-          rotuloDeEnvio="Criar livro"
+          rotuloDeEnvio={ehPasta ? 'Criar pasta' : 'Criar livro'}
           ocupado={ocupado}
           intensidadeDaLuz={intensidadeDaLuz}
+          tipo={{ valor: tipo, onMudar: setTipo }}
           onEnviar={(dados) => {
-            void criarLivro(dados, prateleira, lugar).then((id) => {
+            void criarLivro(dados, prateleira, lugar, tipo).then((id) => {
               // `replace`: voltar depois de criar tem que sair do formulário, e
               // o `chegou` avisa a estante para animar a chegada na prateleira.
               if (id) void navegar(`/?chegou=${id}`, { replace: true })

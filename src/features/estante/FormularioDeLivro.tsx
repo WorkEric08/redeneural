@@ -1,7 +1,8 @@
-import { Shuffle } from 'lucide-react'
+import { BookOpen, Paperclip, Shuffle } from 'lucide-react'
 import { useState } from 'react'
 
 import { botao } from '@/components/botao'
+import type { TipoDeLivro } from '@/core'
 import type { NovoLivro } from '@/store/palacio'
 
 import { COMPRIMENTOS } from './comprimentos'
@@ -32,6 +33,11 @@ interface Props {
   ocupado?: boolean
   /** 0-100: para a amostra mostrar a mesma lavagem da estante. */
   intensidadeDaLuz: number
+  /**
+   * Só ao criar: livro de conceitos ou pasta de acervo. Editando, fica de
+   * fora — o tipo não muda depois (ver `TipoDeLivro`).
+   */
+  tipo?: { valor: TipoDeLivro; onMudar: (tipo: TipoDeLivro) => void }
   onEnviar: (dados: NovoLivro) => void
 }
 
@@ -52,6 +58,7 @@ export function FormularioDeLivro({
   rotuloDeEnvio,
   ocupado = false,
   intensidadeDaLuz,
+  tipo,
   onEnviar,
 }: Props) {
   const [titulo, setTitulo] = useState(inicial.titulo)
@@ -79,6 +86,33 @@ export function FormularioDeLivro({
       // login, pagamento ou endereço.
       autoComplete="off"
     >
+      {tipo && (
+        <div role="group" aria-label="Tipo" className="flex gap-2">
+          <button
+            type="button"
+            aria-pressed={tipo.valor === 'conceitos'}
+            onClick={() => {
+              tipo.onMudar('conceitos')
+            }}
+            className="chip"
+          >
+            <BookOpen size={15} aria-hidden />
+            Livro
+          </button>
+          <button
+            type="button"
+            aria-pressed={tipo.valor === 'acervo'}
+            onClick={() => {
+              tipo.onMudar('acervo')
+            }}
+            className="chip"
+          >
+            <Paperclip size={15} aria-hidden />
+            Pasta de links e imagens
+          </button>
+        </div>
+      )}
+
       <div className="flex items-end gap-4">
         <label className="flex min-w-0 flex-1 flex-col">
           <span className="rotulo-de-secao">Nome</span>
@@ -90,7 +124,9 @@ export function FormularioDeLivro({
             maxLength={120}
             autoComplete="off"
             enterKeyHint="done"
-            placeholder="Uma área do que você sabe"
+            placeholder={
+              tipo?.valor === 'acervo' ? 'Vídeos, referências, fotos…' : 'Uma área do que você sabe'
+            }
             className="campo font-titulo h-13 px-4 text-lg"
           />
         </label>
@@ -114,7 +150,7 @@ export function FormularioDeLivro({
             }}
           >
             <span className="lombada-titulo">{titulo.trim() || '…'}</span>
-            <EmblemaDaLombada chave={emblema} />
+            <EmblemaDaLombada chave={tipo?.valor === 'acervo' ? 'pasta' : emblema} />
           </span>
         </div>
       </div>

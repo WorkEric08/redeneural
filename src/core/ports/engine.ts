@@ -56,7 +56,7 @@ export interface EditarAnexoInput {
   url?: string | undefined
 }
 
-/** O acervo inteiro depois de uma escrita nele — mesmo espírito de `ResultadoDeEscrita`. */
+/** A parte do estado que é das pastas de acervo. */
 export interface AcervoGravado {
   anexos: AnexoNaTela[]
   vinculos: Vinculo[]
@@ -169,13 +169,18 @@ export interface ConnectionEngine {
    */
   moverNeuronioNaRede(id: Id, ponto: Ponto): Promise<Readonly<Record<Id, Ponto>>>
   /**
-   * Grava o anexo antes da inferência (como o neurônio) e devolve o acervo já
-   * com os conceitos que ele escolheu. Só aceita livro do tipo `acervo`.
+   * Grava o anexo antes da inferência (como o neurônio) e devolve o palácio
+   * inteiro, já com os conceitos que ele escolheu. Só aceita livro do tipo
+   * `acervo`.
+   *
+   * O palácio inteiro, e não só o acervo: num palácio que nunca foi lido, o
+   * primeiro anexo com legenda dispara o reprocessamento — e aí os neurônios,
+   * as conexões e a Rede também mudam.
    */
-  criarAnexo(input: CriarAnexoInput): Promise<AcervoGravado>
-  editarAnexo(input: EditarAnexoInput): Promise<AcervoGravado>
+  criarAnexo(input: CriarAnexoInput): Promise<EstadoDoPalacio>
+  editarAnexo(input: EditarAnexoInput): Promise<EstadoDoPalacio>
   /** Nenhum conceito perde vizinho por causa de um anexo — apagar não reprocessa nada. */
-  apagarAnexo(id: Id): Promise<AcervoGravado>
+  apagarAnexo(id: Id): Promise<EstadoDoPalacio>
   /**
    * Os bytes de uma imagem do acervo, pedidos só por quem vai desenhá-la —
    * nunca viajam junto do estado. `null` se o anexo não tem imagem.

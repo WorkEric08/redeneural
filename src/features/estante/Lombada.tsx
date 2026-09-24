@@ -68,6 +68,7 @@ export function Lombada({
 }: Props) {
   const altura =
     item.livro.comprimentoLombada ?? ALTURA_MINIMA + item.altura * (ALTURA_MAXIMA - ALTURA_MINIMA)
+  const ehPasta = item.livro.tipo === 'acervo'
 
   return (
     <button
@@ -84,14 +85,18 @@ export function Lombada({
         height: `${String(Math.round(altura * 10) / 10)}%`,
         width: `${String(largura)}px`,
       }}
-      aria-label={`${item.livro.titulo}, ${contar(item.neuronios, 'neurônio', 'neurônios')}`}
+      aria-label={
+        ehPasta
+          ? `${item.livro.titulo}, pasta com ${contar(item.anexos, 'item', 'itens')}`
+          : `${item.livro.titulo}, ${contar(item.neuronios, 'neurônio', 'neurônios')}`
+      }
       aria-haspopup="dialog"
       {...manipular}
     >
       <span className="lombada-titulo">{item.livro.titulo}</span>
 
       {item.saindo > 0 && <span className="lombada-ponto brilho-ponte" aria-hidden />}
-      <EmblemaDaLombada chave={item.livro.emblema} />
+      <EmblemaDaLombada chave={ehPasta ? 'pasta' : item.livro.emblema} />
     </button>
   )
 }

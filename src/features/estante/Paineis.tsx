@@ -9,6 +9,7 @@ import { Folha } from '@/components/Folha'
 import {
   chaveDoLugar,
   LUGARES_POR_PRATELEIRA,
+  type AnexoNaTela,
   type Id,
   type Livro,
   type NeuronioNaTela,
@@ -24,6 +25,8 @@ interface Props {
   vagas: readonly Vaga[]
   quantidadeDePrateleiras: number
   neuronios: readonly NeuronioNaTela[]
+  /** Os itens das pastas de acervo — uma pasta espia e apaga contando estes. */
+  anexos: readonly AnexoNaTela[]
   pontes: ReadonlyMap<Id, ReadonlyMap<Id, number>>
   ocupado: boolean
   onFechar: () => void
@@ -77,8 +80,87 @@ function Conteudo(props: Props & { painel: Painel }) {
 
   // Só sobra 'acoes' depois dos ifs acima — 'editar' virou rota própria
   // (/livro/:livroId/editar, pedido do usuário, 17/09/2026), não painel.
-  if (painel.tipo === 'espiar') return <Espiar {...props} livro={livro} />
+  if (painel.tipo === 'espiar') {
+    return livro.tipo === 'acervo' ? (
+      <EspiarPasta {...props} livro={livro} />
+    ) : (
+      <Espiar {...props} livro={livro} />
+    )
+  }
   return <Acoes {...props} livro={livro} />
+}
+
+/** O que o livro guarda, contado como se fala: neurônios num livro, itens numa pasta. */
+function conteudoDe(livro: Livro, quantos: number): string {
+  return livro.tipo === 'acervo'
+    ? contar(quantos, 'item', 'itens')
+    : contar(quantos, 'neurônio', 'neurônios')
+}
+
+/**
+ * A pasta puxada para fora: os itens dela, pela legenda. Sem pontes — uma
+ * pasta não tem neurônio, e um anexo nunca é ponte.
+ */
+function EspiarPasta({ livro, anexos, onAbrirLivro }: Props & { livro: Livro }) {
+  const dela = anexos.filter((a) => a.livroId === livro.id)
+  const aMais = dela.length - NEURONIOS_NO_ESPIAR
+
+  return (
+    <div className="flex flex-col gap-5">
+      <Cabecalho livro={livro}>Pasta · {contar(dela.length, 'item', 'itens')}</Cabecalho>
+
+      {dela.length === 0 ? (
+        <div className="cartao flex flex-col items-start gap-3 px-4 py-4">
+          <p className="text-poeira text-sm">Ainda vazia.</p>
+          <Link
+            to={`/novo-anexo?livro=${livro.id}`}
+            replace
+            className={botao({ tipo: 'secundario', tamanho: 'pequeno' })}
+          >
+            <Plus size={16} aria-hidden />
+            Guardar o primeiro item
+          </Link>
+        </div>
+      ) : (
+        <ul className="cartao flex flex-col">
+          {dela.slice(0, NEURONIOS_NO_ESPIAR).map((a) => (
+            <li key={a.id} className="linha-de-lista min-h-12 p-0">
+              <Link
+                to={`/anexo/${a.id}`}
+                replace
+                className="flex min-h-12 w-full items-center gap-3 px-4 py-2 text-sm"
+              >
+                <span
+                  className={`min-w-0 flex-1 truncate ${a.legenda ? '' : 'text-poeira italic'}`}
+                >
+                  {a.legenda || 'Sem legenda'}
+                </span>
+                {a.processando && <EtiquetaProcessando />}
+                <ChevronRight size={16} aria-hidden className="text-poeira shrink-0" />
+              </Link>
+            </li>
+          ))}
+          {aMais > 0 && (
+            <li className="linha-de-lista text-poeira min-h-11 py-2 text-xs">
+              e mais {contar(aMais, 'item', 'itens')} dentro da pasta
+            </li>
+          )}
+        </ul>
+      )}
+
+      <Link
+        to={`/livro/${livro.id}`}
+        replace
+        className={botao({ tipo: 'primario', largo: true })}
+        onClick={(evento) => {
+          evento.preventDefault()
+          onAbrirLivro(livro.id)
+        }}
+      >
+        Abrir a pasta
+      </Link>
+    </div>
+  )
 }
 
 function Cabecalho({ livro, children }: { livro: Livro; children?: ReactNode }) {
@@ -201,12 +283,13 @@ function Espiar({ livro, livros, neuronios, pontes, onAbrirLivro }: Props & { li
   )
 }
 
-function Acoes({ livro, neuronios, ocupado, onTrocarPainel }: Props & { livro: Livro }) {
-  const quantos = neuronios.filter((n) => n.livroId === livro.id).length
+function Acoes({ livro, neuronios, anexos, ocupado, onTrocarPainel }: Props & { livro: Livro }) {
+  const ehPasta = livro.tipo === 'acervo'
+  const quantos = (ehPasta ? anexos : neuronios).filter((x) => x.livroId === livro.id).length
 
   return (
     <div className="flex flex-col gap-5">
-      <Cabecalho livro={livro}>{contar(quantos, 'neurônio', 'neurônios')}</Cabecalho>
+      <Cabecalho livro={livro}>{conteudoDe(livro, quantos)}</Cabecalho>
 
       <ul className="cartao flex flex-col">
         <li className="linha-de-lista p-0">
@@ -220,17 +303,17 @@ function Acoes({ livro, neuronios, ocupado, onTrocarPainel }: Props & { livro: L
             className="flex min-h-14 w-full items-center gap-3.5 px-4"
           >
             <PencilLine size={19} aria-hidden className="text-poeira" />
-            Renomear e editar livro
+            {ehPasta ? 'Renomear e editar pasta' : 'Renomear e editar livro'}
           </Link>
         </li>
         <li className="linha-de-lista p-0">
           <Link
-            to={`/novo?livro=${livro.id}`}
+            to={ehPasta ? `/novo-anexo?livro=${livro.id}` : `/novo?livro=${livro.id}`}
             replace
             className="flex min-h-14 w-full items-center gap-3.5 px-4"
           >
             <Plus size={19} aria-hidden className="text-poeira" />
-            Novo neurônio neste livro
+            {ehPasta ? 'Guardar um item aqui' : 'Novo neurônio neste livro'}
           </Link>
         </li>
         <li className="linha-de-lista p-0">
@@ -245,7 +328,7 @@ function Acoes({ livro, neuronios, ocupado, onTrocarPainel }: Props & { livro: L
             }}
           >
             <Trash2 size={19} aria-hidden />
-            Apagar livro
+            {ehPasta ? 'Apagar pasta' : 'Apagar livro'}
           </button>
         </li>
       </ul>
@@ -257,27 +340,37 @@ function Apagar({
   livroId,
   livros,
   neuronios,
+  anexos,
   ocupado,
   onApagar,
   onFechar,
 }: Props & { livroId: string }) {
   const [livro] = useState(() => livros.find((l) => l.id === livroId))
-  const [quantos] = useState(() => neuronios.filter((n) => n.livroId === livroId).length)
+  const [quantos] = useState(
+    () =>
+      (livro?.tipo === 'acervo' ? anexos : neuronios).filter((x) => x.livroId === livroId).length,
+  )
 
   if (!livro) return <Sumiu onFechar={onFechar} />
+
+  // Uma pasta não tem fio nenhum: apagá-la não refaz conexão de ninguém.
+  const explicacao =
+    livro.tipo === 'acervo'
+      ? quantos > 0
+        ? 'Os links e as imagens vão junto. Nenhum conceito muda. Não dá para desfazer.'
+        : 'A pasta está vazia. Não dá para desfazer.'
+      : quantos > 0
+        ? `Os fios que saem ${quantos === 1 ? 'dele' : 'deles'} vão junto, e o palácio refaz as conexões. Não dá para desfazer.`
+        : 'O livro está vazio. Não dá para desfazer.'
 
   return (
     <Confirmacao
       titulo={
         quantos > 0
-          ? `Apagar ${livro.titulo} e ${contar(quantos, 'neurônio', 'neurônios')} dentro?`
+          ? `Apagar ${livro.titulo} e ${conteudoDe(livro, quantos)} dentro?`
           : `Apagar ${livro.titulo}?`
       }
-      explicacao={
-        quantos > 0
-          ? `Os fios que saem ${quantos === 1 ? 'dele' : 'deles'} vão junto, e o palácio refaz as conexões. Não dá para desfazer.`
-          : 'O livro está vazio. Não dá para desfazer.'
-      }
+      explicacao={explicacao}
       rotulo="Apagar"
       rotuloOcupado="Apagando…"
       ocupado={ocupado}

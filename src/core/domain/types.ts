@@ -176,6 +176,13 @@ export interface Vinculo {
   conceitoId: Id
   /** 0..1, na mesma escala do `emb` das conexões. */
   score: number
+  /**
+   * A posição no ranking daquele anexo: 0 é o conceito mais parecido — é em
+   * volta dele que o satélite orbita na Rede. Gravada, e não deduzida do
+   * `score`, porque o score satura em 1 num palácio pequeno e empata; a ordem
+   * vem do cosseno antes do teto (ver `ancorarAnexos`).
+   */
+  ordem: number
   updatedAt: Date
 }
 

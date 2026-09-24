@@ -96,8 +96,8 @@ function imagem(id: string, livroId: string): Anexo {
 
 const BYTES = { imagem: new Uint8Array([1, 2, 3]), miniatura: new Uint8Array([4]) }
 
-function vinculo(anexoId: string, conceitoId: string, score = 0.7): Vinculo {
-  return { id: `${anexoId}::${conceitoId}`, anexoId, conceitoId, score, updatedAt: T0 }
+function vinculo(anexoId: string, conceitoId: string, score = 0.7, ordem = 0): Vinculo {
+  return { id: `${anexoId}::${conceitoId}`, anexoId, conceitoId, score, ordem, updatedAt: T0 }
 }
 
 /** Um livro como era gravado antes das pastas de acervo — sem `tipo`. */

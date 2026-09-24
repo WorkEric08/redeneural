@@ -1,5 +1,4 @@
 import type {
-  AcervoGravado,
   ConnectionEngine,
   CriarAnexoInput,
   CriarLivroInput,
@@ -117,13 +116,13 @@ export function criarWorkerEngine(): ConnectionEngine {
     moverNeuronioNaRede: (id: Id, ponto: Ponto): Promise<Readonly<Record<Id, Ponto>>> =>
       pedir<'moverNeuronioNaRede'>({ tipo: 'moverNeuronioNaRede', id, ponto }),
 
-    criarAnexo: (input: CriarAnexoInput): Promise<AcervoGravado> =>
+    criarAnexo: (input: CriarAnexoInput): Promise<EstadoDoPalacio> =>
       pedir<'criarAnexo'>({ tipo: 'criarAnexo', input }),
 
-    editarAnexo: (input: EditarAnexoInput): Promise<AcervoGravado> =>
+    editarAnexo: (input: EditarAnexoInput): Promise<EstadoDoPalacio> =>
       pedir<'editarAnexo'>({ tipo: 'editarAnexo', input }),
 
-    apagarAnexo: (anexoId: Id): Promise<AcervoGravado> =>
+    apagarAnexo: (anexoId: Id): Promise<EstadoDoPalacio> =>
       pedir<'apagarAnexo'>({ tipo: 'apagarAnexo', anexoId }),
 
     lerImagem: (anexoId: Id, tamanho: 'miniatura' | 'inteira'): Promise<Uint8Array | null> =>

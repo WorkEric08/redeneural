@@ -1,5 +1,4 @@
 import type {
-  AcervoGravado,
   CriarAnexoInput,
   CriarLivroInput,
   CriarNeuronioInput,
@@ -36,9 +35,9 @@ export interface RespostasDoMotor {
   definirQuantidadeDePrateleiras: number
   definirIntensidadeDaLuz: number
   moverNeuronioNaRede: Readonly<Record<Id, Ponto>>
-  criarAnexo: AcervoGravado
-  editarAnexo: AcervoGravado
-  apagarAnexo: AcervoGravado
+  criarAnexo: EstadoDoPalacio
+  editarAnexo: EstadoDoPalacio
+  apagarAnexo: EstadoDoPalacio
   /** Os bytes vêm só aqui, a pedido — nunca junto do estado. */
   lerImagem: Uint8Array | null
 }

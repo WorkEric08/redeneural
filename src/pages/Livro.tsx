@@ -5,6 +5,7 @@ import { Link, useParams } from 'react-router-dom'
 import { BarraDeTopo } from '@/components/BarraDeTopo'
 import { botao } from '@/components/botao'
 import { EtiquetaProcessando } from '@/components/EtiquetaProcessando'
+import { Pasta } from '@/features/acervo/Pasta'
 import { vizinhosPorNeuronio } from '@/features/estante/resumo'
 import { Fios } from '@/features/neuronio/Fios'
 import { contar } from '@/lib/plural'
@@ -66,6 +67,9 @@ export default function Livro() {
       </div>
     )
   }
+
+  // Uma pasta de acervo abre como galeria, não como lista de neurônios.
+  if (livro.tipo === 'acervo') return <Pasta livro={livro} />
 
   const saindo = meus.reduce(
     (total, n) => total + (vizinhos.get(n.id) ?? []).filter((v) => v.conexao.cross).length,

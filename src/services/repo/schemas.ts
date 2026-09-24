@@ -101,7 +101,14 @@ export const arquivoSchema = z.object({
 })
 
 export const vinculoSchema = z
-  .object({ id, anexoId: id, conceitoId: id, score: unitInterval, updatedAt: z.date() })
+  .object({
+    id,
+    anexoId: id,
+    conceitoId: id,
+    score: unitInterval,
+    ordem: z.number().int().min(0),
+    updatedAt: z.date(),
+  })
   .refine((v) => v.id === `${v.anexoId}::${v.conceitoId}`, {
     message: 'o id do vínculo é `anexoId::conceitoId`',
     path: ['id'],

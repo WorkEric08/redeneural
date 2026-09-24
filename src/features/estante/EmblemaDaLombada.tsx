@@ -1,4 +1,4 @@
-import { Feather, Flame, Heart, Leaf, Moon, Star, Sun, Zap } from 'lucide-react'
+import { Feather, Flame, Heart, Leaf, Moon, Paperclip, Star, Sun, Zap } from 'lucide-react'
 
 /**
  * O emblema, já como ícone na lombada — ou nada, se `chave` for `null` ou
@@ -38,6 +38,10 @@ function iconeElemento(chave: string | null) {
       return <Flame size={11} aria-hidden />
     case 'pena':
       return <Feather size={11} aria-hidden />
+    // Não é escolha de ninguém: toda pasta de acervo mostra o clipe, no lugar
+    // do emblema — é o que a distingue de um livro sem abrir (ver Lombada).
+    case 'pasta':
+      return <Paperclip size={11} aria-hidden />
     default:
       return null
   }

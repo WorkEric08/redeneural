@@ -45,6 +45,8 @@ export function pontesEntreLivros(
 export interface LivroNaEstante {
   livro: Livro
   neuronios: number
+  /** Itens de uma pasta de acervo — zero num livro de conceitos. */
+  anexos: number
   /** Conexões que ficam dentro deste livro. */
   internas: number
   /** Fios de ponte que saem daqui para outro livro. */
@@ -53,15 +55,24 @@ export interface LivroNaEstante {
   altura: number
 }
 
+/**
+ * A altura sai do que o livro guarda: neurônios num livro de conceitos, itens
+ * numa pasta de acervo. As duas contas entram na mesma régua — uma pasta cheia
+ * é tão alta quanto um livro cheio.
+ */
 export function montarEstante(
   livros: readonly Livro[],
   neuronios: readonly NeuronioNaTela[],
   conexoes: readonly Conexao[],
+  anexos: readonly { livroId: Id }[] = [],
 ): LivroNaEstante[] {
   const livroDoNeuronio = new Map(neuronios.map((n) => [n.id, n.livroId]))
 
   const contagem = new Map<string, number>()
   for (const n of neuronios) contagem.set(n.livroId, (contagem.get(n.livroId) ?? 0) + 1)
+  const itens = new Map<string, number>()
+  for (const a of anexos) itens.set(a.livroId, (itens.get(a.livroId) ?? 0) + 1)
+  const guardado = (id: Id): number => (contagem.get(id) ?? 0) + (itens.get(id) ?? 0)
 
   const internas = new Map<string, number>()
   const saindo = new Map<string, number>()
@@ -80,14 +91,15 @@ export function montarEstante(
     }
   }
 
-  const maior = Math.max(1, ...livros.map((l) => contagem.get(l.id) ?? 0))
+  const maior = Math.max(1, ...livros.map((l) => guardado(l.id)))
 
   return livros.map((livro) => ({
     livro,
     neuronios: contagem.get(livro.id) ?? 0,
+    anexos: itens.get(livro.id) ?? 0,
     internas: internas.get(livro.id) ?? 0,
     saindo: saindo.get(livro.id) ?? 0,
-    altura: (contagem.get(livro.id) ?? 0) / maior,
+    altura: guardado(livro.id) / maior,
   }))
 }
 

@@ -107,6 +107,17 @@ describe('montarEstante', () => {
     expect(estante.find((e) => e.livro.id === 'vazio')!.altura).toBe(0)
   })
 
+  it('a pasta mede os itens que guarda, na mesma régua dos neurônios', () => {
+    const itens = Array.from({ length: 6 }, () => ({ livroId: 'vazio' }))
+    const estante = montarEstante(LIVROS, NEURONIOS, [], itens)
+    const pasta = estante.find((e) => e.livro.id === 'vazio')!
+
+    expect(pasta.anexos).toBe(6)
+    expect(pasta.neuronios).toBe(0)
+    expect(pasta.altura).toBe(1)
+    expect(estante.find((e) => e.livro.id === 'psi')!.altura).toBeCloseTo(0.5, 6)
+  })
+
   it('livro vazio aparece na estante em vez de sumir', () => {
     const estante = montarEstante(LIVROS, NEURONIOS, [])
 

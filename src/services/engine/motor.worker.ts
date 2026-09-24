@@ -445,10 +445,19 @@ async function processarAnexo(a: Anexo): Promise<void> {
   }
   await embedding.ready()
   avisar({ tipo: 'modeloPronto' })
-  await ancorar(await embutirAnexo(a))
+  const completo = await embutirAnexo(a)
+
+  // Um palácio que nunca foi lido não tem perfil — sem ele não há régua, e o
+  // anexo diria "nada se parece" quando na verdade nada foi lido ainda.
+  // Reprocessar lê os conceitos, tira o perfil e reancora todos, este incluído.
+  if (!(await repo.getPerfil()) && (await repo.listNeuronios()).length > 0) {
+    await reprocessarTudo()
+    return
+  }
+  await ancorar(completo)
 }
 
-async function criarAnexo(input: CriarAnexoInput): Promise<AcervoGravado> {
+async function criarAnexo(input: CriarAnexoInput): Promise<EstadoDoPalacio> {
   const livro = await repo.getLivro(input.livroId)
   if (livro?.tipo !== 'acervo') throw new Error('um anexo só mora numa pasta')
 
@@ -477,10 +486,10 @@ async function criarAnexo(input: CriarAnexoInput): Promise<AcervoGravado> {
   // se o Worker morrer agora, perde-se o cálculo, nunca a foto.
   await repo.upsertAnexo(base, arquivo)
   await processarAnexo(base)
-  return acervoAtual()
+  return estadoAtual()
 }
 
-async function editarAnexo(input: EditarAnexoInput): Promise<AcervoGravado> {
+async function editarAnexo(input: EditarAnexoInput): Promise<EstadoDoPalacio> {
   const existente = await repo.getAnexo(input.id)
   if (!existente) throw new Error(`anexo ${input.id} não existe`)
 
@@ -503,7 +512,7 @@ async function editarAnexo(input: EditarAnexoInput): Promise<AcervoGravado> {
   // Trocar só o endereço não muda o que o anexo significa. Uma legenda sem
   // vetor (a inferência de antes falhou) é a chance de tentar de novo.
   if (mudouALegenda || base.embedding === null) await processarAnexo(base)
-  return acervoAtual()
+  return estadoAtual()
 }
 
 async function lerImagem(
@@ -579,7 +588,7 @@ async function responder(msg: ParaMotor): Promise<DoMotor> {
       case 'apagarAnexo':
         // Nenhum conceito perde vizinho por causa de um anexo: sem reprocessar.
         await repo.deleteAnexo(msg.anexoId)
-        return { req: msg.req, ok: true, dados: await acervoAtual() }
+        return { req: msg.req, ok: true, dados: await estadoAtual() }
 
       case 'lerImagem':
         return { req: msg.req, ok: true, dados: await lerImagem(msg.anexoId, msg.tamanho) }

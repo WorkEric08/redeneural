@@ -3712,14 +3712,64 @@ antes das pastas, e a conta da redução. 295 testes no total, typecheck e lint
 limpos. **O Worker não tem teste automatizado** (nunca teve); a verificação
 dele fica para o navegador, na Etapa 3.
 
-### As próximas etapas
+### Etapa 3 de 4: a pasta na estante e as telas
 
-3. **A pasta na estante e as telas.** "Livro | Pasta" ao criar, ícone na
-   lombada, grade de cartões (**divergência do §6 aprovada no plano:** 2
-   colunas também no celular, porque é galeria), rotas `/novo-anexo`,
-   `/anexo/:id` e `/anexo/:id/editar`, seletor de imagem em
-   `services/native/midia.ts`, redução para WebP no Worker, e pastas fora da
-   escolha de livro do `/novo`.
+- **Criar:** `/novo-livro` ganhou a escolha "Livro | Pasta de links e
+  imagens" no topo (só ao criar — `FormularioDeLivro` recebe `tipo` só de
+  `NovoLivro`). O formulário continua cabendo sem rolar em 390×844.
+- **Na estante:** a pasta mostra um clipe (`Paperclip`) no lugar do emblema,
+  e a altura mede os itens na mesma régua dos neurônios (`montarEstante`
+  recebe os anexos). Espiar, ações e apagar falam de "itens"; apagar uma pasta
+  avisa que nenhum conceito muda.
+- **A pasta aberta** (`features/acervo/Pasta.tsx`, desviada por `Livro.tsx`):
+  grade de cartões — **2 colunas também no celular**, divergência do §6
+  aprovada no plano: é galeria, e foto em fila única vira uma rolagem de uma
+  foto por tela. Cada cartão diz "com Recursão e mais 1" ou "fica só na
+  pasta".
+- **Rotas:** `/novo-anexo?livro=`, `/anexo/:anexoId` e `/anexo/:anexoId/editar`
+  — voltar fecha, como o resto. Na tela do item: a imagem inteira (a caixa já
+  nasce na proporção gravada, nada pula quando os bytes chegam) ou o link com
+  "Abrir"; a legenda; e "Combina com", levando a cada neurônio. Apagar
+  pergunta numa folha na URL (`?apagar=1`), no molde da tela do neurônio.
+- **O seletor de imagem** mora em `services/native/midia.ts` (`<input
+type="file">` hoje, `@capacitor/camera` depois). A tela nunca recebe bytes
+  junto do estado: `useImagemDoAnexo` pede ao motor e devolve o `blob:` ao
+  sair.
+- **Link do YouTube** ganha a miniatura (`i.ytimg.com`, só com rede; offline
+  ou quebrada, fica o glifo com o domínio). Link sem miniatura não desenha
+  caixa vazia na tela do item.
+- **O `/novo` e o editar neurônio** só oferecem livros de conceitos, e uma
+  sugestão `?livro=` que aponte para uma pasta é ignorada. O Worker recusa
+  de qualquer jeito.
+
+**Dois bugs que só o navegador mostrou**, os dois corrigidos com teste:
+
+1. **Palácio nunca lido não ancora nada.** O seed nasce com 9 neurônios sem
+   vetor e sem perfil — sem régua, todo anexo dizia "nada se parece". Agora,
+   sem perfil e com conceitos, guardar um anexo com legenda **reprocessa
+   tudo** primeiro (como o primeiro neurônio já fazia). Por isso criar,
+   editar e apagar anexo devolvem o **palácio inteiro** (`EstadoDoPalacio`),
+   e não só o acervo: o reprocessamento muda neurônios, conexões e Rede.
+2. **Score saturado escolhia pelo id.** Com 9 neurônios a escala do corpus é
+   minúscula e quase tudo bate 100%; empatados, "Viés de confirmação" virou
+   a segunda âncora de um vídeo de recursão. `ancorarAnexos` passou a
+   ordenar e cortar pelo **cosseno antes do teto** — fora da saturação dá o
+   mesmo resultado, porque a escala é só um divisor — e `Vinculo.ordem`
+   (0 = o mais parecido) grava a posição, porque o score empatado não a
+   guarda. Depois disso, o vídeo de recursão se prende só a "Recursão", e o
+   diagrama só a "Memória de trabalho".
+
+**Verificado no navegador de verdade:** Chrome headless dirigido por CDP
+(driver de ~150 linhas no scratchpad, sem dependência nova). Fluxo completo
+no celular (412×892): criar a pasta tocando um lugar vazio, guardar link e
+imagem (a imagem pelo seletor de arquivo interceptado), grade, abrir, editar,
+apagar, e a pasta ausente da escolha de livro do `/novo`. Estante, pasta,
+item, novo item e novo livro em 320×568, 390×844, 768×1024, 1024×768 e
+1440×900: **nenhuma rolagem lateral** em nenhuma. Tema claro na pasta e no
+item. Nenhum erro no console. 310 testes, typecheck e lint limpos.
+
+### A próxima etapa
+
 4. **Satélites na Rede.** Posição derivada, não gravada: órbita do conceito
    mais forte, ângulo pela `semente` do id, raio em pixels de tela, calculada a
    cada pintura — acompanha balanço e arrasto do conceito sem código a mais.
@@ -3782,5 +3832,5 @@ global, título automático via oEmbed do YouTube.
     aproximar, duplo toque e busca leva a câmera; arrastar neurônio com os
     vizinhos acompanhando e assentando
 24. 🟡 Pastas de acervo — links e imagens como satélites dos conceitos na
-    Rede. **Etapas 1 e 2 de 4 (núcleo, dados e motor) feitas**; faltam telas e os
+    Rede. **Etapas 1 a 3 de 4 (núcleo, dados e motor, telas) feitas**; faltam os
     satélites na Rede

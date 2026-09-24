@@ -10,6 +10,8 @@ export interface VinculoCalculado {
   anexoId: Id
   conceitoId: Id
   score: number
+  /** 0 é o conceito mais parecido — ver `Vinculo.ordem`. */
+  ordem: number
 }
 
 function comparar(a: string, b: string): number {
@@ -48,27 +50,31 @@ export function ancorarAnexos(
     if (!anexo.embedding) continue
     const meu = centralizar(anexo.embedding, perfil.centroide)
 
+    // Ordena e corta pelo cosseno, antes do teto de 1 da escala: num palácio
+    // pequeno a escala do corpus é minúscula e vários conceitos saturam em
+    // 100% — empatados, a ordem sairia pelo id e não pela proximidade (visto
+    // no navegador com o seed, 24/09/2026). Fora da saturação dá exatamente o
+    // mesmo resultado, porque a escala é só um divisor.
     const ranking = conceitos
-      .map((c, i) => ({
-        conceitoId: c.id,
-        score: escalaEmbedding(produtoInterno(meu, centrados[i]!), perfil.escalaEmb),
-      }))
-      .sort((x, y) => y.score - x.score || comparar(x.conceitoId, y.conceitoId))
+      .map((c, i) => ({ conceitoId: c.id, cos: produtoInterno(meu, centrados[i]!) }))
+      .sort((x, y) => y.cos - x.cos || comparar(x.conceitoId, y.conceitoId))
 
-    const melhor = ranking[0]?.score ?? 0
+    const melhor = ranking[0]?.cos ?? 0
     if (melhor <= 0) continue
 
     const limite = opcoes.razaoCorte * melhor
-    for (const r of ranking.slice(0, opcoes.maxAncoras)) {
-      if (r.score < limite) break
-      vinculos.push({ anexoId: anexo.id, conceitoId: r.conceitoId, score: r.score })
+    for (const [ordem, r] of ranking.slice(0, opcoes.maxAncoras).entries()) {
+      if (r.cos < limite) break
+      vinculos.push({
+        anexoId: anexo.id,
+        conceitoId: r.conceitoId,
+        score: escalaEmbedding(r.cos, perfil.escalaEmb),
+        ordem,
+      })
     }
   }
 
-  return vinculos.sort(
-    (x, y) =>
-      comparar(x.anexoId, y.anexoId) || y.score - x.score || comparar(x.conceitoId, y.conceitoId),
-  )
+  return vinculos.sort((x, y) => comparar(x.anexoId, y.anexoId) || x.ordem - y.ordem)
 }
 
 /** O id tem direção — é sempre o anexo que escolhe (ver `Vinculo`). */

@@ -68,6 +68,18 @@ describe('ancorarAnexos', () => {
     }
   })
 
+  it('com a escala saturando tudo em 100%, a ordem segue o cosseno — não o id', () => {
+    // Mais perto de prog-p2 que de prog-p1; com os dois saturados em 1, o
+    // desempate pelo id poria prog-p1 na frente.
+    const pertoDoP2 = anexo('a-p2', { 9: 1, 10: -0.25 })
+    const saturado = { ...PERFIL, escalaEmb: 1e-4 }
+
+    const vinculos = ancorarAnexos([pertoDoP2], PALACIO, saturado)
+
+    expect(vinculos[0]).toMatchObject({ conceitoId: 'prog-p2', score: 1, ordem: 0 })
+    expect(vinculos.map((v) => v.ordem)).toEqual(vinculos.map((_, i) => i))
+  })
+
   it('um anexo não mexe no que o outro escolhe — cada um é satélite sozinho', () => {
     const sozinho = ancorarAnexos([SOBRE_PSI], PALACIO, PERFIL)
     const junto = ancorarAnexos([SOBRE_PSI, SOBRE_PROG], PALACIO, PERFIL)

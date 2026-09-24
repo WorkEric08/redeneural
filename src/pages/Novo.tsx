@@ -1,3 +1,4 @@
+import { useMemo } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 
 import { Formulario } from '@/features/neuronio/Formulario'
@@ -16,13 +17,17 @@ export default function Novo() {
   const navegar = useNavigate()
   const { livros, ocupado, criarNeuronio } = usePalacio()
 
-  const livroSugerido = busca.get('livro') ?? undefined
+  // Um conceito não mora numa pasta de acervo: ela nem aparece na escolha, e
+  // uma sugestão que aponte para uma é ignorada.
+  const deConceitos = useMemo(() => livros.filter((l) => l.tipo === 'conceitos'), [livros])
+  const pedido = busca.get('livro')
+  const livroSugerido = deConceitos.some((l) => l.id === pedido) ? (pedido ?? undefined) : undefined
 
   // A tela inteira é a folha de escrever: barra de topo, livro e texto moram
   // dentro do formulário (ver Formulario.tsx).
   return (
     <Formulario
-      livros={livros}
+      livros={deConceitos}
       {...(livroSugerido ? { inicial: { livroId: livroSugerido, titulo: '', conteudo: '' } } : {})}
       ocupado={ocupado}
       rotuloDeEnvio="Criar neurônio"

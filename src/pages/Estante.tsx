@@ -31,6 +31,7 @@ export default function Estante() {
     vagas,
     neuronios,
     conexoes,
+    anexos,
     carregado,
     ocupado,
     quantidadeDePrateleiras,
@@ -50,8 +51,8 @@ export default function Estante() {
   const [chegandoId, setChegandoId] = useState<string | null>(() => busca.get('chegou'))
 
   const estante = useMemo(
-    () => montarEstante(livros, neuronios, conexoes),
-    [livros, neuronios, conexoes],
+    () => montarEstante(livros, neuronios, conexoes, anexos),
+    [livros, neuronios, conexoes, anexos],
   )
   const pontes = useMemo(() => pontesEntreLivros(neuronios, conexoes), [neuronios, conexoes])
 
@@ -173,6 +174,7 @@ export default function Estante() {
         vagas={vagas}
         quantidadeDePrateleiras={quantidadeDePrateleiras}
         neuronios={neuronios}
+        anexos={anexos}
         pontes={pontes}
         ocupado={ocupado}
         onFechar={fechar}

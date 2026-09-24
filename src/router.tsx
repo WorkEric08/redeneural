@@ -2,13 +2,16 @@ import { createBrowserRouter } from 'react-router-dom'
 
 import App from '@/App'
 import Ajustes from '@/pages/Ajustes'
+import Anexo from '@/pages/Anexo'
 import Busca from '@/pages/Busca'
 import Editar from '@/pages/Editar'
+import EditarAnexo from '@/pages/EditarAnexo'
 import EditarLivro from '@/pages/EditarLivro'
 import Estante from '@/pages/Estante'
 import Livro from '@/pages/Livro'
 import Neuronio from '@/pages/Neuronio'
 import Novo from '@/pages/Novo'
+import NovoAnexo from '@/pages/NovoAnexo'
 import NovoLivro from '@/pages/NovoLivro'
 import Rede from '@/pages/Rede'
 
@@ -32,6 +35,9 @@ export const router = createBrowserRouter([
       { path: 'novo-livro', element: <NovoLivro /> },
       { path: 'neuronio/:neuronioId', element: <Neuronio /> },
       { path: 'neuronio/:neuronioId/editar', element: <Editar /> },
+      { path: 'novo-anexo', element: <NovoAnexo /> },
+      { path: 'anexo/:anexoId', element: <Anexo /> },
+      { path: 'anexo/:anexoId/editar', element: <EditarAnexo /> },
       { path: 'ajustes', element: <Ajustes /> },
       { path: 'busca', element: <Busca /> },
     ],

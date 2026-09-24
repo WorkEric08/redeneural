@@ -25,7 +25,8 @@ export default function Editar() {
 
   return (
     <Formulario
-      livros={livros}
+      // Um conceito não muda para dentro de uma pasta de acervo.
+      livros={livros.filter((l) => l.tipo === 'conceitos')}
       inicial={{
         livroId: neuronio.livroId,
         titulo: neuronio.titulo,
