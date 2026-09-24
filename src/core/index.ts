@@ -13,8 +13,11 @@ export type { EmbeddingProvider } from './ports/embedding'
 export type { RerankProvider } from './ports/rerank'
 export type { PalacioRepo } from './ports/repo'
 export type {
+  AcervoGravado,
   ConnectionEngine,
+  CriarAnexoInput,
   CriarLivroInput,
+  EditarAnexoInput,
   CriarNeuronioInput,
   EditarLivroInput,
   EditarNeuronioInput,

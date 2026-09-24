@@ -1,5 +1,16 @@
-import type { Conexao, Id, Livro, Neuronio, PalacioRepo, PalacioSnapshot, Vaga } from '@/core'
+import type {
+  Anexo,
+  Conexao,
+  Id,
+  Livro,
+  Neuronio,
+  PalacioRepo,
+  PalacioSnapshot,
+  Vaga,
+} from '@/core'
 import {
+  anexoFromSnapshot,
+  anexoToSnapshot,
   SNAPSHOT_VERSION,
   clampIntensidadeDaLuz,
   conexaoId,
@@ -27,7 +38,16 @@ import {
   type PreferenciasGravadas,
 } from '@/services/db'
 
-import { conexaoSchema, livroSchema, neuronioSchema, snapshotSchema, vagaSchema } from './schemas'
+import {
+  anexoSchema,
+  arquivoSchema,
+  conexaoSchema,
+  livroSchema,
+  neuronioSchema,
+  snapshotSchema,
+  vagaSchema,
+  vinculoSchema,
+} from './schemas'
 
 /**
  * O mais recente primeiro (escolha do usuário, 17/09/2026). Sem isto a lista
@@ -37,8 +57,9 @@ import { conexaoSchema, livroSchema, neuronioSchema, snapshotSchema, vagaSchema 
  * pode fazer o neurônio pular para o topo do livro. O id desempata para dois
  * neurônios criados no mesmo milissegundo não trocarem de lugar entre sessões
  * — a mesma promessa de "a mobília não anda" que a estante e a Rede já fazem.
+ * Vale igual para os anexos de uma pasta.
  */
-function porMaisRecente(a: Neuronio, b: Neuronio): number {
+function porMaisRecente(a: Neuronio | Anexo, b: Neuronio | Anexo): number {
   return b.createdAt.getTime() - a.createdAt.getTime() || (a.id < b.id ? -1 : 1)
 }
 
@@ -105,16 +126,27 @@ export function createDexieRepo(db: PalacioDB = defaultDb): PalacioRepo {
     },
 
     async deleteLivro(id) {
-      await db.transaction('rw', db.livros, db.neuronios, db.conexoes, db.vagas, async () => {
-        const livro = await db.livros.get(id)
-        const neuronioIds = await db.neuronios.where('livroId').equals(id).primaryKeys()
-        if (neuronioIds.length > 0) {
-          await db.conexoes.bulkDelete(await idsDeConexoesQueTocam(neuronioIds))
-          await db.neuronios.bulkDelete(neuronioIds)
-        }
-        await db.livros.delete(id)
-        if (livro) await db.vagas.put({ prateleira: livro.prateleira, ordem: livro.ordem })
-      })
+      await db.transaction(
+        'rw',
+        [db.livros, db.neuronios, db.conexoes, db.vagas, db.anexos, db.arquivos, db.vinculos],
+        async () => {
+          const livro = await db.livros.get(id)
+          const neuronioIds = await db.neuronios.where('livroId').equals(id).primaryKeys()
+          if (neuronioIds.length > 0) {
+            await db.conexoes.bulkDelete(await idsDeConexoesQueTocam(neuronioIds))
+            await db.vinculos.where('conceitoId').anyOf(neuronioIds).delete()
+            await db.neuronios.bulkDelete(neuronioIds)
+          }
+          const anexoIds = await db.anexos.where('livroId').equals(id).primaryKeys()
+          if (anexoIds.length > 0) {
+            await db.vinculos.where('anexoId').anyOf(anexoIds).delete()
+            await db.arquivos.bulkDelete(anexoIds)
+            await db.anexos.bulkDelete(anexoIds)
+          }
+          await db.livros.delete(id)
+          if (livro) await db.vagas.put({ prateleira: livro.prateleira, ordem: livro.ordem })
+        },
+      )
     },
 
     async moverLivro(id, prateleira, lugar) {
@@ -231,9 +263,71 @@ export function createDexieRepo(db: PalacioDB = defaultDb): PalacioRepo {
     },
 
     async deleteNeuronio(id) {
-      await db.transaction('rw', db.neuronios, db.conexoes, async () => {
+      await db.transaction('rw', db.neuronios, db.conexoes, db.vinculos, async () => {
         await db.conexoes.bulkDelete(await idsDeConexoesQueTocam([id]))
+        await db.vinculos.where('conceitoId').equals(id).delete()
         await db.neuronios.delete(id)
+      })
+    },
+
+    async listAnexos(livroId) {
+      const todos =
+        livroId === undefined
+          ? await db.anexos.toArray()
+          : await db.anexos.where('livroId').equals(livroId).toArray()
+      return todos.sort(porMaisRecente)
+    },
+
+    async getAnexo(id) {
+      return db.anexos.get(id)
+    },
+
+    async upsertAnexo(a, arquivo) {
+      const anexo = anexoSchema.parse(a)
+      const bytes = arquivo && arquivoSchema.parse({ anexoId: anexo.id, ...arquivo })
+      await db.transaction('rw', db.anexos, db.arquivos, async () => {
+        await db.anexos.put(anexo)
+        if (bytes) await db.arquivos.put(bytes)
+      })
+    },
+
+    async deleteAnexo(id) {
+      await db.transaction('rw', db.anexos, db.arquivos, db.vinculos, async () => {
+        await db.vinculos.where('anexoId').equals(id).delete()
+        await db.arquivos.delete(id)
+        await db.anexos.delete(id)
+      })
+    },
+
+    async getArquivo(anexoId) {
+      const gravado = await db.arquivos.get(anexoId)
+      return gravado && { imagem: gravado.imagem, miniatura: gravado.miniatura }
+    },
+
+    async listVinculos() {
+      return db.vinculos.toArray()
+    },
+
+    async replaceVinculosDe(anexoId, novos) {
+      const validados = novos.map((v) => vinculoSchema.parse(v))
+      const forasteiro = validados.find((v) => v.anexoId !== anexoId)
+      if (forasteiro) {
+        throw new Error(
+          `replaceVinculosDe(${anexoId}) recebeu o vínculo ${forasteiro.id}, que é de outro anexo`,
+        )
+      }
+
+      await db.transaction('rw', db.vinculos, async () => {
+        await db.vinculos.where('anexoId').equals(anexoId).delete()
+        await db.vinculos.bulkPut(validados)
+      })
+    },
+
+    async replaceTodosVinculos(novos) {
+      const validados = novos.map((v) => vinculoSchema.parse(v))
+      await db.transaction('rw', db.vinculos, async () => {
+        await db.vinculos.clear()
+        await db.vinculos.bulkPut(validados)
       })
     },
 
@@ -332,22 +426,22 @@ export function createDexieRepo(db: PalacioDB = defaultDb): PalacioRepo {
     },
 
     async exportAll(): Promise<PalacioSnapshot> {
-      const [livros, neuronios, conexoes, etiquetas, vagas] = await db.transaction(
-        'r',
-        db.livros,
-        db.neuronios,
-        db.conexoes,
-        db.etiquetas,
-        db.vagas,
-        async () =>
-          Promise.all([
-            db.livros.toArray(),
-            db.neuronios.toArray(),
-            db.conexoes.toArray(),
-            db.etiquetas.toArray(),
-            db.vagas.toArray(),
-          ]),
-      )
+      const [livros, neuronios, conexoes, etiquetas, vagas, anexos, arquivos] =
+        await db.transaction(
+          'r',
+          [db.livros, db.neuronios, db.conexoes, db.etiquetas, db.vagas, db.anexos, db.arquivos],
+          async () =>
+            Promise.all([
+              db.livros.toArray(),
+              db.neuronios.toArray(),
+              db.conexoes.toArray(),
+              db.etiquetas.toArray(),
+              db.vagas.toArray(),
+              db.anexos.toArray(),
+              db.arquivos.toArray(),
+            ]),
+        )
+      const arquivoDe = new Map(arquivos.map((a) => [a.anexoId, a]))
 
       return {
         version: SNAPSHOT_VERSION,
@@ -357,6 +451,7 @@ export function createDexieRepo(db: PalacioDB = defaultDb): PalacioRepo {
         conexoes: conexoes.map(conexaoToSnapshot),
         etiquetas,
         vagas,
+        anexos: anexos.map((a) => anexoToSnapshot(a, arquivoDe.get(a.id))),
       }
     },
 
@@ -408,10 +503,31 @@ export function createDexieRepo(db: PalacioDB = defaultDb): PalacioRepo {
         )
       }
 
+      const acervo = parsed.anexos.map(anexoFromSnapshot)
+      const anexos = acervo.map(({ anexo }) => anexoSchema.parse(anexo))
+      const arquivos = acervo.flatMap(({ anexo, arquivo }) =>
+        arquivo ? [arquivoSchema.parse({ anexoId: anexo.id, ...arquivo })] : [],
+      )
+      const perdido = anexos.find((a) => !livroIds.has(a.livroId))
+      if (perdido) {
+        throw new Error(
+          `snapshot inválido: anexo ${perdido.id} aponta para o livro inexistente ${perdido.livroId}`,
+        )
+      }
+
       // bulkPut por id: reimportar o mesmo snapshot não duplica nada.
       await db.transaction(
         'rw',
-        [db.livros, db.neuronios, db.conexoes, db.meta, db.etiquetas, db.vagas],
+        [
+          db.livros,
+          db.neuronios,
+          db.conexoes,
+          db.meta,
+          db.etiquetas,
+          db.vagas,
+          db.anexos,
+          db.arquivos,
+        ],
         async () => {
           // O livro do arquivo fica no lugar dele; o que só existe aqui fica no
           // seu, se ainda estiver livre — o mesmo "arquivo vence" de título e cor.
@@ -421,6 +537,10 @@ export function createDexieRepo(db: PalacioDB = defaultDb): PalacioRepo {
           await db.livros.bulkPut(unidos)
           await db.neuronios.bulkPut(neuronios)
           await db.conexoes.bulkPut(conexoes)
+          // Os vínculos não vêm no arquivo: quem importa reprocessa, e a
+          // reancoragem refaz todos com o perfil do palácio que ficou.
+          await db.anexos.bulkPut(anexos)
+          await db.arquivos.bulkPut(arquivos)
           // A etiqueta do arquivo vence a que já existia na mesma prateleira;
           // etiqueta que só existe aqui não é apagada.
           await db.etiquetas.bulkPut(parsed.etiquetas)
@@ -451,20 +571,20 @@ export function createDexieRepo(db: PalacioDB = defaultDb): PalacioRepo {
     },
 
     async clear() {
-      await db.transaction(
-        'rw',
-        [db.livros, db.neuronios, db.conexoes, db.meta, db.etiquetas, db.vagas],
-        async () => {
-          await Promise.all([
-            db.livros.clear(),
-            db.neuronios.clear(),
-            db.conexoes.clear(),
-            db.meta.clear(),
-            db.etiquetas.clear(),
-            db.vagas.clear(),
-          ])
-        },
-      )
+      const tabelas = [
+        db.livros,
+        db.neuronios,
+        db.conexoes,
+        db.meta,
+        db.etiquetas,
+        db.vagas,
+        db.anexos,
+        db.arquivos,
+        db.vinculos,
+      ]
+      await db.transaction('rw', tabelas, async () => {
+        await Promise.all(tabelas.map((t) => t.clear()))
+      })
     },
   }
 }

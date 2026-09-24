@@ -1,4 +1,4 @@
-import type { Anexo, Id } from '../domain/types'
+import type { Anexo, Id, Vinculo } from '../domain/types'
 
 import { OPCOES_PADRAO, type OpcoesMotor } from './config'
 import { escalaEmbedding } from './fusao'
@@ -69,4 +69,13 @@ export function ancorarAnexos(
     (x, y) =>
       comparar(x.anexoId, y.anexoId) || y.score - x.score || comparar(x.conceitoId, y.conceitoId),
   )
+}
+
+/** O id tem direção — é sempre o anexo que escolhe (ver `Vinculo`). */
+export function vinculoId(anexoId: Id, conceitoId: Id): Id {
+  return `${anexoId}::${conceitoId}`
+}
+
+export function vinculoParaGravar(v: VinculoCalculado, agora: Date): Vinculo {
+  return { id: vinculoId(v.anexoId, v.conceitoId), ...v, updatedAt: agora }
 }

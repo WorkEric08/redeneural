@@ -8,12 +8,16 @@ import {
   novoLivro,
   primeiroLugarLivre,
   vagasDepoisDeMover,
+  type AnexoNaTela,
   type Conexao,
+  type CriarAnexoInput,
   type Livro,
   type NeuronioNaTela,
   type Ponto,
   type ProgressoDoMotor,
+  type TipoDeLivro,
   type Vaga,
+  type Vinculo,
 } from '@/core'
 import { newId } from '@/lib/id'
 import { engine } from '@/services/engine/workerEngine'
@@ -32,10 +36,20 @@ export interface NovoLivro {
   comprimentoLombada: number | null
 }
 
+export interface NovoAnexo {
+  livroId: string
+  legenda: string
+  conteudo: CriarAnexoInput['conteudo']
+}
+
 interface PalacioStore {
   livros: Livro[]
   neuronios: NeuronioNaTela[]
   conexoes: Conexao[]
+  /** Os itens das pastas de acervo. */
+  anexos: AnexoNaTela[]
+  /** Que conceitos cada anexo escolheu. */
+  vinculos: Vinculo[]
   /** Os lugares deixados abertos — sem livro e sem enfeite. */
   vagas: Vaga[]
   /** Onde a Rede organizou cada neurônio da última vez, por significado. */
@@ -60,7 +74,12 @@ interface PalacioStore {
    * Nasce no `lugar` tocado (ou no buraco mais perto dele). Devolve o id do
    * livro criado, ou null se o motor não conseguiu.
    */
-  criarLivro: (novo: NovoLivro, prateleira: number, lugar?: number) => Promise<string | null>
+  criarLivro: (
+    novo: NovoLivro,
+    prateleira: number,
+    lugar?: number,
+    tipo?: TipoDeLivro,
+  ) => Promise<string | null>
   editarLivro: (id: string, mudancas: NovoLivro) => Promise<boolean>
   apagarLivro: (id: string) => Promise<boolean>
   /** Põe o livro no lugar `(prateleira, lugar)`, empurrando se já houver livro ali. */
@@ -79,6 +98,15 @@ interface PalacioStore {
    * o próximo render para saber onde a vizinhança parou.
    */
   moverNeuronioNaRede: (id: string, ponto: Ponto) => Promise<Readonly<Record<string, Ponto>>>
+  /**
+   * Sem otimismo: a imagem ainda vai ser reduzida no Worker, e a medida dela só
+   * se sabe depois. Devolve o id criado, ou null se o motor não conseguiu.
+   */
+  criarAnexo: (novo: NovoAnexo) => Promise<string | null>
+  editarAnexo: (id: string, legenda: string, url?: string) => Promise<boolean>
+  apagarAnexo: (id: string) => Promise<boolean>
+  /** Os bytes de uma imagem do acervo, para quem vai desenhá-la. Não é estado. */
+  lerImagem: (anexoId: string, tamanho: 'miniatura' | 'inteira') => Promise<Uint8Array | null>
   /** O aviso flutuante some — pelo tempo ou pelo toque. */
   dispensarAvisos: () => void
 }
@@ -96,6 +124,8 @@ export const usePalacio = create<PalacioStore>()((set, get) => {
     livros: [],
     neuronios: [],
     conexoes: [],
+    anexos: [],
+    vinculos: [],
     vagas: [],
     posicoesDaRede: {},
     quantidadeDePrateleiras: MINIMO_DE_PRATELEIRAS,
@@ -143,13 +173,13 @@ export const usePalacio = create<PalacioStore>()((set, get) => {
       set((s) => ({ neuronios: [provisorio, ...s.neuronios], ocupado: true, erro: null }))
 
       try {
-        const { neuronios, conexoes, posicoesDaRede } = await engine.criarNeuronio({
+        const { neuronios, conexoes, posicoesDaRede, vinculos } = await engine.criarNeuronio({
           id,
           ...novo,
         })
         // O palácio inteiro, não só o que foi escrito: um reprocessamento tira o
         // "processando…" dos outros também.
-        set({ neuronios, conexoes, posicoesDaRede })
+        set({ neuronios, conexoes, posicoesDaRede, vinculos })
         return id
       } catch (e) {
         // Desfaz o otimismo: o Worker não conseguiu, então não fingimos que deu.
@@ -180,11 +210,11 @@ export const usePalacio = create<PalacioStore>()((set, get) => {
       }))
 
       try {
-        const { neuronios, conexoes, posicoesDaRede } = await engine.editarNeuronio({
+        const { neuronios, conexoes, posicoesDaRede, vinculos } = await engine.editarNeuronio({
           id,
           ...mudancas,
         })
-        set({ neuronios, conexoes, posicoesDaRede })
+        set({ neuronios, conexoes, posicoesDaRede, vinculos })
         return true
       } catch (e) {
         set({ erro: mensagem(e) })
@@ -198,8 +228,8 @@ export const usePalacio = create<PalacioStore>()((set, get) => {
       set({ ocupado: true, erro: null })
 
       try {
-        const { neuronios, conexoes, posicoesDaRede } = await engine.apagarNeuronio(id)
-        set({ neuronios, conexoes, posicoesDaRede })
+        const { neuronios, conexoes, posicoesDaRede, vinculos } = await engine.apagarNeuronio(id)
+        set({ neuronios, conexoes, posicoesDaRede, vinculos })
         return true
       } catch (e) {
         set({ erro: mensagem(e) })
@@ -213,9 +243,9 @@ export const usePalacio = create<PalacioStore>()((set, get) => {
       set({ erro: null, aviso: null })
     },
 
-    async criarLivro(novo, prateleira, lugar): Promise<string | null> {
+    async criarLivro(novo, prateleira, lugar, tipo = 'conceitos'): Promise<string | null> {
       const { livros: antes, vagas: vagasAntes } = get()
-      const input = { id: newId(), ...novo, prateleira, lugar }
+      const input = { id: newId(), ...novo, prateleira, lugar, tipo }
       // A mesma regra do motor: o lugar tocado, ou o buraco mais perto dele se
       // outro livro já chegou ali — nascer nunca empurra ninguém.
       const ordem = primeiroLugarLivre(antes, prateleira, lugar ?? 0)
@@ -356,6 +386,53 @@ export const usePalacio = create<PalacioStore>()((set, get) => {
       } catch (e) {
         set({ intensidadeDaLuz: antes, erro: mensagem(e) })
       }
+    },
+
+    async criarAnexo(novo): Promise<string | null> {
+      const id = newId()
+      set({ ocupado: true, erro: null })
+
+      try {
+        set(await engine.criarAnexo({ id, ...novo }))
+        return id
+      } catch (e) {
+        set({ erro: mensagem(e) })
+        return null
+      } finally {
+        set({ ocupado: false, progresso: null })
+      }
+    },
+
+    async editarAnexo(id, legenda, url): Promise<boolean> {
+      set({ ocupado: true, erro: null })
+
+      try {
+        set(await engine.editarAnexo({ id, legenda, url }))
+        return true
+      } catch (e) {
+        set({ erro: mensagem(e) })
+        return false
+      } finally {
+        set({ ocupado: false, progresso: null })
+      }
+    },
+
+    async apagarAnexo(id): Promise<boolean> {
+      set({ ocupado: true, erro: null })
+
+      try {
+        set(await engine.apagarAnexo(id))
+        return true
+      } catch (e) {
+        set({ erro: mensagem(e) })
+        return false
+      } finally {
+        set({ ocupado: false })
+      }
+    },
+
+    lerImagem(anexoId, tamanho) {
+      return engine.lerImagem(anexoId, tamanho)
     },
 
     async moverNeuronioNaRede(id, ponto) {

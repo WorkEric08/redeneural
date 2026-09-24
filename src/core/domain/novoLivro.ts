@@ -10,6 +10,7 @@ import type { Livro } from './types'
 export function novoLivro(input: CriarLivroInput, agora: Date, ordem: number): Livro {
   return {
     id: input.id,
+    tipo: input.tipo ?? 'conceitos',
     titulo: input.titulo.trim(),
     cor: input.cor,
     prateleira: Math.max(0, Math.trunc(input.prateleira)),

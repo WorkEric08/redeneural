@@ -1,5 +1,7 @@
 /// <reference lib="webworker" />
 import {
+  ancorarAnexos,
+  anexoParaTela,
   arestaParaConexao,
   calcularLayoutDaRede,
   construirGrafo,
@@ -17,13 +19,20 @@ import {
   recalcularVizinhanca,
   SEM_RERANK,
   textoDoNeuronio,
+  vinculoParaGravar,
+  type AcervoGravado,
+  type Anexo,
+  type ArquivoDoAnexo,
+  type CriarAnexoInput,
   type CriarLivroInput,
   type CriarNeuronioInput,
+  type EditarAnexoInput,
   type EditarLivroInput,
   type EstadoDoPalacio,
   type EstanteGravada,
   type Id,
   type Livro,
+  type MidiaDoAnexo,
   type Neuronio,
   type NoDoGrafo,
   type PalacioRepo,
@@ -35,6 +44,7 @@ import {
 } from '@/core'
 import { seedPalacio } from '@/features/palacio/seed'
 import { criarTransformersEmbedding } from '@/services/inferencia/transformersEmbedding'
+import { reduzirImagem } from '@/services/midia/imagem'
 import { palacioRepo } from '@/services/repo/dexieRepo'
 
 import type { DoMotor, ParaMotor } from './protocolo'
@@ -87,6 +97,7 @@ async function estadoAtual(): Promise<EstadoDoPalacio> {
     quantidadeDePrateleiras,
     intensidadeDaLuz,
     posicoesDaRede,
+    acervo,
   ] = await Promise.all([
     repo.listLivros(),
     repo.listVagas(),
@@ -95,6 +106,7 @@ async function estadoAtual(): Promise<EstadoDoPalacio> {
     repo.getQuantidadeDePrateleiras(),
     repo.getIntensidadeDaLuz(),
     repo.getPosicoesDaRede(),
+    acervoAtual(),
   ])
 
   return {
@@ -105,7 +117,54 @@ async function estadoAtual(): Promise<EstadoDoPalacio> {
     quantidadeDePrateleiras,
     intensidadeDaLuz,
     posicoesDaRede,
+    ...acervo,
   }
+}
+
+async function acervoAtual(): Promise<AcervoGravado> {
+  const [anexos, vinculos] = await Promise.all([repo.listAnexos(), repo.listVinculos()])
+  return { anexos: anexos.map(anexoParaTela), vinculos }
+}
+
+/**
+ * Refaz a escolha de todo anexo depois que um conceito mudou: um conceito novo
+ * pode ser a melhor âncora de um anexo antigo, e o perfil pode ter mudado num
+ * reprocessamento. Barato — nenhum modelo, só cossenos sobre vetores gravados
+ * — e nunca mexe em conexão nenhuma: os anexos escolhem, ninguém os escolhe.
+ */
+async function reancorarTodos(): Promise<void> {
+  const [perfil, neuronios, anexos] = await Promise.all([
+    repo.getPerfil(),
+    repo.listNeuronios(),
+    repo.listAnexos(),
+  ])
+  if (anexos.length === 0) return
+
+  const vinculos = perfil
+    ? ancorarAnexos(anexos, nosDeNeuronios(neuronios), perfil, OPCOES_PADRAO)
+    : []
+  const agora = new Date()
+  await repo.replaceTodosVinculos(vinculos.map((v) => vinculoParaGravar(v, agora)))
+}
+
+/** O mesmo, para um anexo só — o caminho de criar e editar. */
+async function ancorar(anexo: Anexo): Promise<void> {
+  const [perfil, neuronios] = await Promise.all([repo.getPerfil(), repo.listNeuronios()])
+  const vinculos = perfil
+    ? ancorarAnexos([anexo], nosDeNeuronios(neuronios), perfil, OPCOES_PADRAO)
+    : []
+  const agora = new Date()
+  await repo.replaceVinculosDe(
+    anexo.id,
+    vinculos.map((v) => vinculoParaGravar(v, agora)),
+  )
+}
+
+async function embutirAnexo(a: Anexo): Promise<Anexo> {
+  const vetor = await embedding.embed(a.legenda)
+  const completo: Anexo = { ...a, embedding: vetor, updatedAt: new Date() }
+  await repo.upsertAnexo(completo)
+  return completo
 }
 
 /**
@@ -179,16 +238,26 @@ async function perfilVigente(nos: readonly NoDoGrafo[]): Promise<PerfilDoPalacio
 async function reprocessarTudo(): Promise<EstadoDoPalacio> {
   const neuronios = await repo.listNeuronios()
   const semVetor = neuronios.filter((n) => n.embedding === null)
+  // Anexo sem legenda não tem o que ler — nunca passa pelo modelo.
+  const anexosSemVetor = (await repo.listAnexos()).filter(
+    (a) => a.embedding === null && a.legenda !== '',
+  )
+  const total = semVetor.length + anexosSemVetor.length
 
   // Só quem nunca foi processado passa pelo modelo. O vetor é salvo junto do
   // neurônio e nunca recalculado ao recarregar.
-  if (semVetor.length > 0) {
+  if (total > 0) {
     await embedding.ready()
     avisar({ tipo: 'modeloPronto' })
 
-    for (const [i, n] of semVetor.entries()) {
+    let feitos = 0
+    for (const n of semVetor) {
       await embutir(n)
-      avisar({ tipo: 'reprocessando', feitos: i + 1, total: semVetor.length })
+      avisar({ tipo: 'reprocessando', feitos: ++feitos, total })
+    }
+    for (const a of anexosSemVetor) {
+      await embutirAnexo(a)
+      avisar({ tipo: 'reprocessando', feitos: ++feitos, total })
     }
   }
 
@@ -200,6 +269,7 @@ async function reprocessarTudo(): Promise<EstadoDoPalacio> {
   await repo.replaceTodasConexoes(arestas.map((a) => arestaParaConexao(a, agora)))
   await repo.setPerfil(perfil, nos.length)
   await recalcularPosicoesDaRede(arestas)
+  await reancorarTodos()
 
   return estadoAtual()
 }
@@ -209,6 +279,11 @@ async function escrever(
   input: CriarNeuronioInput,
   existente: Neuronio | undefined,
 ): Promise<ResultadoDeEscrita> {
+  const livro = await repo.getLivro(input.livroId)
+  if (livro?.tipo === 'acervo') {
+    throw new Error('um neurônio não mora numa pasta — escolha um livro de conceitos')
+  }
+
   const agora = new Date()
   const base: Neuronio = existente
     ? {
@@ -241,6 +316,7 @@ async function escrever(
       neuronios: estado.neuronios,
       conexoes: estado.conexoes,
       posicoesDaRede: estado.posicoesDaRede,
+      vinculos: estado.vinculos,
     }
   }
 
@@ -264,6 +340,7 @@ async function escrever(
   // partida quente — só este neurônio (e quem estava perto dele) se acomoda,
   // ninguém mais reembaralha.
   await recalcularPosicoesDaRede(await repo.listConexoes())
+  await reancorarTodos()
 
   const depois = await estadoAtual()
   return {
@@ -271,6 +348,7 @@ async function escrever(
     neuronios: depois.neuronios,
     conexoes: depois.conexoes,
     posicoesDaRede: depois.posicoesDaRede,
+    vinculos: depois.vinculos,
   }
 }
 
@@ -359,6 +437,84 @@ async function moverNeuronioNaRede(id: Id, ponto: Ponto): Promise<Readonly<Recor
   return gravado
 }
 
+/** Sem legenda, nada a ler: o anexo fica só na pasta, sem vínculo. */
+async function processarAnexo(a: Anexo): Promise<void> {
+  if (a.legenda === '') {
+    await repo.replaceVinculosDe(a.id, [])
+    return
+  }
+  await embedding.ready()
+  avisar({ tipo: 'modeloPronto' })
+  await ancorar(await embutirAnexo(a))
+}
+
+async function criarAnexo(input: CriarAnexoInput): Promise<AcervoGravado> {
+  const livro = await repo.getLivro(input.livroId)
+  if (livro?.tipo !== 'acervo') throw new Error('um anexo só mora numa pasta')
+
+  let midia: MidiaDoAnexo
+  let arquivo: ArquivoDoAnexo | undefined
+  if (input.conteudo.tipo === 'link') {
+    midia = { tipo: 'link', url: input.conteudo.url.trim() }
+  } else {
+    const r = await reduzirImagem(input.conteudo.bytes, input.conteudo.mime)
+    midia = { tipo: 'imagem', mime: r.mime, largura: r.largura, altura: r.altura }
+    arquivo = { imagem: r.imagem, miniatura: r.miniatura }
+  }
+
+  const agora = new Date()
+  const base: Anexo = {
+    id: input.id,
+    livroId: input.livroId,
+    legenda: input.legenda.trim(),
+    midia,
+    embedding: null,
+    createdAt: agora,
+    updatedAt: agora,
+  }
+
+  // Como o neurônio: o que a pessoa entregou é gravado antes da inferência —
+  // se o Worker morrer agora, perde-se o cálculo, nunca a foto.
+  await repo.upsertAnexo(base, arquivo)
+  await processarAnexo(base)
+  return acervoAtual()
+}
+
+async function editarAnexo(input: EditarAnexoInput): Promise<AcervoGravado> {
+  const existente = await repo.getAnexo(input.id)
+  if (!existente) throw new Error(`anexo ${input.id} não existe`)
+
+  const legenda = input.legenda.trim()
+  const midia: MidiaDoAnexo =
+    existente.midia.tipo === 'link' && input.url !== undefined
+      ? { tipo: 'link', url: input.url.trim() }
+      : existente.midia
+  const mudouALegenda = legenda !== existente.legenda
+
+  const base: Anexo = {
+    ...existente,
+    legenda,
+    midia,
+    embedding: mudouALegenda ? null : existente.embedding,
+    updatedAt: new Date(),
+  }
+  await repo.upsertAnexo(base)
+
+  // Trocar só o endereço não muda o que o anexo significa. Uma legenda sem
+  // vetor (a inferência de antes falhou) é a chance de tentar de novo.
+  if (mudouALegenda || base.embedding === null) await processarAnexo(base)
+  return acervoAtual()
+}
+
+async function lerImagem(
+  anexoId: Id,
+  tamanho: 'miniatura' | 'inteira',
+): Promise<Uint8Array | null> {
+  const arquivo = await repo.getArquivo(anexoId)
+  if (!arquivo) return null
+  return tamanho === 'miniatura' ? arquivo.miniatura : arquivo.imagem
+}
+
 async function responder(msg: ParaMotor): Promise<DoMotor> {
   try {
     switch (msg.tipo) {
@@ -413,6 +569,20 @@ async function responder(msg: ParaMotor): Promise<DoMotor> {
 
       case 'moverNeuronioNaRede':
         return { req: msg.req, ok: true, dados: await moverNeuronioNaRede(msg.id, msg.ponto) }
+
+      case 'criarAnexo':
+        return { req: msg.req, ok: true, dados: await criarAnexo(msg.input) }
+
+      case 'editarAnexo':
+        return { req: msg.req, ok: true, dados: await editarAnexo(msg.input) }
+
+      case 'apagarAnexo':
+        // Nenhum conceito perde vizinho por causa de um anexo: sem reprocessar.
+        await repo.deleteAnexo(msg.anexoId)
+        return { req: msg.req, ok: true, dados: await acervoAtual() }
+
+      case 'lerImagem':
+        return { req: msg.req, ok: true, dados: await lerImagem(msg.anexoId, msg.tamanho) }
     }
   } catch (e) {
     return { req: msg.req, ok: false, erro: e instanceof Error ? e.message : String(e) }

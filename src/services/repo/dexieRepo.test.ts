@@ -36,6 +36,7 @@ beforeEach(() => {
 function livro(id: string, titulo: string, ordem = 0, prateleira = 0): Livro {
   return {
     id,
+    tipo: 'conceitos',
     titulo,
     cor: '#6d5bd0',
     prateleira,
@@ -544,7 +545,10 @@ describe('migração para a v3', () => {
     antigo.version(2).stores({ meta: 'chave' })
     await antigo
       .table<
-        Omit<Livro, 'ordem' | 'prateleira' | 'emblema' | 'larguraLombada' | 'comprimentoLombada'>,
+        Omit<
+          Livro,
+          'ordem' | 'prateleira' | 'emblema' | 'larguraLombada' | 'comprimentoLombada' | 'tipo'
+        >,
         string
       >('livros')
       .bulkPut([
@@ -587,7 +591,7 @@ describe('migração para a v4', () => {
     // última com sobra), então o teste exercita mais de um livro por prateleira.
     await antigo
       .table<
-        Omit<Livro, 'prateleira' | 'emblema' | 'larguraLombada' | 'comprimentoLombada'>,
+        Omit<Livro, 'prateleira' | 'emblema' | 'larguraLombada' | 'comprimentoLombada' | 'tipo'>,
         string
       >('livros')
       .bulkPut(
@@ -637,7 +641,9 @@ describe('migração para a v6', () => {
     antigo.version(4).stores({ livros: 'id, createdAt, ordem, prateleira' })
     antigo.version(5).stores({ etiquetas: 'prateleira' })
     await antigo
-      .table<Omit<Livro, 'emblema' | 'larguraLombada' | 'comprimentoLombada'>, string>('livros')
+      .table<Omit<Livro, 'emblema' | 'larguraLombada' | 'comprimentoLombada' | 'tipo'>, string>(
+        'livros',
+      )
       .bulkPut([
         { id: 'l1', titulo: 'Psicologia', cor: '#7b6ae0', prateleira: 0, ordem: 0, createdAt: T0 },
       ])
@@ -676,7 +682,7 @@ describe('migração para a v7', () => {
     antigo.version(5).stores({ etiquetas: 'prateleira' })
     antigo.version(6).stores({})
     await antigo
-      .table<Omit<Livro, 'larguraLombada' | 'comprimentoLombada'>, string>('livros')
+      .table<Omit<Livro, 'larguraLombada' | 'comprimentoLombada' | 'tipo'>, string>('livros')
       .bulkPut([
         {
           id: 'l1',
@@ -722,7 +728,7 @@ describe('migração para a v8', () => {
     antigo.version(5).stores({ etiquetas: 'prateleira' })
     antigo.version(6).stores({})
     antigo.version(7).stores({})
-    await antigo.table<Omit<Livro, 'comprimentoLombada'>, string>('livros').bulkPut([
+    await antigo.table<Omit<Livro, 'comprimentoLombada' | 'tipo'>, string>('livros').bulkPut([
       {
         id: 'l1',
         titulo: 'Psicologia',

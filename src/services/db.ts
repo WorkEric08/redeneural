@@ -3,12 +3,16 @@ import Dexie, { type EntityTable, type Table } from 'dexie'
 import {
   distribuicaoAntiga,
   posicoesAntigas,
+  type Anexo,
+  type ArquivoDoAnexo,
   type Conexao,
   type EtiquetaDePrateleira,
+  type Id,
   type Livro,
   type Neuronio,
   type Ponto,
   type Vaga,
+  type Vinculo,
 } from '@/core'
 
 export const DB_NAME = 'palacio-mental'
@@ -51,6 +55,9 @@ export interface PosicoesDaRedeGravadas {
 
 export type MetaGravada = PerfilGravado | PreferenciasGravadas | PosicoesDaRedeGravadas
 
+/** Os bytes de uma imagem do acervo, numa tabela à parte da do anexo. */
+export type ArquivoGravado = ArquivoDoAnexo & { anexoId: Id }
+
 export type PalacioDB = Dexie & {
   livros: EntityTable<Livro, 'id'>
   neuronios: EntityTable<Neuronio, 'id'>
@@ -59,6 +66,9 @@ export type PalacioDB = Dexie & {
   etiquetas: EntityTable<EtiquetaDePrateleira, 'prateleira'>
   /** Chave composta `[prateleira+ordem]`: um lugar só tem uma vaga. */
   vagas: Table<Vaga, [number, number]>
+  anexos: EntityTable<Anexo, 'id'>
+  arquivos: EntityTable<ArquivoGravado, 'anexoId'>
+  vinculos: EntityTable<Vinculo, 'id'>
 }
 
 /**
@@ -176,6 +186,22 @@ export function createDb(name: string = DB_NAME): PalacioDB {
   db.version(9).stores({
     vagas: '[prateleira+ordem], prateleira',
   })
+
+  // v10 (24/09/2026): pastas de acervo. Três tabelas novas — os anexos, os
+  // bytes das imagens à parte (listar anexos nunca arrasta imagem) e os
+  // vínculos anexo → conceito —, e todo livro que já existia é de conceitos.
+  // `tipo` não é indexado: a estante inteira cabe em memória e é filtrada lá.
+  db.version(10)
+    .stores({
+      anexos: 'id, livroId, updatedAt',
+      arquivos: 'anexoId',
+      vinculos: 'id, anexoId, conceitoId',
+    })
+    .upgrade(async (tx) => {
+      const livros = tx.table<Omit<Livro, 'tipo'> & { tipo?: Livro['tipo'] }, string>('livros')
+      const antigos = await livros.toArray()
+      await livros.bulkPut(antigos.map((l) => ({ ...l, tipo: l.tipo ?? 'conceitos' })))
+    })
 
   return db
 }

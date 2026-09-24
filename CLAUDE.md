@@ -355,11 +355,18 @@ revisão. Não adiantar fases.
 ## Modelo de dados
 
 ```
-livros:     { id, titulo, cor, prateleira, ordem, createdAt }
+livros:     { id, tipo: 'conceitos' | 'acervo', titulo, cor, prateleira, ordem, createdAt }
 neuronios:  { id, livroId, titulo, conteudo, embedding: Float32Array | null, createdAt, updatedAt }
 conexoes:   { id, aId, bId, score, emb, rr, cross, mantidaPorA, mantidaPorB, updatedAt }
 vagas:      { prateleira, ordem }
+anexos:     { id, livroId, legenda, midia, embedding: Float32Array | null, createdAt, updatedAt }
+arquivos:   { anexoId, imagem: Uint8Array, miniatura: Uint8Array }
+vinculos:   { id: 'anexoId::conceitoId', anexoId, conceitoId, score, updatedAt }
 ```
+
+- As três últimas são das pastas de acervo (24/09/2026) — ver "Pastas de
+  acervo". Um anexo nunca entra no grafo de conceitos; os `vinculos` são a
+  escolha dele, só num sentido.
 
 - `livros.ordem` é o lugar na prateleira (0..25), gravado porque quem decide é
   a pessoa arrastando o livro. **Esparso** desde 14/09/2026 — pode haver
@@ -3664,15 +3671,49 @@ próprio assunto; teto e corte relativo; um anexo não mexe no que o outro
 escolhe; independe da ordem de entrada; não muta as entradas. Typecheck e lint
 limpos.
 
+### Etapa 2 de 4: dados e motor
+
+- **`Livro.tipo`** (`'conceitos' | 'acervo'`), escolhido ao criar e nunca
+  trocado — `EditarLivroInput` não tem o campo. O Worker recusa neurônio em
+  pasta e anexo fora de pasta.
+- **Dexie v10:** `anexos`, `arquivos` (os bytes à parte: listar anexos nunca
+  arrasta imagem, e `EstadoDoPalacio` nunca carrega um byte) e `vinculos`. O
+  upgrade dá `tipo: 'conceitos'` a todo livro que já existia.
+- **Bytes são `Uint8Array`, não `Blob`** — pelo mesmo motivo do
+  `Float32Array` do embedding: vira BLOB no SQLite e `ByteArray` no nativo. A
+  tela pede os bytes à parte (`lerImagem(id, 'miniatura' | 'inteira')`).
+- **Link só `http`/`https`** (`urlDeLink` em `schemas.ts`): o endereço vira
+  link tocável, e `javascript:` num link é porta aberta.
+- **A imagem é reduzida no Worker** (`services/midia/imagem.ts`:
+  `createImageBitmap` + `OffscreenCanvas` → WebP; 1600 px e miniatura de 320 px).
+  Reescrever os pixels também tira os metadados da câmera, GPS incluído.
+- **Quando reancora:** criar/editar um anexo ancora só ele; toda escrita de
+  conceito (`escrever`, `reprocessarTudo` e, por ele, apagar neurônio ou livro
+  de conceitos) reancora todos. Apagar anexo ou pasta **não reprocessa nada**.
+  O anexo é gravado antes da inferência, como o neurônio; `reprocessarTudo`
+  também embute anexo com legenda que ficou sem vetor.
+- **Backup:** anexos entram com a imagem em base64; vínculos não entram — são
+  recalculados na chegada, como o perfil. Backup de antes entra com todo livro
+  de conceitos e nenhum anexo.
+
+**Medido (reancorar tudo, 500 conceitos × 300 anexos, 384 dim, comunidades
+sintéticas):** ~67 ms no desktop, com os 900 vínculos na comunidade certa —
+menos que o `perfilDoPalacio` que todo reprocessamento já roda (~106 ms no
+mesmo palácio). Ficou o caminho simples (ordenar o ranking); um top-3 por
+inserção dava ~50 ms e não pagava o código a mais. Pegadinha: o mesmo cálculo
+no ambiente jsdom do Vitest levava ~280 ms — mediu-se no ambiente `node`.
+
+32 testes novos (`acervo.test.ts` e `lib/imagem.test.ts`): migração v10, tipo
+do livro, anexos do mais recente primeiro, imagem à parte que sobrevive a
+regravar a legenda, link `javascript:` recusado, cascatas (anexo, pasta,
+conceito, livro de conceitos — nenhuma conexão entre conceitos tocada),
+vínculos de outro anexo recusados, backup com imagem e idempotente, backup de
+antes das pastas, e a conta da redução. 295 testes no total, typecheck e lint
+limpos. **O Worker não tem teste automatizado** (nunca teve); a verificação
+dele fica para o navegador, na Etapa 3.
+
 ### As próximas etapas
 
-2. **Dados e motor.** Dexie v10 (`anexos`; `midias` com os bytes à parte, para
-   `listAnexos` não arrastar Blob; `vinculos`; `livros.tipo`), porta do
-   repositório, mensagens do Worker, reancorar tudo depois de toda escrita de
-   conceito (medido num palácio sintético; só vira incremental se ficar
-   lento), apagar anexo ou pasta sem reprocessar nada, export/import (a imagem
-   em base64 como o embedding; vínculos recalculados na chegada, como o
-   perfil).
 3. **A pasta na estante e as telas.** "Livro | Pasta" ao criar, ícone na
    lombada, grade de cartões (**divergência do §6 aprovada no plano:** 2
    colunas também no celular, porque é galeria), rotas `/novo-anexo`,
@@ -3741,5 +3782,5 @@ global, título automático via oEmbed do YouTube.
     aproximar, duplo toque e busca leva a câmera; arrastar neurônio com os
     vizinhos acompanhando e assentando
 24. 🟡 Pastas de acervo — links e imagens como satélites dos conceitos na
-    Rede. **Etapa 1 de 4 (núcleo) feita**; faltam dados/motor, telas e os
+    Rede. **Etapas 1 e 2 de 4 (núcleo, dados e motor) feitas**; faltam telas e os
     satélites na Rede

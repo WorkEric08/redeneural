@@ -1,5 +1,5 @@
-import type { NeuronioNaTela } from '../domain/tela'
-import type { Conexao, Id, Livro, Vaga } from '../domain/types'
+import type { AnexoNaTela, NeuronioNaTela } from '../domain/tela'
+import type { Conexao, Id, Livro, TipoDeLivro, Vaga, Vinculo } from '../domain/types'
 import type { Ponto } from '../motor/redeLayout'
 
 export interface CriarNeuronioInput {
@@ -32,6 +32,34 @@ export interface CriarLivroInput {
   emblema?: string | null
   larguraLombada?: number | null
   comprimentoLombada?: number | null
+  /** Ausente é `'conceitos'`. Não muda depois — `EditarLivroInput` não tem este campo. */
+  tipo?: TipoDeLivro
+}
+
+/**
+ * O que a pessoa entrega ao criar um anexo. A imagem chega como veio da
+ * galeria; quem reduz, e decide o formato gravado, é o motor.
+ */
+export interface CriarAnexoInput {
+  /** Gerado por quem chama, pelo mesmo motivo do neurônio. */
+  id: Id
+  livroId: Id
+  legenda: string
+  conteudo: { tipo: 'link'; url: string } | { tipo: 'imagem'; bytes: Uint8Array; mime: string }
+}
+
+/** A imagem não se troca — apaga-se e cria-se outro. O endereço de um link, sim. */
+export interface EditarAnexoInput {
+  id: Id
+  legenda: string
+  /** Só vale para anexo de link. */
+  url?: string | undefined
+}
+
+/** O acervo inteiro depois de uma escrita nele — mesmo espírito de `ResultadoDeEscrita`. */
+export interface AcervoGravado {
+  anexos: AnexoNaTela[]
+  vinculos: Vinculo[]
 }
 
 export interface EditarLivroInput {
@@ -63,6 +91,10 @@ export interface EstadoDoPalacio {
    * por livro (Fase 23-2). `{}` num palácio que nunca foi organizado.
    */
   posicoesDaRede: Readonly<Record<Id, Ponto>>
+  /** Os itens das pastas de acervo, sem vetor e sem bytes. */
+  anexos: AnexoNaTela[]
+  /** Que conceitos cada anexo escolheu. */
+  vinculos: Vinculo[]
 }
 
 export interface ResultadoDeEscrita {
@@ -79,6 +111,8 @@ export interface ResultadoDeEscrita {
   conexoes: Conexao[]
   /** A Rede se reacomoda junto — o novo neurônio nasce perto de quem ele conversa. */
   posicoesDaRede: Readonly<Record<Id, Ponto>>
+  /** Um conceito novo ou mudado pode virar a melhor âncora de algum anexo. */
+  vinculos: Vinculo[]
 }
 
 /** Só o que a tela precisa mostrar enquanto espera. */
@@ -134,6 +168,19 @@ export interface ConnectionEngine {
    * reagir a partir daí — sem tocar em conexões, só no layout.
    */
   moverNeuronioNaRede(id: Id, ponto: Ponto): Promise<Readonly<Record<Id, Ponto>>>
+  /**
+   * Grava o anexo antes da inferência (como o neurônio) e devolve o acervo já
+   * com os conceitos que ele escolheu. Só aceita livro do tipo `acervo`.
+   */
+  criarAnexo(input: CriarAnexoInput): Promise<AcervoGravado>
+  editarAnexo(input: EditarAnexoInput): Promise<AcervoGravado>
+  /** Nenhum conceito perde vizinho por causa de um anexo — apagar não reprocessa nada. */
+  apagarAnexo(id: Id): Promise<AcervoGravado>
+  /**
+   * Os bytes de uma imagem do acervo, pedidos só por quem vai desenhá-la —
+   * nunca viajam junto do estado. `null` se o anexo não tem imagem.
+   */
+  lerImagem(anexoId: Id, tamanho: 'miniatura' | 'inteira'): Promise<Uint8Array | null>
   /** Devolve a função que cancela a inscrição. */
   aoProgredir(ouvinte: (p: ProgressoDoMotor) => void): () => void
 }

@@ -19,6 +19,7 @@ function livro(
     cor: '#7b6ae0',
     prateleira,
     ordem,
+    tipo: 'conceitos',
     emblema: null,
     larguraLombada,
     comprimentoLombada: null,

@@ -1,6 +1,9 @@
 import type {
+  AcervoGravado,
+  CriarAnexoInput,
   CriarLivroInput,
   CriarNeuronioInput,
+  EditarAnexoInput,
   EditarLivroInput,
   EditarNeuronioInput,
   EstadoDoPalacio,
@@ -33,6 +36,11 @@ export interface RespostasDoMotor {
   definirQuantidadeDePrateleiras: number
   definirIntensidadeDaLuz: number
   moverNeuronioNaRede: Readonly<Record<Id, Ponto>>
+  criarAnexo: AcervoGravado
+  editarAnexo: AcervoGravado
+  apagarAnexo: AcervoGravado
+  /** Os bytes vêm só aqui, a pedido — nunca junto do estado. */
+  lerImagem: Uint8Array | null
 }
 
 export type TipoDePedido = keyof RespostasDoMotor
@@ -51,6 +59,10 @@ export type ParaMotor =
   | { req: number; tipo: 'definirQuantidadeDePrateleiras'; quantidade: number }
   | { req: number; tipo: 'definirIntensidadeDaLuz'; valor: number }
   | { req: number; tipo: 'moverNeuronioNaRede'; id: Id; ponto: Ponto }
+  | { req: number; tipo: 'criarAnexo'; input: CriarAnexoInput }
+  | { req: number; tipo: 'editarAnexo'; input: EditarAnexoInput }
+  | { req: number; tipo: 'apagarAnexo'; anexoId: Id }
+  | { req: number; tipo: 'lerImagem'; anexoId: Id; tamanho: 'miniatura' | 'inteira' }
 
 export type DoMotor =
   | { req: number; ok: true; dados: RespostasDoMotor[TipoDePedido] }

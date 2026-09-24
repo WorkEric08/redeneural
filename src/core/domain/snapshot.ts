@@ -1,5 +1,8 @@
-import { base64ToEmbedding, embeddingToBase64 } from './base64'
+import { base64ToBytes, base64ToEmbedding, bytesToBase64, embeddingToBase64 } from './base64'
 import type {
+  Anexo,
+  AnexoSnapshot,
+  ArquivoDoAnexo,
   Conexao,
   ConexaoSnapshot,
   Livro,
@@ -23,6 +26,7 @@ function fromIso(s: string, campo: string): Date {
 export function livroToSnapshot(l: Livro): LivroSnapshot {
   return {
     id: l.id,
+    tipo: l.tipo,
     titulo: l.titulo,
     cor: l.cor,
     prateleira: l.prateleira,
@@ -42,6 +46,7 @@ export function livroToSnapshot(l: Livro): LivroSnapshot {
 export function livroFromSnapshot(s: LivroSnapshot, prateleira: number, ordem: number): Livro {
   return {
     id: s.id,
+    tipo: s.tipo ?? 'conceitos',
     titulo: s.titulo,
     cor: s.cor,
     prateleira,
@@ -104,5 +109,45 @@ export function conexaoFromSnapshot(s: ConexaoSnapshot): Conexao {
     mantidaPorA: s.mantidaPorA,
     mantidaPorB: s.mantidaPorB,
     updatedAt: fromIso(s.updatedAt, `conexao ${s.id}.updatedAt`),
+  }
+}
+
+/** Os bytes da imagem entram no arquivo em base64, como o embedding: o backup restaura tudo. */
+export function anexoToSnapshot(a: Anexo, arquivo: ArquivoDoAnexo | undefined): AnexoSnapshot {
+  return {
+    id: a.id,
+    livroId: a.livroId,
+    legenda: a.legenda,
+    midia: a.midia,
+    embedding: a.embedding ? embeddingToBase64(a.embedding) : null,
+    ...(arquivo && {
+      arquivo: {
+        imagem: bytesToBase64(arquivo.imagem),
+        miniatura: bytesToBase64(arquivo.miniatura),
+      },
+    }),
+    createdAt: toIso(a.createdAt),
+    updatedAt: toIso(a.updatedAt),
+  }
+}
+
+export function anexoFromSnapshot(s: AnexoSnapshot): {
+  anexo: Anexo
+  arquivo: ArquivoDoAnexo | undefined
+} {
+  return {
+    anexo: {
+      id: s.id,
+      livroId: s.livroId,
+      legenda: s.legenda,
+      midia: s.midia,
+      embedding: s.embedding === null ? null : base64ToEmbedding(s.embedding),
+      createdAt: fromIso(s.createdAt, `anexo ${s.id}.createdAt`),
+      updatedAt: fromIso(s.updatedAt, `anexo ${s.id}.updatedAt`),
+    },
+    arquivo: s.arquivo && {
+      imagem: base64ToBytes(s.arquivo.imagem),
+      miniatura: base64ToBytes(s.arquivo.miniatura),
+    },
   }
 }

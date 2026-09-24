@@ -1,4 +1,4 @@
-import type { Id, Neuronio } from './types'
+import type { Anexo, Id, MidiaDoAnexo, Neuronio } from './types'
 
 /**
  * Um neurônio como a tela o vê.
@@ -27,5 +27,32 @@ export function paraTela(n: Neuronio): NeuronioNaTela {
     processando: n.embedding === null,
     createdAt: n.createdAt,
     updatedAt: n.updatedAt,
+  }
+}
+
+/**
+ * Um anexo como a tela o vê: sem o vetor e sem os bytes da imagem. A miniatura
+ * é pedida à parte, só por quem vai desenhá-la.
+ */
+export interface AnexoNaTela {
+  id: Id
+  livroId: Id
+  legenda: string
+  midia: MidiaDoAnexo
+  /** Tem legenda e a inferência ainda não terminou. Sem legenda nunca processa. */
+  processando: boolean
+  createdAt: Date
+  updatedAt: Date
+}
+
+export function anexoParaTela(a: Anexo): AnexoNaTela {
+  return {
+    id: a.id,
+    livroId: a.livroId,
+    legenda: a.legenda,
+    midia: a.midia,
+    processando: a.legenda.trim() !== '' && a.embedding === null,
+    createdAt: a.createdAt,
+    updatedAt: a.updatedAt,
   }
 }

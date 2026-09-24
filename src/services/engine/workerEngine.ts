@@ -1,7 +1,10 @@
 import type {
+  AcervoGravado,
   ConnectionEngine,
+  CriarAnexoInput,
   CriarLivroInput,
   CriarNeuronioInput,
+  EditarAnexoInput,
   EditarLivroInput,
   EditarNeuronioInput,
   EstadoDoPalacio,
@@ -113,6 +116,18 @@ export function criarWorkerEngine(): ConnectionEngine {
 
     moverNeuronioNaRede: (id: Id, ponto: Ponto): Promise<Readonly<Record<Id, Ponto>>> =>
       pedir<'moverNeuronioNaRede'>({ tipo: 'moverNeuronioNaRede', id, ponto }),
+
+    criarAnexo: (input: CriarAnexoInput): Promise<AcervoGravado> =>
+      pedir<'criarAnexo'>({ tipo: 'criarAnexo', input }),
+
+    editarAnexo: (input: EditarAnexoInput): Promise<AcervoGravado> =>
+      pedir<'editarAnexo'>({ tipo: 'editarAnexo', input }),
+
+    apagarAnexo: (anexoId: Id): Promise<AcervoGravado> =>
+      pedir<'apagarAnexo'>({ tipo: 'apagarAnexo', anexoId }),
+
+    lerImagem: (anexoId: Id, tamanho: 'miniatura' | 'inteira'): Promise<Uint8Array | null> =>
+      pedir<'lerImagem'>({ tipo: 'lerImagem', anexoId, tamanho }),
 
     aoProgredir(ouvinte) {
       ouvintes.add(ouvinte)

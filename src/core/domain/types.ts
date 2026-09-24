@@ -8,9 +8,17 @@
 
 export type Id = string
 
+/**
+ * `conceitos` guarda neurônios; `acervo` é uma pasta de links e imagens (ver
+ * `Anexo`). Escolhido ao criar e nunca trocado: um livro que mudasse de tipo
+ * com coisa dentro deixaria tudo o que tem no lugar errado.
+ */
+export type TipoDeLivro = 'conceitos' | 'acervo'
+
 /** Uma área de conhecimento. Visualmente, uma lombada na estante. */
 export interface Livro {
   id: Id
+  tipo: TipoDeLivro
   titulo: string
   /** Cor da lombada, em hex (#rrggbb). */
   cor: string
@@ -190,10 +198,43 @@ export interface PalacioSnapshot {
    * aqui fica, e nenhuma sobrevive embaixo de um livro.
    */
   vagas?: Vaga[] | undefined
+  /**
+   * Ausente em backups de antes das pastas de acervo (24/09/2026) — o import
+   * trata como `[]`. Os vínculos não vêm: são recalculados na chegada, como o
+   * perfil.
+   */
+  anexos?: AnexoSnapshot[] | undefined
+}
+
+export interface AnexoSnapshot {
+  id: Id
+  livroId: Id
+  legenda: string
+  midia: MidiaDoAnexo
+  /** Float32Array em base64, como o do neurônio. */
+  embedding: string | null
+  /** Os bytes da imagem, em base64 — ausentes num anexo de link. */
+  arquivo?: { imagem: string; miniatura: string } | undefined
+  createdAt: string
+  updatedAt: string
+}
+
+/**
+ * Os bytes de uma imagem do acervo, fora da linha do anexo para que listar
+ * anexos nunca arraste imagem junto. `Uint8Array`, como o `Float32Array` do
+ * embedding: vira BLOB no SQLite e `ByteArray` no nativo sem conversão.
+ */
+export interface ArquivoDoAnexo {
+  /** A imagem reduzida (lado maior até 1600 px), no `mime` do anexo. */
+  imagem: Uint8Array
+  /** Para grade e cartão (lado maior até 320 px), no mesmo `mime`. */
+  miniatura: Uint8Array
 }
 
 export interface LivroSnapshot {
   id: Id
+  /** Ausente em backups de antes das pastas de acervo — o import trata como `'conceitos'`. */
+  tipo?: TipoDeLivro | undefined
   titulo: string
   cor: string
   /**

@@ -1,4 +1,14 @@
-import type { Conexao, Id, Livro, Neuronio, PalacioSnapshot, Vaga } from '../domain/types'
+import type {
+  Anexo,
+  ArquivoDoAnexo,
+  Conexao,
+  Id,
+  Livro,
+  Neuronio,
+  PalacioSnapshot,
+  Vaga,
+  Vinculo,
+} from '../domain/types'
 import type { PerfilDoPalacio } from '../motor/grafo'
 import type { MarcaPerdida } from '../motor/incremental'
 import type { Ponto } from '../motor/redeLayout'
@@ -16,7 +26,8 @@ export interface PalacioRepo {
   /** Grava o livro e fecha a vaga que houvesse no lugar dele — livro e buraco não dividem lugar. */
   upsertLivro(l: Livro): Promise<void>
   /**
-   * Apaga o livro, seus neurônios e toda aresta que os tocava. O lugar dele
+   * Apaga o livro e tudo o que mora nele — neurônios e as arestas que os
+   * tocavam; numa pasta, os anexos, as imagens e os vínculos. O lugar dele
    * vira vaga: nada anda sozinho na estante.
    */
   deleteLivro(id: Id): Promise<void>
@@ -47,8 +58,26 @@ export interface PalacioRepo {
   listNeuronios(livroId?: Id): Promise<Neuronio[]>
   getNeuronio(id: Id): Promise<Neuronio | undefined>
   upsertNeuronio(n: Neuronio): Promise<void>
-  /** Apaga o neurônio e toda aresta que o tocava. */
+  /** Apaga o neurônio, toda aresta que o tocava e todo vínculo de anexo preso a ele. */
   deleteNeuronio(id: Id): Promise<void>
+
+  /** O mais recente primeiro, como os neurônios. */
+  listAnexos(livroId?: Id): Promise<Anexo[]>
+  getAnexo(id: Id): Promise<Anexo | undefined>
+  /**
+   * Grava o anexo — e, se vier, a imagem dele, na mesma transação. Sem
+   * `arquivo`, a imagem que já estava gravada fica como está.
+   */
+  upsertAnexo(a: Anexo, arquivo?: ArquivoDoAnexo): Promise<void>
+  /** Apaga o anexo, a imagem e os vínculos dele. */
+  deleteAnexo(id: Id): Promise<void>
+  getArquivo(anexoId: Id): Promise<ArquivoDoAnexo | undefined>
+
+  listVinculos(): Promise<Vinculo[]>
+  /** Troca, numa transação só, os vínculos daquele anexo pelos novos. */
+  replaceVinculosDe(anexoId: Id, novos: readonly Vinculo[]): Promise<void>
+  /** Troca todos de uma vez — é o que a reancoragem depois de um conceito mudar grava. */
+  replaceTodosVinculos(novos: readonly Vinculo[]): Promise<void>
 
   listConexoes(): Promise<Conexao[]>
   /** Arestas que tocam o neurônio, de qualquer um dos dois lados. */

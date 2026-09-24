@@ -11,8 +11,11 @@ const emblema = z.string().min(1).max(30).nullable()
 const larguraLombada = z.number().min(16).max(120).nullable()
 const comprimentoLombada = z.number().min(20).max(100).nullable()
 
+const tipoDeLivro = z.enum(['conceitos', 'acervo'])
+
 export const livroSchema = z.object({
   id,
+  tipo: tipoDeLivro,
   titulo: z.string().trim().min(1).max(120),
   cor: hexColor,
   prateleira: ordem,
@@ -65,6 +68,45 @@ export const conexaoSchema = z
   })
   .refine((c) => c.aId !== c.bId, { message: 'conexão não pode ligar um neurônio a si mesmo' })
 
+/**
+ * Só http e https: o endereço vira um link tocável, e `javascript:` ou
+ * `file:` num link é porta aberta, não conteúdo.
+ */
+export const urlDeLink = z.url({ protocol: /^https?$/ }).max(4000)
+
+const midiaSchema = z.discriminatedUnion('tipo', [
+  z.object({ tipo: z.literal('link'), url: urlDeLink }),
+  z.object({
+    tipo: z.literal('imagem'),
+    mime: z.string().regex(/^image\/[a-z0-9.+-]+$/, 'mime de imagem inválido'),
+    largura: z.number().int().positive(),
+    altura: z.number().int().positive(),
+  }),
+])
+
+export const anexoSchema = z.object({
+  id,
+  livroId: id,
+  legenda: z.string().max(2000),
+  midia: midiaSchema,
+  embedding: z.instanceof(Float32Array).nullable(),
+  createdAt: z.date(),
+  updatedAt: z.date(),
+})
+
+export const arquivoSchema = z.object({
+  anexoId: id,
+  imagem: z.instanceof(Uint8Array).refine((b) => b.byteLength > 0, 'imagem vazia'),
+  miniatura: z.instanceof(Uint8Array).refine((b) => b.byteLength > 0, 'miniatura vazia'),
+})
+
+export const vinculoSchema = z
+  .object({ id, anexoId: id, conceitoId: id, score: unitInterval, updatedAt: z.date() })
+  .refine((v) => v.id === `${v.anexoId}::${v.conceitoId}`, {
+    message: 'o id do vínculo é `anexoId::conceitoId`',
+    path: ['id'],
+  })
+
 const isoDate = z.string().refine((s) => !Number.isNaN(new Date(s).getTime()), 'data ISO inválida')
 const base64 = z.string().regex(/^[A-Za-z0-9+/]*={0,2}$/, 'base64 inválido')
 
@@ -74,6 +116,8 @@ export const snapshotSchema = z.object({
   livros: z.array(
     z.object({
       id,
+      // Opcional: backup de antes das pastas de acervo (24/09/2026) — tudo era conceito.
+      tipo: tipoDeLivro.optional(),
       titulo: z.string(),
       cor: hexColor,
       // Opcional: backup de antes de 12/09/2026 não tinha ordem de estante.
@@ -118,4 +162,20 @@ export const snapshotSchema = z.object({
   etiquetas: z.array(etiquetaSchema).optional().default([]),
   // Ausente em backup de antes dos lugares fixos (14/09/2026) — nenhuma vaga aberta.
   vagas: z.array(vagaSchema).optional().default([]),
+  // Ausente em backup de antes das pastas de acervo (24/09/2026) — nenhum anexo.
+  anexos: z
+    .array(
+      z.object({
+        id,
+        livroId: id,
+        legenda: z.string(),
+        midia: midiaSchema,
+        embedding: base64.nullable(),
+        arquivo: z.object({ imagem: base64, miniatura: base64 }).optional(),
+        createdAt: isoDate,
+        updatedAt: isoDate,
+      }),
+    )
+    .optional()
+    .default([]),
 })
