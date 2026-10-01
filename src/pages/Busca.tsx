@@ -1,17 +1,30 @@
+import { Sparkles, WholeWord } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 
 import { BarraDeTopo } from '@/components/BarraDeTopo'
-import { buscar } from '@/features/busca/buscar'
+import { buscar, resultadosPorSentido } from '@/features/busca/buscar'
+import { useBuscaPorSentido } from '@/features/busca/useBuscaPorSentido'
 import { usePalacio } from '@/store/palacio'
 
 /** Quantos neurônios recentes a tela mostra antes de alguém digitar. */
 const RECENTES = 8
 
+type Modo = 'sentido' | 'exata'
+
 /**
- * Busca no palácio inteiro — livros pelo título, neurônios pelo título ou
- * conteúdo. Sobre o que a store já tem em memória (`buscar.ts`), então digitar
- * responde na hora, sem tocar o banco.
+ * Busca no palácio inteiro, de dois jeitos (30/09/2026):
+ *
+ * - **Por sentido** — o padrão. A frase passa pelo mesmo modelo que lê os
+ *   neurônios, e voltam os que se parecem com ela mesmo sem dividir uma
+ *   palavra (`buscarPorSentido`, no núcleo, dentro do Worker).
+ * - **Palavra exata** — livros pelo título, neurônios pelo título ou pelo
+ *   conteúdo inteiro, sobre o que a store já tem em memória (`buscar.ts`). É a
+ *   que garante achar um trecho do fim de um texto longo: o modelo só lê os
+ *   primeiros 2500 caracteres.
+ *
+ * Abre sempre em "Por sentido" e não lembra a troca — decisão do usuário, sem
+ * preferência nova.
  *
  * Com o campo vazio a tela não fica em branco: mostra os últimos neurônios
  * escritos (17/09/2026). É a única tela do app que responde "o que eu escrevi
@@ -22,6 +35,7 @@ const RECENTES = 8
 export default function Busca() {
   const { livros, neuronios } = usePalacio()
   const [consulta, setConsulta] = useState('')
+  const [modo, setModo] = useState<Modo>('sentido')
 
   // Quem abriu a busca a partir da Rede quer voltar pra lá com a câmera no
   // neurônio, não abrir a tela dele — o link do resultado muda de destino,
@@ -29,9 +43,14 @@ export default function Busca() {
   const [busca] = useSearchParams()
   const daRede = busca.get('de') === 'rede'
 
-  const resultados = useMemo(
-    () => buscar(consulta, livros, neuronios),
-    [consulta, livros, neuronios],
+  const porPalavra = useMemo(
+    () => (modo === 'exata' ? buscar(consulta, livros, neuronios) : []),
+    [modo, consulta, livros, neuronios],
+  )
+  const sentido = useBuscaPorSentido(consulta, modo === 'sentido')
+  const porSentido = useMemo(
+    () => (sentido.ids ? resultadosPorSentido(sentido.ids, livros, neuronios) : []),
+    [sentido.ids, livros, neuronios],
   )
 
   const recentes = useMemo(() => neuronios.slice(0, RECENTES), [neuronios])
@@ -40,31 +59,60 @@ export default function Busca() {
   /** Quem veio da Rede volta para lá com a câmera no neurônio, não para a ficha. */
   const destinoDo = (id: string): string => (daRede ? `/rede?centralizar=${id}` : `/neuronio/${id}`)
 
+  const termo = consulta.trim()
+
   return (
     <div className="flex flex-col">
       <BarraDeTopo voltarPara="/" titulo="Buscar" />
 
       <div className="animar-entrada flex flex-col gap-4 pt-5">
-        <input
-          type="search"
-          value={consulta}
-          onChange={(evento) => {
-            setConsulta(evento.target.value)
-          }}
-          // O ponto inteiro desta tela é digitar assim que ela abre — diferente
-          // da folha, que evita autofoco para não abrir o teclado sem pedido.
-          autoFocus
-          autoComplete="off"
-          autoCorrect="off"
-          autoCapitalize="off"
-          spellCheck={false}
-          enterKeyHint="search"
-          placeholder="Título ou conteúdo…"
-          aria-label="Buscar no palácio"
-          className="campo h-13 px-4 text-lg"
-        />
+        <div className="flex flex-col gap-2.5">
+          <input
+            type="search"
+            value={consulta}
+            onChange={(evento) => {
+              setConsulta(evento.target.value)
+            }}
+            // O ponto inteiro desta tela é digitar assim que ela abre — diferente
+            // da folha, que evita autofoco para não abrir o teclado sem pedido.
+            autoFocus
+            autoComplete="off"
+            autoCorrect="off"
+            autoCapitalize="off"
+            spellCheck={false}
+            enterKeyHint="search"
+            placeholder={modo === 'sentido' ? 'Descreva o que procura…' : 'Título ou conteúdo…'}
+            aria-label="Buscar no palácio"
+            className="campo h-13 px-4 text-lg"
+          />
 
-        {consulta.trim() === '' ? (
+          <div role="group" aria-label="Como buscar" className="flex gap-2">
+            <button
+              type="button"
+              aria-pressed={modo === 'sentido'}
+              onClick={() => {
+                setModo('sentido')
+              }}
+              className="chip"
+            >
+              <Sparkles size={15} aria-hidden />
+              Por sentido
+            </button>
+            <button
+              type="button"
+              aria-pressed={modo === 'exata'}
+              onClick={() => {
+                setModo('exata')
+              }}
+              className="chip"
+            >
+              <WholeWord size={15} aria-hidden />
+              Palavra exata
+            </button>
+          </div>
+        </div>
+
+        {termo === '' ? (
           recentes.length === 0 ? (
             <p className="text-poeira px-1 text-sm">
               Busca em livros e neurônios, pelo título ou pelo conteúdo.
@@ -84,11 +132,37 @@ export default function Busca() {
               </ul>
             </section>
           )
-        ) : resultados.length === 0 ? (
-          <p className="text-poeira px-1 text-sm">Nada encontrado para “{consulta.trim()}”.</p>
+        ) : modo === 'sentido' ? (
+          sentido.falhou ? (
+            <p className="text-poeira px-1 text-sm">
+              Não deu para buscar por sentido agora. A palavra exata continua funcionando.
+            </p>
+          ) : porSentido.length === 0 ? (
+            <p className="text-poeira px-1 text-sm" aria-live="polite">
+              {sentido.procurando ? 'Procurando…' : `Nada parecido com “${termo}”.`}
+            </p>
+          ) : (
+            // Enquanto a consulta nova não volta, a lista da anterior fica — mais
+            // apagada, em vez de piscar a cada tecla.
+            <ul
+              aria-busy={sentido.procurando}
+              className={`cartao flex flex-col transition-opacity ${sentido.procurando ? 'opacity-60' : ''}`}
+            >
+              {porSentido.map((r) => (
+                <LinhaDeNeuronio
+                  key={r.neuronio.id}
+                  para={destinoDo(r.neuronio.id)}
+                  titulo={r.neuronio.titulo}
+                  abaixo={`${r.livro?.titulo ?? ''}${r.trecho ? ` · ${r.trecho}` : ''}`}
+                />
+              ))}
+            </ul>
+          )
+        ) : porPalavra.length === 0 ? (
+          <p className="text-poeira px-1 text-sm">Nada encontrado para “{termo}”.</p>
         ) : (
           <ul className="cartao flex flex-col">
-            {resultados.map((r) =>
+            {porPalavra.map((r) =>
               r.tipo === 'livro' ? (
                 <li key={`livro-${r.livro.id}`} className="linha-de-lista p-0">
                   <Link

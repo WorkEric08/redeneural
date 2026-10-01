@@ -96,6 +96,10 @@ type Extrator = Awaited<ReturnType<typeof pipeline<'feature-extraction'>>>
  */
 export function criarTransformersEmbedding(opcoes: OpcoesEmbedding = {}): EmbeddingProvider {
   let carregando: Promise<Extrator> | null = null
+  // Uma inferência por vez. O Worker atende mensagens em paralelo, e desde a
+  // busca por sentido uma consulta pode chegar enquanto um neurônio está sendo
+  // lido — duas chamadas simultâneas na mesma sessão ONNX não são seguras.
+  let fila: Promise<unknown> = Promise.resolve()
 
   // Idempotente: chamar duas vezes não baixa duas vezes. As duas configurações
   // acima ficam dentro da guarda de propósito — depois da primeira carga o
@@ -127,7 +131,11 @@ export function criarTransformersEmbedding(opcoes: OpcoesEmbedding = {}): Embedd
     async embed(text: string): Promise<Float32Array> {
       const extrator = await carregar()
       const truncado = text.slice(0, LIMITE_CARACTERES)
-      const saida = await extrator(PREFIXO + truncado, { pooling: 'mean', normalize: true })
+      const vez = fila.then(() =>
+        extrator(PREFIXO + truncado, { pooling: 'mean', normalize: true }),
+      )
+      fila = vez.catch(() => undefined)
+      const saida = await vez
 
       const vetor = saida.data as Float32Array
       if (vetor.length !== DIM) {

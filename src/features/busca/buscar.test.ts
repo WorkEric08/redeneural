@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import type { Livro, NeuronioNaTela } from '@/core'
 
-import { buscar } from './buscar'
+import { buscar, resultadosPorSentido } from './buscar'
 
 const T0 = new Date('2026-01-01T12:00:00.000Z')
 
@@ -102,5 +102,44 @@ describe('buscar', () => {
 
   it('sem nenhum livro nem neurônio batendo, devolve lista vazia', () => {
     expect(buscar('fantasma', LIVROS, NEURONIOS)).toEqual([])
+  })
+})
+
+describe('buscar — texto longo', () => {
+  it('acha uma palavra que só aparece depois do que o modelo lê', () => {
+    // O embedding lê só os primeiros 2500 caracteres; a busca exata lê tudo.
+    const longo = `${'Um parágrafo qualquer sobre outra coisa. '.repeat(80)}E no fim: serendipidade.`
+    expect(longo.length).toBeGreaterThan(2500)
+    const [achado] = buscar('SERENDIPIDADE', [], [neuronio('n3', 'psi', 'Notas soltas', longo)])
+
+    expect(achado).toMatchObject({ tipo: 'neuronio', neuronio: { id: 'n3' } })
+    expect((achado as { trecho?: string }).trecho).toContain('serendipidade')
+  })
+})
+
+describe('resultadosPorSentido', () => {
+  it('mantém a ordem do motor e traz o livro junto', () => {
+    const linhas = resultadosPorSentido(['n2', 'n1'], LIVROS, NEURONIOS)
+    expect(linhas.map((l) => l.neuronio.id)).toEqual(['n2', 'n1'])
+    expect(linhas[0]?.livro?.titulo).toBe('Música')
+  })
+
+  it('o trecho é o começo do texto, cortado se for comprido', () => {
+    const longo = neuronio('n4', 'psi', 'Comprido', 'palavra '.repeat(40))
+    const [curto, cortado] = resultadosPorSentido(['n2', 'n4'], LIVROS, [...NEURONIOS, longo])
+    expect(curto?.trecho).toBe('Compor em tempo real dentro de restrições combinadas.')
+    expect(cortado?.trecho?.endsWith('…')).toBe(true)
+    expect(cortado?.trecho?.length).toBeLessThan(longo.conteudo.length)
+  })
+
+  it('sem conteúdo, sem trecho', () => {
+    const [linha] = resultadosPorSentido(['n5'], LIVROS, [neuronio('n5', 'psi', 'Só título', '')])
+    expect(linha?.trecho).toBeUndefined()
+  })
+
+  it('um id que a tela não tem mais fica de fora', () => {
+    expect(
+      resultadosPorSentido(['apagado', 'n1'], LIVROS, NEURONIOS).map((l) => l.neuronio.id),
+    ).toEqual(['n1'])
   })
 })

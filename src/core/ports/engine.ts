@@ -186,6 +186,15 @@ export interface ConnectionEngine {
    * nunca viajam junto do estado. `null` se o anexo não tem imagem.
    */
   lerImagem(anexoId: Id, tamanho: 'miniatura' | 'inteira'): Promise<Uint8Array | null>
+  /**
+   * Os neurônios mais parecidos com a consulta, do mais para o menos parecido
+   * (ver `buscarPorSentido`). Só ids: a tela já tem o resto.
+   *
+   * Num palácio que nunca foi lido devolve vazio sem carregar o modelo — sem
+   * perfil não há régua, e uma busca não pode baixar 129 MB. Neurônio ainda
+   * sem vetor fica de fora.
+   */
+  buscarPorSentido(consulta: string): Promise<Id[]>
   /** Devolve a função que cancela a inscrição. */
   aoProgredir(ouvinte: (p: ProgressoDoMotor) => void): () => void
 }

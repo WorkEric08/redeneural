@@ -3,6 +3,7 @@ import {
   ancorarAnexos,
   anexoParaTela,
   arestaParaConexao,
+  buscarPorSentido,
   calcularLayoutDaRede,
   construirGrafo,
   estadoDosVizinhos,
@@ -524,6 +525,24 @@ async function lerImagem(
   return tamanho === 'miniatura' ? arquivo.miniatura : arquivo.imagem
 }
 
+/**
+ * Só leitura: nada é gravado, nem o vetor da consulta. Sem perfil o palácio
+ * nunca foi lido e não há régua — e carregar o modelo só para isso baixaria
+ * 129 MB por uma busca.
+ */
+async function buscarNoPalacio(consulta: string): Promise<Id[]> {
+  const texto = consulta.trim()
+  if (texto === '') return []
+
+  const perfil = await repo.getPerfil()
+  if (!perfil) return []
+  const nos = nosDeNeuronios(await repo.listNeuronios())
+  if (nos.length === 0) return []
+
+  const vetor = await embedding.embed(texto)
+  return buscarPorSentido(vetor, nos, perfil)
+}
+
 async function responder(msg: ParaMotor): Promise<DoMotor> {
   try {
     switch (msg.tipo) {
@@ -592,6 +611,9 @@ async function responder(msg: ParaMotor): Promise<DoMotor> {
 
       case 'lerImagem':
         return { req: msg.req, ok: true, dados: await lerImagem(msg.anexoId, msg.tamanho) }
+
+      case 'buscarPorSentido':
+        return { req: msg.req, ok: true, dados: await buscarNoPalacio(msg.consulta) }
     }
   } catch (e) {
     return { req: msg.req, ok: false, erro: e instanceof Error ? e.message : String(e) }

@@ -3794,6 +3794,99 @@ da mídia entra antes do `embutir`. Nem o núcleo nem a UI mudam.
 Sugestões registradas, não incluídas: Web Share Target no PWA, anexos na busca
 global, título automático via oEmbed do YouTube.
 
+## Atualizações aprovadas (30/09/2026)
+
+O usuário trouxe um documento com seis atualizações já discutidas, a fazer uma
+por vez, cada uma começando por um plano aprovado e terminando num relatório:
+**1. Busca**, 2. Porto, 3–4. Modo Mapa na Rede, 5–6. Ideias executáveis. O
+documento não está no repositório; as decisões que saem dele ficam aqui.
+
+Decisões da Etapa 0 (respostas dele), que valem para a série toda:
+
+| Ponto                   | Decisão                                                                                                                             |
+| ----------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| Cores no Mapa e na Rede | Ponte agrupada em `--ponte` (o azul de sempre), trilha em `--rede-fio` fina e tracejada, anel das ideias feitas em `--ouro-gravado` |
+| Livro executável        | `Livro.tipo` não muda (`conceitos \| acervo`); entram `executavel: boolean` e `diasParaAdormecer`, só em livro de conceitos         |
+| Termo na interface      | Continua "neurônio", não "ideia"                                                                                                    |
+| Porto                   | Pelo "+", o livro começa em "Automático"; escolha explícita (chip ou "Novo neurônio neste livro") é respeitada                      |
+| Satélites de anexo      | Passo próprio entre a Atualização 2 e a 3, antes de o Mapa mexer na Rede; pasta de acervo não vira ilha                             |
+
+### Busca por sentido (Atualização 1)
+
+`/busca` ganhou dois modos, num seletor de chips como o "Livro | Pasta":
+
+- **Por sentido** — o padrão, e a tela não lembra a troca (escolha do
+  usuário: sem preferência nova). A frase passa pelo mesmo modelo, com o mesmo
+  `query:` e o mesmo truncamento dos neurônios, e voltam até 20 neurônios.
+  Livros e anexos não entram nesse modo.
+- **Palavra exata** — a busca que já existia, sem mudança: pedaço de palavra
+  (escolha do usuário — "prat" acha "prática" enquanto se digita), sem acento e
+  sem caixa, no título e no conteúdo **inteiros**. É a que garante achar um
+  trecho do fim de um texto longo: o modelo só lê os primeiros 2500 caracteres.
+
+**Onde mora:** `buscarPorSentido` em `core/motor/busca.ts`, puro, rodando no
+Worker; a porta devolve só ids, e a tela monta as linhas com o que já tem
+(`resultadosPorSentido`). A store não guarda a resposta, como `lerImagem`.
+`useBuscaPorSentido` espera 300 ms depois da última tecla e descarta a resposta
+de uma consulta já substituída; enquanto a nova não volta, a lista anterior
+fica, mais apagada, em vez de piscar.
+
+**Palácio nunca lido não busca.** Sem perfil não há régua, e carregar o modelo
+só para uma busca baixaria 129 MB — devolve vazio sem tocar no modelo.
+
+**Uma inferência por vez.** O Worker atende mensagens em paralelo, e uma busca
+pode chegar enquanto um neurônio está sendo lido. O adapter de embedding passou
+a enfileirar as chamadas: duas inferências simultâneas na mesma sessão ONNX
+não são seguras.
+
+#### O mínimo: destaque sobre o fundo, não um cosseno fixo
+
+Calibrado com o e5 de verdade, rodando no Node (o `onnxruntime-node` vem com o
+transformers.js) sobre o seed mais 24 notas escritas para isso, e 25 consultas
+— cinco delas sem resposta nenhuma no palácio.
+
+- **Cosseno fixo não separa nada.** "Previsão do tempo para amanhã", sem
+  resposta, teve o primeiro colocado mais parecido (0,13) que "função que chama
+  a si mesma" com a Recursão (0,10). Frase curta tem um fundo próprio, que o
+  centroide do palácio não tira.
+- **O que separa é o resultado se destacar do resto.** Por consulta, mede-se a
+  média e o desvio do cosseno centralizado sobre os **80% menos parecidos** (o
+  fundo), e entra quem fica **3,5 desvios** acima. Com o palácio inteiro como
+  régua, um assunto que ocupa uma fatia grande dele inflaria a régua e deixaria
+  de se destacar — com 2 de 10 batendo, nenhum passava de 2 desvios (há teste).
+- 3,5 é onde as cinco consultas sem resposta pararam de devolver qualquer
+  coisa, no seed (9) e nas 33 notas, mantendo o primeiro colocado de quase toda
+  consulta com resposta. Abaixo de 5 neurônios não há fundo para medir: vale ter
+  cosseno centralizado positivo.
+
+#### O limite do modelo: "recomeçar"
+
+O critério do documento — "aquele texto sobre recomeçar" achar textos de
+recomeço sem a palavra — **não passa**, e não é o mínimo: é o e5-small. Para ele
+"recomeçar" é "repetir", e o primeiro colocado é sempre Prática deliberada
+("repetir de propósito… tocar de novo") ou Recursão; as notas de recomeço caem
+entre as últimas de 33. Frases descritivas funcionam: "virar a página e começar
+outra fase" acha "Nova fase" em primeiro, "reconstruir a vida do zero" acha
+"Mudar de cidade", "mudar de curso na faculdade" acha "Começar outra faculdade".
+
+Medido e **não** feito: gravar os neurônios com o prefixo `passage:` (o uso
+assimétrico que o e5 recomenda) subiu o MRR das consultas de 0,68 para 0,79 —
+mas exige recalcular todo embedding gravado, muda o grafo de conexões, e o
+documento pede a convenção que já existe.
+
+Outro efeito visto no navegador: um texto muito diferente do resto do palácio
+(um diário de viagem comprido) atrai consultas sem resposta — "receita de bolo
+de cenoura" devolveu só ele.
+
+**Verificado no navegador de verdade** (Chrome headless pelo CDP, build de
+produção): o modelo processa o palácio dentro do Chrome, a primeira busca
+responde em ~1,5 s (modelo saindo do cache) e as seguintes em ~300 ms (a espera
+da digitação mais ~10 ms de inferência); tocar no resultado abre o neurônio;
+sem rolagem lateral em 320, 768, 1024 e 1440 px; os dois temas. **Offline de
+verdade**: servidor desligado e rede cortada, a tela abre pelo service worker e
+as mesmas buscas dão o mesmo resultado. 322 testes (12 novos), typecheck e lint
+limpos. Bundle principal: 133,7 KB gzipped.
+
 ## Fases
 
 0. ✅ Esqueleto (Vite/React/TS/Tailwind/PWA/Capacitor)
@@ -3834,3 +3927,5 @@ global, título automático via oEmbed do YouTube.
 24. 🟡 Pastas de acervo — links e imagens como satélites dos conceitos na
     Rede. **Etapas 1 a 3 de 4 (núcleo, dados e motor, telas) feitas**; faltam os
     satélites na Rede
+25. 🟡 Atualizações aprovadas (30/09/2026) — **1 de 6 feita (Busca)**; seguem
+    Porto, satélites de anexo (a etapa 4 da Fase 24), Mapa e Executáveis

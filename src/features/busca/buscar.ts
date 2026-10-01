@@ -79,3 +79,40 @@ export function buscar(
 
   return [...doLivro, ...doNeuronio]
 }
+
+/** O começo do texto, cortado no mesmo tamanho do trecho em volta de um termo. */
+function inicioDoTexto(texto: string): string | undefined {
+  const limpo = texto.trim()
+  if (limpo === '') return undefined
+  const corte = RAIO_DO_TRECHO * 2
+  return limpo.length > corte ? `${limpo.slice(0, corte).trim()}…` : limpo
+}
+
+/**
+ * As linhas da busca por sentido, na ordem que o motor devolveu.
+ *
+ * O trecho é o começo do texto: cada neurônio tem um vetor só, então não há
+ * como saber que parte dele pareceu com a consulta. Um id que a tela não tem
+ * mais — apagado enquanto a resposta vinha — fica de fora.
+ */
+export function resultadosPorSentido(
+  ids: readonly Id[],
+  livros: readonly Livro[],
+  neuronios: readonly NeuronioNaTela[],
+): ResultadoDeNeuronio[] {
+  const livroPorId = new Map<Id, Livro>(livros.map((l) => [l.id, l]))
+  const neuronioPorId = new Map<Id, NeuronioNaTela>(neuronios.map((n) => [n.id, n]))
+
+  return ids.flatMap((id) => {
+    const neuronio = neuronioPorId.get(id)
+    if (!neuronio) return []
+    return [
+      {
+        tipo: 'neuronio' as const,
+        neuronio,
+        livro: livroPorId.get(neuronio.livroId),
+        trecho: inicioDoTexto(neuronio.conteudo),
+      },
+    ]
+  })
+}

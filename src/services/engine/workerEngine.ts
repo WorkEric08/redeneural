@@ -128,6 +128,9 @@ export function criarWorkerEngine(): ConnectionEngine {
     lerImagem: (anexoId: Id, tamanho: 'miniatura' | 'inteira'): Promise<Uint8Array | null> =>
       pedir<'lerImagem'>({ tipo: 'lerImagem', anexoId, tamanho }),
 
+    buscarPorSentido: (consulta: string): Promise<Id[]> =>
+      pedir<'buscarPorSentido'>({ tipo: 'buscarPorSentido', consulta }),
+
     aoProgredir(ouvinte) {
       ouvintes.add(ouvinte)
       return () => ouvintes.delete(ouvinte)

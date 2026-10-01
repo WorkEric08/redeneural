@@ -107,6 +107,12 @@ interface PalacioStore {
   apagarAnexo: (id: string) => Promise<boolean>
   /** Os bytes de uma imagem do acervo, para quem vai desenhá-la. Não é estado. */
   lerImagem: (anexoId: string, tamanho: 'miniatura' | 'inteira') => Promise<Uint8Array | null>
+  /**
+   * Os ids dos neurônios mais parecidos com a consulta, em ordem. Não é estado,
+   * como `lerImagem`: quem pergunta guarda a resposta. Falhar é com quem chamou
+   * — uma busca enquanto se digita não pode encher a tela de avisos de erro.
+   */
+  buscarPorSentido: (consulta: string) => Promise<string[]>
   /** O aviso flutuante some — pelo tempo ou pelo toque. */
   dispensarAvisos: () => void
 }
@@ -433,6 +439,16 @@ export const usePalacio = create<PalacioStore>()((set, get) => {
 
     lerImagem(anexoId, tamanho) {
       return engine.lerImagem(anexoId, tamanho)
+    },
+
+    async buscarPorSentido(consulta) {
+      try {
+        return await engine.buscarPorSentido(consulta)
+      } finally {
+        // Se foi a busca que carregou o modelo, o fio de progresso subiu por
+        // causa dela. Com uma escrita em curso o fio é dela, e fica.
+        if (!get().ocupado) set({ progresso: null })
+      }
     },
 
     async moverNeuronioNaRede(id, ponto) {
