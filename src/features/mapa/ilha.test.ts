@@ -2,7 +2,16 @@ import { describe, expect, it } from 'vitest'
 
 import { RECORTE_DA_COSTA, type MapaDoPalacio } from '@/core'
 
-import { bordasDoMapa, contornoDaIlha, neuronioNoMapaEm, pontosAbsolutos } from './ilha'
+import {
+  bordasDoMapa,
+  contornoDaIlha,
+  ESCALA_DE_PERTO,
+  ilhaEm,
+  neuronioNoMapaEm,
+  pontosAbsolutos,
+  presencaDePerto,
+  raioDaCosta,
+} from './ilha'
 
 const MAPA: MapaDoPalacio = {
   ilhas: {
@@ -27,6 +36,43 @@ describe('contornoDaIlha', () => {
   it('cada livro tem a sua costa, e é sempre a mesma', () => {
     expect(contornoDaIlha('psi', 80)).toEqual(contornoDaIlha('psi', 80))
     expect(contornoDaIlha('psi', 80)).not.toEqual(contornoDaIlha('mus', 80))
+  })
+
+  it('o raio da costa num ângulo é o do contorno nesse ângulo', () => {
+    const costa = contornoDaIlha('psi', 80, 8)
+    costa.forEach((p, i) => {
+      expect(raioDaCosta('psi', 80, (i / 8) * 2 * Math.PI)).toBeCloseTo(Math.hypot(p.x, p.y))
+    })
+  })
+})
+
+describe('ilhaEm', () => {
+  it('a terra é a da costa de verdade, e o mar não é de ninguém', () => {
+    expect(ilhaEm({ x: 100, y: 0 }, MAPA)).toBe('psi')
+    expect(ilhaEm({ x: -300, y: 50 }, MAPA)).toBe('mus')
+    expect(ilhaEm({ x: 0, y: 400 }, MAPA)).toBeNull()
+  })
+
+  it('entre o recorte e o raio, decide a costa daquele ângulo', () => {
+    const angulo = 1
+    const r = raioDaCosta('psi', 80, angulo)
+    const em = (d: number) => ({ x: 100 + Math.cos(angulo) * d, y: Math.sin(angulo) * d })
+    expect(ilhaEm(em(r - 0.5), MAPA)).toBe('psi')
+    expect(ilhaEm(em(r + 0.5), MAPA)).toBeNull()
+  })
+})
+
+describe('presencaDePerto', () => {
+  it('nada de longe, tudo de perto, e sobe sem pular', () => {
+    expect(presencaDePerto(0.3)).toBe(0)
+    expect(presencaDePerto(ESCALA_DE_PERTO)).toBe(1)
+    expect(presencaDePerto(3)).toBe(1)
+    let anterior = 0
+    for (let e = 0.3; e <= ESCALA_DE_PERTO; e += 0.01) {
+      const p = presencaDePerto(e)
+      expect(p).toBeGreaterThanOrEqual(anterior)
+      anterior = p
+    }
   })
 })
 

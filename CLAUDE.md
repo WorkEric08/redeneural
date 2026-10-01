@@ -4116,22 +4116,24 @@ próxima atualização a encaixa de novo. Backup de antes do mapa importa sem el
   ficaria flutuando sobre o mar, longe dela. O enquadramento reserva 40 px a
   mais no alto (`ALTURA_DO_NOME_DA_ILHA`), senão o nome da ilha de cima caía
   por cima da contagem.
-- **Visto e não resolvido:** em 320 px, com o mapa inteiro enquadrado, o nome
-  de uma ilha pode encostar na ilha vizinha. O nome tem tamanho fixo na tela, e
-  as ilhas encolhem com o zoom. Quantos nomes aparecem em cada distância é
-  assunto dos três níveis de zoom da parte 2.
+- **Visto na parte 1, tratado na parte 2:** em 320 px, com o mapa inteiro
+  enquadrado, o nome de uma ilha pode encostar na ilha vizinha. O nome tem
+  tamanho fixo na tela, e as ilhas encolhem com o zoom. Desde a parte 2 os
+  nomes não se sobrepõem entre si e ganharam um contorno da cor do mar, que os
+  mantém legíveis por cima de terra e de ponte.
 - **Toque:** tocar seleciona, com o mesmo cartão da Rede, e tocar no mar tira a
   seleção. O duplo toque foca o neurônio, ou aproxima no mar. Pinça, roda do
-  mouse e deslize funcionam como na Rede.
+  mouse e deslize funcionam como na Rede. (A parte 2 acrescentou tocar na ilha
+  e na ponte.)
 - **Sem arrastar ponto:** o lugar é do núcleo.
 - **Sem laço de animação e sem balanço:** a tela pinta quando algo muda, e só.
 - **A seleção sobrevive à troca de modo**, e a câmera vai até ela.
   `?centralizar=` (a busca) e o neurônio recém-criado funcionam nos dois modos:
   `TelaDoMapa` cumpre o mesmo `ControleDaTela` da Rede.
-- Os filtros (foco num livro, só as pontes) são da Rede e somem no Mapa. A
+- Os filtros (foco num livro, só as pontes) são da Rede e não valem no Mapa. A
   contagem diz "N ilhas · M neurônios".
-- **As conexões ainda não aparecem no Mapa:** trilhas, pontes agrupadas,
-  níveis de zoom, o porto e a legenda são a parte 2 (Atualização 4).
+- As conexões, os níveis de zoom, o porto e a legenda vieram na parte 2,
+  abaixo.
 
 **A câmera virou um hook** (`features/rede/useCamera.ts`). Pan, pinça, roda,
 deslize e toque/duplo toque saíram de `Tela.tsx`, que encolheu de 810 para 586
@@ -4160,6 +4162,109 @@ Sem rolagem lateral em 320, 412, 768, 1024 e 1440 px, nos dois temas; a roda do
 mouse aproxima no desktop; nenhum erro no console. 376 testes (novos: 17 do
 núcleo do mapa, 5 de `ilha.ts` e 5 do repositório — modo e mapa, backup
 incluído), typecheck e lint limpos. Bundle principal: 139,0 KB gzipped.
+
+### O Mapa, parte 2 (Atualização 4)
+
+As conexões entram no Mapa sem virar novelo: três distâncias, cada uma
+mostrando só o que se lê dali. Tudo isto existe **só no modo Mapa** — a Rede
+continua igual, e isso foi conferido no navegador. Decisões minhas, pela regra
+da série.
+
+#### As três distâncias
+
+| Distância                                     | O que aparece                                                                                     |
+| --------------------------------------------- | ------------------------------------------------------------------------------------------------- |
+| **De longe** (zoom abaixo de 0,9)             | ilhas, nomes de livro e as pontes mais fortes de cada ilha; pontos e trilhas escondidos           |
+| **Perto de uma ilha** (0,9 ou mais)           | os pontos, as trilhas, os nomes dos neurônios que cabem e **todas** as pontes                     |
+| **Com um neurônio tocado** (em qualquer zoom) | o resto esmaece debaixo de um véu; por cima, as conexões dele uma por uma, os vizinhos e os nomes |
+
+- **O limiar é um número só** (`ESCALA_DE_PERTO`, 0,9), não relativo ao
+  palácio: os pontos ficam a 22 do mundo um do outro em qualquer ilha, e a 0,9
+  eles já estão a uns 20 px na tela. Pontos e trilhas aparecem aos poucos entre
+  0,65 e 0,9 (`presencaDePerto`), sem pular de uma vez.
+- **De longe, cada ilha mostra as 3 pontes mais fortes dela** (`pontesAMostra`).
+  Uma ponte aparece se é das mais fortes de **qualquer um** dos dois lados —
+  senão uma ilha pequena, cuja única ponte vai para um livro cheio delas,
+  ficaria sem nenhuma. Força: mais conexões, depois maior soma de scores.
+- **O neurônio tocado vale em qualquer zoom.** De longe, os vizinhos dele
+  aparecem como pontos acesos mesmo com os outros escondidos, e dá para tocá-los.
+
+#### Trilha e ponte
+
+- **Trilha:** as conexões de dentro do livro, finas (menos de 1 px) e tracejadas
+  em `--rede-fio`. Nunca na cor de ponte.
+- **Ponte agrupada:** uma por par de livros (`agruparPontes`), cheia, em
+  `--ponte` — o azul que cumpre o "dourado" do documento desde 15/09 (decisão da
+  Etapa 0). A espessura cresce com a quantidade, de 1,5 px até o teto de 7 px:
+  trilha e ponte se distinguem também pela espessura e pelo tracejado.
+- **A ponte vai de centro a centro, por baixo das ilhas.** A terra cobre o pedaço
+  de dentro, e o que se vê sai exatamente pela praia, sem calcular a costa — e
+  some debaixo de qualquer ilha que esteja no caminho.
+- **Com um neurônio tocado**, cada conexão dele é desenhada até o vizinho:
+  tracejada como trilha dentro do livro, cheia como ponte para os outros, e
+  tracejada fina quando o score é zero, como em todo o app.
+
+#### Toque
+
+A ordem decide quem fica com o toque: **ponto, terra, ponte, mar.**
+
+- **Ponto:** só o que se vê. De perto, todos; de longe, só os da vizinhança
+  acesa. Seleciona, e o duplo toque foca.
+- **Terra:** de longe, **aproxima da ilha** — enquadra com 30% de mar em volta,
+  e nunca a menos que 0,9, para chegar onde os pontos aparecem. De perto, tirar
+  a seleção (o duplo toque aproxima no dedo, como no mar). Aproximar só de longe
+  é de propósito: de perto, um toque que errasse o ponto por pouco faria a
+  câmera pular.
+- **Ponte:** só as que aparecem, com 14 px de tolerância. Como ela passa por
+  baixo da terra, o toque na terra já ficou com a ilha: o que chega aqui é o
+  pedaço no mar. Abre a folha da ponte (`?ponte=livroA::livroB`) com os pares de
+  neurônios, um de cada livro, do mais parecido para o menos, e cada nome abre o
+  neurônio. Voltar devolve a lista.
+- **Mar:** tira a seleção.
+
+#### O que mais entrou
+
+- **O cartão do neurônio, no Mapa, traz o começo do texto** (duas linhas). Na
+  Rede o cartão continua como era.
+- **"Ver todas as pontes" e a legenda moram numa folha** aberta pelo botão que,
+  na Rede, abre os filtros (`?filtros=1`, com o conteúdo de cada modo). Na
+  fileira do pé, num celular de 320 px, não cabe mais um botão ao lado do de
+  criar. É o mesmo lugar do "Só as pontes" da Rede. A folha diz quantas pontes
+  ficam escondidas de longe. Não fica gravado, como os filtros.
+- **O porto** aparece no pé do Mapa, só quando alguém espera livro: "N no
+  porto", e só o número abaixo de 360 px. Leva a `/porto`, o fluxo de sempre.
+- **A busca** é a da Atualização 1: a lupa leva a `/busca?de=rede`, e o
+  resultado volta ao Mapa centralizado e tocado — é o véu que o destaca.
+- **Nomes não se atropelam.** Os de ilha (maior primeiro) e os de neurônio (mais
+  conectado primeiro, até 40) ficam de fora quando encostariam num já posto, num
+  trecho coberto pela página (`cobertas`: o alto com seletor e contagem, o pé
+  com os botões) ou na borda da tela. E todos têm um contorno da cor do mar.
+
+**Puro e testado:** `features/mapa/pontes.ts` (agrupar, as de longe, as
+visíveis, espessura, distância ao segmento e toque) e, em `ilha.ts`,
+`raioDaCosta`, `ilhaEm` e `presencaDePerto`. **Banco:** nenhuma mudança.
+
+**Verificado no navegador de verdade** (build de produção, toque por CDP,
+palácio de 35 notas: 7 ilhas, 17 pontes agrupadas, 5 escondidas de longe):
+
+- A folha mostra a legenda e as 5 escondidas, e "Ver todas" desenha as 5 no
+  canvas e volta ao mesmo quadro ao desligar.
+- Tocar a ponte Programação–Psicologia no mar abriu os 4 pares; um nome abriu o
+  neurônio, e voltar devolveu a lista.
+- Tocar a ilha de longe aproximou (0,56 → 1,64) sem selecionar ninguém.
+- De perto, o ponto selecionou com o resumo no cartão. Enquadrar manteve a
+  seleção, com as conexões até as outras ilhas por cima do véu.
+- Um neurônio no porto apareceu como "1 no porto" e levou até ele. Na Rede, nem
+  o indicador nem o resumo aparecem.
+- A busca por palavra voltou ao Mapa com o resultado tocado.
+
+Sem rolagem lateral e sem o porto encostar no botão de criar em 320, 412, 768,
+1024 e 1440 px, nos dois temas; nenhum erro no console. 389 testes (13 novos),
+typecheck e lint limpos. Bundle principal: 142,2 KB gzipped.
+
+**Não medido:** um palácio com dezenas de livros. A regra das 3 por ilha limita
+cada ilha, mas um palácio de 20 livros ainda pode mostrar umas 30 pontes de
+longe — o "limpo" do documento foi visto com 7.
 
 ## Fases
 
@@ -4200,6 +4305,6 @@ incluído), typecheck e lint limpos. Bundle principal: 139,0 KB gzipped.
     vizinhos acompanhando e assentando
 24. ✅ Pastas de acervo — links e imagens como satélites dos conceitos na
     Rede (as 4 etapas; a última em 01/10/2026)
-25. 🟡 Atualizações aprovadas (30/09/2026) — **3 de 6 feitas (Busca, Porto,
-    Mapa parte 1)**, e os satélites de anexo entre o Porto e o Mapa; seguem
-    Mapa parte 2 e Executáveis
+25. 🟡 Atualizações aprovadas (30/09/2026) — **4 de 6 feitas (Busca, Porto,
+    Mapa partes 1 e 2)**, e os satélites de anexo entre o Porto e o Mapa;
+    seguem os Executáveis

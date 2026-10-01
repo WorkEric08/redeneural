@@ -1,4 +1,5 @@
 import {
+  Anchor,
   Map as IconeDoMapa,
   Maximize2,
   Search,
@@ -12,8 +13,11 @@ import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-do
 import { BarraDeTopo } from '@/components/BarraDeTopo'
 import { botao } from '@/components/botao'
 import { Folha } from '@/components/Folha'
+import { OpcoesDoMapa } from '@/features/mapa/OpcoesDoMapa'
+import { ParesDaPonte } from '@/features/mapa/ParesDaPonte'
+import { agruparPontes, pontesAMostra, type PonteAgrupada } from '@/features/mapa/pontes'
 import { TelaDoMapa } from '@/features/mapa/TelaDoMapa'
-import { ROTULO_DO_PORTO } from '@/features/porto/porto'
+import { noPorto, ROTULO_DO_PORTO } from '@/features/porto/porto'
 import { grausDoMapa, satelitesDaCena } from '@/features/rede/layout'
 import { Tela, type ControleDaTela, type Folgas } from '@/features/rede/Tela'
 import { useTravarRolagem } from '@/hooks/useTravarRolagem'
@@ -65,6 +69,7 @@ export default function Rede() {
   const navegar = useNavigate()
   const { key } = useLocation()
   const filtrosAbertos = busca.get('filtros') === '1'
+  const chaveDaPonteAberta = busca.get('ponte')
   const [centralizarId] = useState<string | null>(() => busca.get('centralizar'))
   // O neurônio recém-criado (`Novo.tsx` manda para cá em vez de para a tela
   // dele — pedido do usuário, 17/09/2026): ver `revelar` em Tela.tsx.
@@ -72,6 +77,9 @@ export default function Rede() {
 
   const [livroEmFoco, setLivroEmFoco] = useState<string | null>(null)
   const [soAsPontes, setSoAsPontes] = useState(false)
+  // O "Ver todas as pontes" do Mapa: um jeito de olhar agora, como os filtros
+  // da Rede — não fica gravado.
+  const [todasAsPontes, setTodasAsPontes] = useState(false)
   // Já nasce selecionado se a busca mandou para cá — o cartão de baixo e a
   // vizinhança acesa aparecem no mesmo instante da câmera se movendo. O
   // recém-criado **não** entra aqui: ele só seleciona (se tiver vizinho) ao
@@ -106,7 +114,7 @@ export default function Rede() {
     centrarNoEscolhido()
   }, [modo])
 
-  function fecharFiltros(): void {
+  function fecharFolha(): void {
     // O React Router chama de 'default' a primeira entrada da sessão.
     if (key === 'default') void navegar({ search: '' }, { replace: true })
     else void navegar(-1)
@@ -126,6 +134,19 @@ export default function Rede() {
   const posicoes = useMemo(() => new Map(Object.entries(posicoesDaRede)), [posicoesDaRede])
   const graus = useMemo(() => grausDoMapa(conexoes), [conexoes])
   const satelites = useMemo(() => satelitesDaCena(anexos, vinculos), [anexos, vinculos])
+  // As pontes do Mapa, uma por par de livros: o canvas desenha e toca, e a
+  // folha da ponte lista o que ela junta — a mesma conta para os dois.
+  const pontesDoMapa = useMemo(
+    () => agruparPontes(conexoes, new Map(neuronios.map((n) => [n.id, n.livroId]))),
+    [conexoes, neuronios],
+  )
+  const ponteAberta = pontesDoMapa.find((p) => p.chave === chaveDaPonteAberta) ?? null
+  const abrirPonte = useCallback(
+    (ponte: PonteAgrupada) => {
+      void navegar({ search: `?${new URLSearchParams({ ponte: ponte.chave }).toString()}` })
+    },
+    [navegar],
+  )
 
   // Leva a câmera até o neurônio que a busca escolheu. Roda depois do
   // enquadramento inicial da Tela (efeito de filho comita antes do efeito do
@@ -152,6 +173,10 @@ export default function Rede() {
   const pastaDoEscolhido = livros.find((l) => l.id === anexoEscolhido?.livroId)
   const filtrando = livroEmFoco !== null || soAsPontes
   const livroFocado = livros.find((l) => l.id === livroEmFoco)
+  const esperandoNoPorto = noPorto(neuronios).length
+  // No Mapa o cartão traz o começo do texto: é a ficha de quem foi achado no
+  // mapa. A Rede continua como era.
+  const resumo = modo === 'mapa' && escolhido ? escolhido.conteudo.replace(/\s+/g, ' ').trim() : ''
 
   return (
     <div className="flex flex-col">
@@ -164,8 +189,13 @@ export default function Rede() {
             mapa={mapa}
             livros={livros}
             neuronios={neuronios}
+            conexoes={conexoes}
+            graus={graus}
+            pontes={pontesDoMapa}
+            todasAsPontes={todasAsPontes}
             selecionado={selecionado}
             onSelecionar={escolherNeuronio}
+            onTocarPonte={abrirPonte}
             controle={controle}
             folgas={FOLGAS}
           />
@@ -285,7 +315,7 @@ export default function Rede() {
       {escolhido && (
         <div className="cartao fixed inset-x-4 bottom-[calc(96px+env(safe-area-inset-bottom))] z-10 mx-auto flex max-w-xl items-center gap-3 py-3 pr-3 pl-4 lg:left-[calc(13rem+1rem)]">
           <span
-            className="h-9 w-1 shrink-0 rounded-full"
+            className={`w-1 shrink-0 rounded-full ${resumo ? 'self-stretch' : 'h-9'}`}
             style={{ background: livroDoEscolhido?.cor ?? 'var(--linha)' }}
             aria-hidden
           />
@@ -295,6 +325,7 @@ export default function Rede() {
               {livroDoEscolhido?.titulo ?? ROTULO_DO_PORTO} ·{' '}
               {contar(graus.get(escolhido.id) ?? 0, 'conexão', 'conexões')}
             </p>
+            {resumo && <p className="text-papel/85 mt-1 line-clamp-2 text-xs">{resumo}</p>}
           </div>
           <Link
             to={`/neuronio/${escolhido.id}`}
@@ -318,22 +349,58 @@ export default function Rede() {
         >
           <Maximize2 size={18} aria-hidden />
         </button>
-        {modo === 'rede' && (
-          <button
-            type="button"
-            aria-label="Filtros da rede"
-            aria-pressed={filtrando}
-            className={botao({ tipo: 'secundario', tamanho: 'icone' })}
-            onClick={() => {
-              void navegar({ search: '?filtros=1' })
-            }}
+        <button
+          type="button"
+          aria-label={modo === 'mapa' ? 'Pontes e legenda do mapa' : 'Filtros da rede'}
+          aria-pressed={modo === 'mapa' ? todasAsPontes : filtrando}
+          className={botao({ tipo: 'secundario', tamanho: 'icone' })}
+          onClick={() => {
+            void navegar({ search: '?filtros=1' })
+          }}
+        >
+          <SlidersHorizontal size={18} aria-hidden />
+        </button>
+        {/* O porto no Mapa: quem não tem livro não tem ilha, e é aqui que se vê
+            que alguém espera. Leva à lista do porto, o mesmo fluxo de lá. */}
+        {modo === 'mapa' && esperandoNoPorto > 0 && (
+          <Link
+            to="/porto"
+            aria-label={`${String(esperandoNoPorto)} no porto`}
+            className={botao({ tipo: 'secundario', tamanho: 'pequeno' })}
           >
-            <SlidersHorizontal size={18} aria-hidden />
-          </button>
+            <Anchor size={16} aria-hidden />
+            <span aria-hidden>
+              {String(esperandoNoPorto)}
+              {/* Num celular de 320 px, só o número: o botão de criar mora logo ao lado. */}
+              <span className="max-[359px]:hidden"> no porto</span>
+            </span>
+          </Link>
         )}
       </div>
 
-      <Folha aberta={filtrosAbertos} rotulo="Filtros da rede" onFechar={fecharFiltros}>
+      <Folha
+        aberta={filtrosAbertos && modo === 'mapa'}
+        rotulo="Pontes e legenda do mapa"
+        onFechar={fecharFolha}
+      >
+        <OpcoesDoMapa
+          todasAsPontes={todasAsPontes}
+          onAlternarPontes={() => {
+            setTodasAsPontes((v) => !v)
+          }}
+          escondidas={pontesDoMapa.length - pontesAMostra(pontesDoMapa).length}
+        />
+      </Folha>
+
+      <Folha aberta={ponteAberta !== null} rotulo="O que esta ponte junta" onFechar={fecharFolha}>
+        {ponteAberta && <ParesDaPonte ponte={ponteAberta} livros={livros} neuronios={neuronios} />}
+      </Folha>
+
+      <Folha
+        aberta={filtrosAbertos && modo === 'rede'}
+        rotulo="Filtros da rede"
+        onFechar={fecharFolha}
+      >
         <div className="flex flex-col gap-6">
           <section>
             <h2 className="rotulo-de-secao">Mostrar</h2>
