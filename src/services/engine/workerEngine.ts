@@ -11,6 +11,7 @@ import type {
   Id,
   Livro,
   ModoDaBusca,
+  NeuronioGuardado,
   Ponto,
   ProgressoDoMotor,
   ResultadoDeEscrita,
@@ -86,6 +87,9 @@ export function criarWorkerEngine(): ConnectionEngine {
 
     apagarNeuronio: (neuronioId: Id): Promise<EstadoDoPalacio> =>
       pedir<'apagarNeuronio'>({ tipo: 'apagarNeuronio', neuronioId }),
+
+    guardarNeuronio: (id: Id, livroId: Id): Promise<NeuronioGuardado> =>
+      pedir<'guardarNeuronio'>({ tipo: 'guardarNeuronio', id, livroId }),
 
     criarLivro: (input: CriarLivroInput): Promise<EstanteGravada> =>
       pedir<'criarLivro'>({ tipo: 'criarLivro', input }),

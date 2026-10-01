@@ -356,7 +356,7 @@ revisão. Não adiantar fases.
 
 ```
 livros:     { id, tipo: 'conceitos' | 'acervo', titulo, cor, prateleira, ordem, createdAt }
-neuronios:  { id, livroId, titulo, conteudo, embedding: Float32Array | null, createdAt, updatedAt }
+neuronios:  { id, livroId: string | null, titulo, conteudo, embedding: Float32Array | null, createdAt, updatedAt }
 conexoes:   { id, aId, bId, score, emb, rr, cross, mantidaPorA, mantidaPorB, updatedAt }
 vagas:      { prateleira, ordem }
 anexos:     { id, livroId, legenda, midia, embedding: Float32Array | null, createdAt, updatedAt }
@@ -367,6 +367,9 @@ vinculos:   { id: 'anexoId::conceitoId', anexoId, conceitoId, score, updatedAt }
 - As três últimas são das pastas de acervo (24/09/2026) — ver "Pastas de
   acervo". Um anexo nunca entra no grafo de conceitos; os `vinculos` são a
   escolha dele, só num sentido.
+
+- `neuronios.livroId` `null` é o **porto** (01/10/2026): um neurônio que o
+  motor não soube onde guardar, esperando a pessoa escolher. Ver "O Porto".
 
 - `livros.ordem` é o lugar na prateleira (0..25), gravado porque quem decide é
   a pessoa arrastando o livro. **Esparso** desde 14/09/2026 — pode haver
@@ -3900,6 +3903,94 @@ verdade**: servidor desligado e rede cortada, a tela abre pelo service worker e
 as mesmas buscas dão o mesmo resultado. 322 testes (12 novos; 328 com o modo lembrado), typecheck e lint
 limpos. Bundle principal: 133,7 KB gzipped.
 
+### O Porto (Atualização 2)
+
+Pelo "+", o livro de um neurônio novo começa em **"Automático"**: o motor lê o
+texto, calcula as conexões como sempre e guarda no livro que os mais parecidos
+apontam. Sem resposta clara, o neurônio fica **no porto** (`livroId = null`) e a
+pessoa escolhe. Livro escolhido à mão — no chip, ou vindo de "Novo neurônio
+neste livro" — não passa pelo Porto, e editar também não.
+
+#### A regra: voto dos 5 mais parecidos, não a soma das conexões fortes
+
+O documento pedia "o livro com a maior soma de conexões fortes". Calibrado com o
+e5 de verdade, deixando cada uma das 33 notas de fora por vez, **essa regra
+errava muito**: neste palácio as conexões mais fortes atravessam livros de
+propósito — são as pontes, o achado. No seed ela mandaria 7 de 9 neurônios para
+o livro errado com qualquer limiar; nas 33 notas, o melhor equilíbrio acertava
+cerca de 60% do que decidia sozinha. Exigir que o livro vencedor concentrasse as
+fortes não ajudou: o problema é as fortes apontarem para outro livro, não se
+dividirem.
+
+**Escolha do usuário: o voto** (`livroDoPorto`, `core/motor/porto.ts`). Votam os
+5 neurônios mais parecidos pelo cosseno centralizado no perfil congelado; 3 do
+mesmo livro levam o neurônio. Nas 33 notas, decidiu 17 sozinho com 4 erros; no
+seed, perguntou sempre e não errou nenhum. Livro excluído (os executáveis, na
+Atualização 5) e neurônio no porto votam, mas não vencem — aí a pessoa escolhe.
+
+**O `LIMIAR_FORTE` não nasceu aqui.** O documento o queria num lugar só, para o
+Porto e para o despertar da Atualização 6; com o voto, o Porto não o usa, e uma
+constante sem uso não entra (regra 7 do mestre). Ele nasce na Atualização 6, com
+calibração própria.
+
+#### O que muda quando não há livro
+
+- **Ponte é entre dois livros de verdade** (`ehPonte`). As conexões de um
+  neurônio no porto não são ponte; viram, ou não, quando ele ganha livro.
+- **`guardarNeuronio`** põe o neurônio num livro sem reler o texto: o vetor e as
+  conexões ficam, só o `cross` das conexões dele é refeito. É a resposta da
+  pergunta, o "Mudar" — e será o "Tornar executável" da Atualização 5.
+- Estante, busca, Rede, anexos e fios tratam "sem livro": "No porto" no lugar do
+  nome, anel vazio no lugar da cor, nenhum toque de cor de livro na Rede, e o
+  foco num livro apaga quem está no porto.
+- **Banco:** nenhuma versão nova. O índice `livroId` não muda (o IndexedDB só
+  deixa de fora do índice quem tem `null`), e nenhum dado antigo precisa de
+  reescrita. O backup leva `livroId: null`, e no import um neurônio no porto não
+  conta como órfão; backup antigo importa igual.
+
+#### A pergunta e onde os pendentes aparecem (escolhas do usuário)
+
+- **Colocou sozinho:** o aviso diz "Guardado em Programação." com **"Mudar"**. O
+  aviso ganhou um botão — um link para `?guardar=<id>` na tela atual, e não uma
+  função, porque o aviso mora no casco e sobrevive à tela que o pediu. Com botão
+  ele dura 6 s.
+- **Não soube:** a pergunta "Onde guardar?" abre na própria tela de escrever, por
+  cima do texto. Escolher guarda e segue para a Rede; fechar segue para a Rede
+  com "Ficou no porto."; o voltar do Android sai da tela de escrever inteira (a
+  pergunta tomou o lugar dela no histórico, porque o neurônio já existe) e o
+  aviso aparece onde cair.
+- **"Criar livro novo"** abre a tela de livro que já existia, sem a escolha de
+  pasta, com o livro no primeiro lugar livre da estante
+  (`primeiroLugarDaEstante`). O parâmetro ali é `?neuronio=`, e não `?guardar=`:
+  visto no navegador, `?guardar=` abria a própria pergunta por cima do
+  formulário de livro.
+- **Pendentes:** "N no porto" na fileira de baixo da estante, só quando há algum;
+  `/porto` lista com "Guardar em…"; a tela do neurônio mostra "No porto" no lugar
+  do livro, com o mesmo "Guardar em…".
+- Fora da tela de escrever, a pergunta é uma só para o app inteiro
+  (`GuardarNoPorto`, no casco, aberta por `?guardar=`). A lista de livros é a
+  mesma da escolha do formulário (`EscolhaDeLivro`).
+
+**Verificado no navegador de verdade** (build de produção, toque por CDP, palácio
+de 35 notas com os vetores do e5):
+
+- "Automático" com texto de programação foi sozinho para Programação, e o
+  "Mudar" levou a Leituras com as pontes refeitas.
+- Texto sem livro óbvio abriu a pergunta. Fechar deixou no porto com o aviso, e
+  ele apareceu na estante e em `/porto`.
+- A tela do neurônio guardou pelo "Guardar em…", e "Criar livro novo" criou o
+  livro e guardou dentro.
+- Livro escolhido à mão não passou pelo Porto.
+- O voltar do Android com a pergunta aberta deixou no porto.
+
+Em todos, o `cross` gravado bate com o livro dos dois lados. Sem rolagem lateral
+em 320, 768, 1024 e 1440 px, nos dois temas, sem erro no console. 343 testes (15
+novos), typecheck e lint limpos. Bundle principal: 135,3 KB gzipped.
+
+**Visto e não resolvido:** na Rede, o aviso com "Mudar" ocupa a mesma altura do
+cartão do neurônio selecionado e o cobre pelos 6 s em que aparece; tocar no
+aviso o dispensa.
+
 ## Fases
 
 0. ✅ Esqueleto (Vite/React/TS/Tailwind/PWA/Capacitor)
@@ -3940,5 +4031,5 @@ limpos. Bundle principal: 133,7 KB gzipped.
 24. 🟡 Pastas de acervo — links e imagens como satélites dos conceitos na
     Rede. **Etapas 1 a 3 de 4 (núcleo, dados e motor, telas) feitas**; faltam os
     satélites na Rede
-25. 🟡 Atualizações aprovadas (30/09/2026) — **1 de 6 feita (Busca)**; seguem
-    Porto, satélites de anexo (a etapa 4 da Fase 24), Mapa e Executáveis
+25. 🟡 Atualizações aprovadas (30/09/2026) — **2 de 6 feitas (Busca, Porto)**;
+    seguem satélites de anexo (a etapa 4 da Fase 24), Mapa e Executáveis

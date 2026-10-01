@@ -33,7 +33,8 @@ export function pontesEntreLivros(
   for (const c of conexoes) {
     const a = livroDoNeuronio.get(c.aId)
     const b = livroDoNeuronio.get(c.bId)
-    if (a === undefined || b === undefined || a === b) continue
+    // Sem livro (porto) não é ponte nem conta dentro de livro nenhum.
+    if (a == null || b == null || a === b) continue
 
     somar(a, b)
     somar(b, a)
@@ -69,7 +70,9 @@ export function montarEstante(
   const livroDoNeuronio = new Map(neuronios.map((n) => [n.id, n.livroId]))
 
   const contagem = new Map<string, number>()
-  for (const n of neuronios) contagem.set(n.livroId, (contagem.get(n.livroId) ?? 0) + 1)
+  for (const n of neuronios) {
+    if (n.livroId !== null) contagem.set(n.livroId, (contagem.get(n.livroId) ?? 0) + 1)
+  }
   const itens = new Map<string, number>()
   for (const a of anexos) itens.set(a.livroId, (itens.get(a.livroId) ?? 0) + 1)
   const guardado = (id: Id): number => (contagem.get(id) ?? 0) + (itens.get(id) ?? 0)
@@ -80,7 +83,7 @@ export function montarEstante(
   for (const c of conexoes) {
     const a = livroDoNeuronio.get(c.aId)
     const b = livroDoNeuronio.get(c.bId)
-    if (a === undefined || b === undefined) continue
+    if (a == null || b == null) continue
 
     if (a === b) {
       internas.set(a, (internas.get(a) ?? 0) + 1)
@@ -129,7 +132,7 @@ export function vizinhosPorNeuronio(
       conexao,
       outroId: outro.id,
       outroTitulo: outro.titulo,
-      outroLivro: nomeDoLivro.get(outro.livroId) ?? '',
+      outroLivro: (outro.livroId !== null && nomeDoLivro.get(outro.livroId)) || '',
     }
 
     const lista = mapa.get(deId)

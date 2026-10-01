@@ -10,6 +10,7 @@ import { Folha } from '@/components/Folha'
 import type { NeuronioNaTela } from '@/core'
 import { vizinhosPorNeuronio } from '@/features/estante/resumo'
 import { TextoComLinks } from '@/features/neuronio/TextoComLinks'
+import { ROTULO_DO_PORTO } from '@/features/porto/porto'
 import { usePalacio } from '@/store/palacio'
 
 /** O que a confirmação guarda no histórico para saber como sair depois de apagar. */
@@ -77,7 +78,7 @@ export default function Neuronio() {
   const meus = vizinhos.get(neuronio.id) ?? []
   const fios = apagando?.fios ?? meus.length
   const perguntando = busca.get('apagar') === '1'
-  const saida = livro ? `/livro/${livro.id}` : '/'
+  const saida = livro ? `/livro/${livro.id}` : neuronio.livroId === null ? '/porto' : '/'
 
   function perguntar(): void {
     const proxima = new URLSearchParams(busca)
@@ -134,6 +135,16 @@ export default function Neuronio() {
               />
               <span className="truncate">{livro.titulo}</span>
             </Link>
+          ) : neuronio.livroId === null ? (
+            // No porto: o lugar do nome do livro diz isso, e tocar pergunta
+            // onde guardar — a mesma pergunta da tela de escrever.
+            <Link
+              to={{ search: `?guardar=${neuronio.id}` }}
+              className="flex min-w-0 items-center gap-2.5 rounded-lg py-2 pr-2"
+            >
+              <span className="border-poeira size-2 shrink-0 rounded-full border" aria-hidden />
+              <span className="truncate">{ROTULO_DO_PORTO}</span>
+            </Link>
           ) : (
             'Neurônio'
           )
@@ -175,6 +186,14 @@ export default function Neuronio() {
             {neuronio.titulo}
           </h1>
           {neuronio.processando && <EtiquetaProcessando texto="procurando conexões" />}
+          {neuronio.livroId === null && (
+            <Link
+              to={{ search: `?guardar=${neuronio.id}` }}
+              className={botao({ tipo: 'secundario', tamanho: 'pequeno' })}
+            >
+              Guardar em…
+            </Link>
+          )}
         </header>
 
         {neuronio.conteudo && (

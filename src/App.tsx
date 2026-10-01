@@ -6,6 +6,7 @@ import { Aviso } from '@/components/Aviso'
 import { Dial } from '@/components/Dial'
 import { Navegacao } from '@/components/Navegacao'
 import { Porta } from '@/components/Porta'
+import { GuardarNoPorto } from '@/features/porto/GuardarNoPorto'
 import { usePalacio } from '@/store/palacio'
 
 /**
@@ -71,6 +72,7 @@ export default function App() {
       {mostrarCriar && <Dial />}
 
       <Navegacao />
+      <GuardarNoPorto />
       <Aviso />
     </div>
   )

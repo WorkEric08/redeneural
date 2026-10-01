@@ -165,6 +165,16 @@ describe('recalcularVizinhanca', () => {
     expect(resultado.arestas.every((a) => a.aId === solto.id || a.bId === solto.id)).toBe(true)
   })
 
+  it('neurônio novo no porto não faz ponte, e dá o mesmo grafo que reprocessar tudo', async () => {
+    // Parece com a dupla de programação, mas ainda não tem livro.
+    const noPorto: NoDoGrafo = { ...no('sem-livro', 'x', { 9: 1, 10: 0.1 }), livroId: null }
+    const { resultado, aplicado, completo } = await comparar(noPorto)
+
+    expect(resultado.arestas.length).toBeGreaterThan(0)
+    expect(resultado.arestas.every((a) => !a.cross)).toBe(true)
+    expect(porPar(aplicado)).toEqual(porPar(completo))
+  })
+
   it('dá o mesmo grafo que reprocessar tudo — vizinho isolado', async () => {
     const primo = no('mus-primo', 'mus', { 13: 1, 15: 0.2 })
     const { resultado, aplicado, completo } = await comparar(primo)

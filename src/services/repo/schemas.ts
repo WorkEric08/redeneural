@@ -38,7 +38,8 @@ export const etiquetaSchema = z.object({
 
 export const neuronioSchema = z.object({
   id,
-  livroId: id,
+  // `null` é o porto: o neurônio esperando a pessoa escolher o livro.
+  livroId: id.nullable(),
   titulo: z.string().trim().min(1).max(200),
   conteudo: z.string().max(20_000),
   embedding: z.instanceof(Float32Array).nullable(),
@@ -143,7 +144,7 @@ export const snapshotSchema = z.object({
   neuronios: z.array(
     z.object({
       id,
-      livroId: id,
+      livroId: id.nullable(),
       titulo: z.string(),
       conteudo: z.string(),
       embedding: base64.nullable(),

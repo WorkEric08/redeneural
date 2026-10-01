@@ -3,6 +3,7 @@ import type { Conexao, Id } from '../domain/types'
 import { OPCOES_PADRAO, type OpcoesMotor } from './config'
 import { escalaEmbedding, fundir } from './fusao'
 import {
+  ehPonte,
   SEM_RERANK,
   type ArestaCalculada,
   type NoDoGrafo,
@@ -170,7 +171,7 @@ export async function recalcularVizinhanca(
       score: c.score,
       emb: c.emb,
       rr: c.rr,
-      cross: alvo.livroId !== vizinho.livroId,
+      cross: ehPonte(alvo.livroId, vizinho.livroId),
       mantidaPorA: alvoEhLadoA ? alvoMantem : vizinhoMantem,
       mantidaPorB: alvoEhLadoA ? vizinhoMantem : alvoMantem,
     })

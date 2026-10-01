@@ -79,16 +79,17 @@ export function raioNaTela(grau: number): number {
 function montarChecagens(cena: Cena) {
   const vizinhanca = vizinhancaDe(cena.selecionado, cena.conexoes)
 
-  const apagadoPeloLivro = (livroId: Id | undefined): boolean =>
+  // Um neurônio no porto não é de livro nenhum: com um livro em foco, apaga.
+  const apagadoPeloLivro = (livroId: Id | null | undefined): boolean =>
     cena.livroEmFoco !== null && cena.livroEmFoco !== livroId
 
   const arestaApagadaPelaVizinhanca = (aId: Id, bId: Id): boolean =>
     cena.selecionado !== null && aId !== cena.selecionado && bId !== cena.selecionado
 
   return {
-    internaApagada: (livroId: Id | undefined, aId: Id, bId: Id): boolean =>
+    internaApagada: (livroId: Id | null | undefined, aId: Id, bId: Id): boolean =>
       apagadoPeloLivro(livroId) || arestaApagadaPelaVizinhanca(aId, bId),
-    ponteApagada: (livroA: Id | undefined, livroB: Id | undefined, aId: Id, bId: Id): boolean =>
+    ponteApagada: (livroA: Id | null | undefined, livroB: Id | null | undefined, aId: Id, bId: Id): boolean =>
       (apagadoPeloLivro(livroA) && apagadoPeloLivro(livroB)) ||
       arestaApagadaPelaVizinhanca(aId, bId),
     noApagado: (n: NeuronioNaTela): boolean =>
@@ -175,8 +176,8 @@ function tracarLotes(ctx: CanvasRenderingContext2D, lotes: Map<string, Lote>, px
 function desenharFios(
   ctx: CanvasRenderingContext2D,
   cena: Cena,
-  livroDoNeuronio: ReadonlyMap<Id, Id>,
-  apagada: (livroId: Id | undefined, aId: Id, bId: Id) => boolean,
+  livroDoNeuronio: ReadonlyMap<Id, Id | null>,
+  apagada: (livroId: Id | null | undefined, aId: Id, bId: Id) => boolean,
   px: number,
 ): void {
   const { posicoes } = cena
@@ -220,8 +221,13 @@ function desenharFios(
 function desenharPontes(
   ctx: CanvasRenderingContext2D,
   cena: Cena,
-  livroDoNeuronio: ReadonlyMap<Id, Id>,
-  apagada: (livroA: Id | undefined, livroB: Id | undefined, aId: Id, bId: Id) => boolean,
+  livroDoNeuronio: ReadonlyMap<Id, Id | null>,
+  apagada: (
+    livroA: Id | null | undefined,
+    livroB: Id | null | undefined,
+    aId: Id,
+    bId: Id,
+  ) => boolean,
   px: number,
 ): void {
   const { posicoes } = cena
@@ -291,7 +297,11 @@ function desenharNeuronios(
     const raio = raioNaTela(cena.graus.get(n.id) ?? 0) * px
     const grupo = grupos.get(chave)
     if (grupo) grupo.pontos.push([p, raio])
-    else grupos.set(chave, { cor: corDoLivro.get(n.livroId), longe, pontos: [[p, raio]] })
+    else {
+      // No porto não há livro, então não há o toque da cor de livro nenhum.
+      const cor = n.livroId === null ? undefined : corDoLivro.get(n.livroId)
+      grupos.set(chave, { cor, longe, pontos: [[p, raio]] })
+    }
   }
 
   const circulos = (pontos: [Ponto, number][], aumento: number): void => {

@@ -9,7 +9,8 @@ import type { Anexo, Id, MidiaDoAnexo, Neuronio } from './types'
  */
 export interface NeuronioNaTela {
   id: Id
-  livroId: Id
+  /** `null` é o porto — ver `Neuronio.livroId`. */
+  livroId: Id | null
   titulo: string
   conteudo: string
   /** A inferência ainda não terminou — mostrar como "processando…". */

@@ -1,4 +1,4 @@
-import { Check, ChevronDown } from 'lucide-react'
+import { Check, ChevronDown, Sparkles } from 'lucide-react'
 import { useState } from 'react'
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 
@@ -6,7 +6,10 @@ import { BarraDeTopo } from '@/components/BarraDeTopo'
 import { botao } from '@/components/botao'
 import { Folha } from '@/components/Folha'
 import type { Livro } from '@/core'
+import { ROTULO_DO_PORTO } from '@/features/porto/porto'
 import type { NovoNeuronio } from '@/store/palacio'
+
+import { EscolhaDeLivro } from './EscolhaDeLivro'
 
 /**
  * A folha de escrever — o mesmo formulário serve para criar e para editar.
@@ -21,7 +24,8 @@ import type { NovoNeuronio } from '@/store/palacio'
  *   barra do Notes faz, e devolve uma tela inteira para o texto;
  * - **o livro é uma etiqueta** que abre uma folha de escolha (pedido do
  *   usuário, 17/09/2026) — não um campo de 52 px com rótulo por cima, e não
- *   mais o `<select>` nativo do navegador, que destoava do resto do app;
+ *   mais o `<select>` nativo do navegador, que destoava do resto do app. Ao
+ *   criar, a escolha começa em "Automático" — o Porto (01/10/2026);
  * - **o texto não tem caixa**: sem borda e sem fundo, ele é a folha, e a folha
  *   é o que sobra da tela. Uma caixa dentro de uma tela que já é só escrever
  *   desenha uma moldura em volta do nada.
@@ -47,6 +51,11 @@ interface Props {
   voltarPara: string
   /** Uma linha acima da folha. Só o editar tem uma — criar entra limpo. */
   aviso?: string
+  /**
+   * Oferece "Automático" na escolha do livro — só ao criar: o motor lê o texto
+   * e guarda no livro que os mais parecidos apontam, ou pergunta (o Porto).
+   */
+  automatico?: boolean
   onEnviar: (dados: NovoNeuronio) => void
 }
 
@@ -57,9 +66,11 @@ export function Formulario({
   rotuloDeEnvio,
   voltarPara,
   aviso,
+  automatico = false,
   onEnviar,
 }: Props) {
-  const [livroEscolhido, setLivroEscolhido] = useState(inicial?.livroId ?? '')
+  // `null`: "Automático" ao criar; ao editar, um neurônio que está no porto.
+  const [livroId, setLivroId] = useState<string | null>(inicial?.livroId ?? null)
   const [titulo, setTitulo] = useState(inicial?.titulo ?? '')
   const [conteudo, setConteudo] = useState(inicial?.conteudo ?? '')
 
@@ -71,9 +82,9 @@ export function Formulario({
   const { key } = useLocation()
   const escolhendoLivro = busca.get('livros') === '1'
 
-  const livroId = livroEscolhido || (livros[0]?.id ?? '')
   const livro = livros.find((l) => l.id === livroId)
-  const podeEnviar = titulo.trim().length > 0 && livroId !== '' && !ocupado
+  const podeEnviar = titulo.trim().length > 0 && !ocupado
+  const nomeDoLivro = livro?.titulo ?? (automatico ? 'Automático' : ROTULO_DO_PORTO)
 
   function abrirEscolhaDeLivro(): void {
     void navegar({ search: '?livros=1' })
@@ -122,24 +133,32 @@ export function Formulario({
 
         <div className="animar-entrada flex flex-1 flex-col pt-4">
           <div className="flex items-center">
-            {livros.length === 0 ? (
+            {livros.length === 0 && !automatico ? (
               <span className="text-poeira text-xs leading-relaxed">
                 Nenhum livro na estante ainda. Toque numa lombada escura para criar o primeiro.
               </span>
             ) : (
               <span className="relative flex min-w-0 items-center">
-                <span
-                  className="pointer-events-none absolute left-3.5 size-2 shrink-0 rounded-full"
-                  style={{ background: livro?.cor }}
-                  aria-hidden
-                />
+                {livro ? (
+                  <span
+                    className="pointer-events-none absolute left-3.5 size-2 shrink-0 rounded-full"
+                    style={{ background: livro.cor }}
+                    aria-hidden
+                  />
+                ) : (
+                  // Sem livro ainda: um anel vazio no lugar da cor.
+                  <span
+                    className="border-poeira pointer-events-none absolute left-3.5 size-2 shrink-0 rounded-full border"
+                    aria-hidden
+                  />
+                )}
                 <button
                   type="button"
                   onClick={abrirEscolhaDeLivro}
-                  aria-label={livro ? `Livro: ${livro.titulo}` : 'Escolher livro'}
+                  aria-label={`Livro: ${nomeDoLivro}`}
                   className="chip text-papel min-w-0 truncate pr-8 pl-7"
                 >
-                  {livro?.titulo}
+                  {nomeDoLivro}
                 </button>
                 <ChevronDown
                   size={14}
@@ -180,30 +199,39 @@ export function Formulario({
       </form>
 
       <Folha aberta={escolhendoLivro} rotulo="Escolher livro" onFechar={fecharEscolhaDeLivro}>
-        <ul className="cartao flex flex-col">
-          {livros.map((l) => (
-            <li key={l.id} className="linha-de-lista p-0">
-              <button
-                type="button"
-                onClick={() => {
-                  setLivroEscolhido(l.id)
-                  fecharEscolhaDeLivro()
-                }}
-                className="flex min-h-14 w-full items-center gap-3.5 px-4 text-left"
-              >
-                <span
-                  className="size-2.5 shrink-0 rounded-full"
-                  style={{ background: l.cor }}
-                  aria-hidden
-                />
-                <span className="min-w-0 flex-1 truncate">{l.titulo}</span>
-                {l.id === livroId && (
-                  <Check size={18} aria-hidden className="text-papel shrink-0" />
-                )}
-              </button>
-            </li>
-          ))}
-        </ul>
+        <EscolhaDeLivro
+          livros={livros}
+          escolhido={livroId}
+          onEscolher={(id) => {
+            setLivroId(id)
+            fecharEscolhaDeLivro()
+          }}
+          antes={
+            automatico && (
+              <li className="linha-de-lista p-0">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setLivroId(null)
+                    fecharEscolhaDeLivro()
+                  }}
+                  className="flex min-h-14 w-full items-center gap-3.5 px-4 text-left"
+                >
+                  <Sparkles size={16} aria-hidden className="text-poeira -mx-px shrink-0" />
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate">Automático</span>
+                    <span className="text-poeira block truncate text-xs">
+                      O palácio escolhe pelo sentido
+                    </span>
+                  </span>
+                  {livroId === null && (
+                    <Check size={18} aria-hidden className="text-papel shrink-0" />
+                  )}
+                </button>
+              </li>
+            )
+          }
+        />
       </Folha>
     </>
   )

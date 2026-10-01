@@ -24,6 +24,7 @@ export type {
   EditarNeuronioInput,
   EstadoDoPalacio,
   EstanteGravada,
+  NeuronioGuardado,
   ProgressoDoMotor,
   ResultadoDeEscrita,
 } from './ports/engine'

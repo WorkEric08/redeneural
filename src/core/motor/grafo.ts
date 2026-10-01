@@ -8,7 +8,8 @@ import { centralizar, centroide, produtoInterno } from './vetores'
 /** O que o motor precisa saber de um neurônio. Nada além disso. */
 export interface NoDoGrafo {
   id: Id
-  livroId: Id
+  /** `null` é o porto: sem livro, nenhuma conexão dele é ponte. */
+  livroId: Id | null
   /** Título e conteúdo juntos — é o que o reranker lê. */
   texto: string
   /** Vetor normalizado, ainda **não** centralizado. */
@@ -40,6 +41,15 @@ export type PontuarPar = (a: NoDoGrafo, b: NoDoGrafo) => Promise<number | null>
 export const SEM_RERANK: PontuarPar = () => Promise.resolve(null)
 
 // --- conversões -------------------------------------------------------------
+
+/**
+ * Ponte é a conexão entre dois livros **de verdade**. Um neurônio no porto
+ * (sem livro) ainda não está em lugar nenhum: as conexões dele viram ponte, ou
+ * não, quando ele ganhar um livro.
+ */
+export function ehPonte(livroA: Id | null, livroB: Id | null): boolean {
+  return livroA !== null && livroB !== null && livroA !== livroB
+}
 
 /**
  * Texto canônico de um neurônio.
@@ -286,7 +296,7 @@ function montarArestas(
       score: d.score,
       emb: d.emb,
       rr: d.rr,
-      cross: nos[a]!.livroId !== nos[b]!.livroId,
+      cross: ehPonte(nos[a]!.livroId, nos[b]!.livroId),
       mantidaPorA: iEhLadoA ? iMantem : jMantem,
       mantidaPorB: iEhLadoA ? jMantem : iMantem,
     })

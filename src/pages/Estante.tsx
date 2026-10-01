@@ -1,4 +1,4 @@
-import { Search } from 'lucide-react'
+import { Anchor, Search } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 
@@ -10,6 +10,7 @@ import { Movel } from '@/features/estante/Movel'
 import { PaineisDaEstante } from '@/features/estante/Paineis'
 import { montarEstante, pontesEntreLivros } from '@/features/estante/resumo'
 import { usePainel } from '@/features/estante/usePainel'
+import { noPorto } from '@/features/porto/porto'
 import { useTravarRolagem } from '@/hooks/useTravarRolagem'
 import { contar } from '@/lib/plural'
 import { usePalacio } from '@/store/palacio'
@@ -55,6 +56,7 @@ export default function Estante() {
     [livros, neuronios, conexoes, anexos],
   )
   const pontes = useMemo(() => pontesEntreLivros(neuronios, conexoes), [neuronios, conexoes])
+  const esperandoNoPorto = noPorto(neuronios).length
 
   useEffect(() => {
     if (chegandoId === null) return
@@ -157,6 +159,14 @@ export default function Estante() {
           >
             <Search size={20} aria-hidden />
           </Link>
+          {/* Só existe enquanto algum neurônio espera livro: é o único lugar da
+              estante de onde se vê que o porto não está vazio. */}
+          {esperandoNoPorto > 0 && (
+            <Link to="/porto" className={botao({ tipo: 'secundario', tamanho: 'pequeno' })}>
+              <Anchor size={16} aria-hidden />
+              {String(esperandoNoPorto)} no porto
+            </Link>
+          )}
           <p className="text-poeira min-w-0 flex-1 truncate text-xs">
             {carregado
               ? `${contar(livros.length, 'livro', 'livros')} · ${contar(neuronios.length, 'neurônio', 'neurônios')} · ${contar(conexoes.length, 'conexão', 'conexões')}`

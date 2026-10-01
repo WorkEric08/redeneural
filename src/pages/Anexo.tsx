@@ -12,6 +12,7 @@ import { dominioDe, miniaturaDoLink } from '@/features/acervo/links'
 import { Miniatura } from '@/features/acervo/Miniatura'
 import { conceitosPorAnexo, situacaoDoAnexo } from '@/features/acervo/resumo'
 import { TextoComLinks } from '@/features/neuronio/TextoComLinks'
+import { ROTULO_DO_PORTO } from '@/features/porto/porto'
 import { usePalacio } from '@/store/palacio'
 
 /** O que a confirmação guarda no histórico para saber como sair depois de apagar. */
@@ -194,29 +195,32 @@ export default function Anexo() {
           )}
           {situacao === 'preso' && (
             <ul className="cartao flex flex-col">
-              {conceitos.map((c) => (
-                <li key={c.id} className="linha-de-lista p-0">
-                  <Link
-                    to={`/neuronio/${c.id}`}
-                    className="flex min-h-14 w-full items-center gap-3 px-4"
-                  >
-                    <span
-                      className="h-6 w-1 shrink-0 rounded-full"
-                      style={{ background: livroDe.get(c.livroId)?.cor }}
-                      aria-hidden
-                    />
-                    <span className="min-w-0 flex-1">
-                      <span className="block truncate">{c.titulo}</span>
-                      <span className="text-poeira block truncate text-xs">
-                        {livroDe.get(c.livroId)?.titulo}
+              {conceitos.map((c) => {
+                const livroDoConceito = c.livroId === null ? undefined : livroDe.get(c.livroId)
+                return (
+                  <li key={c.id} className="linha-de-lista p-0">
+                    <Link
+                      to={`/neuronio/${c.id}`}
+                      className="flex min-h-14 w-full items-center gap-3 px-4"
+                    >
+                      <span
+                        className="h-6 w-1 shrink-0 rounded-full"
+                        style={{ background: livroDoConceito?.cor }}
+                        aria-hidden
+                      />
+                      <span className="min-w-0 flex-1">
+                        <span className="block truncate">{c.titulo}</span>
+                        <span className="text-poeira block truncate text-xs">
+                          {livroDoConceito?.titulo ?? ROTULO_DO_PORTO}
+                        </span>
                       </span>
-                    </span>
-                    <span className="text-poeira font-dado text-xs tabular-nums">
-                      {String(Math.round(c.score * 100))}%
-                    </span>
-                  </Link>
-                </li>
-              ))}
+                      <span className="text-poeira font-dado text-xs tabular-nums">
+                        {String(Math.round(c.score * 100))}%
+                      </span>
+                    </Link>
+                  </li>
+                )
+              })}
             </ul>
           )}
         </section>

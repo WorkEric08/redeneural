@@ -25,7 +25,8 @@ import { newId } from '@/lib/id'
 import { engine } from '@/services/engine/workerEngine'
 
 export interface NovoNeuronio {
-  livroId: string
+  /** `null`: "Automático" ao criar (o Porto decide); ao editar, continua no porto. */
+  livroId: string | null
   titulo: string
   conteudo: string
 }
@@ -42,6 +43,16 @@ export interface NovoAnexo {
   livroId: string
   legenda: string
   conteudo: CriarAnexoInput['conteudo']
+}
+
+/**
+ * Um botão dentro do aviso flutuante. É um destino, e não uma função: o aviso
+ * mora no casco do app e sobrevive à tela que o pediu, então ele só leva a
+ * algum lugar — hoje, sempre a uma busca na tela atual (`?guardar=`).
+ */
+export interface AcaoDoAviso {
+  rotulo: string
+  busca: string
 }
 
 interface PalacioStore {
@@ -67,13 +78,20 @@ interface PalacioStore {
   progresso: ProgressoDoMotor | null
   erro: string | null
   aviso: string | null
+  /** O botão do aviso, quando ele tem um (o "Mudar" depois de o Porto escolher). */
+  acaoDoAviso: AcaoDoAviso | null
 
   carregar: () => Promise<void>
-  /** Devolve o id criado, ou null se o motor não conseguiu. */
-  criarNeuronio: (novo: NovoNeuronio) => Promise<string | null>
+  /**
+   * Devolve o neurônio já com o livro final — num "Automático", o que o Porto
+   * escolheu, ou `null` se ele ficou no porto — ou null se o motor não conseguiu.
+   */
+  criarNeuronio: (novo: NovoNeuronio) => Promise<NeuronioNaTela | null>
   editarNeuronio: (id: string, mudancas: NovoNeuronio) => Promise<boolean>
   /** `false` se o motor não conseguiu — quem confirmou fica onde está e lê o erro. */
   apagarNeuronio: (id: string) => Promise<boolean>
+  /** Põe o neurônio num livro de conceitos, sem reler o texto. `false` se o motor não conseguiu. */
+  guardarNeuronio: (id: string, livroId: string) => Promise<boolean>
   /**
    * Nasce no `lugar` tocado (ou no buraco mais perto dele). Devolve o id do
    * livro criado, ou null se o motor não conseguiu.
@@ -119,6 +137,8 @@ interface PalacioStore {
    * — uma busca enquanto se digita não pode encher a tela de avisos de erro.
    */
   buscarPorSentido: (consulta: string) => Promise<string[]>
+  /** Mostra um aviso flutuante, com ou sem botão. */
+  avisar: (texto: string, acao?: AcaoDoAviso) => void
   /** O aviso flutuante some — pelo tempo ou pelo toque. */
   dispensarAvisos: () => void
 }
@@ -148,6 +168,7 @@ export const usePalacio = create<PalacioStore>()((set, get) => {
     progresso: null,
     erro: null,
     aviso: null,
+    acaoDoAviso: null,
 
     async carregar() {
       if (get().carregado) return
@@ -163,7 +184,7 @@ export const usePalacio = create<PalacioStore>()((set, get) => {
       }
     },
 
-    async criarNeuronio(novo): Promise<string | null> {
+    async criarNeuronio(novo): Promise<NeuronioNaTela | null> {
       const id = newId()
       const agora = new Date()
 
@@ -186,14 +207,12 @@ export const usePalacio = create<PalacioStore>()((set, get) => {
       set((s) => ({ neuronios: [provisorio, ...s.neuronios], ocupado: true, erro: null }))
 
       try {
-        const { neuronios, conexoes, posicoesDaRede, vinculos } = await engine.criarNeuronio({
-          id,
-          ...novo,
-        })
+        const { neuronio, neuronios, conexoes, posicoesDaRede, vinculos } =
+          await engine.criarNeuronio({ id, ...novo })
         // O palácio inteiro, não só o que foi escrito: um reprocessamento tira o
         // "processando…" dos outros também.
         set({ neuronios, conexoes, posicoesDaRede, vinculos })
-        return id
+        return neuronio
       } catch (e) {
         // Desfaz o otimismo: o Worker não conseguiu, então não fingimos que deu.
         set((s) => ({ neuronios: s.neuronios.filter((n) => n.id !== id), erro: mensagem(e) }))
@@ -252,8 +271,33 @@ export const usePalacio = create<PalacioStore>()((set, get) => {
       }
     },
 
+    avisar(texto, acao) {
+      set({ aviso: texto, acaoDoAviso: acao ?? null })
+    },
+
     dispensarAvisos() {
-      set({ erro: null, aviso: null })
+      set({ erro: null, aviso: null, acaoDoAviso: null })
+    },
+
+    async guardarNeuronio(id, livroId): Promise<boolean> {
+      // Otimista: o neurônio já aparece no livro; a ponte chega com o motor.
+      const antes = get().neuronios.find((n) => n.id === id)?.livroId ?? null
+      set((s) => ({
+        neuronios: s.neuronios.map((n) => (n.id === id ? { ...n, livroId } : n)),
+        erro: null,
+      }))
+
+      try {
+        const { neuronios, conexoes } = await engine.guardarNeuronio(id, livroId)
+        set({ neuronios, conexoes })
+        return true
+      } catch (e) {
+        set((s) => ({
+          neuronios: s.neuronios.map((n) => (n.id === id ? { ...n, livroId: antes } : n)),
+          erro: mensagem(e),
+        }))
+        return false
+      }
     },
 
     async criarLivro(novo, prateleira, lugar, tipo = 'conceitos'): Promise<string | null> {
@@ -263,7 +307,10 @@ export const usePalacio = create<PalacioStore>()((set, get) => {
       // outro livro já chegou ali — nascer nunca empurra ninguém.
       const ordem = primeiroLugarLivre(antes, prateleira, lugar ?? 0)
       if (ordem === null) {
-        set({ aviso: `A prateleira ${String(prateleira + 1)} não tem lugar sem livro.` })
+        set({
+          acaoDoAviso: null,
+          aviso: `A prateleira ${String(prateleira + 1)} não tem lugar sem livro.`,
+        })
         return null
       }
       const provisorio = novoLivro(input, new Date(), ordem)
@@ -332,7 +379,10 @@ export const usePalacio = create<PalacioStore>()((set, get) => {
       const { livros: antes, vagas: vagasAntes } = get()
       const depois = moverLivroNaEstante(antes, id, prateleira, lugar)
       if (!depois) {
-        set({ aviso: `A prateleira ${String(prateleira + 1)} não tem lugar sem livro.` })
+        set({
+          acaoDoAviso: null,
+          aviso: `A prateleira ${String(prateleira + 1)} não tem lugar sem livro.`,
+        })
         return
       }
 

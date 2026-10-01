@@ -100,7 +100,11 @@ export interface EtiquetaDePrateleira {
 /** Um conceito dentro de um livro. */
 export interface Neuronio {
   id: Id
-  livroId: Id
+  /**
+   * `null` é o porto: um neurônio novo que o motor não soube onde guardar e
+   * que espera a pessoa escolher. Nunca se perde — só não tem livro ainda.
+   */
+  livroId: Id | null
   titulo: string
   conteudo: string
   /**
@@ -268,7 +272,8 @@ export interface LivroSnapshot {
 
 export interface NeuronioSnapshot {
   id: Id
-  livroId: Id
+  /** `null` é o porto. Ausente não acontece: backups antigos sempre têm livro. */
+  livroId: Id | null
   titulo: string
   conteudo: string
   /** Float32Array em base64 (little-endian), não array JSON. */

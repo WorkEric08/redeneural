@@ -503,7 +503,8 @@ export function createDexieRepo(db: PalacioDB = defaultDb): PalacioRepo {
       const conexoes = parsed.conexoes.map(conexaoFromSnapshot)
 
       const livroIds = new Set(livros.map((l) => l.id))
-      const orfao = neuronios.find((n) => !livroIds.has(n.livroId))
+      // No porto (sem livro) não é órfão: é um neurônio esperando escolha.
+      const orfao = neuronios.find((n) => n.livroId !== null && !livroIds.has(n.livroId))
       if (orfao) {
         throw new Error(
           `snapshot inválido: neurônio ${orfao.id} aponta para o livro inexistente ${orfao.livroId}`,

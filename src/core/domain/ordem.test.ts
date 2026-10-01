@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest'
 import {
   LUGARES_POR_PRATELEIRA,
   moverLivroNaEstante,
+  primeiroLugarDaEstante,
   primeiroLugarLivre,
   vagasDepoisDeMover,
 } from './ordem'
@@ -46,6 +47,25 @@ describe('primeiroLugarLivre', () => {
   it('prateleira cheia de livros não tem lugar', () => {
     const cheia = Array.from({ length: LUGARES_POR_PRATELEIRA }, (_, i) => l(`x${String(i)}`, 0, i))
     expect(primeiroLugarLivre(cheia, 0, 4)).toBeNull()
+  })
+})
+
+describe('primeiroLugarDaEstante', () => {
+  it('o primeiro buraco da prateleira de cima', () => {
+    expect(primeiroLugarDaEstante([l('a', 0, 0), l('b', 0, 1)], 4)).toEqual({
+      prateleira: 0,
+      lugar: 2,
+    })
+  })
+
+  it('desce para a próxima prateleira quando a de cima está cheia', () => {
+    const cheia = Array.from({ length: LUGARES_POR_PRATELEIRA }, (_, i) => l(`x${String(i)}`, 0, i))
+    expect(primeiroLugarDaEstante(cheia, 4)).toEqual({ prateleira: 1, lugar: 0 })
+  })
+
+  it('estante inteira cheia não tem lugar', () => {
+    const cheia = Array.from({ length: LUGARES_POR_PRATELEIRA }, (_, i) => l(`x${String(i)}`, 0, i))
+    expect(primeiroLugarDaEstante(cheia, 1)).toBeNull()
   })
 })
 

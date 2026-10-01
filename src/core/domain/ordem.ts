@@ -72,6 +72,22 @@ export function primeiroLugarLivre(
   return null
 }
 
+/**
+ * O primeiro lugar sem livro da estante inteira, da prateleira de cima para
+ * baixo. É onde nasce um livro criado sem ninguém ter tocado num lugar — o
+ * livro novo que a pergunta do porto oferece. `null` com a estante cheia.
+ */
+export function primeiroLugarDaEstante(
+  livros: readonly NoLugar[],
+  quantidadeDePrateleiras: number,
+): { prateleira: number; lugar: number } | null {
+  for (let prateleira = 0; prateleira < quantidadeDePrateleiras; prateleira += 1) {
+    const lugar = primeiroLugarLivre(livros, prateleira)
+    if (lugar !== null) return { prateleira, lugar }
+  }
+  return null
+}
+
 /** O buraco mais perto do alvo: primeiro à direita, senão à esquerda. */
 function vagaMaisProxima(ocupados: ReadonlyMap<number, Id>, alvo: number): number | null {
   for (let i = alvo + 1; i < LUGARES_POR_PRATELEIRA; i += 1) if (!ocupados.has(i)) return i

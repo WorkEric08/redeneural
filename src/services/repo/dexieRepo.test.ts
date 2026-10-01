@@ -48,7 +48,11 @@ function livro(id: string, titulo: string, ordem = 0, prateleira = 0): Livro {
   }
 }
 
-function neuronio(id: string, livroId: string, embedding: Float32Array | null = null): Neuronio {
+function neuronio(
+  id: string,
+  livroId: string | null,
+  embedding: Float32Array | null = null,
+): Neuronio {
   return {
     id,
     livroId,
@@ -327,6 +331,35 @@ describe('DexieRepo', () => {
     })
 
     await expect(repo.importAll(snapshot)).rejects.toThrow(/livro inexistente/)
+  })
+})
+
+describe('porto', () => {
+  it('guarda e lista um neurônio sem livro', async () => {
+    await repo.upsertNeuronio(neuronio('n1', null))
+    const [lido] = await repo.listNeuronios()
+    expect(lido?.livroId).toBeNull()
+  })
+
+  it('apagar um livro não leva junto quem está no porto', async () => {
+    await repo.upsertLivro(livro('l1', 'Psicologia'))
+    await repo.upsertNeuronio(neuronio('n1', 'l1'))
+    await repo.upsertNeuronio(neuronio('n2', null))
+
+    await repo.deleteLivro('l1')
+    expect((await repo.listNeuronios()).map((n) => n.id)).toEqual(['n2'])
+  })
+
+  it('o backup leva e traz o neurônio no porto, e ele não conta como órfão', async () => {
+    await repo.upsertLivro(livro('l1', 'Psicologia'))
+    await repo.upsertNeuronio(neuronio('n1', 'l1'))
+    await repo.upsertNeuronio(neuronio('n2', null))
+    const snapshot = await repo.exportAll()
+
+    const outro = createDexieRepo(createDb(`palacio-test-porto-${String(nth)}`))
+    await outro.importAll(JSON.parse(JSON.stringify(snapshot)) as typeof snapshot)
+    expect((await outro.getNeuronio('n2'))?.livroId).toBeNull()
+    expect((await outro.getNeuronio('n1'))?.livroId).toBe('l1')
   })
 })
 

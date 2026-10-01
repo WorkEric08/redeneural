@@ -5,6 +5,8 @@ import {
   arestaParaConexao,
   buscarPorSentido,
   calcularLayoutDaRede,
+  ehPonte,
+  livroDoPorto,
   construirGrafo,
   estadoDosVizinhos,
   ITERACOES_LAYOUT_COMPLETO,
@@ -34,6 +36,7 @@ import {
   type Id,
   type Livro,
   type MidiaDoAnexo,
+  type NeuronioGuardado,
   type Neuronio,
   type NoDoGrafo,
   type PalacioRepo,
@@ -283,9 +286,11 @@ async function escrever(
   input: CriarNeuronioInput,
   existente: Neuronio | undefined,
 ): Promise<ResultadoDeEscrita> {
-  const livro = await repo.getLivro(input.livroId)
-  if (livro?.tipo === 'acervo') {
-    throw new Error('um neurônio não mora numa pasta — escolha um livro de conceitos')
+  if (input.livroId !== null) {
+    const livro = await repo.getLivro(input.livroId)
+    if (livro?.tipo === 'acervo') {
+      throw new Error('um neurônio não mora numa pasta — escolha um livro de conceitos')
+    }
   }
 
   const agora = new Date()
@@ -294,14 +299,16 @@ async function escrever(
         ...existente,
         titulo: input.titulo.trim(),
         conteudo: input.conteudo.trim(),
-        livroId: input.livroId,
+        // Editar nunca passa pelo Porto: sem livro escolhido, fica onde estava.
+        livroId: input.livroId ?? existente.livroId,
         embedding: null,
         updatedAt: agora,
       }
     : novoNeuronio(input, agora)
 
   // Persiste o texto antes de a inferência começar: se o Worker morrer agora,
-  // o que se perde é o cálculo, nunca o que a pessoa escreveu.
+  // o que se perde é o cálculo, nunca o que a pessoa escreveu. Um neurônio em
+  // "Automático" é gravado no porto, sem livro, pelo mesmo motivo.
   await repo.upsertNeuronio(base)
 
   await embedding.ready()
@@ -312,48 +319,90 @@ async function escrever(
   const perfil = await perfilVigente(nos)
 
   if (!perfil) {
-    const estado = await reprocessarTudo()
-    const naTela = estado.neuronios.find((n) => n.id === completo.id)
-    if (!naTela) throw new Error(`neurônio ${completo.id} sumiu no reprocessamento`)
-    return {
-      neuronio: naTela,
-      neuronios: estado.neuronios,
-      conexoes: estado.conexoes,
-      posicoesDaRede: estado.posicoesDaRede,
-      vinculos: estado.vinculos,
-    }
+    await reprocessarTudo()
+  } else {
+    const vizinhancas = estadoDosVizinhos(await repo.listConexoes())
+    const resultado = await recalcularVizinhanca(
+      completo.id,
+      nos,
+      vizinhancas,
+      perfil,
+      pontuar,
+      OPCOES_PADRAO,
+    )
+
+    await repo.soltarMarcas(resultado.marcasPerdidas)
+    await repo.replaceConexoesDe(
+      completo.id,
+      resultado.arestas.map((a) => arestaParaConexao(a, new Date())),
+    )
+
+    // A Rede reage ao grafo já assentado, com o que sobrou de antes como
+    // partida quente — só este neurônio (e quem estava perto dele) se acomoda,
+    // ninguém mais reembaralha.
+    await recalcularPosicoesDaRede(await repo.listConexoes())
+    await reancorarTodos()
   }
 
-  const vizinhancas = estadoDosVizinhos(await repo.listConexoes())
-  const resultado = await recalcularVizinhanca(
-    completo.id,
-    nos,
-    vizinhancas,
-    perfil,
-    pontuar,
-    OPCOES_PADRAO,
-  )
-
-  await repo.soltarMarcas(resultado.marcasPerdidas)
-  await repo.replaceConexoesDe(
-    completo.id,
-    resultado.arestas.map((a) => arestaParaConexao(a, new Date())),
-  )
-
-  // A Rede reage ao grafo já assentado, com o que sobrou de antes como
-  // partida quente — só este neurônio (e quem estava perto dele) se acomoda,
-  // ninguém mais reembaralha.
-  await recalcularPosicoesDaRede(await repo.listConexoes())
-  await reancorarTodos()
+  // O Porto só vale para quem acabou de nascer em "Automático".
+  if (!existente && input.livroId === null) await guardarPeloPorto(completo.id)
 
   const depois = await estadoAtual()
+  const naTela = depois.neuronios.find((n) => n.id === completo.id)
+  if (!naTela) throw new Error(`neurônio ${completo.id} sumiu no recálculo`)
   return {
-    neuronio: paraTela(completo),
+    neuronio: naTela,
     neuronios: depois.neuronios,
     conexoes: depois.conexoes,
     posicoesDaRede: depois.posicoesDaRede,
     vinculos: depois.vinculos,
   }
+}
+
+/**
+ * Leva ao livro que os mais parecidos apontam, quando a resposta é clara. Sem
+ * ela o neurônio fica no porto, e a tela pergunta. Roda depois das conexões,
+ * com o perfil já assentado — a mesma régua delas.
+ */
+async function guardarPeloPorto(id: Id): Promise<void> {
+  const [perfil, neuronios] = await Promise.all([repo.getPerfil(), repo.listNeuronios()])
+  const alvo = neuronios.find((n) => n.id === id)
+  if (!perfil || !alvo?.embedding) return
+
+  const livroId = livroDoPorto({ id, embedding: alvo.embedding }, nosDeNeuronios(neuronios), perfil)
+  if (livroId !== null) await guardar(id, livroId)
+}
+
+/**
+ * Põe o neurônio num livro de conceitos sem reler o texto: o vetor e as
+ * conexões continuam os mesmos, e só a ponte é refeita — ela depende do livro
+ * dos dois lados.
+ */
+async function guardar(id: Id, livroId: Id): Promise<void> {
+  const [neuronio, livro] = await Promise.all([repo.getNeuronio(id), repo.getLivro(livroId)])
+  if (!neuronio) throw new Error(`neurônio ${id} não existe`)
+  if (!livro) throw new Error(`livro ${livroId} não existe`)
+  if (livro.tipo === 'acervo') {
+    throw new Error('um neurônio não mora numa pasta — escolha um livro de conceitos')
+  }
+
+  await repo.upsertNeuronio({ ...neuronio, livroId })
+
+  const livroDe = new Map((await repo.listNeuronios()).map((n) => [n.id, n.livroId]))
+  const conexoes = await repo.listConexoesDe(id)
+  await repo.replaceConexoesDe(
+    id,
+    conexoes.map((c) => ({
+      ...c,
+      cross: ehPonte(livroDe.get(c.aId) ?? null, livroDe.get(c.bId) ?? null),
+    })),
+  )
+}
+
+async function guardarNeuronio(id: Id, livroId: Id): Promise<NeuronioGuardado> {
+  await guardar(id, livroId)
+  const [neuronios, conexoes] = await Promise.all([repo.listNeuronios(), repo.listConexoes()])
+  return { neuronios: neuronios.map(paraTela), conexoes }
 }
 
 /**
@@ -562,6 +611,9 @@ async function responder(msg: ParaMotor): Promise<DoMotor> {
         if (!existente) throw new Error(`neurônio ${msg.input.id} não existe`)
         return { req: msg.req, ok: true, dados: await escrever(msg.input, existente) }
       }
+
+      case 'guardarNeuronio':
+        return { req: msg.req, ok: true, dados: await guardarNeuronio(msg.id, msg.livroId) }
 
       case 'apagarNeuronio':
         return { req: msg.req, ok: true, dados: await apagarNeuronio(msg.neuronioId) }

@@ -17,6 +17,7 @@ export interface ResultadoDeLivro {
 export interface ResultadoDeNeuronio {
   tipo: 'neuronio'
   neuronio: NeuronioNaTela
+  /** `undefined` para um neurônio no porto, ainda sem livro. */
   livro: Livro | undefined
   /** Pedaço do conteúdo em volta do termo, só quando foi ele que bateu. */
   trecho: string | undefined
@@ -73,7 +74,7 @@ export function buscar(
     .map(({ neuronio, noTitulo }) => ({
       tipo: 'neuronio',
       neuronio,
-      livro: livroPorId.get(neuronio.livroId),
+      livro: neuronio.livroId === null ? undefined : livroPorId.get(neuronio.livroId),
       trecho: noTitulo ? undefined : trechoEmVolta(neuronio.conteudo, termo),
     }))
 
@@ -110,7 +111,7 @@ export function resultadosPorSentido(
       {
         tipo: 'neuronio' as const,
         neuronio,
-        livro: livroPorId.get(neuronio.livroId),
+        livro: neuronio.livroId === null ? undefined : livroPorId.get(neuronio.livroId),
         trecho: inicioDoTexto(neuronio.conteudo),
       },
     ]

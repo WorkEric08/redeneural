@@ -1,7 +1,8 @@
-import { useMemo } from 'react'
+import { useEffect, useMemo, useRef } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 
 import { Formulario } from '@/features/neuronio/Formulario'
+import { FolhaGuardarEm } from '@/features/porto/FolhaGuardarEm'
 import { usePalacio } from '@/store/palacio'
 
 /**
@@ -11,11 +12,17 @@ import { usePalacio } from '@/store/palacio'
  * Tela.tsx). `criarNeuronio` só resolve depois de o Worker terminar a
  * inferência inteira (embedding, conexões e posição já gravados), então a
  * Rede nunca abre com o neurônio "no meio do processamento".
+ *
+ * Pelo "+", o livro começa em "Automático" (o Porto, 01/10/2026): o motor
+ * guarda no livro que os mais parecidos apontam e o aviso oferece "Mudar"; sem
+ * resposta clara, o neurônio fica no porto e a pergunta "Onde guardar?" abre
+ * aqui mesmo, por cima do que a pessoa acabou de escrever. Responder guarda e
+ * segue para a Rede; fechar segue para a Rede com ele no porto.
  */
 export default function Novo() {
-  const [busca] = useSearchParams()
+  const [busca, setBusca] = useSearchParams()
   const navegar = useNavigate()
-  const { livros, ocupado, criarNeuronio } = usePalacio()
+  const { livros, neuronios, ocupado, criarNeuronio, guardarNeuronio, avisar } = usePalacio()
 
   // Um conceito não mora numa pasta de acervo: ela nem aparece na escolha, e
   // uma sugestão que aponte para uma é ignorada.
@@ -23,22 +30,85 @@ export default function Novo() {
   const pedido = busca.get('livro')
   const livroSugerido = deConceitos.some((l) => l.id === pedido) ? (pedido ?? undefined) : undefined
 
-  // A tela inteira é a folha de escrever: barra de topo, livro e texto moram
-  // dentro do formulário (ver Formulario.tsx).
+  // O neurônio que acabou de nascer no porto, esperando a resposta.
+  const pendenteId = busca.get('guardar')
+  const pendente = neuronios.find((n) => n.id === pendenteId)
+
+  // Sair da tela sem responder (o voltar do Android, que a leva inteira do
+  // histórico) deixa o neurônio no porto — e isso precisa ser dito.
+  const semResposta = useRef<string | null>(null)
+  useEffect(() => {
+    semResposta.current = pendenteId
+  }, [pendenteId])
+  useEffect(
+    () => () => {
+      if (semResposta.current !== null) usePalacio.getState().avisar('Ficou no porto.')
+    },
+    [],
+  )
+
+  function irParaARede(id: string): void {
+    semResposta.current = null
+    // `replace`: voltar depois de criar tem que sair do formulário, não
+    // trazê-lo de volta vazio.
+    void navegar(`/rede?novo=${id}`, { replace: true })
+  }
+
   return (
-    <Formulario
-      livros={deConceitos}
-      {...(livroSugerido ? { inicial: { livroId: livroSugerido, titulo: '', conteudo: '' } } : {})}
-      ocupado={ocupado}
-      rotuloDeEnvio="Criar neurônio"
-      voltarPara="/"
-      onEnviar={(dados) => {
-        void criarNeuronio(dados).then((id) => {
-          // `replace`: voltar depois de criar tem que sair do formulário, não
-          // trazê-lo de volta vazio.
-          if (id) void navegar(`/rede?novo=${id}`, { replace: true })
-        })
-      }}
-    />
+    <>
+      {/* A tela inteira é a folha de escrever: barra de topo, livro e texto
+          moram dentro do formulário (ver Formulario.tsx). */}
+      <Formulario
+        livros={deConceitos}
+        {...(livroSugerido
+          ? { inicial: { livroId: livroSugerido, titulo: '', conteudo: '' } }
+          : {})}
+        automatico
+        ocupado={ocupado}
+        rotuloDeEnvio="Criar neurônio"
+        voltarPara="/"
+        onEnviar={(dados) => {
+          void criarNeuronio(dados).then((criado) => {
+            if (!criado) return
+            if (dados.livroId === null && criado.livroId !== null) {
+              const livro = livros.find((l) => l.id === criado.livroId)
+              avisar(`Guardado em ${livro?.titulo ?? 'um livro'}.`, {
+                rotulo: 'Mudar',
+                busca: `?guardar=${criado.id}`,
+              })
+            }
+            if (criado.livroId !== null) {
+              irParaARede(criado.id)
+              return
+            }
+            // No porto: a pergunta toma o lugar desta entrada no histórico, e
+            // o voltar sai da tela de escrever inteira — o neurônio já existe.
+            setBusca({ guardar: criado.id }, { replace: true })
+          })
+        }}
+      />
+
+      <FolhaGuardarEm
+        aberta={pendente !== undefined}
+        neuronio={pendente}
+        livros={deConceitos}
+        onEscolher={(livroId) => {
+          if (!pendente) return
+          void guardarNeuronio(pendente.id, livroId).then(() => {
+            irParaARede(pendente.id)
+          })
+        }}
+        onCriarLivro={() => {
+          if (!pendente) return
+          semResposta.current = null
+          void navegar(`/novo-livro?neuronio=${pendente.id}&revelar=1`, { replace: true })
+        }}
+        onFechar={() => {
+          if (!pendente) return
+          avisar('Ficou no porto.')
+          irParaARede(pendente.id)
+        }}
+      />
+    </>
   )
 }

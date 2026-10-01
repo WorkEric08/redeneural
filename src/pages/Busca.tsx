@@ -5,6 +5,7 @@ import { Link, useSearchParams } from 'react-router-dom'
 import { BarraDeTopo } from '@/components/BarraDeTopo'
 import { buscar, resultadosPorSentido } from '@/features/busca/buscar'
 import { useBuscaPorSentido } from '@/features/busca/useBuscaPorSentido'
+import { ROTULO_DO_PORTO } from '@/features/porto/porto'
 import { usePalacio } from '@/store/palacio'
 
 /** Quantos neurônios recentes a tela mostra antes de alguém digitar. */
@@ -124,7 +125,9 @@ export default function Busca() {
                     key={n.id}
                     para={destinoDo(n.id)}
                     titulo={n.titulo}
-                    abaixo={livroPorId.get(n.livroId)?.titulo}
+                    abaixo={
+                      n.livroId === null ? ROTULO_DO_PORTO : livroPorId.get(n.livroId)?.titulo
+                    }
                   />
                 ))}
               </ul>
@@ -151,7 +154,7 @@ export default function Busca() {
                   key={r.neuronio.id}
                   para={destinoDo(r.neuronio.id)}
                   titulo={r.neuronio.titulo}
-                  abaixo={`${r.livro?.titulo ?? ''}${r.trecho ? ` · ${r.trecho}` : ''}`}
+                  abaixo={`${r.livro?.titulo ?? ROTULO_DO_PORTO}${r.trecho ? ` · ${r.trecho}` : ''}`}
                 />
               ))}
             </ul>
@@ -183,7 +186,7 @@ export default function Busca() {
                   key={`neuronio-${r.neuronio.id}`}
                   para={destinoDo(r.neuronio.id)}
                   titulo={r.neuronio.titulo}
-                  abaixo={`${r.livro?.titulo ?? ''}${r.trecho ? ` · ${r.trecho}` : ''}`}
+                  abaixo={`${r.livro?.titulo ?? ROTULO_DO_PORTO}${r.trecho ? ` · ${r.trecho}` : ''}`}
                 />
               ),
             )}

@@ -4,7 +4,8 @@ import type { AnexoNaTela, Id, NeuronioNaTela, Vinculo } from '@/core'
 export interface ConceitoDoAnexo {
   id: Id
   titulo: string
-  livroId: Id
+  /** `null`: o conceito está no porto, ainda sem livro. */
+  livroId: Id | null
   score: number
   /** 0 é o mais parecido — ver `Vinculo.ordem`. */
   ordem: number

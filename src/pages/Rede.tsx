@@ -5,6 +5,7 @@ import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-do
 import { BarraDeTopo } from '@/components/BarraDeTopo'
 import { botao } from '@/components/botao'
 import { Folha } from '@/components/Folha'
+import { ROTULO_DO_PORTO } from '@/features/porto/porto'
 import { grausDoMapa } from '@/features/rede/layout'
 import { Tela, type ControleDaTela, type Folgas } from '@/features/rede/Tela'
 import { useTravarRolagem } from '@/hooks/useTravarRolagem'
@@ -157,13 +158,13 @@ export default function Rede() {
         <div className="cartao fixed inset-x-4 bottom-[calc(96px+env(safe-area-inset-bottom))] z-10 mx-auto flex max-w-xl items-center gap-3 py-3 pr-3 pl-4 lg:left-[calc(13rem+1rem)]">
           <span
             className="h-9 w-1 shrink-0 rounded-full"
-            style={{ background: livroDoEscolhido?.cor }}
+            style={{ background: livroDoEscolhido?.cor ?? 'var(--linha)' }}
             aria-hidden
           />
           <div className="min-w-0 flex-1">
             <p className="font-titulo truncate font-semibold">{escolhido.titulo}</p>
             <p className="text-poeira truncate text-xs">
-              {livroDoEscolhido?.titulo} ·{' '}
+              {livroDoEscolhido?.titulo ?? ROTULO_DO_PORTO} ·{' '}
               {contar(graus.get(escolhido.id) ?? 0, 'conexão', 'conexões')}
             </p>
           </div>

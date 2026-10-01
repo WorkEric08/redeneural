@@ -11,12 +11,26 @@ export interface CriarNeuronioInput {
    * neurônio com este id antes de a inferência começar, e depois só substitui.
    */
   id: Id
-  livroId: Id
+  /**
+   * Ao criar, `null` é "Automático": o motor lê o texto, calcula as conexões e
+   * guarda no livro que os mais parecidos apontam (ver `livroDoPorto`) — ou
+   * deixa no porto, sem livro, quando a resposta não é clara.
+   *
+   * Ao editar, `null` só mantém no porto quem já estava lá: editar nunca
+   * passa pelo Porto.
+   */
+  livroId: Id | null
   titulo: string
   conteudo: string
 }
 
 export type EditarNeuronioInput = CriarNeuronioInput
+
+/** O que muda quando um neurônio troca de livro: ele, e a cor das conexões dele. */
+export interface NeuronioGuardado {
+  neuronios: NeuronioNaTela[]
+  conexoes: Conexao[]
+}
 
 export interface CriarLivroInput {
   /** Gerado por quem chama, pelo mesmo motivo do neurônio: é o que deixa a tela ser otimista. */
@@ -137,6 +151,13 @@ export interface ConnectionEngine {
   criarNeuronio(input: CriarNeuronioInput): Promise<ResultadoDeEscrita>
   editarNeuronio(input: EditarNeuronioInput): Promise<ResultadoDeEscrita>
   apagarNeuronio(id: Id): Promise<EstadoDoPalacio>
+  /**
+   * Põe o neurônio num livro de conceitos — é a resposta à pergunta do porto,
+   * e o "Mudar" depois de o Porto escolher. Não relê o texto: o vetor e as
+   * conexões continuam os mesmos, só a ponte é refeita, porque ela depende do
+   * livro dos dois lados.
+   */
+  guardarNeuronio(id: Id, livroId: Id): Promise<NeuronioGuardado>
 
   /** Livro não mexe no grafo: devolve só a estante, já com o livro no lugar. */
   criarLivro(input: CriarLivroInput): Promise<EstanteGravada>

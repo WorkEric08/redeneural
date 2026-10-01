@@ -84,6 +84,16 @@ describe('construirGrafo', () => {
     expect(arestas.some((a) => a.cross)).toBe(true)
   })
 
+  it('conexão com um neurônio no porto (sem livro) nunca é ponte', async () => {
+    // O mesmo palácio, com a dupla de programação ainda esperando livro.
+    const comPorto = PALACIO.map((n) => (n.livroId === 'prog' ? { ...n, livroId: null } : n))
+    const arestas = await construirGrafo(comPorto)
+    const doPorto = arestas.filter((a) => a.aId.startsWith('prog') || a.bId.startsWith('prog'))
+
+    expect(doPorto.length).toBeGreaterThan(0)
+    expect(doPorto.every((a) => !a.cross)).toBe(true)
+  })
+
   it('sem reranker, o score é o embedding puro', async () => {
     const arestas = await construirGrafo(PALACIO, SEM_RERANK)
 

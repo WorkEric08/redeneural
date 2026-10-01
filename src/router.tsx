@@ -13,6 +13,7 @@ import Neuronio from '@/pages/Neuronio'
 import Novo from '@/pages/Novo'
 import NovoAnexo from '@/pages/NovoAnexo'
 import NovoLivro from '@/pages/NovoLivro'
+import Porto from '@/pages/Porto'
 import Rede from '@/pages/Rede'
 
 /**
@@ -40,6 +41,7 @@ export const router = createBrowserRouter([
       { path: 'anexo/:anexoId/editar', element: <EditarAnexo /> },
       { path: 'ajustes', element: <Ajustes /> },
       { path: 'busca', element: <Busca /> },
+      { path: 'porto', element: <Porto /> },
     ],
   },
 ])
