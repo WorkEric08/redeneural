@@ -23,6 +23,7 @@ import {
   moverLivroNaEstante,
   MAXIMO_DE_PRATELEIRAS,
   MINIMO_DE_PRATELEIRAS,
+  modoDaBuscaOuPadrao,
   neuronioFromSnapshot,
   neuronioToSnapshot,
   posicoesAntigas,
@@ -103,6 +104,23 @@ export function createDexieRepo(db: PalacioDB = defaultDb): PalacioRepo {
       db.conexoes.where('bId').anyOf(neuronioIds).primaryKeys(),
     ])
     return [...new Set([...porA, ...porB])]
+  }
+
+  /**
+   * As preferências gravadas com `mudancas` por cima. Os campos irmãos vêm do
+   * documento atual: as preferências moram num documento só, e regravá-lo sem
+   * ler antes apagaria o que a operação não veio mudar.
+   */
+  async function preferenciasCom(
+    mudancas: Partial<Omit<PreferenciasGravadas, 'chave'>>,
+  ): Promise<PreferenciasGravadas> {
+    const atual = (await db.meta.get('preferencias')) as PreferenciasGravadas | undefined
+    return {
+      quantidadeDePrateleiras: MINIMO_DE_PRATELEIRAS,
+      ...atual,
+      ...mudancas,
+      chave: 'preferencias',
+    }
   }
 
   return {
@@ -216,15 +234,7 @@ export function createDexieRepo(db: PalacioDB = defaultDb): PalacioRepo {
         // Prateleira que deixa de existir não guarda buraco: se voltar a existir,
         // volta cheia de enfeite, como qualquer prateleira nova.
         await db.vagas.where('prateleira').aboveOrEqual(quantidade).delete()
-        const atual = (await db.meta.get('preferencias')) as PreferenciasGravadas | undefined
-        const preferencias: PreferenciasGravadas = {
-          chave: 'preferencias',
-          quantidadeDePrateleiras: quantidade,
-          ...(atual?.intensidadeDaLuz !== undefined && {
-            intensidadeDaLuz: atual.intensidadeDaLuz,
-          }),
-        }
-        await db.meta.put(preferencias)
+        await db.meta.put(await preferenciasCom({ quantidadeDePrateleiras: quantidade }))
       })
     },
 
@@ -236,13 +246,18 @@ export function createDexieRepo(db: PalacioDB = defaultDb): PalacioRepo {
     async definirIntensidadeDaLuz(valor) {
       const recortado = clampIntensidadeDaLuz(valor)
       await db.transaction('rw', db.meta, async () => {
-        const atual = (await db.meta.get('preferencias')) as PreferenciasGravadas | undefined
-        const preferencias: PreferenciasGravadas = {
-          chave: 'preferencias',
-          quantidadeDePrateleiras: atual?.quantidadeDePrateleiras ?? MINIMO_DE_PRATELEIRAS,
-          intensidadeDaLuz: recortado,
-        }
-        await db.meta.put(preferencias)
+        await db.meta.put(await preferenciasCom({ intensidadeDaLuz: recortado }))
+      })
+    },
+
+    async getModoDaBusca() {
+      const gravado = (await db.meta.get('preferencias')) as PreferenciasGravadas | undefined
+      return modoDaBuscaOuPadrao(gravado?.modoDaBusca)
+    },
+
+    async definirModoDaBusca(modo) {
+      await db.transaction('rw', db.meta, async () => {
+        await db.meta.put(await preferenciasCom({ modoDaBusca: modoDaBuscaOuPadrao(modo) }))
       })
     },
 
@@ -557,14 +572,7 @@ export function createDexieRepo(db: PalacioDB = defaultDb): PalacioRepo {
           const maiorPrateleira = Math.max(-1, ...unidos.map((l) => l.prateleira)) + 1
           const atual = (await db.meta.get('preferencias')) as PreferenciasGravadas | undefined
           if (maiorPrateleira > (atual?.quantidadeDePrateleiras ?? MINIMO_DE_PRATELEIRAS)) {
-            const preferencias: PreferenciasGravadas = {
-              chave: 'preferencias',
-              quantidadeDePrateleiras: maiorPrateleira,
-              ...(atual?.intensidadeDaLuz !== undefined && {
-                intensidadeDaLuz: atual.intensidadeDaLuz,
-              }),
-            }
-            await db.meta.put(preferencias)
+            await db.meta.put(await preferenciasCom({ quantidadeDePrateleiras: maiorPrateleira }))
           }
         },
       )

@@ -4,6 +4,7 @@ import {
   chaveDoLugar,
   INTENSIDADE_DA_LUZ_PADRAO,
   MINIMO_DE_PRATELEIRAS,
+  MODO_DA_BUSCA_PADRAO,
   moverLivroNaEstante,
   novoLivro,
   primeiroLugarLivre,
@@ -12,6 +13,7 @@ import {
   type Conexao,
   type CriarAnexoInput,
   type Livro,
+  type ModoDaBusca,
   type NeuronioNaTela,
   type Ponto,
   type ProgressoDoMotor,
@@ -57,6 +59,8 @@ interface PalacioStore {
   quantidadeDePrateleiras: number
   /** 0-100: o quanto a luz da sala lava a cor do pano em repouso. */
   intensidadeDaLuz: number
+  /** O último modo da busca que a pessoa escolheu. */
+  modoDaBusca: ModoDaBusca
 
   carregado: boolean
   ocupado: boolean
@@ -92,6 +96,8 @@ interface PalacioStore {
   definirQuantidadeDePrateleiras: (quantidade: number) => Promise<void>
   /** Otimista, como o resto das preferências — a estante já lava na hora. */
   definirIntensidadeDaLuz: (valor: number) => Promise<void>
+  /** Otimista: a busca troca de modo na hora, e a escolha fica gravada para a próxima vez. */
+  definirModoDaBusca: (modo: ModoDaBusca) => Promise<void>
   /**
    * Solta um neurônio arrastado no ponto novo. Devolve o layout reagindo a
    * ele na hora — a tela anima o assentamento com o resultado, sem esperar
@@ -136,6 +142,7 @@ export const usePalacio = create<PalacioStore>()((set, get) => {
     posicoesDaRede: {},
     quantidadeDePrateleiras: MINIMO_DE_PRATELEIRAS,
     intensidadeDaLuz: INTENSIDADE_DA_LUZ_PADRAO,
+    modoDaBusca: MODO_DA_BUSCA_PADRAO,
     carregado: false,
     ocupado: false,
     progresso: null,
@@ -391,6 +398,17 @@ export const usePalacio = create<PalacioStore>()((set, get) => {
         set({ intensidadeDaLuz: await engine.definirIntensidadeDaLuz(valor) })
       } catch (e) {
         set({ intensidadeDaLuz: antes, erro: mensagem(e) })
+      }
+    },
+
+    async definirModoDaBusca(modo) {
+      set({ modoDaBusca: modo })
+      try {
+        await engine.definirModoDaBusca(modo)
+      } catch (e) {
+        // Sem desfazer: a pessoa tocou no modo e a busca já está nele. Só
+        // não fica lembrado para a próxima vez — e isso ela precisa saber.
+        set({ erro: mensagem(e) })
       }
     },
 

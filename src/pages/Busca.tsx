@@ -10,8 +10,6 @@ import { usePalacio } from '@/store/palacio'
 /** Quantos neurônios recentes a tela mostra antes de alguém digitar. */
 const RECENTES = 8
 
-type Modo = 'sentido' | 'exata'
-
 /**
  * Busca no palácio inteiro, de dois jeitos (30/09/2026):
  *
@@ -23,8 +21,9 @@ type Modo = 'sentido' | 'exata'
  *   que garante achar um trecho do fim de um texto longo: o modelo só lê os
  *   primeiros 2500 caracteres.
  *
- * Abre sempre em "Por sentido" e não lembra a troca — decisão do usuário, sem
- * preferência nova.
+ * Abre no último modo que a pessoa escolheu (pedido do usuário, 30/09/2026) —
+ * gravado como preferência do palácio, como a luz da estante. Quem nunca
+ * escolheu começa em "Por sentido".
  *
  * Com o campo vazio a tela não fica em branco: mostra os últimos neurônios
  * escritos (17/09/2026). É a única tela do app que responde "o que eu escrevi
@@ -33,9 +32,8 @@ type Modo = 'sentido' | 'exata'
  * (ver `porMaisRecente` em dexieRepo.ts), então aqui é só recortar.
  */
 export default function Busca() {
-  const { livros, neuronios } = usePalacio()
+  const { livros, neuronios, modoDaBusca: modo, definirModoDaBusca } = usePalacio()
   const [consulta, setConsulta] = useState('')
-  const [modo, setModo] = useState<Modo>('sentido')
 
   // Quem abriu a busca a partir da Rede quer voltar pra lá com a câmera no
   // neurônio, não abrir a tela dele — o link do resultado muda de destino,
@@ -91,7 +89,7 @@ export default function Busca() {
               type="button"
               aria-pressed={modo === 'sentido'}
               onClick={() => {
-                setModo('sentido')
+                void definirModoDaBusca('sentido')
               }}
               className="chip"
             >
@@ -102,7 +100,7 @@ export default function Busca() {
               type="button"
               aria-pressed={modo === 'exata'}
               onClick={() => {
-                setModo('exata')
+                void definirModoDaBusca('exata')
               }}
               className="chip"
             >

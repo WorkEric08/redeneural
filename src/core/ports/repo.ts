@@ -9,6 +9,7 @@ import type {
   Vaga,
   Vinculo,
 } from '../domain/types'
+import type { ModoDaBusca } from '../domain/modoDaBusca'
 import type { PerfilDoPalacio } from '../motor/grafo'
 import type { MarcaPerdida } from '../motor/incremental'
 import type { Ponto } from '../motor/redeLayout'
@@ -54,6 +55,9 @@ export interface PalacioRepo {
   getIntensidadeDaLuz(): Promise<number>
   /** Grava a intensidade da luz, sempre recortada para 0-100. */
   definirIntensidadeDaLuz(valor: number): Promise<void>
+  /** O último modo da busca que a pessoa escolheu. `MODO_DA_BUSCA_PADRAO` se nunca escolheu. */
+  getModoDaBusca(): Promise<ModoDaBusca>
+  definirModoDaBusca(modo: ModoDaBusca): Promise<void>
 
   listNeuronios(livroId?: Id): Promise<Neuronio[]>
   getNeuronio(id: Id): Promise<Neuronio | undefined>

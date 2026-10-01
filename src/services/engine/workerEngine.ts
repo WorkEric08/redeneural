@@ -10,6 +10,7 @@ import type {
   EstanteGravada,
   Id,
   Livro,
+  ModoDaBusca,
   Ponto,
   ProgressoDoMotor,
   ResultadoDeEscrita,
@@ -112,6 +113,9 @@ export function criarWorkerEngine(): ConnectionEngine {
 
     definirIntensidadeDaLuz: (valor: number): Promise<number> =>
       pedir<'definirIntensidadeDaLuz'>({ tipo: 'definirIntensidadeDaLuz', valor }),
+
+    definirModoDaBusca: (modo: ModoDaBusca): Promise<ModoDaBusca> =>
+      pedir<'definirModoDaBusca'>({ tipo: 'definirModoDaBusca', modo }),
 
     moverNeuronioNaRede: (id: Id, ponto: Ponto): Promise<Readonly<Record<Id, Ponto>>> =>
       pedir<'moverNeuronioNaRede'>({ tipo: 'moverNeuronioNaRede', id, ponto }),

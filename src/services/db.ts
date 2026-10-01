@@ -9,6 +9,7 @@ import {
   type EtiquetaDePrateleira,
   type Id,
   type Livro,
+  type ModoDaBusca,
   type Neuronio,
   type Ponto,
   type Vaga,
@@ -33,12 +34,20 @@ export interface PerfilGravado {
   atualizadoEm: Date
 }
 
-/** Preferências simples do palácio: quantidade de prateleiras (Fase 10) e intensidade da luz (Fase 17). */
+/**
+ * Preferências simples do palácio: quantidade de prateleiras (Fase 10),
+ * intensidade da luz (Fase 17) e o modo da busca (30/09/2026).
+ *
+ * Um documento só para todas: quem grava um campo lê o documento antes e
+ * espalha o que já estava, senão apagaria os irmãos.
+ */
 export interface PreferenciasGravadas {
   chave: 'preferencias'
   quantidadeDePrateleiras: number
   /** 0-100. Ausente em preferências gravadas antes da Fase 17 — o repo trata como `INTENSIDADE_DA_LUZ_PADRAO`. */
   intensidadeDaLuz?: number
+  /** Ausente em preferências gravadas antes de 30/09/2026 — o repo trata como `MODO_DA_BUSCA_PADRAO`. */
+  modoDaBusca?: ModoDaBusca
 }
 
 /**

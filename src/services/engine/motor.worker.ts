@@ -97,6 +97,7 @@ async function estadoAtual(): Promise<EstadoDoPalacio> {
     conexoes,
     quantidadeDePrateleiras,
     intensidadeDaLuz,
+    modoDaBusca,
     posicoesDaRede,
     acervo,
   ] = await Promise.all([
@@ -106,6 +107,7 @@ async function estadoAtual(): Promise<EstadoDoPalacio> {
     repo.listConexoes(),
     repo.getQuantidadeDePrateleiras(),
     repo.getIntensidadeDaLuz(),
+    repo.getModoDaBusca(),
     repo.getPosicoesDaRede(),
     acervoAtual(),
   ])
@@ -117,6 +119,7 @@ async function estadoAtual(): Promise<EstadoDoPalacio> {
     conexoes,
     quantidadeDePrateleiras,
     intensidadeDaLuz,
+    modoDaBusca,
     posicoesDaRede,
     ...acervo,
   }
@@ -594,6 +597,10 @@ async function responder(msg: ParaMotor): Promise<DoMotor> {
       case 'definirIntensidadeDaLuz':
         await repo.definirIntensidadeDaLuz(msg.valor)
         return { req: msg.req, ok: true, dados: await repo.getIntensidadeDaLuz() }
+
+      case 'definirModoDaBusca':
+        await repo.definirModoDaBusca(msg.modo)
+        return { req: msg.req, ok: true, dados: await repo.getModoDaBusca() }
 
       case 'moverNeuronioNaRede':
         return { req: msg.req, ok: true, dados: await moverNeuronioNaRede(msg.id, msg.ponto) }

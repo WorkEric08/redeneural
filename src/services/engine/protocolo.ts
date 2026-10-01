@@ -9,6 +9,7 @@ import type {
   EstanteGravada,
   Id,
   Livro,
+  ModoDaBusca,
   Ponto,
   ProgressoDoMotor,
   ResultadoDeEscrita,
@@ -34,6 +35,7 @@ export interface RespostasDoMotor {
   porEnfeite: Vaga[]
   definirQuantidadeDePrateleiras: number
   definirIntensidadeDaLuz: number
+  definirModoDaBusca: ModoDaBusca
   moverNeuronioNaRede: Readonly<Record<Id, Ponto>>
   criarAnexo: EstadoDoPalacio
   editarAnexo: EstadoDoPalacio
@@ -58,6 +60,7 @@ export type ParaMotor =
   | { req: number; tipo: 'porEnfeite'; prateleira: number; lugar: number }
   | { req: number; tipo: 'definirQuantidadeDePrateleiras'; quantidade: number }
   | { req: number; tipo: 'definirIntensidadeDaLuz'; valor: number }
+  | { req: number; tipo: 'definirModoDaBusca'; modo: ModoDaBusca }
   | { req: number; tipo: 'moverNeuronioNaRede'; id: Id; ponto: Ponto }
   | { req: number; tipo: 'criarAnexo'; input: CriarAnexoInput }
   | { req: number; tipo: 'editarAnexo'; input: EditarAnexoInput }

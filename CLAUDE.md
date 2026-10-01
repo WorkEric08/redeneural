@@ -3815,14 +3815,27 @@ Decisões da Etapa 0 (respostas dele), que valem para a série toda:
 
 `/busca` ganhou dois modos, num seletor de chips como o "Livro | Pasta":
 
-- **Por sentido** — o padrão, e a tela não lembra a troca (escolha do
-  usuário: sem preferência nova). A frase passa pelo mesmo modelo, com o mesmo
-  `query:` e o mesmo truncamento dos neurônios, e voltam até 20 neurônios.
-  Livros e anexos não entram nesse modo.
+- **Por sentido** — para quem nunca escolheu. A frase passa pelo mesmo modelo,
+  com o mesmo `query:` e o mesmo truncamento dos neurônios, e voltam até 20
+  neurônios. Livros e anexos não entram nesse modo.
 - **Palavra exata** — a busca que já existia, sem mudança: pedaço de palavra
   (escolha do usuário — "prat" acha "prática" enquanto se digita), sem acento e
   sem caixa, no título e no conteúdo **inteiros**. É a que garante achar um
   trecho do fim de um texto longo: o modelo só lê os primeiros 2500 caracteres.
+
+**A tela abre no último modo escolhido** (pedido do usuário, depois de testar —
+a primeira versão abria sempre em "Por sentido"). Fica em
+`meta.preferencias.modoDaBusca`, junto da quantidade de prateleiras e da luz:
+preferência local, fora do backup pelo mesmo motivo das outras duas. A store
+troca na hora e grava por trás; se gravar falhar, a busca continua no modo
+tocado e o aviso diz que não ficou lembrado.
+
+**As preferências deixaram de apagar umas às outras.** Cada escrita copiava os
+campos irmãos à mão — o gotcha da Fase 17 —, e um terceiro campo exigiria
+lembrar de copiá-lo em três lugares (prateleiras, luz e a fusão do import).
+`preferenciasCom` lê o documento e põe só a mudança por cima; há teste de
+prateleiras, luz e import não apagando o modo, e do modo não apagando as duas.
+É o mesmo lugar que o modo do Mapa (Atualização 3) vai usar.
 
 **Onde mora:** `buscarPorSentido` em `core/motor/busca.ts`, puro, rodando no
 Worker; a porta devolve só ids, e a tela monta as linhas com o que já tem
@@ -3884,7 +3897,7 @@ responde em ~1,5 s (modelo saindo do cache) e as seguintes em ~300 ms (a espera
 da digitação mais ~10 ms de inferência); tocar no resultado abre o neurônio;
 sem rolagem lateral em 320, 768, 1024 e 1440 px; os dois temas. **Offline de
 verdade**: servidor desligado e rede cortada, a tela abre pelo service worker e
-as mesmas buscas dão o mesmo resultado. 322 testes (12 novos), typecheck e lint
+as mesmas buscas dão o mesmo resultado. 322 testes (12 novos; 328 com o modo lembrado), typecheck e lint
 limpos. Bundle principal: 133,7 KB gzipped.
 
 ## Fases

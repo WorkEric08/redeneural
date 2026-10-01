@@ -528,6 +528,43 @@ describe('intensidade da luz', () => {
   })
 })
 
+describe('modo da busca', () => {
+  it('"sentido" por padrão, quando nunca foi escolhido', async () => {
+    expect(await repo.getModoDaBusca()).toBe('sentido')
+  })
+
+  it('devolve o último que foi escolhido', async () => {
+    await repo.definirModoDaBusca('exata')
+    expect(await repo.getModoDaBusca()).toBe('exata')
+
+    await repo.definirModoDaBusca('sentido')
+    expect(await repo.getModoDaBusca()).toBe('sentido')
+  })
+
+  it('mexer nas prateleiras ou na luz não apaga o modo, e escolher o modo não apaga as duas', async () => {
+    await repo.definirModoDaBusca('exata')
+    await repo.definirQuantidadeDePrateleiras(6)
+    await repo.definirIntensidadeDaLuz(70)
+    expect(await repo.getModoDaBusca()).toBe('exata')
+
+    await repo.definirModoDaBusca('sentido')
+    expect(await repo.getQuantidadeDePrateleiras()).toBe(6)
+    expect(await repo.getIntensidadeDaLuz()).toBe(70)
+  })
+
+  it('importar um backup que aumenta as prateleiras não apaga o modo', async () => {
+    const origem = createDexieRepo(createDb(`palacio-test-modo-${String(nth)}`))
+    await origem.upsertLivro(livro('l1', 'Psicologia', 0, 5))
+    const snapshot = await origem.exportAll()
+
+    await repo.definirModoDaBusca('exata')
+    await repo.importAll(snapshot)
+
+    expect(await repo.getQuantidadeDePrateleiras()).toBe(6)
+    expect(await repo.getModoDaBusca()).toBe('exata')
+  })
+})
+
 describe('migração para a v3', () => {
   // É o que acontece no aparelho de quem já usava o app: o banco abre em v2, com
   // livros sem `ordem`, e nenhum deles pode mudar de lugar na tela. Como
