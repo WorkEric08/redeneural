@@ -1,4 +1,4 @@
-import type { Anexo, Id, MidiaDoAnexo, Neuronio } from './types'
+import type { Anexo, EstadoDaIdeia, Id, MidiaDoAnexo, Neuronio } from './types'
 
 /**
  * Um neurônio como a tela o vê.
@@ -15,6 +15,10 @@ export interface NeuronioNaTela {
   conteudo: string
   /** A inferência ainda não terminou — mostrar como "processando…". */
   processando: boolean
+  /** Ver `Neuronio.estado` — a tela só mostra num livro executável (`estadoVisivel`). */
+  estado: EstadoDaIdeia | null
+  ultimoToque: Date
+  resultadoLink: string | null
   createdAt: Date
   updatedAt: Date
 }
@@ -26,6 +30,9 @@ export function paraTela(n: Neuronio): NeuronioNaTela {
     titulo: n.titulo,
     conteudo: n.conteudo,
     processando: n.embedding === null,
+    estado: n.estado,
+    ultimoToque: n.ultimoToque,
+    resultadoLink: n.resultadoLink,
     createdAt: n.createdAt,
     updatedAt: n.updatedAt,
   }

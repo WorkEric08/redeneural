@@ -37,7 +37,10 @@ export default function EditarLivro() {
             emblema: livro.emblema,
             larguraLombada: livro.larguraLombada,
             comprimentoLombada: livro.comprimentoLombada,
+            executavel: livro.executavel,
+            diasParaAdormecer: livro.diasParaAdormecer,
           }}
+          tipoFixo={livro.tipo}
           rotuloDeEnvio="Salvar"
           ocupado={ocupado}
           intensidadeDaLuz={intensidadeDaLuz}

@@ -23,6 +23,8 @@ function livro(
     emblema: null,
     larguraLombada,
     comprimentoLombada: null,
+    executavel: false,
+    diasParaAdormecer: 30,
     createdAt: T0,
   }
   return { livro: l, neuronios: 3, anexos: 0, internas: 0, saindo: 0, altura: 0.5 }

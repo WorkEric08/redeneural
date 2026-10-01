@@ -355,8 +355,9 @@ revisão. Não adiantar fases.
 ## Modelo de dados
 
 ```
-livros:     { id, tipo: 'conceitos' | 'acervo', titulo, cor, prateleira, ordem, createdAt }
-neuronios:  { id, livroId: string | null, titulo, conteudo, embedding: Float32Array | null, createdAt, updatedAt }
+livros:     { id, tipo: 'conceitos' | 'acervo', titulo, cor, prateleira, ordem, executavel, diasParaAdormecer, createdAt }
+neuronios:  { id, livroId: string | null, titulo, conteudo, embedding: Float32Array | null,
+              estado: 'para_fazer' | 'fazendo' | 'feita' | null, ultimoToque, resultadoLink, createdAt, updatedAt }
 conexoes:   { id, aId, bId, score, emb, rr, cross, mantidaPorA, mantidaPorB, updatedAt }
 vagas:      { prateleira, ordem }
 anexos:     { id, livroId, legenda, midia, embedding: Float32Array | null, createdAt, updatedAt }
@@ -375,6 +376,11 @@ vinculos:   { id: 'anexoId::conceitoId', anexoId, conceitoId, score, updatedAt }
   **mapa** (chave `'mapa'`, 01/10/2026): o centro e o raio de cada ilha e o
   lugar de cada neurônio nela. Diferente das posições da Rede, **vai no
   backup**. Ver "O Mapa".
+
+- `livros.executavel`/`diasParaAdormecer` e `neuronios.estado`/`ultimoToque`/
+  `resultadoLink` são dos livros executáveis (Dexie v11, 01/10/2026). O estado
+  só tem sentido num livro executável; fora dele fica guardado sem aparecer.
+  Ver "Ideias executáveis".
 
 - `livros.ordem` é o lugar na prateleira (0..25), gravado porque quem decide é
   a pessoa arrastando o livro. **Esparso** desde 14/09/2026 — pode haver
@@ -4266,6 +4272,109 @@ typecheck e lint limpos. Bundle principal: 142,2 KB gzipped.
 cada ilha, mas um palácio de 20 livros ainda pode mostrar umas 30 pontes de
 longe — o "limpo" do documento foi visto com 7.
 
+### Ideias executáveis, parte 1 (Atualização 5)
+
+Um livro pode ser de **ideias para fazer** — textos, estudos, vídeos —, cada
+uma com um andamento: **para fazer, fazendo, feita**. Sem prazo, sem data, sem
+subtarefa e sem etiqueta: o livro não vira gerenciador de tarefas. Decisões
+minhas, pela regra da série.
+
+#### O dado
+
+- **`Livro.executavel`, e não um terceiro `tipo`** (decisão da Etapa 0): um
+  livro executável continua sendo de conceitos em tudo — conexões, pontes,
+  Rede, Mapa. `diasParaAdormecer` (padrão 30, de 0 a 365) vale a partir da
+  Atualização 6; 0 existe para testar o adormecer na hora. **Uma pasta de
+  acervo nunca é executável** — o schema recusa, o motor força `false`, e o
+  import também, mesmo num arquivo mexido à mão.
+- **`Neuronio.estado` é `null` em quem nunca entrou num livro executável.**
+  - Entrar num (nascer nele, vir de outro livro ou do porto) começa em "para
+    fazer".
+  - Continuar no mesmo mantém o que tinha.
+  - **Sair guarda o estado sem mostrar.** Um livro que deixa de ser executável
+    e volta devolve os estados como estavam — verificado.
+  - A regra é `estadoAoGuardar` (`core/domain/executavel.ts`, pura e
+    testada), usada igual pelo motor e pelo otimismo da store. A tela mostra o
+    estado por `estadoVisivel`: só num livro executável, e "para fazer" para
+    quem estava no livro antes de ele virar executável.
+- **`ultimoToque`** é o relógio do adormecer. A migração usa a última edição.
+  Nesta parte ele anda ao nascer, ao entrar num livro executável e ao mudar de
+  estado. Abrir, editar, "Acordar" e o despertar por conexão entram na
+  Atualização 6, que é quem os pede.
+- **`resultadoLink`** só se grava junto de "feita", e só http/https (a mesma
+  régua do link de anexo). Mudar de estado depois não o apaga.
+- **Dexie v11**, sem índice novo: todo livro fica de pensamentos com 30 dias, e
+  toda ideia fica sem estado e sem link, com o toque na última edição. O
+  backup leva os campos novos; backup antigo importa com os mesmos padrões.
+
+#### As entradas, sempre explícitas
+
+- **"Quero executar isso", na captura**, ao lado da etiqueta do livro:
+  - com um livro executável, vai para ele;
+  - com vários, abre a folha "Em qual livro executável?";
+  - com nenhum, a mesma folha **oferece criar um ali mesmo**, com "Ideias
+    executáveis" de nome sugerido. Sair para o formulário de livro perderia o
+    texto escrito. O livro nasce como qualquer livro novo (pano sugerido,
+    tamanho normal) no primeiro lugar livre da estante, e o resto se troca
+    depois em "Renomear e editar livro".
+  - **O botão não tem estado próprio**: está ligado quando o livro escolhido é
+    executável. Escolher um pela etiqueta também o liga, e desligar volta ao
+    "Automático".
+- **"Tornar executável", na tela de qualquer ideia** que não está num livro
+  executável, inclusive no porto: com um, direto e com aviso; com vários ou
+  nenhum, a mesma folha. É o `guardarNeuronio` de sempre: as conexões ficam e
+  o `cross` é refeito, e no Mapa ela entra na ilha nova perto dos vizinhos.
+- **O Porto passa a excluir os executáveis** (a exclusão preparada na
+  Atualização 2): eles votam, mas nunca vencem. Verificado com Programação
+  executável: um texto de programação que ia sozinho para lá ficou no porto,
+  com a pergunta.
+- **Escolher à mão continua livre:** a etiqueta do livro, a pergunta do porto e
+  o editar mostram os executáveis, marcados com um martelo.
+
+#### As telas
+
+- **Formulário de livro:** "Livro executável" logo abaixo do tipo (só para
+  livro, nunca para pasta), e com ele ligado "Adormece com [30] dias parada".
+  Cabe sem rolar em 412×892.
+- **Livro executável:** seções "Fazendo", "Para fazer" e "Feitas", com a
+  contagem; seção vazia não aparece. Cada cartão ganha à esquerda o círculo do
+  estado, com alvo de toque próprio.
+- **Folha do andamento** (`?estado=<id>` no livro, `?estado=1` na ideia): "Para
+  fazer" e "Fazendo" mudam e fecham. "Feita" abre o link do resultado,
+  opcional, antes de confirmar; link que não é http/https não passa.
+- **Tela da ideia:** o andamento num botão que abre a mesma folha e, feita, o
+  "Resultado" abrindo o link. Fora de livro executável, o "Tornar executável".
+- **Livros de pensamentos não mudaram** — verificado.
+- **O visual da Rede e do Mapa ainda não mudou** (névoa, anel das feitas): é a
+  Atualização 6.
+
+**Puro e testado:** `estadoAoGuardar`, `entraEmExecutavel`, `estadoVisivel` e
+`clampDiasParaAdormecer` (8 testes). No repositório:
+
+- migração v11;
+- pasta executável recusada;
+- link que não é http recusado;
+- backup de ida e volta e backup antigo;
+- pasta executável num arquivo mexido;
+- link inválido num arquivo.
+
+**Verificado no navegador de verdade** (build de produção, toque por CDP,
+palácio de 35 notas com os vetores do e5):
+
+- As três situações da captura: nenhum livro executável (criou "Ideias
+  executáveis" sem perder o texto), um só, e vários.
+- "Tornar executável" com um e com vários, a ponte refeita dos dois lados.
+- O formulário gravando executável com 7 dias.
+- Os estados mudando pelas seções e o link inválido barrado.
+- "Feita" com o link e um toque novo, e o "Resultado" na tela da ideia.
+- Executável desligado e religado sem perder estado.
+- O Porto evitando um livro executável.
+- Recarregar mantendo tudo.
+
+Sem rolagem lateral em 320, 412, 768, 1024 e 1440 px, nos dois temas; nenhum
+erro no console. 404 testes (15 novos), typecheck e lint limpos. Bundle
+principal: 145,0 KB gzipped.
+
 ## Fases
 
 0. ✅ Esqueleto (Vite/React/TS/Tailwind/PWA/Capacitor)
@@ -4305,6 +4414,6 @@ longe — o "limpo" do documento foi visto com 7.
     vizinhos acompanhando e assentando
 24. ✅ Pastas de acervo — links e imagens como satélites dos conceitos na
     Rede (as 4 etapas; a última em 01/10/2026)
-25. 🟡 Atualizações aprovadas (30/09/2026) — **4 de 6 feitas (Busca, Porto,
-    Mapa partes 1 e 2)**, e os satélites de anexo entre o Porto e o Mapa;
-    seguem os Executáveis
+25. 🟡 Atualizações aprovadas (30/09/2026) — **5 de 6 feitas (Busca, Porto,
+    Mapa partes 1 e 2, Executáveis parte 1)**, e os satélites de anexo entre o
+    Porto e o Mapa; segue a parte 2 dos Executáveis (adormecer e despertar)

@@ -2,6 +2,8 @@ import { create } from 'zustand'
 
 import {
   chaveDoLugar,
+  clampDiasParaAdormecer,
+  estadoAoGuardar,
   INTENSIDADE_DA_LUZ_PADRAO,
   MINIMO_DE_PRATELEIRAS,
   MAPA_VAZIO,
@@ -14,6 +16,7 @@ import {
   type AnexoNaTela,
   type Conexao,
   type CriarAnexoInput,
+  type EstadoDaIdeia,
   type Livro,
   type MapaDoPalacio,
   type ModoDaBusca,
@@ -41,6 +44,9 @@ export interface NovoLivro {
   emblema: string | null
   larguraLombada: number | null
   comprimentoLombada: number | null
+  /** Só livro de conceitos: uma pasta nunca é executável (o motor garante). */
+  executavel: boolean
+  diasParaAdormecer: number
 }
 
 export interface NovoAnexo {
@@ -100,6 +106,15 @@ interface PalacioStore {
   apagarNeuronio: (id: string) => Promise<boolean>
   /** Põe o neurônio num livro de conceitos, sem reler o texto. `false` se o motor não conseguiu. */
   guardarNeuronio: (id: string, livroId: string) => Promise<boolean>
+  /**
+   * O andamento de uma ideia num livro executável, e o link do resultado
+   * quando ela está feita. Otimista. `false` se o motor não conseguiu.
+   */
+  definirEstado: (
+    id: string,
+    estado: EstadoDaIdeia,
+    resultadoLink: string | null,
+  ) => Promise<boolean>
   /**
    * Nasce no `lugar` tocado (ou no buraco mais perto dele). Devolve o id do
    * livro criado, ou null se o motor não conseguiu.
@@ -204,12 +219,17 @@ export const usePalacio = create<PalacioStore>()((set, get) => {
 
       // Otimista: o neurônio aparece antes de o modelo dizer qualquer coisa.
       // O id vem daqui de propósito — é o que dispensa correlacionar depois.
+      const livro = get().livros.find((l) => l.id === novo.livroId)
       const provisorio: NeuronioNaTela = {
         id,
         livroId: novo.livroId,
         titulo: novo.titulo.trim(),
         conteudo: novo.conteudo.trim(),
         processando: true,
+        // A mesma regra do motor: nascer num livro executável é "para fazer".
+        estado: estadoAoGuardar(undefined, livro),
+        ultimoToque: agora,
+        resultadoLink: null,
         createdAt: agora,
         updatedAt: agora,
       }
@@ -239,6 +259,7 @@ export const usePalacio = create<PalacioStore>()((set, get) => {
     async editarNeuronio(id, mudancas): Promise<boolean> {
       // Otimista também: o texto novo aparece marcado como processando, porque
       // editar refaz o embedding e as conexões podem mudar.
+      const livro = get().livros.find((l) => l.id === mudancas.livroId)
       set((s) => ({
         neuronios: s.neuronios.map((n) =>
           n.id === id
@@ -247,6 +268,7 @@ export const usePalacio = create<PalacioStore>()((set, get) => {
                 titulo: mudancas.titulo.trim(),
                 conteudo: mudancas.conteudo.trim(),
                 livroId: mudancas.livroId,
+                estado: estadoAoGuardar(n, livro),
                 processando: true,
               }
             : n,
@@ -298,9 +320,12 @@ export const usePalacio = create<PalacioStore>()((set, get) => {
 
     async guardarNeuronio(id, livroId): Promise<boolean> {
       // Otimista: o neurônio já aparece no livro; a ponte chega com o motor.
-      const antes = get().neuronios.find((n) => n.id === id)?.livroId ?? null
+      const anterior = get().neuronios.find((n) => n.id === id)
+      const livro = get().livros.find((l) => l.id === livroId)
       set((s) => ({
-        neuronios: s.neuronios.map((n) => (n.id === id ? { ...n, livroId } : n)),
+        neuronios: s.neuronios.map((n) =>
+          n.id === id ? { ...n, livroId, estado: estadoAoGuardar(n, livro) } : n,
+        ),
         erro: null,
       }))
 
@@ -310,7 +335,35 @@ export const usePalacio = create<PalacioStore>()((set, get) => {
         return true
       } catch (e) {
         set((s) => ({
-          neuronios: s.neuronios.map((n) => (n.id === id ? { ...n, livroId: antes } : n)),
+          neuronios: s.neuronios.map((n) => (n.id === id && anterior ? anterior : n)),
+          erro: mensagem(e),
+        }))
+        return false
+      }
+    },
+
+    async definirEstado(id, estado, resultadoLink): Promise<boolean> {
+      const anterior = get().neuronios.find((n) => n.id === id)
+      set((s) => ({
+        neuronios: s.neuronios.map((n) =>
+          n.id === id
+            ? {
+                ...n,
+                estado,
+                resultadoLink: estado === 'feita' ? resultadoLink : n.resultadoLink,
+                ultimoToque: new Date(),
+              }
+            : n,
+        ),
+        erro: null,
+      }))
+
+      try {
+        set({ neuronios: await engine.definirEstado(id, estado, resultadoLink) })
+        return true
+      } catch (e) {
+        set((s) => ({
+          neuronios: s.neuronios.map((n) => (n.id === id && anterior ? anterior : n)),
           erro: mensagem(e),
         }))
         return false
@@ -361,6 +414,8 @@ export const usePalacio = create<PalacioStore>()((set, get) => {
                 emblema: mudancas.emblema,
                 larguraLombada: mudancas.larguraLombada,
                 comprimentoLombada: mudancas.comprimentoLombada,
+                executavel: l.tipo === 'conceitos' && mudancas.executavel,
+                diasParaAdormecer: clampDiasParaAdormecer(mudancas.diasParaAdormecer),
               }
             : l,
         ),

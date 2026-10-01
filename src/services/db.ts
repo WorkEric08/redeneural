@@ -1,6 +1,7 @@
 import Dexie, { type EntityTable, type Table } from 'dexie'
 
 import {
+  DIAS_PARA_ADORMECER_PADRAO,
   distribuicaoAntiga,
   posicoesAntigas,
   type Anexo,
@@ -225,6 +226,43 @@ export function createDb(name: string = DB_NAME): PalacioDB {
       const livros = tx.table<Omit<Livro, 'tipo'> & { tipo?: Livro['tipo'] }, string>('livros')
       const antigos = await livros.toArray()
       await livros.bulkPut(antigos.map((l) => ({ ...l, tipo: l.tipo ?? 'conceitos' })))
+    })
+
+  // v11 (01/10/2026): livros executáveis. Nenhum índice novo — estado e
+  // executável se filtram em memória, como o `tipo`. Todo livro que já existia
+  // continua de pensamentos, com o adormecer padrão; toda ideia fica sem
+  // estado, sem link, e o último toque dela é a última edição.
+  db.version(11)
+    .stores({})
+    .upgrade(async (tx) => {
+      const livros = tx.table<
+        Omit<Livro, 'executavel' | 'diasParaAdormecer'> &
+          Partial<Pick<Livro, 'executavel' | 'diasParaAdormecer'>>,
+        string
+      >('livros')
+      const antigos = await livros.toArray()
+      await livros.bulkPut(
+        antigos.map((l) => ({
+          ...l,
+          executavel: l.executavel ?? false,
+          diasParaAdormecer: l.diasParaAdormecer ?? DIAS_PARA_ADORMECER_PADRAO,
+        })),
+      )
+
+      const neuronios = tx.table<
+        Omit<Neuronio, 'estado' | 'ultimoToque' | 'resultadoLink'> &
+          Partial<Pick<Neuronio, 'estado' | 'ultimoToque' | 'resultadoLink'>>,
+        string
+      >('neuronios')
+      const ideias = await neuronios.toArray()
+      await neuronios.bulkPut(
+        ideias.map((n) => ({
+          ...n,
+          estado: n.estado ?? null,
+          ultimoToque: n.ultimoToque ?? n.updatedAt,
+          resultadoLink: n.resultadoLink ?? null,
+        })),
+      )
     })
 
   return db

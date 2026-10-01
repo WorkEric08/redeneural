@@ -1,5 +1,7 @@
 import { z } from 'zod'
 
+import { DIAS_PARA_ADORMECER_MAXIMO } from '@/core'
+
 /** CLAUDE.md §7: validar a entrada antes de gravar no IndexedDB. */
 
 const id = z.string().min(1)
@@ -12,21 +14,36 @@ const larguraLombada = z.number().min(16).max(120).nullable()
 const comprimentoLombada = z.number().min(20).max(100).nullable()
 
 const tipoDeLivro = z.enum(['conceitos', 'acervo'])
+const estadoDaIdeia = z.enum(['para_fazer', 'fazendo', 'feita'])
+const diasParaAdormecer = z.number().int().min(0).max(DIAS_PARA_ADORMECER_MAXIMO)
+
+/**
+ * Só http e https: o endereço vira um link tocável, e `javascript:` ou
+ * `file:` num link é porta aberta, não conteúdo.
+ */
+export const urlDeLink = z.url({ protocol: /^https?$/ }).max(4000)
 
 const ponto = z.object({ x: z.number(), y: z.number() })
 
-export const livroSchema = z.object({
-  id,
-  tipo: tipoDeLivro,
-  titulo: z.string().trim().min(1).max(120),
-  cor: hexColor,
-  prateleira: ordem,
-  ordem,
-  emblema,
-  larguraLombada,
-  comprimentoLombada,
-  createdAt: z.date(),
-})
+export const livroSchema = z
+  .object({
+    id,
+    tipo: tipoDeLivro,
+    titulo: z.string().trim().min(1).max(120),
+    cor: hexColor,
+    prateleira: ordem,
+    ordem,
+    emblema,
+    larguraLombada,
+    comprimentoLombada,
+    executavel: z.boolean(),
+    diasParaAdormecer,
+    createdAt: z.date(),
+  })
+  .refine((l) => l.tipo === 'conceitos' || !l.executavel, {
+    message: 'uma pasta de acervo não é executável',
+    path: ['executavel'],
+  })
 
 export const vagaSchema = z.object({
   prateleira: ordem,
@@ -45,6 +62,9 @@ export const neuronioSchema = z.object({
   titulo: z.string().trim().min(1).max(200),
   conteudo: z.string().max(20_000),
   embedding: z.instanceof(Float32Array).nullable(),
+  estado: estadoDaIdeia.nullable(),
+  ultimoToque: z.date(),
+  resultadoLink: urlDeLink.nullable(),
   createdAt: z.date(),
   updatedAt: z.date(),
 })
@@ -70,12 +90,6 @@ export const conexaoSchema = z
     path: ['aId'],
   })
   .refine((c) => c.aId !== c.bId, { message: 'conexão não pode ligar um neurônio a si mesmo' })
-
-/**
- * Só http e https: o endereço vira um link tocável, e `javascript:` ou
- * `file:` num link é porta aberta, não conteúdo.
- */
-export const urlDeLink = z.url({ protocol: /^https?$/ }).max(4000)
 
 const midiaSchema = z.discriminatedUnion('tipo', [
   z.object({ tipo: z.literal('link'), url: urlDeLink }),
@@ -140,6 +154,9 @@ export const snapshotSchema = z.object({
       larguraLombada: larguraLombada.optional(),
       // Opcional: backup de antes de 14/09/2026 não tinha comprimento próprio.
       comprimentoLombada: comprimentoLombada.optional(),
+      // Opcionais: backup de antes dos executáveis (01/10/2026).
+      executavel: z.boolean().optional(),
+      diasParaAdormecer: diasParaAdormecer.optional(),
       createdAt: isoDate,
     }),
   ),
@@ -150,6 +167,10 @@ export const snapshotSchema = z.object({
       titulo: z.string(),
       conteudo: z.string(),
       embedding: base64.nullable(),
+      // Opcionais: backup de antes dos executáveis (01/10/2026).
+      estado: estadoDaIdeia.nullable().optional(),
+      ultimoToque: isoDate.optional(),
+      resultadoLink: urlDeLink.nullable().optional(),
       createdAt: isoDate,
       updatedAt: isoDate,
     }),

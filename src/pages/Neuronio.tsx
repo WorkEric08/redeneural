@@ -1,4 +1,4 @@
-import { PencilLine, Search, Trash2 } from 'lucide-react'
+import { ExternalLink, Hammer, PencilLine, Search, Trash2 } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { Link, useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 
@@ -7,8 +7,13 @@ import { botao } from '@/components/botao'
 import { Confirmacao } from '@/components/Confirmacao'
 import { EtiquetaProcessando } from '@/components/EtiquetaProcessando'
 import { Folha } from '@/components/Folha'
-import type { NeuronioNaTela } from '@/core'
+import { estadoVisivel, type NeuronioNaTela } from '@/core'
 import { vizinhosPorNeuronio } from '@/features/estante/resumo'
+import { ROTULO_DO_ESTADO } from '@/features/executaveis/estados'
+import { FolhaDeEstado } from '@/features/executaveis/FolhaDeEstado'
+import { FolhaDeExecutaveis } from '@/features/executaveis/FolhaDeExecutaveis'
+import { IconeDoEstado } from '@/features/executaveis/IconeDoEstado'
+import { useCriarLivroExecutavel } from '@/features/executaveis/useCriarLivroExecutavel'
 import { TextoComLinks } from '@/features/neuronio/TextoComLinks'
 import { ROTULO_DO_PORTO } from '@/features/porto/porto'
 import { usePalacio } from '@/store/palacio'
@@ -28,6 +33,11 @@ interface EstadoDaConfirmacao {
  *
  * Apagar pergunta antes, numa folha que mora na URL (`?apagar=1`), pelo mesmo
  * motivo dos painéis da estante: voltar fecha a pergunta.
+ *
+ * Num livro executável (01/10/2026) a ideia mostra o andamento, que muda numa
+ * folha (`?estado=1`), e o link do resultado quando está feita. Fora dele, o
+ * "Tornar executável" leva a ideia para um livro executável — com um só, direto;
+ * com vários ou nenhum, numa folha (`?executar=1`) que escolhe ou cria.
  */
 export default function Neuronio() {
   const { neuronioId } = useParams()
@@ -35,7 +45,18 @@ export default function Neuronio() {
   const localizacao = useLocation()
   const { key } = localizacao
   const navegar = useNavigate()
-  const { livros, neuronios, conexoes, carregado, ocupado, apagarNeuronio } = usePalacio()
+  const {
+    livros,
+    neuronios,
+    conexoes,
+    carregado,
+    ocupado,
+    apagarNeuronio,
+    guardarNeuronio,
+    definirEstado,
+    avisar,
+  } = usePalacio()
+  const criarLivroExecutavel = useCriarLivroExecutavel()
 
   // O apagado continua desenhado o instante entre o motor responder e a
   // navegação sair daqui — senão piscaria "não existe mais" e a folha sumiria
@@ -78,6 +99,10 @@ export default function Neuronio() {
   const meus = vizinhos.get(neuronio.id) ?? []
   const fios = apagando?.fios ?? meus.length
   const perguntando = busca.get('apagar') === '1'
+  const mudandoEstado = busca.get('estado') === '1'
+  const escolhendoExecutavel = busca.get('executar') === '1'
+  const estado = estadoVisivel(neuronio, livro)
+  const executaveis = livros.filter((l) => l.tipo === 'conceitos' && l.executavel)
   const saida = livro ? `/livro/${livro.id}` : neuronio.livroId === null ? '/porto' : '/'
 
   function perguntar(): void {
@@ -98,6 +123,32 @@ export default function Neuronio() {
     } else {
       void navegar(-1)
     }
+  }
+
+  function abrir(painel: 'estado' | 'executar'): void {
+    void navegar({ search: `?${painel}=1` })
+  }
+
+  function fecharPainel(): void {
+    if (key === 'default') void navegar({ search: '' }, { replace: true })
+    else void navegar(-1)
+  }
+
+  /** Guarda num livro executável — "para fazer" — e diz onde ficou. */
+  function levarPara(livroId: string, deUmaFolha: boolean): void {
+    const destino = livros.find((l) => l.id === livroId)
+    if (!neuronio) return
+    void guardarNeuronio(neuronio.id, livroId).then((ok) => {
+      if (!ok) return
+      if (deUmaFolha) fecharPainel()
+      avisar(`Agora em ${destino?.titulo ?? 'um livro executável'}, para fazer.`)
+    })
+  }
+
+  function tornarExecutavel(): void {
+    const [unico] = executaveis
+    if (executaveis.length === 1 && unico) levarPara(unico.id, false)
+    else abrir('executar')
   }
 
   function apagar(alvo: NeuronioNaTela): void {
@@ -186,14 +237,52 @@ export default function Neuronio() {
             {neuronio.titulo}
           </h1>
           {neuronio.processando && <EtiquetaProcessando texto="procurando conexões" />}
-          {neuronio.livroId === null && (
-            <Link
-              to={{ search: `?guardar=${neuronio.id}` }}
-              className={botao({ tipo: 'secundario', tamanho: 'pequeno' })}
-            >
-              Guardar em…
-            </Link>
-          )}
+          <div className="flex flex-wrap gap-2">
+            {neuronio.livroId === null && (
+              <Link
+                to={{ search: `?guardar=${neuronio.id}` }}
+                className={botao({ tipo: 'secundario', tamanho: 'pequeno' })}
+              >
+                Guardar em…
+              </Link>
+            )}
+            {estado ? (
+              <>
+                <button
+                  type="button"
+                  onClick={() => {
+                    abrir('estado')
+                  }}
+                  aria-label={`Andamento: ${ROTULO_DO_ESTADO[estado]}`}
+                  className={botao({ tipo: 'secundario', tamanho: 'pequeno' })}
+                >
+                  <IconeDoEstado estado={estado} tamanho={16} />
+                  {ROTULO_DO_ESTADO[estado]}
+                </button>
+                {estado === 'feita' && neuronio.resultadoLink && (
+                  <a
+                    href={neuronio.resultadoLink}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className={botao({ tipo: 'fantasma', tamanho: 'pequeno' })}
+                  >
+                    <ExternalLink size={15} aria-hidden />
+                    Resultado
+                  </a>
+                )}
+              </>
+            ) : (
+              <button
+                type="button"
+                onClick={tornarExecutavel}
+                disabled={ocupado}
+                className={botao({ tipo: 'secundario', tamanho: 'pequeno' })}
+              >
+                <Hammer size={15} aria-hidden />
+                Tornar executável
+              </button>
+            )}
+          </div>
         </header>
 
         {neuronio.conteudo && (
@@ -203,6 +292,25 @@ export default function Neuronio() {
           />
         )}
       </article>
+
+      <FolhaDeEstado
+        aberta={mudandoEstado && estado !== null}
+        neuronio={neuronio}
+        estadoAtual={estado}
+        onDefinir={(novo, link) => definirEstado(neuronio.id, novo, link)}
+        onFechar={fecharPainel}
+      />
+
+      <FolhaDeExecutaveis
+        aberta={escolhendoExecutavel && estado === null}
+        executaveis={executaveis}
+        escolhido={null}
+        onEscolher={(livroId) => {
+          levarPara(livroId, true)
+        }}
+        onCriar={criarLivroExecutavel}
+        onFechar={fecharPainel}
+      />
 
       <Folha aberta={perguntando} rotulo={`Apagar ${neuronio.titulo}`} onFechar={desistir}>
         <Confirmacao

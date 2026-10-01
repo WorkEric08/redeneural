@@ -1,8 +1,8 @@
-import { BookOpen, Paperclip, Shuffle } from 'lucide-react'
+import { BookOpen, Hammer, Paperclip, Shuffle } from 'lucide-react'
 import { useState } from 'react'
 
 import { botao } from '@/components/botao'
-import type { TipoDeLivro } from '@/core'
+import { clampDiasParaAdormecer, DIAS_PARA_ADORMECER_MAXIMO, type TipoDeLivro } from '@/core'
 import type { NovoLivro } from '@/store/palacio'
 
 import { COMPRIMENTOS } from './comprimentos'
@@ -38,6 +38,8 @@ interface Props {
    * fora — o tipo não muda depois (ver `TipoDeLivro`).
    */
   tipo?: { valor: TipoDeLivro; onMudar: (tipo: TipoDeLivro) => void }
+  /** Editando: o tipo do livro, que não muda — decide se ele pode ser executável. */
+  tipoFixo?: TipoDeLivro
   onEnviar: (dados: NovoLivro) => void
 }
 
@@ -59,6 +61,7 @@ export function FormularioDeLivro({
   ocupado = false,
   intensidadeDaLuz,
   tipo,
+  tipoFixo,
   onEnviar,
 }: Props) {
   const [titulo, setTitulo] = useState(inicial.titulo)
@@ -68,6 +71,11 @@ export function FormularioDeLivro({
   const emblema = inicial.emblema
   const [larguraLombada, setLarguraLombada] = useState(inicial.larguraLombada)
   const [comprimentoLombada, setComprimentoLombada] = useState(inicial.comprimentoLombada)
+  const [executavel, setExecutavel] = useState(inicial.executavel)
+  // Texto, e não número: o campo pode ficar vazio enquanto se digita.
+  const [dias, setDias] = useState(String(inicial.diasParaAdormecer))
+  // Uma pasta de acervo nunca é executável.
+  const podeSerExecutavel = (tipo?.valor ?? tipoFixo ?? 'conceitos') === 'conceitos'
 
   const podeEnviar = titulo.trim().length > 0 && !ocupado
 
@@ -77,7 +85,17 @@ export function FormularioDeLivro({
       onSubmit={(evento) => {
         evento.preventDefault()
         if (podeEnviar) {
-          onEnviar({ titulo: titulo.trim(), cor, emblema, larguraLombada, comprimentoLombada })
+          onEnviar({
+            titulo: titulo.trim(),
+            cor,
+            emblema,
+            larguraLombada,
+            comprimentoLombada,
+            executavel: podeSerExecutavel && executavel,
+            diasParaAdormecer: clampDiasParaAdormecer(
+              dias.trim() === '' ? Number.NaN : Number(dias),
+            ),
+          })
         }
       }}
       // O `autocomplete` do form, e não só do campo: é o sinal mais forte
@@ -110,6 +128,44 @@ export function FormularioDeLivro({
             <Paperclip size={15} aria-hidden />
             Pasta de links e imagens
           </button>
+        </div>
+      )}
+
+      {/* Um livro de ideias para fazer (01/10/2026). Logo abaixo do tipo, porque
+          é do mesmo jeito uma decisão sobre que livro é este — mas, ao
+          contrário do tipo, muda quando a pessoa quiser. */}
+      {podeSerExecutavel && (
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+          <button
+            type="button"
+            aria-pressed={executavel}
+            onClick={() => {
+              setExecutavel((v) => !v)
+            }}
+            className="chip"
+          >
+            <Hammer size={15} aria-hidden />
+            Livro executável
+          </button>
+          {executavel && (
+            <label className="text-poeira flex items-center gap-2 text-sm">
+              Adormece com
+              <input
+                value={dias}
+                onChange={(evento) => {
+                  setDias(evento.target.value)
+                }}
+                type="number"
+                inputMode="numeric"
+                min={0}
+                max={DIAS_PARA_ADORMECER_MAXIMO}
+                aria-label="Dias parada até adormecer"
+                autoComplete="off"
+                className="campo text-papel h-9 w-16 px-2 text-center"
+              />
+              dias parada
+            </label>
+          )}
         </div>
       )}
 

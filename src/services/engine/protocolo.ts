@@ -5,6 +5,7 @@ import type {
   EditarAnexoInput,
   EditarLivroInput,
   EditarNeuronioInput,
+  EstadoDaIdeia,
   EstadoDoPalacio,
   EstanteGravada,
   Id,
@@ -13,6 +14,7 @@ import type {
   ModoDaBusca,
   ModoDaRede,
   NeuronioGuardado,
+  NeuronioNaTela,
   Ponto,
   ProgressoDoMotor,
   ResultadoDeEscrita,
@@ -31,6 +33,7 @@ export interface RespostasDoMotor {
   editarNeuronio: ResultadoDeEscrita
   apagarNeuronio: EstadoDoPalacio
   guardarNeuronio: NeuronioGuardado
+  definirEstado: NeuronioNaTela[]
   criarLivro: EstanteGravada
   editarLivro: Livro[]
   apagarLivro: EstadoDoPalacio
@@ -59,6 +62,13 @@ export type ParaMotor =
   | { req: number; tipo: 'editarNeuronio'; input: EditarNeuronioInput }
   | { req: number; tipo: 'apagarNeuronio'; neuronioId: Id }
   | { req: number; tipo: 'guardarNeuronio'; id: Id; livroId: Id }
+  | {
+      req: number
+      tipo: 'definirEstado'
+      id: Id
+      estado: EstadoDaIdeia
+      resultadoLink: string | null
+    }
   | { req: number; tipo: 'criarLivro'; input: CriarLivroInput }
   | { req: number; tipo: 'editarLivro'; input: EditarLivroInput }
   | { req: number; tipo: 'apagarLivro'; livroId: Id }

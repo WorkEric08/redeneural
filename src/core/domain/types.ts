@@ -17,6 +17,12 @@ export type Id = string
  */
 export type TipoDeLivro = 'conceitos' | 'acervo'
 
+/**
+ * O andamento de uma ideia num livro executável (01/10/2026). Só tem sentido
+ * ali: fora de um livro executável o estado fica guardado, mas nada o mostra.
+ */
+export type EstadoDaIdeia = 'para_fazer' | 'fazendo' | 'feita'
+
 /** Uma área de conhecimento. Visualmente, uma lombada na estante. */
 export interface Livro {
   id: Id
@@ -67,6 +73,17 @@ export interface Livro {
    * comunicar isso — fica visualmente idêntico a um livro cheio de conteúdo.
    */
   comprimentoLombada: number | null
+  /**
+   * Um livro de ideias para executar — textos, estudos, vídeos (01/10/2026).
+   * Só livro de conceitos: uma pasta de acervo nunca é executável. É um campo
+   * à parte, e não um terceiro `tipo`, porque continua sendo um livro de
+   * conceitos em tudo: conexões, pontes, Rede e Mapa.
+   *
+   * O Porto nunca guarda nada aqui sozinho: a ideia só entra por escolha.
+   */
+  executavel: boolean
+  /** Quantos dias parada uma ideia deste livro leva para adormecer. */
+  diasParaAdormecer: number
   createdAt: Date
 }
 
@@ -115,6 +132,19 @@ export interface Neuronio {
    * persistido antes do Worker responder para que nada se perca num crash.
    */
   embedding: Float32Array | null
+  /**
+   * O andamento, num livro executável. `null` em quem nunca entrou num; quem
+   * sai de um guarda o que tinha, sem mostrar — e entrar de novo recomeça em
+   * "para fazer".
+   */
+  estado: EstadoDaIdeia | null
+  /**
+   * A última vez que a ideia foi mexida de verdade — criada, levada a um livro
+   * executável, mudada de estado. É o relógio de quem adormece.
+   */
+  ultimoToque: Date
+  /** O link do que saiu dela, quando está feita. Só http e https. */
+  resultadoLink: string | null
   createdAt: Date
   updatedAt: Date
 }
@@ -276,6 +306,10 @@ export interface LivroSnapshot {
   larguraLombada?: number | null | undefined
   /** Ausente em backups de antes de 14/09/2026 — o import trata como `null`. */
   comprimentoLombada?: number | null | undefined
+  /** Ausente em backups de antes dos executáveis (01/10/2026) — o import trata como `false`. */
+  executavel?: boolean | undefined
+  /** Ausente em backups de antes dos executáveis — o import trata como o padrão (30). */
+  diasParaAdormecer?: number | undefined
   createdAt: string
 }
 
@@ -287,6 +321,10 @@ export interface NeuronioSnapshot {
   conteudo: string
   /** Float32Array em base64 (little-endian), não array JSON. */
   embedding: string | null
+  /** Ausentes em backups de antes dos executáveis (01/10/2026): sem estado, sem link, e o último toque é a última edição. */
+  estado?: EstadoDaIdeia | null | undefined
+  ultimoToque?: string | undefined
+  resultadoLink?: string | null | undefined
   createdAt: string
   updatedAt: string
 }

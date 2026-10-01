@@ -44,6 +44,8 @@ function livro(id: string, titulo: string, ordem = 0, prateleira = 0): Livro {
     emblema: null,
     larguraLombada: null,
     comprimentoLombada: null,
+    executavel: false,
+    diasParaAdormecer: 30,
     createdAt: T0,
   }
 }
@@ -59,6 +61,9 @@ function neuronio(
     titulo: `neurônio ${id}`,
     conteudo: 'conteúdo de teste',
     embedding,
+    estado: null,
+    ultimoToque: T0,
+    resultadoLink: null,
     createdAt: T0,
     updatedAt: T0,
   }
@@ -666,7 +671,14 @@ describe('migração para a v3', () => {
       .table<
         Omit<
           Livro,
-          'ordem' | 'prateleira' | 'emblema' | 'larguraLombada' | 'comprimentoLombada' | 'tipo'
+          | 'ordem'
+          | 'prateleira'
+          | 'emblema'
+          | 'larguraLombada'
+          | 'comprimentoLombada'
+          | 'tipo'
+          | 'executavel'
+          | 'diasParaAdormecer'
         >,
         string
       >('livros')
@@ -710,7 +722,16 @@ describe('migração para a v4', () => {
     // última com sobra), então o teste exercita mais de um livro por prateleira.
     await antigo
       .table<
-        Omit<Livro, 'prateleira' | 'emblema' | 'larguraLombada' | 'comprimentoLombada' | 'tipo'>,
+        Omit<
+          Livro,
+          | 'prateleira'
+          | 'emblema'
+          | 'larguraLombada'
+          | 'comprimentoLombada'
+          | 'tipo'
+          | 'executavel'
+          | 'diasParaAdormecer'
+        >,
         string
       >('livros')
       .bulkPut(
@@ -760,9 +781,18 @@ describe('migração para a v6', () => {
     antigo.version(4).stores({ livros: 'id, createdAt, ordem, prateleira' })
     antigo.version(5).stores({ etiquetas: 'prateleira' })
     await antigo
-      .table<Omit<Livro, 'emblema' | 'larguraLombada' | 'comprimentoLombada' | 'tipo'>, string>(
-        'livros',
-      )
+      .table<
+        Omit<
+          Livro,
+          | 'emblema'
+          | 'larguraLombada'
+          | 'comprimentoLombada'
+          | 'tipo'
+          | 'executavel'
+          | 'diasParaAdormecer'
+        >,
+        string
+      >('livros')
       .bulkPut([
         { id: 'l1', titulo: 'Psicologia', cor: '#7b6ae0', prateleira: 0, ordem: 0, createdAt: T0 },
       ])
@@ -801,7 +831,13 @@ describe('migração para a v7', () => {
     antigo.version(5).stores({ etiquetas: 'prateleira' })
     antigo.version(6).stores({})
     await antigo
-      .table<Omit<Livro, 'larguraLombada' | 'comprimentoLombada' | 'tipo'>, string>('livros')
+      .table<
+        Omit<
+          Livro,
+          'larguraLombada' | 'comprimentoLombada' | 'tipo' | 'executavel' | 'diasParaAdormecer'
+        >,
+        string
+      >('livros')
       .bulkPut([
         {
           id: 'l1',
@@ -847,18 +883,23 @@ describe('migração para a v8', () => {
     antigo.version(5).stores({ etiquetas: 'prateleira' })
     antigo.version(6).stores({})
     antigo.version(7).stores({})
-    await antigo.table<Omit<Livro, 'comprimentoLombada' | 'tipo'>, string>('livros').bulkPut([
-      {
-        id: 'l1',
-        titulo: 'Psicologia',
-        cor: '#7b6ae0',
-        prateleira: 0,
-        ordem: 0,
-        emblema: null,
-        larguraLombada: null,
-        createdAt: T0,
-      },
-    ])
+    await antigo
+      .table<
+        Omit<Livro, 'comprimentoLombada' | 'tipo' | 'executavel' | 'diasParaAdormecer'>,
+        string
+      >('livros')
+      .bulkPut([
+        {
+          id: 'l1',
+          titulo: 'Psicologia',
+          cor: '#7b6ae0',
+          prateleira: 0,
+          ordem: 0,
+          emblema: null,
+          larguraLombada: null,
+          createdAt: T0,
+        },
+      ])
     antigo.close()
 
     const migrado = createDexieRepo(createDb(nome))
@@ -907,5 +948,98 @@ describe('migração para a v9', () => {
       ['l2', 0, 1],
     ])
     expect(await migrado.listVagas()).toEqual([])
+  })
+})
+
+describe('migração para a v11', () => {
+  // Antes de 01/10/2026 não havia livro executável nem estado de ideia.
+  it('todo livro fica de pensamentos, e toda ideia sem estado e com o toque na última edição', async () => {
+    const nome = `palacio-migracao-v11-${String(nth)}`
+    const editadoEm = new Date('2026-09-20T08:00:00.000Z')
+
+    const antigo = new Dexie(nome)
+    antigo.version(1).stores({
+      livros: 'id, createdAt',
+      neuronios: 'id, livroId, updatedAt',
+      conexoes: 'id, aId, bId, updatedAt',
+    })
+    antigo.version(2).stores({ meta: 'chave' })
+    antigo.version(3).stores({ livros: 'id, createdAt, ordem' })
+    antigo.version(4).stores({ livros: 'id, createdAt, ordem, prateleira' })
+    antigo.version(5).stores({ etiquetas: 'prateleira' })
+    antigo.version(6).stores({})
+    antigo.version(7).stores({})
+    antigo.version(8).stores({})
+    antigo.version(9).stores({ vagas: '[prateleira+ordem], prateleira' })
+    antigo.version(10).stores({
+      anexos: 'id, livroId, updatedAt',
+      arquivos: 'anexoId',
+      vinculos: 'id, anexoId, conceitoId',
+    })
+    const l = livro('l1', 'Psicologia')
+    const n = neuronio('n1', 'l1')
+    await antigo.table('livros').bulkPut([
+      {
+        id: l.id,
+        tipo: l.tipo,
+        titulo: l.titulo,
+        cor: l.cor,
+        prateleira: l.prateleira,
+        ordem: l.ordem,
+        emblema: l.emblema,
+        larguraLombada: l.larguraLombada,
+        comprimentoLombada: l.comprimentoLombada,
+        createdAt: l.createdAt,
+      },
+    ])
+    await antigo.table('neuronios').bulkPut([
+      {
+        id: n.id,
+        livroId: n.livroId,
+        titulo: n.titulo,
+        conteudo: n.conteudo,
+        embedding: n.embedding,
+        createdAt: n.createdAt,
+        updatedAt: editadoEm,
+      },
+    ])
+    antigo.close()
+
+    const migrado = createDexieRepo(createDb(nome))
+    expect(await migrado.getLivro('l1')).toMatchObject({ executavel: false, diasParaAdormecer: 30 })
+    expect(await migrado.getNeuronio('n1')).toMatchObject({
+      estado: null,
+      ultimoToque: editadoEm,
+      resultadoLink: null,
+    })
+  })
+})
+
+describe('livros executáveis', () => {
+  it('uma pasta de acervo não pode ser executável', async () => {
+    await expect(
+      repo.upsertLivro({ ...livro('p1', 'Vídeos'), tipo: 'acervo', executavel: true }),
+    ).rejects.toThrow()
+  })
+
+  it('o estado e o link do resultado são gravados, e o link só aceita http e https', async () => {
+    await repo.upsertLivro({ ...livro('l1', 'Ideias'), executavel: true })
+    await expect(
+      repo.upsertNeuronio({
+        ...neuronio('n1', 'l1'),
+        estado: 'feita',
+        resultadoLink: 'javascript:alert(1)',
+      }),
+    ).rejects.toThrow()
+
+    await repo.upsertNeuronio({
+      ...neuronio('n1', 'l1'),
+      estado: 'feita',
+      resultadoLink: 'https://exemplo.com/texto',
+    })
+    expect(await repo.getNeuronio('n1')).toMatchObject({
+      estado: 'feita',
+      resultadoLink: 'https://exemplo.com/texto',
+    })
   })
 })

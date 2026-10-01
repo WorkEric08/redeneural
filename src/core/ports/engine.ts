@@ -2,7 +2,7 @@ import type { ModoDaBusca } from '../domain/modoDaBusca'
 import type { ModoDaRede } from '../domain/modoDaRede'
 import type { MapaDoPalacio } from '../motor/mapa'
 import type { AnexoNaTela, NeuronioNaTela } from '../domain/tela'
-import type { Conexao, Id, Livro, TipoDeLivro, Vaga, Vinculo } from '../domain/types'
+import type { Conexao, EstadoDaIdeia, Id, Livro, TipoDeLivro, Vaga, Vinculo } from '../domain/types'
 import type { Ponto } from '../motor/redeLayout'
 
 export interface CriarNeuronioInput {
@@ -53,6 +53,10 @@ export interface CriarLivroInput {
   comprimentoLombada?: number | null
   /** Ausente é `'conceitos'`. Não muda depois — `EditarLivroInput` não tem este campo. */
   tipo?: TipoDeLivro
+  /** Ausente é `false`. Pasta de acervo nunca é. */
+  executavel?: boolean
+  /** Ausente é `DIAS_PARA_ADORMECER_PADRAO`. */
+  diasParaAdormecer?: number
 }
 
 /**
@@ -88,6 +92,9 @@ export interface EditarLivroInput {
   emblema: string | null
   larguraLombada: number | null
   comprimentoLombada: number | null
+  /** Livro de conceitos vira executável e deixa de ser quando a pessoa quiser; pasta, nunca. */
+  executavel: boolean
+  diasParaAdormecer: number
 }
 
 /** O que a estante grava além do grafo: onde cada livro está e os lugares deixados abertos. */
@@ -168,6 +175,16 @@ export interface ConnectionEngine {
    * livro dos dois lados.
    */
   guardarNeuronio(id: Id, livroId: Id): Promise<NeuronioGuardado>
+  /**
+   * Muda o andamento de uma ideia num livro executável — e é um toque. O link
+   * do resultado vale quando ela está feita; mudar de estado depois não o
+   * apaga. Não mexe em texto, vetor nem conexão.
+   */
+  definirEstado(
+    id: Id,
+    estado: EstadoDaIdeia,
+    resultadoLink: string | null,
+  ): Promise<NeuronioNaTela[]>
 
   /** Livro não mexe no grafo: devolve só a estante, já com o livro no lugar. */
   criarLivro(input: CriarLivroInput): Promise<EstanteGravada>

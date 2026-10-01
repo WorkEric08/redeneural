@@ -1,4 +1,4 @@
-import { Check } from 'lucide-react'
+import { Check, Hammer } from 'lucide-react'
 import type { ReactNode } from 'react'
 
 import type { Id, Livro } from '@/core'
@@ -38,6 +38,9 @@ export function EscolhaDeLivro({ livros, escolhido, onEscolher, antes, depois }:
               aria-hidden
             />
             <span className="min-w-0 flex-1 truncate">{l.titulo}</span>
+            {l.executavel && (
+              <Hammer size={15} aria-label="executável" className="text-poeira shrink-0" />
+            )}
             {l.id === escolhido && <Check size={18} aria-hidden className="text-papel shrink-0" />}
           </button>
         </li>

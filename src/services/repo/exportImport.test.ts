@@ -36,6 +36,8 @@ const LIVROS: Livro[] = [
     emblema: null,
     larguraLombada: null,
     comprimentoLombada: null,
+    executavel: false,
+    diasParaAdormecer: 30,
     createdAt: T0,
   },
   {
@@ -48,6 +50,8 @@ const LIVROS: Livro[] = [
     emblema: null,
     larguraLombada: null,
     comprimentoLombada: null,
+    executavel: false,
+    diasParaAdormecer: 30,
     createdAt: T0,
   },
   {
@@ -60,6 +64,8 @@ const LIVROS: Livro[] = [
     emblema: null,
     larguraLombada: null,
     comprimentoLombada: null,
+    executavel: false,
+    diasParaAdormecer: 30,
     createdAt: T0,
   },
 ]
@@ -71,6 +77,9 @@ const NEURONIOS: Neuronio[] = PALACIO.map((n) => ({
   titulo: n.texto,
   conteudo: `conteúdo de ${n.texto}`,
   embedding: n.embedding,
+  estado: null,
+  ultimoToque: T0,
+  resultadoLink: null,
   createdAt: T0,
   updatedAt: T0,
 }))
@@ -209,6 +218,8 @@ describe('exportar num navegador e importar noutro', () => {
       emblema: null,
       larguraLombada: null,
       comprimentoLombada: null,
+      executavel: false,
+      diasParaAdormecer: 30,
       createdAt: T0,
     })
     await destino.upsertNeuronio({
@@ -217,6 +228,9 @@ describe('exportar num navegador e importar noutro', () => {
       titulo: 'Algo que eu já tinha',
       conteudo: '',
       embedding: null,
+      estado: null,
+      ultimoToque: T0,
+      resultadoLink: null,
       createdAt: T0,
       updatedAt: T0,
     })
@@ -305,6 +319,8 @@ describe('a ordem da estante no backup', () => {
       emblema: null,
       larguraLombada: null,
       comprimentoLombada: null,
+      executavel: false,
+      diasParaAdormecer: 30,
       createdAt: T0,
     })
 
@@ -327,6 +343,8 @@ describe('a ordem da estante no backup', () => {
       emblema: null,
       larguraLombada: null,
       comprimentoLombada: null,
+      executavel: false,
+      diasParaAdormecer: 30,
       createdAt: T0,
     })
 
@@ -498,5 +516,113 @@ describe('largura da lombada no backup', () => {
     await destino.importAll(antigo)
 
     expect((await destino.listLivros()).every((l) => l.larguraLombada === null)).toBe(true)
+  })
+})
+
+describe('livros executáveis no backup', () => {
+  it('exporta e importa o livro executável, o estado, o último toque e o link', async () => {
+    const origem = await palacioPovoado()
+    const [psi] = await origem.listLivros()
+    await origem.upsertLivro({ ...psi!, executavel: true, diasParaAdormecer: 7 })
+    const [ideia] = await origem.listNeuronios(psi!.id)
+    const toque = new Date('2026-09-30T10:00:00.000Z')
+    await origem.upsertNeuronio({
+      ...ideia!,
+      estado: 'feita',
+      ultimoToque: toque,
+      resultadoLink: 'https://exemplo.com/video',
+    })
+    const snapshot = await origem.exportAll()
+
+    const destino = repoVazio()
+    await destino.importAll(JSON.parse(JSON.stringify(snapshot)) as typeof snapshot)
+
+    expect(await destino.getLivro(psi!.id)).toMatchObject({
+      executavel: true,
+      diasParaAdormecer: 7,
+    })
+    expect(await destino.getNeuronio(ideia!.id)).toMatchObject({
+      estado: 'feita',
+      ultimoToque: toque,
+      resultadoLink: 'https://exemplo.com/video',
+    })
+  })
+
+  // Backup de antes de 01/10/2026 não tinha os campos — não pode quebrar o import.
+  it('backup de antes importa tudo de pensamentos, sem estado, e o toque na última edição', async () => {
+    const origem = await palacioPovoado()
+    const snapshot = await origem.exportAll()
+    const antigo = {
+      ...snapshot,
+      livros: snapshot.livros.map((l) => ({
+        id: l.id,
+        tipo: l.tipo,
+        titulo: l.titulo,
+        cor: l.cor,
+        prateleira: l.prateleira,
+        ordem: l.ordem,
+        createdAt: l.createdAt,
+      })),
+      neuronios: snapshot.neuronios.map((n) => ({
+        id: n.id,
+        livroId: n.livroId,
+        titulo: n.titulo,
+        conteudo: n.conteudo,
+        embedding: n.embedding,
+        createdAt: n.createdAt,
+        updatedAt: n.updatedAt,
+      })),
+    }
+
+    const destino = repoVazio()
+    await destino.importAll(antigo)
+
+    const livros = await destino.listLivros()
+    expect(livros.every((l) => !l.executavel && l.diasParaAdormecer === 30)).toBe(true)
+    const ideias = await destino.listNeuronios()
+    expect(ideias.length).toBeGreaterThan(0)
+    for (const n of ideias) {
+      expect(n.estado).toBeNull()
+      expect(n.resultadoLink).toBeNull()
+      expect(n.ultimoToque.getTime()).toBe(n.updatedAt.getTime())
+    }
+  })
+
+  it('uma pasta de acervo nunca vira executável, nem num arquivo mexido à mão', async () => {
+    const origem = await palacioPovoado()
+    const snapshot = await origem.exportAll()
+    const mexido = {
+      ...snapshot,
+      livros: [
+        ...snapshot.livros,
+        {
+          id: 'pasta',
+          tipo: 'acervo' as const,
+          titulo: 'Vídeos',
+          cor: '#6d5bd0',
+          prateleira: 3,
+          ordem: 0,
+          executavel: true,
+          createdAt: T0.toISOString(),
+        },
+      ],
+    }
+
+    const destino = repoVazio()
+    await destino.importAll(mexido)
+
+    expect((await destino.getLivro('pasta'))?.executavel).toBe(false)
+  })
+
+  it('recusa link de resultado que não é http nem https', async () => {
+    const origem = await palacioPovoado()
+    const snapshot = await origem.exportAll()
+    const [primeira, ...resto] = snapshot.neuronios
+    const mexido = {
+      ...snapshot,
+      neuronios: [{ ...primeira!, resultadoLink: 'javascript:alert(1)' }, ...resto],
+    }
+
+    await expect(repoVazio().importAll(mexido)).rejects.toThrow()
   })
 })

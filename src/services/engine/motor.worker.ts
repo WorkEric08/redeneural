@@ -6,6 +6,9 @@ import {
   buscarPorSentido,
   atualizarMapa,
   calcularLayoutDaRede,
+  clampDiasParaAdormecer,
+  entraEmExecutavel,
+  estadoAoGuardar,
   mapaCompleto,
   ehPonte,
   livroDoPorto,
@@ -33,6 +36,7 @@ import {
   type CriarNeuronioInput,
   type EditarAnexoInput,
   type EditarLivroInput,
+  type EstadoDaIdeia,
   type EstadoDoPalacio,
   type EstanteGravada,
   type Id,
@@ -41,6 +45,7 @@ import {
   type MidiaDoAnexo,
   type NoDoMapa,
   type NeuronioGuardado,
+  type NeuronioNaTela,
   type Neuronio,
   type NoDoGrafo,
   type PalacioRepo,
@@ -342,15 +347,13 @@ async function escrever(
   input: CriarNeuronioInput,
   existente: Neuronio | undefined,
 ): Promise<ResultadoDeEscrita> {
-  if (input.livroId !== null) {
-    const livro = await repo.getLivro(input.livroId)
-    if (livro?.tipo === 'acervo') {
-      throw new Error('um neurônio não mora numa pasta — escolha um livro de conceitos')
-    }
+  const livro = input.livroId === null ? undefined : await repo.getLivro(input.livroId)
+  if (livro?.tipo === 'acervo') {
+    throw new Error('um neurônio não mora numa pasta — escolha um livro de conceitos')
   }
 
   const agora = new Date()
-  const base: Neuronio = existente
+  const escrito: Neuronio = existente
     ? {
         ...existente,
         titulo: input.titulo.trim(),
@@ -361,6 +364,13 @@ async function escrever(
         updatedAt: agora,
       }
     : novoNeuronio(input, agora)
+  // Escolher um livro executável — o "Quero executar isso" da captura, ou o
+  // livro trocado ao editar — é entrar nele: "para fazer", e um toque.
+  const base: Neuronio = {
+    ...escrito,
+    estado: estadoAoGuardar(existente, livro),
+    ...(existente && entraEmExecutavel(existente.livroId, livro) ? { ultimoToque: agora } : {}),
+  }
 
   // Persiste o texto antes de a inferência começar: se o Worker morrer agora,
   // o que se perde é o cálculo, nunca o que a pessoa escreveu. Um neurônio em
@@ -424,11 +434,22 @@ async function escrever(
  * com o perfil já assentado — a mesma régua delas.
  */
 async function guardarPeloPorto(id: Id): Promise<void> {
-  const [perfil, neuronios] = await Promise.all([repo.getPerfil(), repo.listNeuronios()])
+  const [perfil, neuronios, livros] = await Promise.all([
+    repo.getPerfil(),
+    repo.listNeuronios(),
+    repo.listLivros(),
+  ])
   const alvo = neuronios.find((n) => n.id === id)
   if (!perfil || !alvo?.embedding) return
 
-  const livroId = livroDoPorto({ id, embedding: alvo.embedding }, nosDeNeuronios(neuronios), perfil)
+  // Um livro executável nunca recebe ideia sozinho: só por escolha.
+  const executaveis = new Set(livros.filter((l) => l.executavel).map((l) => l.id))
+  const livroId = livroDoPorto(
+    { id, embedding: alvo.embedding },
+    nosDeNeuronios(neuronios),
+    perfil,
+    executaveis,
+  )
   if (livroId !== null) await guardar(id, livroId)
 }
 
@@ -445,7 +466,13 @@ async function guardar(id: Id, livroId: Id): Promise<void> {
     throw new Error('um neurônio não mora numa pasta — escolha um livro de conceitos')
   }
 
-  await repo.upsertNeuronio({ ...neuronio, livroId })
+  // Guardar num livro executável é o "Tornar executável": "para fazer", e um toque.
+  await repo.upsertNeuronio({
+    ...neuronio,
+    livroId,
+    estado: estadoAoGuardar(neuronio, livro),
+    ...(entraEmExecutavel(neuronio.livroId, livro) ? { ultimoToque: new Date() } : {}),
+  })
 
   const livroDe = new Map((await repo.listNeuronios()).map((n) => [n.id, n.livroId]))
   const conexoes = await repo.listConexoesDe(id)
@@ -467,6 +494,30 @@ async function guardarNeuronio(id: Id, livroId: Id): Promise<NeuronioGuardado> {
     repo.getMapa(),
   ])
   return { neuronios: neuronios.map(paraTela), conexoes, mapa }
+}
+
+/**
+ * O andamento de uma ideia num livro executável. Não relê nada: muda o estado,
+ * o link do resultado (só junto de "feita" — mudar de estado depois não o
+ * apaga) e o último toque.
+ */
+async function definirEstado(
+  id: Id,
+  estado: EstadoDaIdeia,
+  resultadoLink: string | null,
+): Promise<NeuronioNaTela[]> {
+  const neuronio = await repo.getNeuronio(id)
+  if (!neuronio) throw new Error(`neurônio ${id} não existe`)
+  const livro = neuronio.livroId === null ? undefined : await repo.getLivro(neuronio.livroId)
+  if (!livro?.executavel) throw new Error('o andamento só existe num livro executável')
+
+  await repo.upsertNeuronio({
+    ...neuronio,
+    estado,
+    resultadoLink: estado === 'feita' ? resultadoLink : neuronio.resultadoLink,
+    ultimoToque: new Date(),
+  })
+  return (await repo.listNeuronios()).map(paraTela)
 }
 
 /**
@@ -509,6 +560,9 @@ async function editarLivro(input: EditarLivroInput): Promise<Livro[]> {
     emblema: input.emblema,
     larguraLombada: input.larguraLombada,
     comprimentoLombada: input.comprimentoLombada,
+    // Uma pasta de acervo nunca é executável.
+    executavel: existente.tipo === 'conceitos' && input.executavel,
+    diasParaAdormecer: clampDiasParaAdormecer(input.diasParaAdormecer),
   })
   return repo.listLivros()
 }
@@ -679,6 +733,13 @@ async function responder(msg: ParaMotor): Promise<DoMotor> {
 
       case 'guardarNeuronio':
         return { req: msg.req, ok: true, dados: await guardarNeuronio(msg.id, msg.livroId) }
+
+      case 'definirEstado':
+        return {
+          req: msg.req,
+          ok: true,
+          dados: await definirEstado(msg.id, msg.estado, msg.resultadoLink),
+        }
 
       case 'apagarNeuronio':
         return { req: msg.req, ok: true, dados: await apagarNeuronio(msg.neuronioId) }

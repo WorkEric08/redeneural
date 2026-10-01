@@ -1,12 +1,16 @@
 import { BookOpen, ChevronDown, ChevronRight, Search } from 'lucide-react'
 import { useMemo, useState } from 'react'
-import { Link, useParams } from 'react-router-dom'
+import { Link, useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 
 import { BarraDeTopo } from '@/components/BarraDeTopo'
 import { botao } from '@/components/botao'
 import { EtiquetaProcessando } from '@/components/EtiquetaProcessando'
+import { ESTADOS_DA_IDEIA, estadoVisivel, type EstadoDaIdeia, type NeuronioNaTela } from '@/core'
 import { Pasta } from '@/features/acervo/Pasta'
 import { vizinhosPorNeuronio } from '@/features/estante/resumo'
+import { ROTULO_DO_ESTADO, TITULO_DA_SECAO } from '@/features/executaveis/estados'
+import { IconeDoEstado } from '@/features/executaveis/IconeDoEstado'
+import { FolhaDeEstado } from '@/features/executaveis/FolhaDeEstado'
 import { Fios } from '@/features/neuronio/Fios'
 import { contar } from '@/lib/plural'
 import { usePalacio } from '@/store/palacio'
@@ -21,10 +25,19 @@ import { usePalacio } from '@/store/palacio'
  * abre a tela cheia do neurônio — é como se lê o texto inteiro, não só a
  * prévia de duas linhas daqui. O fio de ponte leva o nome do livro do outro
  * lado: sem isso, "atravessa livros" não quer dizer nada para quem está lendo.
+ *
+ * Um livro executável (01/10/2026) separa as ideias pelo andamento — "Fazendo",
+ * "Para fazer" e "Feitas" —, e cada cartão ganha à esquerda o círculo do
+ * estado, que abre a folha de mudar (`?estado=<id>`, na URL como os outros
+ * painéis: o voltar fecha).
  */
 export default function Livro() {
   const { livroId } = useParams()
-  const { livros, neuronios, conexoes, carregado } = usePalacio()
+  const { livros, neuronios, conexoes, carregado, definirEstado } = usePalacio()
+  const [busca] = useSearchParams()
+  const navegar = useNavigate()
+  const { key } = useLocation()
+  const estadoAberto = busca.get('estado')
 
   const livro = livros.find((l) => l.id === livroId)
   const meus = useMemo(() => neuronios.filter((n) => n.livroId === livroId), [neuronios, livroId])
@@ -35,6 +48,12 @@ export default function Livro() {
   // Cada cartão abre e fecha por conta própria — ver os fios de dois
   // neurônios ao mesmo tempo, comparando, é um uso legítimo desta tela.
   const [abertos, setAbertos] = useState<ReadonlySet<string>>(new Set())
+
+  function fecharEstado(): void {
+    // O React Router chama de 'default' a primeira entrada da sessão.
+    if (key === 'default') void navegar({ search: '' }, { replace: true })
+    else void navegar(-1)
+  }
 
   function alternar(id: string): void {
     setAbertos((atual) => {
@@ -75,6 +94,75 @@ export default function Livro() {
     (total, n) => total + (vizinhos.get(n.id) ?? []).filter((v) => v.conexao.cross).length,
     0,
   )
+
+  const escolhidoParaEstado = livro.executavel ? meus.find((n) => n.id === estadoAberto) : undefined
+
+  function cartao(n: NeuronioNaTela, estado: EstadoDaIdeia | null) {
+    const aberto = abertos.has(n.id)
+    return (
+      <li key={n.id} className="cartao">
+        <div className="flex items-stretch">
+          {estado && (
+            // O círculo do andamento, com alvo de toque próprio: mudar o
+            // estado não pode disputar o dedo com abrir os fios.
+            <Link
+              to={{ search: `?estado=${n.id}` }}
+              aria-label={`Andamento de ${n.titulo}: ${ROTULO_DO_ESTADO[estado]}`}
+              className="text-poeira hover:bg-realce/60 active:bg-realce flex shrink-0 items-center pr-1 pl-4 transition-colors"
+            >
+              <IconeDoEstado estado={estado} tamanho={20} />
+            </Link>
+          )}
+          <button
+            type="button"
+            onClick={() => {
+              alternar(n.id)
+            }}
+            aria-expanded={aberto}
+            className="active:bg-realce hover:bg-realce/60 flex min-w-0 flex-1 flex-col gap-1.5 px-4 pt-4 pb-3 text-left transition-colors"
+          >
+            <span className="flex items-start justify-between gap-3">
+              <span className="font-titulo min-w-0 truncate text-[1.05rem] leading-snug font-semibold">
+                {n.titulo}
+              </span>
+              <span className="flex shrink-0 items-center gap-2">
+                {n.processando && <EtiquetaProcessando />}
+                {/* A seta dos fios: só o indicador de que há algo
+                      ali — o toque é no botão inteiro, não só nela. */}
+                <ChevronDown
+                  size={18}
+                  aria-hidden
+                  className={`text-poeira shrink-0 transition-transform ${aberto ? 'rotate-180' : ''}`}
+                />
+              </span>
+            </span>
+            {n.conteudo && (
+              <span className="text-poeira line-clamp-2 text-sm leading-relaxed">{n.conteudo}</span>
+            )}
+          </button>
+
+          {/* A segunda seta, sempre à mostra — não escondida atrás
+                de expandir: é o caminho direto para ler o texto
+                inteiro na tela do neurônio (pedido do usuário,
+                17/09/2026). Alvo de toque à parte do botão de
+                expandir, para os dois gestos não disputarem o dedo. */}
+          <Link
+            to={`/neuronio/${n.id}`}
+            aria-label={`Abrir ${n.titulo}`}
+            className="hover:bg-realce/60 active:bg-realce flex shrink-0 items-center px-4 transition-colors"
+          >
+            <ChevronRight size={20} aria-hidden className="text-poeira" />
+          </Link>
+        </div>
+
+        {aberto && (
+          <div className="border-linha border-t px-2 py-2">
+            <Fios lista={vizinhos.get(n.id) ?? []} />
+          </div>
+        )}
+      </li>
+    )
+  }
 
   return (
     <div className="flex flex-col">
@@ -122,75 +210,48 @@ export default function Livro() {
             <div className="flex flex-col gap-1">
               <p className="font-titulo text-lg font-semibold">Este livro ainda está vazio</p>
               <p className="text-poeira text-sm">
-                Todo conceito que você escrever aqui vira um neurônio.
+                {livro.executavel
+                  ? 'Toda ideia que você escrever aqui começa em “Para fazer”.'
+                  : 'Todo conceito que você escrever aqui vira um neurônio.'}
               </p>
             </div>
             <Link to={`/novo?livro=${livro.id}`} className={botao({ tipo: 'primario' })}>
               Escrever o primeiro neurônio
             </Link>
           </div>
-        ) : (
-          <ul className="flex flex-col gap-3">
-            {meus.map((n) => {
-              const aberto = abertos.has(n.id)
+        ) : livro.executavel ? (
+          <div className="flex flex-col gap-6">
+            {ESTADOS_DA_IDEIA.map((estado) => {
+              const daSecao = meus.filter((n) => estadoVisivel(n, livro) === estado)
+              if (daSecao.length === 0) return null
               return (
-                <li key={n.id} className="cartao">
-                  <div className="flex items-stretch">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        alternar(n.id)
-                      }}
-                      aria-expanded={aberto}
-                      className="active:bg-realce hover:bg-realce/60 flex min-w-0 flex-1 flex-col gap-1.5 px-4 pt-4 pb-3 text-left transition-colors"
-                    >
-                      <span className="flex items-start justify-between gap-3">
-                        <span className="font-titulo min-w-0 truncate text-[1.05rem] leading-snug font-semibold">
-                          {n.titulo}
-                        </span>
-                        <span className="flex shrink-0 items-center gap-2">
-                          {n.processando && <EtiquetaProcessando />}
-                          {/* A seta dos fios: só o indicador de que há algo
-                              ali — o toque é no botão inteiro, não só nela. */}
-                          <ChevronDown
-                            size={18}
-                            aria-hidden
-                            className={`text-poeira shrink-0 transition-transform ${aberto ? 'rotate-180' : ''}`}
-                          />
-                        </span>
-                      </span>
-                      {n.conteudo && (
-                        <span className="text-poeira line-clamp-2 text-sm leading-relaxed">
-                          {n.conteudo}
-                        </span>
-                      )}
-                    </button>
-
-                    {/* A segunda seta, sempre à mostra — não escondida atrás
-                        de expandir: é o caminho direto para ler o texto
-                        inteiro na tela do neurônio (pedido do usuário,
-                        17/09/2026). Alvo de toque à parte do botão de
-                        expandir, para os dois gestos não disputarem o dedo. */}
-                    <Link
-                      to={`/neuronio/${n.id}`}
-                      aria-label={`Abrir ${n.titulo}`}
-                      className="hover:bg-realce/60 active:bg-realce flex shrink-0 items-center px-4 transition-colors"
-                    >
-                      <ChevronRight size={20} aria-hidden className="text-poeira" />
-                    </Link>
-                  </div>
-
-                  {aberto && (
-                    <div className="border-linha border-t px-2 py-2">
-                      <Fios lista={vizinhos.get(n.id) ?? []} />
-                    </div>
-                  )}
-                </li>
+                <section key={estado} aria-label={TITULO_DA_SECAO[estado]}>
+                  <h2 className="rotulo-de-secao">
+                    {TITULO_DA_SECAO[estado]} · {String(daSecao.length)}
+                  </h2>
+                  <ul className="flex flex-col gap-3">{daSecao.map((n) => cartao(n, estado))}</ul>
+                </section>
               )
             })}
-          </ul>
+          </div>
+        ) : (
+          <ul className="flex flex-col gap-3">{meus.map((n) => cartao(n, null))}</ul>
         )}
       </div>
+
+      {livro.executavel && (
+        <FolhaDeEstado
+          aberta={escolhidoParaEstado !== undefined}
+          neuronio={escolhidoParaEstado}
+          estadoAtual={escolhidoParaEstado ? estadoVisivel(escolhidoParaEstado, livro) : null}
+          onDefinir={(estado, link) =>
+            escolhidoParaEstado
+              ? definirEstado(escolhidoParaEstado.id, estado, link)
+              : Promise.resolve(false)
+          }
+          onFechar={fecharEstado}
+        />
+      )}
     </div>
   )
 }

@@ -43,6 +43,8 @@ function livro(id: string, ordem = 0, tipo: Livro['tipo'] = 'conceitos'): Livro 
     emblema: null,
     larguraLombada: null,
     comprimentoLombada: null,
+    executavel: false,
+    diasParaAdormecer: 30,
     createdAt: T0,
   }
 }
@@ -54,6 +56,9 @@ function neuronio(id: string, livroId: string): Neuronio {
     titulo: `neurônio ${id}`,
     conteudo: '',
     embedding: null,
+    estado: null,
+    ultimoToque: T0,
+    resultadoLink: null,
     createdAt: T0,
     updatedAt: T0,
   }

@@ -1,4 +1,5 @@
 import { base64ToBytes, base64ToEmbedding, bytesToBase64, embeddingToBase64 } from './base64'
+import { clampDiasParaAdormecer, DIAS_PARA_ADORMECER_PADRAO } from './executavel'
 import type {
   Anexo,
   AnexoSnapshot,
@@ -34,6 +35,8 @@ export function livroToSnapshot(l: Livro): LivroSnapshot {
     emblema: l.emblema,
     larguraLombada: l.larguraLombada,
     comprimentoLombada: l.comprimentoLombada,
+    executavel: l.executavel,
+    diasParaAdormecer: l.diasParaAdormecer,
     createdAt: toIso(l.createdAt),
   }
 }
@@ -54,6 +57,9 @@ export function livroFromSnapshot(s: LivroSnapshot, prateleira: number, ordem: n
     emblema: s.emblema ?? null,
     larguraLombada: s.larguraLombada ?? null,
     comprimentoLombada: s.comprimentoLombada ?? null,
+    // Uma pasta nunca é executável, nem vinda de um arquivo mexido à mão.
+    executavel: (s.tipo ?? 'conceitos') === 'conceitos' && s.executavel === true,
+    diasParaAdormecer: clampDiasParaAdormecer(s.diasParaAdormecer ?? DIAS_PARA_ADORMECER_PADRAO),
     createdAt: fromIso(s.createdAt, `livro ${s.id}.createdAt`),
   }
 }
@@ -65,20 +71,32 @@ export function neuronioToSnapshot(n: Neuronio): NeuronioSnapshot {
     titulo: n.titulo,
     conteudo: n.conteudo,
     embedding: n.embedding ? embeddingToBase64(n.embedding) : null,
+    estado: n.estado,
+    ultimoToque: toIso(n.ultimoToque),
+    resultadoLink: n.resultadoLink,
     createdAt: toIso(n.createdAt),
     updatedAt: toIso(n.updatedAt),
   }
 }
 
 export function neuronioFromSnapshot(s: NeuronioSnapshot): Neuronio {
+  const updatedAt = fromIso(s.updatedAt, `neuronio ${s.id}.updatedAt`)
   return {
     id: s.id,
     livroId: s.livroId,
     titulo: s.titulo,
     conteudo: s.conteudo,
     embedding: s.embedding === null ? null : base64ToEmbedding(s.embedding),
+    estado: s.estado ?? null,
+    // Backup de antes dos executáveis: o último toque é a última edição, a
+    // mesma regra da migração do banco.
+    ultimoToque:
+      s.ultimoToque === undefined
+        ? updatedAt
+        : fromIso(s.ultimoToque, `neuronio ${s.id}.ultimoToque`),
+    resultadoLink: s.resultadoLink ?? null,
     createdAt: fromIso(s.createdAt, `neuronio ${s.id}.createdAt`),
-    updatedAt: fromIso(s.updatedAt, `neuronio ${s.id}.updatedAt`),
+    updatedAt,
   }
 }
 

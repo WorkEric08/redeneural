@@ -1,4 +1,4 @@
-import type { Livro, Neuronio, PalacioRepo } from '@/core'
+import { DIAS_PARA_ADORMECER_PADRAO, type Livro, type Neuronio, type PalacioRepo } from '@/core'
 
 /**
  * Seed de exemplo — três livros que existem para exercitar o motor de conexões,
@@ -31,6 +31,8 @@ export const SEED_LIVROS: Livro[] = [
     emblema: null,
     larguraLombada: null,
     comprimentoLombada: null,
+    executavel: false,
+    diasParaAdormecer: DIAS_PARA_ADORMECER_PADRAO,
     createdAt: T0,
   },
   {
@@ -43,6 +45,8 @@ export const SEED_LIVROS: Livro[] = [
     emblema: null,
     larguraLombada: null,
     comprimentoLombada: null,
+    executavel: false,
+    diasParaAdormecer: DIAS_PARA_ADORMECER_PADRAO,
     createdAt: T0,
   },
   {
@@ -55,12 +59,25 @@ export const SEED_LIVROS: Livro[] = [
     emblema: null,
     larguraLombada: null,
     comprimentoLombada: null,
+    executavel: false,
+    diasParaAdormecer: DIAS_PARA_ADORMECER_PADRAO,
     createdAt: T0,
   },
 ]
 
 function neuronio(id: string, livroId: string, titulo: string, conteudo: string): Neuronio {
-  return { id, livroId, titulo, conteudo, embedding: null, createdAt: T0, updatedAt: T0 }
+  return {
+    id,
+    livroId,
+    titulo,
+    conteudo,
+    embedding: null,
+    estado: null,
+    ultimoToque: T0,
+    resultadoLink: null,
+    createdAt: T0,
+    updatedAt: T0,
+  }
 }
 
 export const SEED_NEURONIOS: Neuronio[] = [

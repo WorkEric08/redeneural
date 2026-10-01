@@ -1,5 +1,6 @@
 import type { CriarLivroInput } from '../ports/engine'
 
+import { clampDiasParaAdormecer, DIAS_PARA_ADORMECER_PADRAO } from './executavel'
 import type { Livro } from './types'
 
 /**
@@ -8,9 +9,10 @@ import type { Livro } from './types'
  * aquela prateleira já tem (mesmo padrão de `livroFromSnapshot`).
  */
 export function novoLivro(input: CriarLivroInput, agora: Date, ordem: number): Livro {
+  const tipo = input.tipo ?? 'conceitos'
   return {
     id: input.id,
-    tipo: input.tipo ?? 'conceitos',
+    tipo,
     titulo: input.titulo.trim(),
     cor: input.cor,
     prateleira: Math.max(0, Math.trunc(input.prateleira)),
@@ -18,6 +20,11 @@ export function novoLivro(input: CriarLivroInput, agora: Date, ordem: number): L
     emblema: input.emblema ?? null,
     larguraLombada: input.larguraLombada ?? null,
     comprimentoLombada: input.comprimentoLombada ?? null,
+    // Uma pasta de acervo nunca é executável.
+    executavel: tipo === 'conceitos' && input.executavel === true,
+    diasParaAdormecer: clampDiasParaAdormecer(
+      input.diasParaAdormecer ?? DIAS_PARA_ADORMECER_PADRAO,
+    ),
     createdAt: agora,
   }
 }

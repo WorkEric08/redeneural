@@ -28,6 +28,9 @@ function neuronio(id: string, livroId: string): NeuronioNaTela {
     titulo: id,
     conteudo: '',
     processando: false,
+    estado: null,
+    ultimoToque: T0,
+    resultadoLink: null,
     createdAt: T0,
     updatedAt: T0,
   }

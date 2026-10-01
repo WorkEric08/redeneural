@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 
 import { BarraDeTopo } from '@/components/BarraDeTopo'
-import { primeiroLugarDaEstante, type TipoDeLivro } from '@/core'
+import { DIAS_PARA_ADORMECER_PADRAO, primeiroLugarDaEstante, type TipoDeLivro } from '@/core'
 import { COMPRIMENTO_PADRAO } from '@/features/estante/comprimentos'
 import { FormularioDeLivro } from '@/features/estante/FormularioDeLivro'
 import { LARGURA_PADRAO } from '@/features/estante/larguras'
@@ -79,6 +79,8 @@ export default function NovoLivro() {
             emblema: null,
             larguraLombada: LARGURA_PADRAO,
             comprimentoLombada: COMPRIMENTO_PADRAO,
+            executavel: false,
+            diasParaAdormecer: DIAS_PARA_ADORMECER_PADRAO,
           }}
           rotuloDeEnvio={ehPasta ? 'Criar pasta' : 'Criar livro'}
           ocupado={ocupado}

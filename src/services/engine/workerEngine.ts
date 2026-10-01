@@ -6,6 +6,7 @@ import type {
   EditarAnexoInput,
   EditarLivroInput,
   EditarNeuronioInput,
+  EstadoDaIdeia,
   EstadoDoPalacio,
   EstanteGravada,
   Id,
@@ -14,6 +15,7 @@ import type {
   ModoDaBusca,
   ModoDaRede,
   NeuronioGuardado,
+  NeuronioNaTela,
   Ponto,
   ProgressoDoMotor,
   ResultadoDeEscrita,
@@ -92,6 +94,13 @@ export function criarWorkerEngine(): ConnectionEngine {
 
     guardarNeuronio: (id: Id, livroId: Id): Promise<NeuronioGuardado> =>
       pedir<'guardarNeuronio'>({ tipo: 'guardarNeuronio', id, livroId }),
+
+    definirEstado: (
+      id: Id,
+      estado: EstadoDaIdeia,
+      resultadoLink: string | null,
+    ): Promise<NeuronioNaTela[]> =>
+      pedir<'definirEstado'>({ tipo: 'definirEstado', id, estado, resultadoLink }),
 
     criarLivro: (input: CriarLivroInput): Promise<EstanteGravada> =>
       pedir<'criarLivro'>({ tipo: 'criarLivro', input }),

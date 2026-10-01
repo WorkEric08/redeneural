@@ -13,6 +13,9 @@ function neuronio(id: string): NeuronioNaTela {
     titulo: `título ${id}`,
     conteudo: '',
     processando: false,
+    estado: null,
+    ultimoToque: T0,
+    resultadoLink: null,
     createdAt: T0,
     updatedAt: T0,
   }

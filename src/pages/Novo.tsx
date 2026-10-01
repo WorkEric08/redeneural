@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 
+import { useCriarLivroExecutavel } from '@/features/executaveis/useCriarLivroExecutavel'
 import { Formulario } from '@/features/neuronio/Formulario'
 import { FolhaGuardarEm } from '@/features/porto/FolhaGuardarEm'
 import { usePalacio } from '@/store/palacio'
@@ -23,6 +24,7 @@ export default function Novo() {
   const [busca, setBusca] = useSearchParams()
   const navegar = useNavigate()
   const { livros, neuronios, ocupado, criarNeuronio, guardarNeuronio, avisar } = usePalacio()
+  const criarLivroExecutavel = useCriarLivroExecutavel()
 
   // Um conceito não mora numa pasta de acervo: ela nem aparece na escolha, e
   // uma sugestão que aponte para uma é ignorada.
@@ -64,6 +66,7 @@ export default function Novo() {
           ? { inicial: { livroId: livroSugerido, titulo: '', conteudo: '' } }
           : {})}
         automatico
+        executar={{ onCriarLivro: criarLivroExecutavel }}
         ocupado={ocupado}
         rotuloDeEnvio="Criar neurônio"
         voltarPara="/"

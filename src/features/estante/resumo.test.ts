@@ -17,6 +17,8 @@ const LIVROS: Livro[] = [
     emblema: null,
     larguraLombada: null,
     comprimentoLombada: null,
+    executavel: false,
+    diasParaAdormecer: 30,
     createdAt: T0,
   },
   {
@@ -29,6 +31,8 @@ const LIVROS: Livro[] = [
     emblema: null,
     larguraLombada: null,
     comprimentoLombada: null,
+    executavel: false,
+    diasParaAdormecer: 30,
     createdAt: T0,
   },
   {
@@ -41,6 +45,8 @@ const LIVROS: Livro[] = [
     emblema: null,
     larguraLombada: null,
     comprimentoLombada: null,
+    executavel: false,
+    diasParaAdormecer: 30,
     createdAt: T0,
   },
 ]
@@ -52,6 +58,9 @@ function neuronio(id: string, livroId: string): NeuronioNaTela {
     titulo: `n ${id}`,
     conteudo: '',
     processando: false,
+    estado: null,
+    ultimoToque: T0,
+    resultadoLink: null,
     createdAt: T0,
     updatedAt: T0,
   }

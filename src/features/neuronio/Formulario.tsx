@@ -1,4 +1,4 @@
-import { Check, ChevronDown, Sparkles } from 'lucide-react'
+import { Check, ChevronDown, Hammer, Sparkles } from 'lucide-react'
 import { useState } from 'react'
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 
@@ -6,6 +6,7 @@ import { BarraDeTopo } from '@/components/BarraDeTopo'
 import { botao } from '@/components/botao'
 import { Folha } from '@/components/Folha'
 import type { Livro } from '@/core'
+import { FolhaDeExecutaveis } from '@/features/executaveis/FolhaDeExecutaveis'
 import { ROTULO_DO_PORTO } from '@/features/porto/porto'
 import type { NovoNeuronio } from '@/store/palacio'
 
@@ -56,6 +57,12 @@ interface Props {
    * e guarda no livro que os mais parecidos apontam, ou pergunta (o Porto).
    */
   automatico?: boolean
+  /**
+   * "Quero executar isso" — só na captura. Leva a ideia para um livro
+   * executável, e aí o Porto não entra: com um só, vai para ele; com vários, a
+   * pessoa escolhe; sem nenhum, o app oferece criar um aqui mesmo.
+   */
+  executar?: { onCriarLivro: (titulo: string) => Promise<string | null> }
   onEnviar: (dados: NovoNeuronio) => void
 }
 
@@ -67,6 +74,7 @@ export function Formulario({
   voltarPara,
   aviso,
   automatico = false,
+  executar,
   onEnviar,
 }: Props) {
   // `null`: "Automático" ao criar; ao editar, um neurônio que está no porto.
@@ -81,13 +89,24 @@ export function Formulario({
   const navegar = useNavigate()
   const { key } = useLocation()
   const escolhendoLivro = busca.get('livros') === '1'
+  const escolhendoExecutavel = busca.get('livros') === 'executar'
 
   const livro = livros.find((l) => l.id === livroId)
   const podeEnviar = titulo.trim().length > 0 && !ocupado
   const nomeDoLivro = livro?.titulo ?? (automatico ? 'Automático' : ROTULO_DO_PORTO)
+  const executaveis = livros.filter((l) => l.executavel)
+  // O "Quero executar isso" não guarda estado próprio: é ligado quando o livro
+  // escolhido é executável — escolher um pela etiqueta também o liga.
+  const executando = livro?.executavel === true
 
   function abrirEscolhaDeLivro(): void {
     void navegar({ search: '?livros=1' })
+  }
+
+  function alternarExecutar(): void {
+    if (executando) setLivroId(null)
+    else if (executaveis.length === 1) setLivroId(executaveis[0]?.id ?? null)
+    else void navegar({ search: '?livros=executar' })
   }
 
   function fecharEscolhaDeLivro(): void {
@@ -132,7 +151,7 @@ export function Formulario({
         />
 
         <div className="animar-entrada flex flex-1 flex-col pt-4">
-          <div className="flex items-center">
+          <div className="flex flex-wrap items-center gap-2">
             {livros.length === 0 && !automatico ? (
               <span className="text-poeira text-xs leading-relaxed">
                 Nenhum livro na estante ainda. Toque numa lombada escura para criar o primeiro.
@@ -166,6 +185,17 @@ export function Formulario({
                   className="text-poeira pointer-events-none absolute right-3"
                 />
               </span>
+            )}
+            {executar && (
+              <button
+                type="button"
+                aria-pressed={executando}
+                onClick={alternarExecutar}
+                className="chip"
+              >
+                <Hammer size={15} aria-hidden />
+                Quero executar isso
+              </button>
             )}
           </div>
 
@@ -233,6 +263,20 @@ export function Formulario({
           }
         />
       </Folha>
+
+      {executar && (
+        <FolhaDeExecutaveis
+          aberta={escolhendoExecutavel}
+          executaveis={executaveis}
+          escolhido={livroId}
+          onEscolher={(id) => {
+            setLivroId(id)
+            fecharEscolhaDeLivro()
+          }}
+          onCriar={executar.onCriarLivro}
+          onFechar={fecharEscolhaDeLivro}
+        />
+      )}
     </>
   )
 }

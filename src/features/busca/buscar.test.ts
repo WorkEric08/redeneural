@@ -17,6 +17,8 @@ const LIVROS: Livro[] = [
     emblema: null,
     larguraLombada: null,
     comprimentoLombada: null,
+    executavel: false,
+    diasParaAdormecer: 30,
     createdAt: T0,
   },
   {
@@ -29,12 +31,25 @@ const LIVROS: Livro[] = [
     emblema: null,
     larguraLombada: null,
     comprimentoLombada: null,
+    executavel: false,
+    diasParaAdormecer: 30,
     createdAt: T0,
   },
 ]
 
 function neuronio(id: string, livroId: string, titulo: string, conteudo: string): NeuronioNaTela {
-  return { id, livroId, titulo, conteudo, processando: false, createdAt: T0, updatedAt: T0 }
+  return {
+    id,
+    livroId,
+    titulo,
+    conteudo,
+    processando: false,
+    estado: null,
+    ultimoToque: T0,
+    resultadoLink: null,
+    createdAt: T0,
+    updatedAt: T0,
+  }
 }
 
 const NEURONIOS: NeuronioNaTela[] = [
