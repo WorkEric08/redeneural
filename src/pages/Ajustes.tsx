@@ -1,14 +1,20 @@
-import { Lightbulb, Minus, Plus, Rows3, Search } from 'lucide-react'
+import { Lightbulb, Map as IconeDoMapa, Minus, Plus, Rows3, Search } from 'lucide-react'
 import type { ReactNode } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 
 import { botao } from '@/components/botao'
 import { BarraDeTopo } from '@/components/BarraDeTopo'
+import { Confirmacao } from '@/components/Confirmacao'
+import { Folha } from '@/components/Folha'
 import { EtiquetaProcessando } from '@/components/EtiquetaProcessando'
 import { INTENSIDADE_DA_LUZ_MAXIMA, INTENSIDADE_DA_LUZ_MINIMA, MAXIMO_DE_PRATELEIRAS } from '@/core'
 import { usePalacio } from '@/store/palacio'
 
-/** Ajustes do palácio: quantidade de prateleiras e intensidade da luz. */
+/**
+ * Ajustes do palácio: quantidade de prateleiras, intensidade da luz e
+ * "Reorganizar mapa" — a única coisa que refaz o Mapa inteiro, e por isso
+ * pergunta antes (01/10/2026).
+ */
 export default function Ajustes() {
   const {
     livros,
@@ -20,7 +26,19 @@ export default function Ajustes() {
     definirQuantidadeDePrateleiras,
     intensidadeDaLuz,
     definirIntensidadeDaLuz,
+    reorganizarMapa,
+    avisar,
   } = usePalacio()
+
+  // A pergunta mora na URL, como as outras folhas: o voltar do Android fecha.
+  const [busca] = useSearchParams()
+  const navegar = useNavigate()
+  const { key } = useLocation()
+  const perguntando = busca.get('reorganizar') === '1'
+  function fecharPergunta(): void {
+    if (key === 'default') void navegar({ search: '' }, { replace: true })
+    else void navegar(-1)
+  }
 
   const semVetor = neuronios.filter((n) => n.processando).length
   const travado = ocupado || !carregado
@@ -136,7 +154,46 @@ export default function Ajustes() {
             Diminuir prateleiras é recusado se ainda sobrar livro nas removidas — mova-os antes.
           </p>
         </section>
+
+        <section>
+          <h2 className="rotulo-de-secao">Mapa</h2>
+          <div className="cartao">
+            <div className="linha-de-lista">
+              <Icone>
+                <IconeDoMapa size={18} aria-hidden />
+              </Icone>
+              <Texto titulo="Reorganizar mapa">
+                Desenha o mapa de novo, do zero. Ilhas e neurônios mudam de lugar.
+              </Texto>
+              <Link
+                to={{ search: '?reorganizar=1' }}
+                aria-disabled={travado}
+                className={`${botao({ tipo: 'secundario', tamanho: 'pequeno' })} aria-disabled:pointer-events-none aria-disabled:opacity-45`}
+              >
+                Reorganizar
+              </Link>
+            </div>
+          </div>
+        </section>
       </div>
+
+      <Folha aberta={perguntando} rotulo="Reorganizar o mapa" onFechar={fecharPergunta}>
+        <Confirmacao
+          titulo="Reorganizar o mapa?"
+          explicacao="O mapa é desenhado de novo, do zero: as ilhas e os neurônios mudam de lugar, e onde você se lembrava de encontrar cada coisa deixa de valer. Não dá para desfazer."
+          rotulo="Reorganizar"
+          rotuloOcupado="Reorganizando…"
+          ocupado={ocupado}
+          onCancelar={fecharPergunta}
+          onConfirmar={() => {
+            void reorganizarMapa().then((deuCerto) => {
+              if (!deuCerto) return
+              fecharPergunta()
+              avisar('Mapa reorganizado.')
+            })
+          }}
+        />
+      </Folha>
     </div>
   )
 }

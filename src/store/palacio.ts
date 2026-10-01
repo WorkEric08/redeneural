@@ -4,7 +4,9 @@ import {
   chaveDoLugar,
   INTENSIDADE_DA_LUZ_PADRAO,
   MINIMO_DE_PRATELEIRAS,
+  MAPA_VAZIO,
   MODO_DA_BUSCA_PADRAO,
+  MODO_DA_REDE_PADRAO,
   moverLivroNaEstante,
   novoLivro,
   primeiroLugarLivre,
@@ -13,7 +15,9 @@ import {
   type Conexao,
   type CriarAnexoInput,
   type Livro,
+  type MapaDoPalacio,
   type ModoDaBusca,
+  type ModoDaRede,
   type NeuronioNaTela,
   type Ponto,
   type ProgressoDoMotor,
@@ -67,11 +71,15 @@ interface PalacioStore {
   vagas: Vaga[]
   /** Onde a Rede organizou cada neurônio da última vez, por significado. */
   posicoesDaRede: Record<string, Ponto>
+  /** O Mapa: ilhas por livro, gravadas. */
+  mapa: MapaDoPalacio
   quantidadeDePrateleiras: number
   /** 0-100: o quanto a luz da sala lava a cor do pano em repouso. */
   intensidadeDaLuz: number
   /** O último modo da busca que a pessoa escolheu. */
   modoDaBusca: ModoDaBusca
+  /** O último modo da tela da Rede: a constelação ou o Mapa. */
+  modoDaRede: ModoDaRede
 
   carregado: boolean
   ocupado: boolean
@@ -116,6 +124,10 @@ interface PalacioStore {
   definirIntensidadeDaLuz: (valor: number) => Promise<void>
   /** Otimista: a busca troca de modo na hora, e a escolha fica gravada para a próxima vez. */
   definirModoDaBusca: (modo: ModoDaBusca) => Promise<void>
+  /** O mesmo, para a tela da Rede (constelação ou Mapa). */
+  definirModoDaRede: (modo: ModoDaRede) => Promise<void>
+  /** Desenha o Mapa inteiro de novo — só a pedido, em Ajustes. `false` se o motor não conseguiu. */
+  reorganizarMapa: () => Promise<boolean>
   /**
    * Solta um neurônio arrastado no ponto novo. Devolve o layout reagindo a
    * ele na hora — a tela anima o assentamento com o resultado, sem esperar
@@ -160,9 +172,11 @@ export const usePalacio = create<PalacioStore>()((set, get) => {
     vinculos: [],
     vagas: [],
     posicoesDaRede: {},
+    mapa: MAPA_VAZIO,
     quantidadeDePrateleiras: MINIMO_DE_PRATELEIRAS,
     intensidadeDaLuz: INTENSIDADE_DA_LUZ_PADRAO,
     modoDaBusca: MODO_DA_BUSCA_PADRAO,
+    modoDaRede: MODO_DA_REDE_PADRAO,
     carregado: false,
     ocupado: false,
     progresso: null,
@@ -207,11 +221,11 @@ export const usePalacio = create<PalacioStore>()((set, get) => {
       set((s) => ({ neuronios: [provisorio, ...s.neuronios], ocupado: true, erro: null }))
 
       try {
-        const { neuronio, neuronios, conexoes, posicoesDaRede, vinculos } =
+        const { neuronio, neuronios, conexoes, posicoesDaRede, vinculos, mapa } =
           await engine.criarNeuronio({ id, ...novo })
         // O palácio inteiro, não só o que foi escrito: um reprocessamento tira o
         // "processando…" dos outros também.
-        set({ neuronios, conexoes, posicoesDaRede, vinculos })
+        set({ neuronios, conexoes, posicoesDaRede, vinculos, mapa })
         return neuronio
       } catch (e) {
         // Desfaz o otimismo: o Worker não conseguiu, então não fingimos que deu.
@@ -242,11 +256,13 @@ export const usePalacio = create<PalacioStore>()((set, get) => {
       }))
 
       try {
-        const { neuronios, conexoes, posicoesDaRede, vinculos } = await engine.editarNeuronio({
-          id,
-          ...mudancas,
-        })
-        set({ neuronios, conexoes, posicoesDaRede, vinculos })
+        const { neuronios, conexoes, posicoesDaRede, vinculos, mapa } = await engine.editarNeuronio(
+          {
+            id,
+            ...mudancas,
+          },
+        )
+        set({ neuronios, conexoes, posicoesDaRede, vinculos, mapa })
         return true
       } catch (e) {
         set({ erro: mensagem(e) })
@@ -260,8 +276,9 @@ export const usePalacio = create<PalacioStore>()((set, get) => {
       set({ ocupado: true, erro: null })
 
       try {
-        const { neuronios, conexoes, posicoesDaRede, vinculos } = await engine.apagarNeuronio(id)
-        set({ neuronios, conexoes, posicoesDaRede, vinculos })
+        const { neuronios, conexoes, posicoesDaRede, vinculos, mapa } =
+          await engine.apagarNeuronio(id)
+        set({ neuronios, conexoes, posicoesDaRede, vinculos, mapa })
         return true
       } catch (e) {
         set({ erro: mensagem(e) })
@@ -288,8 +305,8 @@ export const usePalacio = create<PalacioStore>()((set, get) => {
       }))
 
       try {
-        const { neuronios, conexoes } = await engine.guardarNeuronio(id, livroId)
-        set({ neuronios, conexoes })
+        const { neuronios, conexoes, mapa } = await engine.guardarNeuronio(id, livroId)
+        set({ neuronios, conexoes, mapa })
         return true
       } catch (e) {
         set((s) => ({
@@ -448,6 +465,29 @@ export const usePalacio = create<PalacioStore>()((set, get) => {
         set({ intensidadeDaLuz: await engine.definirIntensidadeDaLuz(valor) })
       } catch (e) {
         set({ intensidadeDaLuz: antes, erro: mensagem(e) })
+      }
+    },
+
+    async definirModoDaRede(modo) {
+      set({ modoDaRede: modo })
+      try {
+        await engine.definirModoDaRede(modo)
+      } catch (e) {
+        // Como no modo da busca: a tela já trocou; só não fica lembrado.
+        set({ erro: mensagem(e) })
+      }
+    },
+
+    async reorganizarMapa(): Promise<boolean> {
+      set({ ocupado: true, erro: null })
+      try {
+        set({ mapa: await engine.reorganizarMapa() })
+        return true
+      } catch (e) {
+        set({ erro: mensagem(e) })
+        return false
+      } finally {
+        set({ ocupado: false })
       }
     },
 

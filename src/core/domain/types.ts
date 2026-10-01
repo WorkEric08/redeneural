@@ -6,6 +6,8 @@
  * e o que seria traduzido quase linha a linha para Kotlin num app nativo.
  */
 
+import type { MapaDoPalacio } from '../motor/mapa'
+
 export type Id = string
 
 /**
@@ -215,6 +217,13 @@ export interface PalacioSnapshot {
    * perfil.
    */
   anexos?: AnexoSnapshot[] | undefined
+  /**
+   * Ausente em backups de antes do Mapa (01/10/2026) — calculado na chegada.
+   * Diferente das posições da Rede, o mapa **vai** no backup: a promessa dele é
+   * a memória espacial, e recalcular na chegada a desfaria. No import, as ilhas
+   * do arquivo vencem (ver `fundirMapas`).
+   */
+  mapa?: MapaDoPalacio | undefined
 }
 
 export interface AnexoSnapshot {

@@ -9,7 +9,9 @@ import {
   type EtiquetaDePrateleira,
   type Id,
   type Livro,
+  type MapaDoPalacio,
   type ModoDaBusca,
+  type ModoDaRede,
   type Neuronio,
   type Ponto,
   type Vaga,
@@ -48,6 +50,8 @@ export interface PreferenciasGravadas {
   intensidadeDaLuz?: number
   /** Ausente em preferências gravadas antes de 30/09/2026 — o repo trata como `MODO_DA_BUSCA_PADRAO`. */
   modoDaBusca?: ModoDaBusca
+  /** Ausente antes do Mapa (01/10/2026) — o repo trata como `MODO_DA_REDE_PADRAO`. */
+  modoDaRede?: ModoDaRede
 }
 
 /**
@@ -62,7 +66,18 @@ export interface PosicoesDaRedeGravadas {
   posicoes: Record<string, Ponto>
 }
 
-export type MetaGravada = PerfilGravado | PreferenciasGravadas | PosicoesDaRedeGravadas
+/**
+ * O Mapa (01/10/2026): ilhas por livro e o lugar de cada neurônio nelas. Ao
+ * contrário das posições da Rede, entra no backup — é memória espacial, não
+ * derivado que se recalcula na chegada.
+ */
+export interface MapaGravado {
+  chave: 'mapa'
+  ilhas: MapaDoPalacio['ilhas']
+}
+
+export type MetaGravada =
+  PerfilGravado | PreferenciasGravadas | PosicoesDaRedeGravadas | MapaGravado
 
 /** Os bytes de uma imagem do acervo, numa tabela à parte da do anexo. */
 export type ArquivoGravado = ArquivoDoAnexo & { anexoId: Id }

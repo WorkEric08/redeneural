@@ -24,6 +24,9 @@ import {
   MAXIMO_DE_PRATELEIRAS,
   MINIMO_DE_PRATELEIRAS,
   modoDaBuscaOuPadrao,
+  modoDaRedeOuPadrao,
+  fundirMapas,
+  MAPA_VAZIO,
   neuronioFromSnapshot,
   neuronioToSnapshot,
   posicoesAntigas,
@@ -33,6 +36,7 @@ import {
 } from '@/core'
 import {
   db as defaultDb,
+  type MapaGravado,
   type PalacioDB,
   type PerfilGravado,
   type PosicoesDaRedeGravadas,
@@ -250,6 +254,17 @@ export function createDexieRepo(db: PalacioDB = defaultDb): PalacioRepo {
       })
     },
 
+    async getModoDaRede() {
+      const gravado = (await db.meta.get('preferencias')) as PreferenciasGravadas | undefined
+      return modoDaRedeOuPadrao(gravado?.modoDaRede)
+    },
+
+    async definirModoDaRede(modo) {
+      await db.transaction('rw', db.meta, async () => {
+        await db.meta.put(await preferenciasCom({ modoDaRede: modoDaRedeOuPadrao(modo) }))
+      })
+    },
+
     async getModoDaBusca() {
       const gravado = (await db.meta.get('preferencias')) as PreferenciasGravadas | undefined
       return modoDaBuscaOuPadrao(gravado?.modoDaBusca)
@@ -440,6 +455,16 @@ export function createDexieRepo(db: PalacioDB = defaultDb): PalacioRepo {
       await db.meta.put(gravado)
     },
 
+    async getMapa() {
+      const gravado = (await db.meta.get('mapa')) as MapaGravado | undefined
+      return gravado ? { ilhas: gravado.ilhas } : MAPA_VAZIO
+    },
+
+    async setMapa(mapa) {
+      const gravado: MapaGravado = { chave: 'mapa', ilhas: mapa.ilhas }
+      await db.meta.put(gravado)
+    },
+
     async exportAll(): Promise<PalacioSnapshot> {
       const [livros, neuronios, conexoes, etiquetas, vagas, anexos, arquivos] =
         await db.transaction(
@@ -457,6 +482,7 @@ export function createDexieRepo(db: PalacioDB = defaultDb): PalacioRepo {
             ]),
         )
       const arquivoDe = new Map(arquivos.map((a) => [a.anexoId, a]))
+      const mapa = (await db.meta.get('mapa')) as MapaGravado | undefined
 
       return {
         version: SNAPSHOT_VERSION,
@@ -467,6 +493,7 @@ export function createDexieRepo(db: PalacioDB = defaultDb): PalacioRepo {
         etiquetas,
         vagas,
         anexos: anexos.map((a) => anexoToSnapshot(a, arquivoDe.get(a.id))),
+        ...(mapa ? { mapa: { ilhas: mapa.ilhas } } : {}),
       }
     },
 
@@ -574,6 +601,14 @@ export function createDexieRepo(db: PalacioDB = defaultDb): PalacioRepo {
           const atual = (await db.meta.get('preferencias')) as PreferenciasGravadas | undefined
           if (maiorPrateleira > (atual?.quantidadeDePrateleiras ?? MINIMO_DE_PRATELEIRAS)) {
             await db.meta.put(await preferenciasCom({ quantidadeDePrateleiras: maiorPrateleira }))
+          }
+
+          // O mapa do arquivo volta como estava; o daqui encaixa em volta.
+          if (parsed.mapa) {
+            const local = (await db.meta.get('mapa')) as MapaGravado | undefined
+            const fundido = fundirMapas(local ? { ilhas: local.ilhas } : MAPA_VAZIO, parsed.mapa)
+            const gravado: MapaGravado = { chave: 'mapa', ilhas: fundido.ilhas }
+            await db.meta.put(gravado)
           }
         },
       )

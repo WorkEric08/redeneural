@@ -4,7 +4,9 @@ import {
   anexoParaTela,
   arestaParaConexao,
   buscarPorSentido,
+  atualizarMapa,
   calcularLayoutDaRede,
+  mapaCompleto,
   ehPonte,
   livroDoPorto,
   construirGrafo,
@@ -35,7 +37,9 @@ import {
   type EstanteGravada,
   type Id,
   type Livro,
+  type MapaDoPalacio,
   type MidiaDoAnexo,
+  type NoDoMapa,
   type NeuronioGuardado,
   type Neuronio,
   type NoDoGrafo,
@@ -101,7 +105,9 @@ async function estadoAtual(): Promise<EstadoDoPalacio> {
     quantidadeDePrateleiras,
     intensidadeDaLuz,
     modoDaBusca,
+    modoDaRede,
     posicoesDaRede,
+    mapa,
     acervo,
   ] = await Promise.all([
     repo.listLivros(),
@@ -111,7 +117,9 @@ async function estadoAtual(): Promise<EstadoDoPalacio> {
     repo.getQuantidadeDePrateleiras(),
     repo.getIntensidadeDaLuz(),
     repo.getModoDaBusca(),
+    repo.getModoDaRede(),
     repo.getPosicoesDaRede(),
+    repo.getMapa(),
     acervoAtual(),
   ])
 
@@ -123,7 +131,9 @@ async function estadoAtual(): Promise<EstadoDoPalacio> {
     quantidadeDePrateleiras,
     intensidadeDaLuz,
     modoDaBusca,
+    modoDaRede,
     posicoesDaRede,
+    mapa,
     ...acervo,
   }
 }
@@ -220,6 +230,51 @@ async function recalcularPosicoesDaRede(
  * contagem certa e nenhum ponto. Quem já tem lugar não se mexe: é a mesma
  * partida quente de sempre.
  */
+/** O que o Mapa precisa: os livros de conceitos e os neurônios que moram neles. */
+async function entradaDoMapa(): Promise<{
+  nos: NoDoMapa[]
+  livros: Set<Id>
+  centroide: Float32Array | null
+}> {
+  const [livros, neuronios, perfil] = await Promise.all([
+    repo.listLivros(),
+    repo.listNeuronios(),
+    repo.getPerfil(),
+  ])
+  const nos: NoDoMapa[] = []
+  for (const n of neuronios) {
+    // No porto não há livro — e sem livro não há ilha.
+    if (n.livroId !== null) nos.push({ id: n.id, livroId: n.livroId, embedding: n.embedding })
+  }
+  return {
+    nos,
+    livros: new Set(livros.filter((l) => l.tipo === 'conceitos').map((l) => l.id)),
+    centroide: perfil?.centroide ?? null,
+  }
+}
+
+/**
+ * Encaixa no Mapa o que mudou, sem remexer o resto (`atualizarMapa`). Roda
+ * nas mesmas escritas que reacomodam a Rede, depois de o livro do neurônio já
+ * estar decidido — o Porto inclusive. Sem mapa gravado, desenha o inteiro: é
+ * a migração de quem já tinha um palácio antes do Mapa.
+ */
+async function encaixarNoMapa(): Promise<void> {
+  const [{ nos, livros, centroide }, anterior] = await Promise.all([
+    entradaDoMapa(),
+    repo.getMapa(),
+  ])
+  await repo.setMapa(atualizarMapa(anterior, nos, livros, centroide))
+}
+
+/** Só a pedido da pessoa: o mapa inteiro de novo, do zero. */
+async function reorganizarMapa(): Promise<MapaDoPalacio> {
+  const { nos, livros, centroide } = await entradaDoMapa()
+  const mapa = mapaCompleto(nos, livros, centroide)
+  await repo.setMapa(mapa)
+  return mapa
+}
+
 async function darLugarAQuemFalta(): Promise<void> {
   const [neuronios, posicoes] = await Promise.all([repo.listNeuronios(), repo.getPosicoesDaRede()])
   if (neuronios.every((n) => n.id in posicoes)) return
@@ -277,6 +332,7 @@ async function reprocessarTudo(): Promise<EstadoDoPalacio> {
   await repo.setPerfil(perfil, nos.length)
   await recalcularPosicoesDaRede(arestas)
   await reancorarTodos()
+  await encaixarNoMapa()
 
   return estadoAtual()
 }
@@ -346,6 +402,8 @@ async function escrever(
 
   // O Porto só vale para quem acabou de nascer em "Automático".
   if (!existente && input.livroId === null) await guardarPeloPorto(completo.id)
+  // Depois do Porto: a ilha é a do livro que ficou decidido.
+  await encaixarNoMapa()
 
   const depois = await estadoAtual()
   const naTela = depois.neuronios.find((n) => n.id === completo.id)
@@ -356,6 +414,7 @@ async function escrever(
     conexoes: depois.conexoes,
     posicoesDaRede: depois.posicoesDaRede,
     vinculos: depois.vinculos,
+    mapa: depois.mapa,
   }
 }
 
@@ -401,8 +460,13 @@ async function guardar(id: Id, livroId: Id): Promise<void> {
 
 async function guardarNeuronio(id: Id, livroId: Id): Promise<NeuronioGuardado> {
   await guardar(id, livroId)
-  const [neuronios, conexoes] = await Promise.all([repo.listNeuronios(), repo.listConexoes()])
-  return { neuronios: neuronios.map(paraTela), conexoes }
+  await encaixarNoMapa()
+  const [neuronios, conexoes, mapa] = await Promise.all([
+    repo.listNeuronios(),
+    repo.listConexoes(),
+    repo.getMapa(),
+  ])
+  return { neuronios: neuronios.map(paraTela), conexoes, mapa }
 }
 
 /**
@@ -601,6 +665,7 @@ async function responder(msg: ParaMotor): Promise<DoMotor> {
       case 'carregar':
         await seedPalacio(repo)
         await darLugarAQuemFalta()
+        await encaixarNoMapa()
         return { req: msg.req, ok: true, dados: await estadoAtual() }
 
       case 'criarNeuronio':
@@ -649,6 +714,13 @@ async function responder(msg: ParaMotor): Promise<DoMotor> {
       case 'definirIntensidadeDaLuz':
         await repo.definirIntensidadeDaLuz(msg.valor)
         return { req: msg.req, ok: true, dados: await repo.getIntensidadeDaLuz() }
+
+      case 'definirModoDaRede':
+        await repo.definirModoDaRede(msg.modo)
+        return { req: msg.req, ok: true, dados: await repo.getModoDaRede() }
+
+      case 'reorganizarMapa':
+        return { req: msg.req, ok: true, dados: await reorganizarMapa() }
 
       case 'definirModoDaBusca':
         await repo.definirModoDaBusca(msg.modo)

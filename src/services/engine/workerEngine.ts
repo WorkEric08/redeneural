@@ -10,7 +10,9 @@ import type {
   EstanteGravada,
   Id,
   Livro,
+  MapaDoPalacio,
   ModoDaBusca,
+  ModoDaRede,
   NeuronioGuardado,
   Ponto,
   ProgressoDoMotor,
@@ -120,6 +122,12 @@ export function criarWorkerEngine(): ConnectionEngine {
 
     definirModoDaBusca: (modo: ModoDaBusca): Promise<ModoDaBusca> =>
       pedir<'definirModoDaBusca'>({ tipo: 'definirModoDaBusca', modo }),
+
+    definirModoDaRede: (modo: ModoDaRede): Promise<ModoDaRede> =>
+      pedir<'definirModoDaRede'>({ tipo: 'definirModoDaRede', modo }),
+
+    reorganizarMapa: (): Promise<MapaDoPalacio> =>
+      pedir<'reorganizarMapa'>({ tipo: 'reorganizarMapa' }),
 
     moverNeuronioNaRede: (id: Id, ponto: Ponto): Promise<Readonly<Record<Id, Ponto>>> =>
       pedir<'moverNeuronioNaRede'>({ tipo: 'moverNeuronioNaRede', id, ponto }),

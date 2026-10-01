@@ -1,4 +1,6 @@
 import type { ModoDaBusca } from '../domain/modoDaBusca'
+import type { ModoDaRede } from '../domain/modoDaRede'
+import type { MapaDoPalacio } from '../motor/mapa'
 import type { AnexoNaTela, NeuronioNaTela } from '../domain/tela'
 import type { Conexao, Id, Livro, TipoDeLivro, Vaga, Vinculo } from '../domain/types'
 import type { Ponto } from '../motor/redeLayout'
@@ -30,6 +32,8 @@ export type EditarNeuronioInput = CriarNeuronioInput
 export interface NeuronioGuardado {
   neuronios: NeuronioNaTela[]
   conexoes: Conexao[]
+  /** Mudou de livro, mudou de ilha. */
+  mapa: MapaDoPalacio
 }
 
 export interface CriarLivroInput {
@@ -103,6 +107,10 @@ export interface EstadoDoPalacio {
   intensidadeDaLuz: number
   /** O último modo da busca que a pessoa escolheu — a tela abre nele. */
   modoDaBusca: ModoDaBusca
+  /** O último modo da tela da Rede — constelação ou Mapa. */
+  modoDaRede: ModoDaRede
+  /** O Mapa: ilhas por livro, gravadas (ver `core/motor/mapa.ts`). */
+  mapa: MapaDoPalacio
   /**
    * Onde a Rede organizou cada neurônio da última vez — por significado, não
    * por livro (Fase 23-2). `{}` num palácio que nunca foi organizado.
@@ -128,6 +136,8 @@ export interface ResultadoDeEscrita {
   conexoes: Conexao[]
   /** A Rede se reacomoda junto — o novo neurônio nasce perto de quem ele conversa. */
   posicoesDaRede: Readonly<Record<Id, Ponto>>
+  /** E o Mapa encaixa o neurônio na ilha do livro dele, sem mover ninguém. */
+  mapa: MapaDoPalacio
   /** Um conceito novo ou mudado pode virar a melhor âncora de algum anexo. */
   vinculos: Vinculo[]
 }
@@ -188,6 +198,13 @@ export interface ConnectionEngine {
   definirIntensidadeDaLuz(valor: number): Promise<number>
   /** Grava o modo da busca que a pessoa acabou de escolher. */
   definirModoDaBusca(modo: ModoDaBusca): Promise<ModoDaBusca>
+  /** Grava o modo da tela da Rede que a pessoa acabou de escolher. */
+  definirModoDaRede(modo: ModoDaRede): Promise<ModoDaRede>
+  /**
+   * Desenha o Mapa inteiro de novo, do zero. É a única coisa que reorganiza o
+   * mapa todo — só quando a pessoa pede (Ajustes, com confirmação).
+   */
+  reorganizarMapa(): Promise<MapaDoPalacio>
   /**
    * Arrastar um neurônio: onde o dedo soltou vira a âncora dele, e a mesma
    * física de sempre (partida quente, poucas iterações) deixa a vizinhança

@@ -1,10 +1,18 @@
-import { Maximize2, Search, SlidersHorizontal, Waypoints } from 'lucide-react'
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import {
+  Map as IconeDoMapa,
+  Maximize2,
+  Search,
+  Share2,
+  SlidersHorizontal,
+  Waypoints,
+} from 'lucide-react'
+import { useCallback, useEffect, useEffectEvent, useMemo, useRef, useState } from 'react'
 import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 
 import { BarraDeTopo } from '@/components/BarraDeTopo'
 import { botao } from '@/components/botao'
 import { Folha } from '@/components/Folha'
+import { TelaDoMapa } from '@/features/mapa/TelaDoMapa'
 import { ROTULO_DO_PORTO } from '@/features/porto/porto'
 import { grausDoMapa, satelitesDaCena } from '@/features/rede/layout'
 import { Tela, type ControleDaTela, type Folgas } from '@/features/rede/Tela'
@@ -13,14 +21,17 @@ import { contar } from '@/lib/plural'
 import { usePalacio } from '@/store/palacio'
 
 /**
- * O quanto a barra de topo (com a contagem) e os controles do pé cobrem da
- * constelação, em px: enquadrar deixa os pontos fora deles. Constante de
- * módulo porque a Tela depende da identidade.
+ * O quanto a barra de topo (com o seletor de modo e a contagem) e os controles
+ * do pé cobrem da tela, em px: enquadrar deixa os pontos fora deles. Constante
+ * de módulo porque a Tela depende da identidade.
  */
-const FOLGAS: Folgas = { topo: 104, base: 112, lados: 28 }
+const FOLGAS: Folgas = { topo: 152, base: 112, lados: 28 }
 
 /**
- * A rede do palácio: uma constelação, em tela cheia.
+ * A rede do palácio, em tela cheia, de dois jeitos (01/10/2026): a
+ * **constelação** (por significado) e o **Mapa** (por livro, em ilhas). Abre no
+ * último modo usado — na primeira vez, a constelação —, e o neurônio tocado
+ * continua tocado ao trocar: o Mapa abre centrado nele.
  *
  * Espelha exatamente o grafo do motor — nada é filtrado ou inventado aqui. Os
  * filtros existem porque um palácio grande vira novelo: focar num livro e
@@ -37,8 +48,11 @@ export default function Rede() {
     anexos,
     vinculos,
     posicoesDaRede,
+    mapa,
+    modoDaRede: modo,
     carregado,
     moverNeuronioNaRede,
+    definirModoDaRede,
   } = usePalacio()
 
   // A folha dos filtros mora na URL, como os painéis da estante: o voltar do
@@ -75,6 +89,22 @@ export default function Rede() {
     setSelecionado(null)
   }, [])
   const controle = useRef<ControleDaTela>(null)
+
+  function trocarModo(novo: typeof modo): void {
+    // O Mapa não tem satélites: um item tocado na constelação deixa de estar.
+    if (novo === 'mapa') setAnexoSelecionado(null)
+    void definirModoDaRede(novo)
+  }
+
+  // Trocou de modo com um neurônio tocado: a tela nova abre centrada nele. Roda
+  // depois do enquadramento da tela que acabou de montar (efeito de filho comita
+  // antes do do pai).
+  const centrarNoEscolhido = useEffectEvent(() => {
+    if (selecionado) controle.current?.focar(selecionado)
+  })
+  useEffect(() => {
+    centrarNoEscolhido()
+  }, [modo])
 
   function fecharFiltros(): void {
     // O React Router chama de 'default' a primeira entrada da sessão.
@@ -115,6 +145,7 @@ export default function Rede() {
   }, [novoId])
 
   const pontes = conexoes.filter((c) => c.cross).length
+  const noMapa = Object.values(mapa.ilhas).reduce((s, i) => s + Object.keys(i.pontos).length, 0)
   const escolhido = neuronios.find((n) => n.id === selecionado)
   const livroDoEscolhido = livros.find((l) => l.id === escolhido?.livroId)
   const anexoEscolhido = anexos.find((a) => a.id === anexoSelecionado)
@@ -128,25 +159,37 @@ export default function Rede() {
           da animação viraria referência para o `fixed`, e a constelação
           nasceria deslocada. */}
       <div className="fixed inset-0 z-0 lg:left-52">
-        <Tela
-          cena={{
-            posicoes,
-            livros,
-            neuronios,
-            conexoes,
-            graus,
-            livroEmFoco,
-            soAsPontes,
-            selecionado,
-            satelites,
-            anexoSelecionado,
-          }}
-          onSelecionar={escolherNeuronio}
-          onSelecionarAnexo={escolherAnexo}
-          onArrastarNeuronio={moverNeuronioNaRede}
-          controle={controle}
-          folgas={FOLGAS}
-        />
+        {modo === 'mapa' ? (
+          <TelaDoMapa
+            mapa={mapa}
+            livros={livros}
+            neuronios={neuronios}
+            selecionado={selecionado}
+            onSelecionar={escolherNeuronio}
+            controle={controle}
+            folgas={FOLGAS}
+          />
+        ) : (
+          <Tela
+            cena={{
+              posicoes,
+              livros,
+              neuronios,
+              conexoes,
+              graus,
+              livroEmFoco,
+              soAsPontes,
+              selecionado,
+              satelites,
+              anexoSelecionado,
+            }}
+            onSelecionar={escolherNeuronio}
+            onSelecionarAnexo={escolherAnexo}
+            onArrastarNeuronio={moverNeuronioNaRede}
+            controle={controle}
+            folgas={FOLGAS}
+          />
+        )}
       </div>
 
       <BarraDeTopo
@@ -165,19 +208,56 @@ export default function Rede() {
         }
       />
 
+      <div
+        role="group"
+        aria-label="Como ver o palácio"
+        className="relative z-10 flex gap-2 px-1 pt-3"
+      >
+        <button
+          type="button"
+          aria-pressed={modo === 'rede'}
+          onClick={() => {
+            trocarModo('rede')
+          }}
+          className="chip"
+        >
+          <Share2 size={15} aria-hidden />
+          Rede
+        </button>
+        <button
+          type="button"
+          aria-pressed={modo === 'mapa'}
+          onClick={() => {
+            trocarModo('mapa')
+          }}
+          className="chip"
+        >
+          <IconeDoMapa size={15} aria-hidden />
+          Mapa
+        </button>
+      </div>
+
       {/* Deixa o toque passar: por baixo da contagem ainda é a rede. */}
-      <p className="text-poeira pointer-events-none relative z-10 px-1 pt-3 text-sm">
-        {carregado
-          ? `${contar(neuronios.length, 'neurônio', 'neurônios')} · ${contar(conexoes.length, 'conexão', 'conexões')} · `
-          : 'Abrindo…'}
-        {carregado && (
-          <span className="text-ponte brilho-ponte-texto-sm">
-            {contar(pontes, 'ponte', 'pontes')}
-          </span>
-        )}
-        {livroFocado && ` · foco em ${livroFocado.titulo}`}
-        {soAsPontes && ' · só as pontes'}
-      </p>
+      {modo === 'mapa' ? (
+        <p className="text-poeira pointer-events-none relative z-10 px-1 pt-2 text-sm">
+          {carregado
+            ? `${contar(Object.keys(mapa.ilhas).length, 'ilha', 'ilhas')} · ${contar(noMapa, 'neurônio', 'neurônios')}`
+            : 'Abrindo…'}
+        </p>
+      ) : (
+        <p className="text-poeira pointer-events-none relative z-10 px-1 pt-2 text-sm">
+          {carregado
+            ? `${contar(neuronios.length, 'neurônio', 'neurônios')} · ${contar(conexoes.length, 'conexão', 'conexões')} · `
+            : 'Abrindo…'}
+          {carregado && (
+            <span className="text-ponte brilho-ponte-texto-sm">
+              {contar(pontes, 'ponte', 'pontes')}
+            </span>
+          )}
+          {livroFocado && ` · foco em ${livroFocado.titulo}`}
+          {soAsPontes && ' · só as pontes'}
+        </p>
+      )}
 
       {anexoEscolhido && (
         <div className="cartao fixed inset-x-4 bottom-[calc(96px+env(safe-area-inset-bottom))] z-10 mx-auto flex max-w-xl items-center gap-3 py-3 pr-3 pl-4 lg:left-[calc(13rem+1rem)]">
@@ -238,17 +318,19 @@ export default function Rede() {
         >
           <Maximize2 size={18} aria-hidden />
         </button>
-        <button
-          type="button"
-          aria-label="Filtros da rede"
-          aria-pressed={filtrando}
-          className={botao({ tipo: 'secundario', tamanho: 'icone' })}
-          onClick={() => {
-            void navegar({ search: '?filtros=1' })
-          }}
-        >
-          <SlidersHorizontal size={18} aria-hidden />
-        </button>
+        {modo === 'rede' && (
+          <button
+            type="button"
+            aria-label="Filtros da rede"
+            aria-pressed={filtrando}
+            className={botao({ tipo: 'secundario', tamanho: 'icone' })}
+            onClick={() => {
+              void navegar({ search: '?filtros=1' })
+            }}
+          >
+            <SlidersHorizontal size={18} aria-hidden />
+          </button>
+        )}
       </div>
 
       <Folha aberta={filtrosAbertos} rotulo="Filtros da rede" onFechar={fecharFiltros}>

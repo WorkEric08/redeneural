@@ -13,6 +13,8 @@ const comprimentoLombada = z.number().min(20).max(100).nullable()
 
 const tipoDeLivro = z.enum(['conceitos', 'acervo'])
 
+const ponto = z.object({ x: z.number(), y: z.number() })
+
 export const livroSchema = z.object({
   id,
   tipo: tipoDeLivro,
@@ -186,4 +188,17 @@ export const snapshotSchema = z.object({
     )
     .optional()
     .default([]),
+  // Ausente em backup de antes do Mapa (01/10/2026) — calculado na chegada.
+  mapa: z
+    .object({
+      ilhas: z.record(
+        z.string(),
+        z.object({
+          centro: ponto,
+          raio: z.number().positive(),
+          pontos: z.record(z.string(), ponto),
+        }),
+      ),
+    })
+    .optional(),
 })

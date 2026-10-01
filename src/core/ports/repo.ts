@@ -10,6 +10,8 @@ import type {
   Vinculo,
 } from '../domain/types'
 import type { ModoDaBusca } from '../domain/modoDaBusca'
+import type { ModoDaRede } from '../domain/modoDaRede'
+import type { MapaDoPalacio } from '../motor/mapa'
 import type { PerfilDoPalacio } from '../motor/grafo'
 import type { MarcaPerdida } from '../motor/incremental'
 import type { Ponto } from '../motor/redeLayout'
@@ -58,6 +60,9 @@ export interface PalacioRepo {
   /** O último modo da busca que a pessoa escolheu. `MODO_DA_BUSCA_PADRAO` se nunca escolheu. */
   getModoDaBusca(): Promise<ModoDaBusca>
   definirModoDaBusca(modo: ModoDaBusca): Promise<void>
+  /** O último modo da tela da Rede (constelação ou Mapa). `MODO_DA_REDE_PADRAO` se nunca escolheu. */
+  getModoDaRede(): Promise<ModoDaRede>
+  definirModoDaRede(modo: ModoDaRede): Promise<void>
 
   listNeuronios(livroId?: Id): Promise<Neuronio[]>
   getNeuronio(id: Id): Promise<Neuronio | undefined>
@@ -118,6 +123,10 @@ export interface PalacioRepo {
    * conjunto completo), então sempre substitui tudo de uma vez.
    */
   setPosicoesDaRede(posicoes: Readonly<Record<Id, Ponto>>): Promise<void>
+
+  /** O Mapa gravado. `MAPA_VAZIO` num palácio que nunca o desenhou. */
+  getMapa(): Promise<MapaDoPalacio>
+  setMapa(mapa: MapaDoPalacio): Promise<void>
 
   exportAll(): Promise<PalacioSnapshot>
   /** Idempotente: importar o mesmo snapshot duas vezes não duplica nada. */

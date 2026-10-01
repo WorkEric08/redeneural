@@ -598,6 +598,55 @@ describe('modo da busca', () => {
   })
 })
 
+describe('modo da Rede', () => {
+  it('"rede" por padrão, e devolve o último escolhido', async () => {
+    expect(await repo.getModoDaRede()).toBe('rede')
+    await repo.definirModoDaRede('mapa')
+    expect(await repo.getModoDaRede()).toBe('mapa')
+  })
+
+  it('não apaga o modo da busca nem a luz, e eles não o apagam', async () => {
+    await repo.definirModoDaRede('mapa')
+    await repo.definirModoDaBusca('exata')
+    await repo.definirIntensidadeDaLuz(30)
+    expect(await repo.getModoDaRede()).toBe('mapa')
+    expect(await repo.getModoDaBusca()).toBe('exata')
+    expect(await repo.getIntensidadeDaLuz()).toBe(30)
+  })
+})
+
+describe('mapa', () => {
+  const ilha = (x: number) => ({ centro: { x, y: 0 }, raio: 80, pontos: { n1: { x: 3, y: -4 } } })
+
+  it('vazio num palácio que nunca o desenhou, e devolve o que foi gravado', async () => {
+    expect(await repo.getMapa()).toEqual({ ilhas: {} })
+    await repo.setMapa({ ilhas: { l1: ilha(10) } })
+    expect(await repo.getMapa()).toEqual({ ilhas: { l1: ilha(10) } })
+  })
+
+  it('vai no backup e volta com as ilhas do arquivo vencendo', async () => {
+    await repo.upsertLivro(livro('l1', 'Psicologia'))
+    await repo.upsertNeuronio(neuronio('n1', 'l1'))
+    await repo.setMapa({ ilhas: { l1: ilha(10) } })
+    const snapshot = await repo.exportAll()
+    expect(snapshot.mapa).toEqual({ ilhas: { l1: ilha(10) } })
+
+    const outro = createDexieRepo(createDb(`palacio-test-mapa-${String(nth)}`))
+    await outro.setMapa({ ilhas: { l1: ilha(-999), l2: ilha(5000) } })
+    await outro.importAll(JSON.parse(JSON.stringify(snapshot)) as typeof snapshot)
+    expect(await outro.getMapa()).toEqual({ ilhas: { l1: ilha(10), l2: ilha(5000) } })
+  })
+
+  it('backup de antes do mapa importa sem mexer no mapa daqui', async () => {
+    await repo.upsertLivro(livro('l1', 'Psicologia'))
+    const snapshot = await repo.exportAll()
+    delete snapshot.mapa
+    await repo.setMapa({ ilhas: { l1: ilha(7) } })
+    await repo.importAll(snapshot)
+    expect(await repo.getMapa()).toEqual({ ilhas: { l1: ilha(7) } })
+  })
+})
+
 describe('migração para a v3', () => {
   // É o que acontece no aparelho de quem já usava o app: o banco abre em v2, com
   // livros sem `ordem`, e nenhum deles pode mudar de lugar na tela. Como

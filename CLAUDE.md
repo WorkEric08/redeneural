@@ -371,6 +371,11 @@ vinculos:   { id: 'anexoId::conceitoId', anexoId, conceitoId, score, updatedAt }
 - `neuronios.livroId` `null` é o **porto** (01/10/2026): um neurônio que o
   motor não soube onde guardar, esperando a pessoa escolher. Ver "O Porto".
 
+- `meta` guarda, além do perfil, das posições da Rede e das preferências, o
+  **mapa** (chave `'mapa'`, 01/10/2026): o centro e o raio de cada ilha e o
+  lugar de cada neurônio nela. Diferente das posições da Rede, **vai no
+  backup**. Ver "O Mapa".
+
 - `livros.ordem` é o lugar na prateleira (0..25), gravado porque quem decide é
   a pessoa arrastando o livro. **Esparso** desde 14/09/2026 — pode haver
   buraco entre dois livros (ver "A estante vira fileira de lugares").
@@ -4029,6 +4034,133 @@ novos), typecheck e lint limpos. Bundle principal: 135,3 KB gzipped.
 cartão do neurônio selecionado e o cobre pelos 6 s em que aparece; tocar no
 aviso o dispensa.
 
+### O Mapa, parte 1 (Atualização 3)
+
+**Da Atualização 3 em diante, o usuário mandou seguir as minhas recomendações
+sem esperar aprovação do plano.** O que precisar mudar, ele muda quando as seis
+estiverem prontas e puderem ser testadas juntas. Por isso as decisões abaixo
+são minhas, e cada uma diz o motivo, para ser fácil de reverter.
+
+A tela `/rede` ganhou um segundo jeito de ver o palácio: **Rede | Mapa**, dois
+chips no alto ("Como ver o palácio"). A Rede é por significado e se rearruma
+quando o grafo muda. O Mapa é por **livro**, e é memória: cada livro é uma
+ilha, e o lugar de cada coisa nela não muda sozinho.
+
+- **A tela abre no último modo escolhido**, como a busca:
+  `meta.preferencias.modoDaRede`, padrão Rede, fora do backup.
+- **Uma ilha por livro de conceitos com pelo menos um neurônio.** Não viram
+  ilha a pasta de acervo, o livro vazio (a ilha aparece com o primeiro
+  neurônio) nem o porto (sem livro, sem ilha). Os satélites de anexo ficam só
+  na Rede.
+- **O raio cresce com a raiz do tamanho do livro:** `max(70, 34·√n)`.
+- **A costa é orgânica e sempre a mesma.** Ela sai da semente do id (três
+  ondulações) e recorta até 15% do raio, nunca passa dele. Os pontos moram
+  dentro da parte que nunca é recortada, com 16 de margem.
+- **Dentro da ilha, o lugar é o sentido.** Os vetores do livro são
+  centralizados no perfil e reduzidos para 2D por PCA (iteração de potência,
+  com partida e sinal fixos, para ser determinístico). Depois são espalhados
+  até ficarem a 22 um do outro. Com menos de 5 neurônios a redução é instável,
+  e vale a espiral de girassol por ordem de id. Quem ainda não tem vetor entra
+  pela espiral também.
+- **Entre as ilhas, livros parecidos ficam perto.** As ilhas se dispõem por
+  força: o centro de cada livro puxa os parecidos, e todas se afastam até ter
+  46 de mar entre elas.
+
+#### Crescer sem remexer
+
+O mapa é gravado, e cada escrita só **encaixa** o que mudou
+(`atualizarMapa`, no núcleo, rodando no Worker). Há teste de cada caso.
+
+| O que aconteceu                    | O que anda                                                                    |
+| ---------------------------------- | ----------------------------------------------------------------------------- |
+| Neurônio novo num livro com ilha   | só ele: entra perto dos 3 mais parecidos dali, num vão                        |
+| Primeiro neurônio de um livro      | a ilha nova, a um mar de distância da mais parecida, no primeiro ângulo livre |
+| Ilha cresceu e encostou noutra     | **só ela**, o mínimo para fora                                                |
+| Neurônio apagado ou mudou de livro | sai de onde estava; na outra ilha, entra como novo                            |
+| Livro esvaziado ou apagado         | a ilha some                                                                   |
+
+**A ilha que cresce quase nunca encosta**, e isso foi de propósito. A primeira
+versão dispunha as ilhas justas: qualquer neurônio novo fazia a ilha crescer e
+andar, e o teste "um neurônio novo não mexe em mais ninguém" falhava. Agora a
+disposição reserva **25% de crescimento** em cada raio (`RESERVA_DE_CRESCIMENTO`).
+A ilha só anda quando encosta de verdade, e vai para um lugar onde a reserva
+caiba de novo.
+
+**Só "Reorganizar mapa" redesenha tudo do zero.** Fica em Ajustes, numa seção
+"Mapa", com confirmação, porque desfaz a memória espacial de uma vez. É a saída
+para um palácio que cresceu torto.
+
+#### Onde fica gravado, e por que vai no backup
+
+Em `meta`, chave `'mapa'`, sem versão nova do Dexie. Ao abrir, `carregar`
+encaixa quem ainda não tem lugar, e é isso que cria o mapa de um palácio de
+antes dele: a migração é a própria atualização incremental.
+
+**Vai no backup, ao contrário das posições da Rede.** A Rede é derivada do
+grafo e se rearruma de qualquer jeito. O mapa é a memória de onde as coisas
+ficam, e um backup restaurado deve devolver a mesma geografia. No import as
+ilhas do arquivo vencem (`fundirMapas`). Uma ilha que só existe no aparelho
+fica onde está se não encostar em nenhuma do arquivo; se encostar, sai, e a
+próxima atualização a encaixa de novo. Backup de antes do mapa importa sem ele.
+
+#### A tela
+
+- `features/mapa/`: `TelaDoMapa` (o canvas), `desenharMapa` (a pintura) e
+  `ilha.ts` (costa, lugares no mundo e toque, puro e testado).
+- **A pintura:** a sala é o mar, a parede é a terra, e cada ilha leva um toque
+  da cor do livro, o mesmo toque que pinta os pontos da Rede. Os pontos ficam
+  do mesmo tamanho na tela em qualquer zoom. O nome do livro e a contagem ficam
+  acima da ilha, em pixels de tela.
+- **O nome da ilha some quando o centro dela sai da tela pelos lados.** Ele é
+  empurrado para dentro da tela para não ser cortado, e com a ilha lá fora
+  ficaria flutuando sobre o mar, longe dela. O enquadramento reserva 40 px a
+  mais no alto (`ALTURA_DO_NOME_DA_ILHA`), senão o nome da ilha de cima caía
+  por cima da contagem.
+- **Visto e não resolvido:** em 320 px, com o mapa inteiro enquadrado, o nome
+  de uma ilha pode encostar na ilha vizinha. O nome tem tamanho fixo na tela, e
+  as ilhas encolhem com o zoom. Quantos nomes aparecem em cada distância é
+  assunto dos três níveis de zoom da parte 2.
+- **Toque:** tocar seleciona, com o mesmo cartão da Rede, e tocar no mar tira a
+  seleção. O duplo toque foca o neurônio, ou aproxima no mar. Pinça, roda do
+  mouse e deslize funcionam como na Rede.
+- **Sem arrastar ponto:** o lugar é do núcleo.
+- **Sem laço de animação e sem balanço:** a tela pinta quando algo muda, e só.
+- **A seleção sobrevive à troca de modo**, e a câmera vai até ela.
+  `?centralizar=` (a busca) e o neurônio recém-criado funcionam nos dois modos:
+  `TelaDoMapa` cumpre o mesmo `ControleDaTela` da Rede.
+- Os filtros (foco num livro, só as pontes) são da Rede e somem no Mapa. A
+  contagem diz "N ilhas · M neurônios".
+- **As conexões ainda não aparecem no Mapa:** trilhas, pontes agrupadas,
+  níveis de zoom, o porto e a legenda são a parte 2 (Atualização 4).
+
+**A câmera virou um hook** (`features/rede/useCamera.ts`). Pan, pinça, roda,
+deslize e toque/duplo toque saíram de `Tela.tsx`, que encolheu de 810 para 586
+linhas, e as duas telas usam o mesmo código. A Rede pluga o arrasto de neurônio
+por ganchos (`aoDescer` / `aoArrastarTomado` / `aoSoltarTomado`).
+`features/rede/canvas.ts` reúne `lerCor` e o repintar ao mudar de tamanho ou de
+tema.
+
+**Verificado no navegador de verdade** (build de produção, toque por CDP,
+palácio de 35 notas com os vetores do e5):
+
+- O mapa foi criado ao abrir (migração), com 7 ilhas, e a primeira visita
+  abriu na Rede.
+- Os gestos da Rede depois do hook, um por um: centralizar, tocar e tirar,
+  arrastar neurônio (posição gravada), pan, deslize e pinça.
+- No Mapa:
+  - a seleção continuou ao trocar de modo;
+  - tocar o mar tirou a seleção, e tocar o ponto selecionou;
+  - reabrir o app voltou no Mapa, com o mapa gravado idêntico e a tela igual
+    pixel a pixel.
+- Um neurônio novo entrou na ilha de Psicologia sem mover mais nada (0
+  coordenadas mudaram) e apareceu tocado.
+- "Reorganizar mapa" pediu confirmação, avisou e redesenhou.
+
+Sem rolagem lateral em 320, 412, 768, 1024 e 1440 px, nos dois temas; a roda do
+mouse aproxima no desktop; nenhum erro no console. 376 testes (novos: 17 do
+núcleo do mapa, 5 de `ilha.ts` e 5 do repositório — modo e mapa, backup
+incluído), typecheck e lint limpos. Bundle principal: 139,0 KB gzipped.
+
 ## Fases
 
 0. ✅ Esqueleto (Vite/React/TS/Tailwind/PWA/Capacitor)
@@ -4068,5 +4200,6 @@ aviso o dispensa.
     vizinhos acompanhando e assentando
 24. ✅ Pastas de acervo — links e imagens como satélites dos conceitos na
     Rede (as 4 etapas; a última em 01/10/2026)
-25. 🟡 Atualizações aprovadas (30/09/2026) — **2 de 6 feitas (Busca, Porto)**, e
-    os satélites de anexo entre elas e o Mapa; seguem Mapa e Executáveis
+25. 🟡 Atualizações aprovadas (30/09/2026) — **3 de 6 feitas (Busca, Porto,
+    Mapa parte 1)**, e os satélites de anexo entre o Porto e o Mapa; seguem
+    Mapa parte 2 e Executáveis
