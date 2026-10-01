@@ -10,6 +10,8 @@ import {
   posicoesDoArrasto,
   quadroDoAssentamento,
   easeOutCubic,
+  sateliteEm,
+  satelitesVisiveis,
   vizinhancaDe,
   type NoArrastado,
 } from './layout'
@@ -117,6 +119,8 @@ export interface Folgas {
 interface Props {
   cena: Omit<Cena, 'cores'>
   onSelecionar: (id: string | null) => void
+  /** Tocar um satélite (um item de pasta) escolhe ele, e não o neurônio colado nele. */
+  onSelecionarAnexo: (id: Id) => void
   /**
    * Solta um neurônio arrastado no ponto novo (mundo). Devolve o layout já
    * reagindo a ele — a tela anima o assentamento sozinha com o resultado, sem
@@ -159,7 +163,14 @@ function lerCores(el: HTMLElement): CoresDaRede {
   }
 }
 
-export function Tela({ cena, onSelecionar, onArrastarNeuronio, controle, folgas }: Props) {
+export function Tela({
+  cena,
+  onSelecionar,
+  onSelecionarAnexo,
+  onArrastarNeuronio,
+  controle,
+  folgas,
+}: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const camera = useRef<Camera>({ x: 0, y: 0, escala: 1 })
   const cores = useRef<CoresDaRede | null>(null)
@@ -586,6 +597,35 @@ export function Tela({ cena, onSelecionar, onArrastarNeuronio, controle, folgas 
     pintar()
   }
 
+  /**
+   * O que está debaixo do dedo: um neurônio, um satélite, ou nada. O satélite
+   * orbita colado no dono (11-16 px de tela, dentro do mesmo alvo de toque de
+   * 22 px), então o toque fica com o mais perto dos dois.
+   */
+  function alvoDoToque(mundo: Ponto): { tipo: 'neuronio' | 'anexo'; id: Id } | null {
+    const escala = camera.current.escala
+    const raio = RAIO_DO_TOQUE / escala
+    const neuronio = neuronioEm(mundo, cena.posicoes, cena.neuronios, raio)
+    const visiveis = satelitesVisiveis(cena.satelites, {
+      escala,
+      soAsPontes: cena.soAsPontes,
+      selecionado: cena.selecionado,
+      anexoSelecionado: cena.anexoSelecionado,
+    })
+    const satelite = sateliteEm(mundo, visiveis, cena.posicoes, escala, raio)
+
+    if (satelite && neuronio) {
+      const p = cena.posicoes.get(neuronio)
+      const distancia = p ? Math.hypot(p.x - mundo.x, p.y - mundo.y) : Infinity
+      return satelite.distancia < distancia
+        ? { tipo: 'anexo', id: satelite.anexoId }
+        : { tipo: 'neuronio', id: neuronio }
+    }
+    if (satelite) return { tipo: 'anexo', id: satelite.anexoId }
+    if (neuronio) return { tipo: 'neuronio', id: neuronio }
+    return null
+  }
+
   function distanciaEntreDedos(): number {
     const [a, b] = [...ponteiros.current.values()]
     return a && b ? Math.hypot(a.x - b.x, a.y - b.y) : 0
@@ -616,9 +656,10 @@ export function Tela({ cena, onSelecionar, onArrastarNeuronio, controle, folgas 
         // só vem no solto — `arrastou.current` é o mesmo teste de tolerância
         // que já separa toque de arrasto de câmera.
         if (ponteiros.current.size === 0) {
+          // Um satélite não se arrasta: tocar nele nunca vira arrastar o dono.
           const mundo = paraOMundo(e.clientX, e.clientY)
-          const raioDeToque = RAIO_DO_TOQUE / camera.current.escala
-          const alvo = neuronioEm(mundo, cena.posicoes, cena.neuronios, raioDeToque)
+          const tocado = alvoDoToque(mundo)
+          const alvo = tocado?.tipo === 'neuronio' ? tocado.id : null
           const origem = alvo ? cena.posicoes.get(alvo) : undefined
 
           if (alvo && origem) {
@@ -731,9 +772,10 @@ export function Tela({ cena, onSelecionar, onArrastarNeuronio, controle, folgas 
         }
 
         const mundo = paraOMundo(e.clientX, e.clientY)
-        const raioDeToque = RAIO_DO_TOQUE / camera.current.escala
-        const alvo = neuronioEm(mundo, cena.posicoes, cena.neuronios, raioDeToque)
-        onSelecionar(alvo)
+        const tocado = alvoDoToque(mundo)
+        if (tocado?.tipo === 'anexo') onSelecionarAnexo(tocado.id)
+        else onSelecionar(tocado?.id ?? null)
+        const alvo = tocado?.tipo === 'neuronio' ? tocado.id : null
 
         // Duplo toque: perto e rápido do anterior. O primeiro toque já
         // selecionou normalmente — isto só soma o zoom, sem atrasar o toque
@@ -747,8 +789,9 @@ export function Tela({ cena, onSelecionar, onArrastarNeuronio, controle, folgas 
 
         if (duplo) {
           ultimoToque.current = null
+          // Duplo toque num satélite não aproxima: ele só existe de perto.
           if (alvo) focar(alvo)
-          else aplicarZoom(ZOOM_DO_DUPLO_TOQUE, e.clientX, e.clientY)
+          else if (tocado?.tipo !== 'anexo') aplicarZoom(ZOOM_DO_DUPLO_TOQUE, e.clientX, e.clientY)
         } else {
           ultimoToque.current = { tempo: agora, x: e.clientX, y: e.clientY }
         }

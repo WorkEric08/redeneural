@@ -1,12 +1,12 @@
 import { Maximize2, Search, SlidersHorizontal, Waypoints } from 'lucide-react'
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 
 import { BarraDeTopo } from '@/components/BarraDeTopo'
 import { botao } from '@/components/botao'
 import { Folha } from '@/components/Folha'
 import { ROTULO_DO_PORTO } from '@/features/porto/porto'
-import { grausDoMapa } from '@/features/rede/layout'
+import { grausDoMapa, satelitesDaCena } from '@/features/rede/layout'
 import { Tela, type ControleDaTela, type Folgas } from '@/features/rede/Tela'
 import { useTravarRolagem } from '@/hooks/useTravarRolagem'
 import { contar } from '@/lib/plural'
@@ -30,8 +30,16 @@ export default function Rede() {
   // O canvas é do dedo inteiro: arrastar a rede não pode disputar com a rolagem.
   useTravarRolagem()
 
-  const { livros, neuronios, conexoes, posicoesDaRede, carregado, moverNeuronioNaRede } =
-    usePalacio()
+  const {
+    livros,
+    neuronios,
+    conexoes,
+    anexos,
+    vinculos,
+    posicoesDaRede,
+    carregado,
+    moverNeuronioNaRede,
+  } = usePalacio()
 
   // A folha dos filtros mora na URL, como os painéis da estante: o voltar do
   // Android fecha a folha antes de sair da Rede. A busca manda para cá com
@@ -55,6 +63,17 @@ export default function Rede() {
   // recém-criado **não** entra aqui: ele só seleciona (se tiver vizinho) ao
   // fim da própria animação de revelação, não no instante em que a tela monta.
   const [selecionado, setSelecionado] = useState<string | null>(() => centralizarId)
+  // Um item de pasta tocado — e um ou outro, nunca os dois: o cartão do pé é
+  // de quem foi tocado por último.
+  const [anexoSelecionado, setAnexoSelecionado] = useState<string | null>(null)
+  const escolherNeuronio = useCallback((id: string | null) => {
+    setSelecionado(id)
+    setAnexoSelecionado(null)
+  }, [])
+  const escolherAnexo = useCallback((id: string) => {
+    setAnexoSelecionado(id)
+    setSelecionado(null)
+  }, [])
   const controle = useRef<ControleDaTela>(null)
 
   function fecharFiltros(): void {
@@ -76,6 +95,7 @@ export default function Rede() {
   // canvas usa.
   const posicoes = useMemo(() => new Map(Object.entries(posicoesDaRede)), [posicoesDaRede])
   const graus = useMemo(() => grausDoMapa(conexoes), [conexoes])
+  const satelites = useMemo(() => satelitesDaCena(anexos, vinculos), [anexos, vinculos])
 
   // Leva a câmera até o neurônio que a busca escolheu. Roda depois do
   // enquadramento inicial da Tela (efeito de filho comita antes do efeito do
@@ -97,6 +117,8 @@ export default function Rede() {
   const pontes = conexoes.filter((c) => c.cross).length
   const escolhido = neuronios.find((n) => n.id === selecionado)
   const livroDoEscolhido = livros.find((l) => l.id === escolhido?.livroId)
+  const anexoEscolhido = anexos.find((a) => a.id === anexoSelecionado)
+  const pastaDoEscolhido = livros.find((l) => l.id === anexoEscolhido?.livroId)
   const filtrando = livroEmFoco !== null || soAsPontes
   const livroFocado = livros.find((l) => l.id === livroEmFoco)
 
@@ -116,8 +138,11 @@ export default function Rede() {
             livroEmFoco,
             soAsPontes,
             selecionado,
+            satelites,
+            anexoSelecionado,
           }}
-          onSelecionar={setSelecionado}
+          onSelecionar={escolherNeuronio}
+          onSelecionarAnexo={escolherAnexo}
           onArrastarNeuronio={moverNeuronioNaRede}
           controle={controle}
           folgas={FOLGAS}
@@ -153,6 +178,29 @@ export default function Rede() {
         {livroFocado && ` · foco em ${livroFocado.titulo}`}
         {soAsPontes && ' · só as pontes'}
       </p>
+
+      {anexoEscolhido && (
+        <div className="cartao fixed inset-x-4 bottom-[calc(96px+env(safe-area-inset-bottom))] z-10 mx-auto flex max-w-xl items-center gap-3 py-3 pr-3 pl-4 lg:left-[calc(13rem+1rem)]">
+          <span
+            className="h-9 w-1 shrink-0 rounded-full"
+            style={{ background: pastaDoEscolhido?.cor ?? 'var(--linha)' }}
+            aria-hidden
+          />
+          <div className="min-w-0 flex-1">
+            <p className="font-titulo truncate font-semibold">{anexoEscolhido.legenda}</p>
+            <p className="text-poeira truncate text-xs">
+              {pastaDoEscolhido?.titulo} ·{' '}
+              {anexoEscolhido.midia.tipo === 'imagem' ? 'imagem' : 'link'}
+            </p>
+          </div>
+          <Link
+            to={`/anexo/${anexoEscolhido.id}`}
+            className={botao({ tipo: 'secundario', tamanho: 'pequeno' })}
+          >
+            Abrir
+          </Link>
+        </div>
+      )}
 
       {escolhido && (
         <div className="cartao fixed inset-x-4 bottom-[calc(96px+env(safe-area-inset-bottom))] z-10 mx-auto flex max-w-xl items-center gap-3 py-3 pr-3 pl-4 lg:left-[calc(13rem+1rem)]">

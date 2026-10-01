@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import type { Conexao, NeuronioNaTela } from '@/core'
+import type { AnexoNaTela, Conexao, NeuronioNaTela, Vinculo } from '@/core'
 
 import {
   balanco,
@@ -8,8 +8,13 @@ import {
   easeOutCubic,
   grausDoMapa,
   neuronioEm,
+  ORBITAS_DO_SATELITE_PX,
+  posicaoDoSatelite,
   posicoesDoArrasto,
   quadroDoAssentamento,
+  sateliteEm,
+  satelitesDaCena,
+  satelitesVisiveis,
   vizinhancaDe,
   type NoArrastado,
 } from './layout'
@@ -256,5 +261,96 @@ describe('balanco', () => {
     const a = balanco('a', 1000)
     const b = balanco('outro-bem-diferente', 1000)
     expect(a).not.toEqual(b)
+  })
+})
+
+describe('satélites', () => {
+  function anexo(id: string, tipo: 'link' | 'imagem'): AnexoNaTela {
+    return {
+      id,
+      livroId: 'pasta',
+      legenda: id,
+      midia:
+        tipo === 'link'
+          ? { tipo: 'link', url: 'https://exemplo.com' }
+          : { tipo: 'imagem', mime: 'image/webp', largura: 10, altura: 10 },
+      processando: false,
+      createdAt: T0,
+      updatedAt: T0,
+    }
+  }
+  function vinculo(anexoId: string, conceitoId: string, ordem: number): Vinculo {
+    return {
+      id: `${anexoId}::${conceitoId}`,
+      anexoId,
+      conceitoId,
+      score: 0.5,
+      ordem,
+      updatedAt: T0,
+    }
+  }
+
+  const ANEXOS = [anexo('foto', 'imagem'), anexo('video', 'link'), anexo('solto', 'link')]
+  const VINCULOS = [
+    vinculo('video', 'p2', 1),
+    vinculo('video', 'p1', 0),
+    vinculo('foto', 'g1', 0),
+    vinculo('video', 'g2', 2),
+  ]
+  const SATELITES = satelitesDaCena(ANEXOS, VINCULOS)
+
+  it('orbita o conceito de ordem 0, com os outros na ordem, e a forma pela mídia', () => {
+    expect(SATELITES).toEqual([
+      { anexoId: 'foto', forma: 'quadrado', donoId: 'g1', outrosIds: [], pastaId: 'pasta' },
+      {
+        anexoId: 'video',
+        forma: 'losango',
+        donoId: 'p1',
+        outrosIds: ['p2', 'g2'],
+        pastaId: 'pasta',
+      },
+    ])
+  })
+
+  it('anexo sem vínculo fica só na pasta', () => {
+    expect(SATELITES.some((s) => s.anexoId === 'solto')).toBe(false)
+  })
+
+  it('a órbita tem a mesma distância na tela em qualquer zoom', () => {
+    const dono = { x: 100, y: -40 }
+    for (const escala of [0.5, 1, 3]) {
+      const p = posicaoDoSatelite(dono, 'video', escala)
+      const naTela = Math.hypot(p.x - dono.x, p.y - dono.y) * escala
+      expect(ORBITAS_DO_SATELITE_PX).toContain(Math.round(naTela))
+    }
+  })
+
+  it('o lugar sai do id do anexo: sempre o mesmo, e outro anexo noutro canto', () => {
+    const dono = { x: 0, y: 0 }
+    expect(posicaoDoSatelite(dono, 'video', 2)).toEqual(posicaoDoSatelite(dono, 'video', 2))
+    expect(posicaoDoSatelite(dono, 'video', 2)).not.toEqual(posicaoDoSatelite(dono, 'foto', 2))
+  })
+
+  it('aparecem de perto, com o dono tocado, ou tocados — e nunca em "só as pontes"', () => {
+    const base = { escala: 1, soAsPontes: false, selecionado: null, anexoSelecionado: null }
+    expect(satelitesVisiveis(SATELITES, base)).toEqual([])
+    expect(satelitesVisiveis(SATELITES, { ...base, escala: 2.2 })).toHaveLength(2)
+    expect(
+      satelitesVisiveis(SATELITES, { ...base, selecionado: 'p1' }).map((s) => s.anexoId),
+    ).toEqual(['video'])
+    expect(
+      satelitesVisiveis(SATELITES, { ...base, anexoSelecionado: 'foto' }).map((s) => s.anexoId),
+    ).toEqual(['foto'])
+    expect(satelitesVisiveis(SATELITES, { ...base, escala: 4, soAsPontes: true })).toEqual([])
+  })
+
+  it('o toque acha o satélite mais perto, dentro do raio', () => {
+    const posicoes = new Map([
+      ['p1', { x: 0, y: 0 }],
+      ['g1', { x: 200, y: 0 }],
+    ])
+    const alvo = posicaoDoSatelite({ x: 0, y: 0 }, 'video', 1)
+    expect(sateliteEm(alvo, SATELITES, posicoes, 1, 22)).toEqual({ anexoId: 'video', distancia: 0 })
+    expect(sateliteEm({ x: 100, y: 100 }, SATELITES, posicoes, 1, 22)).toBeNull()
   })
 })

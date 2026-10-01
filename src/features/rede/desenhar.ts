@@ -1,6 +1,13 @@
 import type { Conexao, Id, Livro, NeuronioNaTela, Ponto } from '@/core'
 
-import { vizinhancaDe } from './layout'
+import {
+  ESCALA_QUE_REVELA,
+  ORBITAS_DO_SATELITE_PX,
+  posicaoDoSatelite,
+  satelitesVisiveis,
+  vizinhancaDe,
+  type SateliteDaCena,
+} from './layout'
 
 /**
  * O desenho da rede, em canvas: uma constelação.
@@ -45,6 +52,10 @@ export interface Cena {
   soAsPontes: boolean
   /** Tocar um neurônio acende ele e a vizinhança dele; o resto apaga. */
   selecionado: Id | null
+  /** Os itens das pastas de acervo que se prenderam a algum conceito. */
+  satelites: readonly SateliteDaCena[]
+  /** Tocar um satélite acende só ele e os conceitos que ele escolheu. */
+  anexoSelecionado: Id | null
   cores: CoresDaRede
 }
 
@@ -78,22 +89,44 @@ export function raioNaTela(grau: number): number {
  */
 function montarChecagens(cena: Cena) {
   const vizinhanca = vizinhancaDe(cena.selecionado, cena.conexoes)
+  // Um satélite tocado é o foco: acesos só ele e os conceitos que escolheu, e
+  // nenhum fio entre conceitos — os fios que contam agora são os dele.
+  const tocado =
+    cena.anexoSelecionado === null
+      ? undefined
+      : cena.satelites.find((s) => s.anexoId === cena.anexoSelecionado)
+  const doAnexo = tocado ? new Set<Id>([tocado.donoId, ...tocado.outrosIds]) : null
+  const livroDe = new Map(cena.neuronios.map((n) => [n.id, n.livroId]))
 
   // Um neurônio no porto não é de livro nenhum: com um livro em foco, apaga.
   const apagadoPeloLivro = (livroId: Id | null | undefined): boolean =>
     cena.livroEmFoco !== null && cena.livroEmFoco !== livroId
 
   const arestaApagadaPelaVizinhanca = (aId: Id, bId: Id): boolean =>
-    cena.selecionado !== null && aId !== cena.selecionado && bId !== cena.selecionado
+    doAnexo !== null ||
+    (cena.selecionado !== null && aId !== cena.selecionado && bId !== cena.selecionado)
 
   return {
     internaApagada: (livroId: Id | null | undefined, aId: Id, bId: Id): boolean =>
       apagadoPeloLivro(livroId) || arestaApagadaPelaVizinhanca(aId, bId),
-    ponteApagada: (livroA: Id | null | undefined, livroB: Id | null | undefined, aId: Id, bId: Id): boolean =>
+    ponteApagada: (
+      livroA: Id | null | undefined,
+      livroB: Id | null | undefined,
+      aId: Id,
+      bId: Id,
+    ): boolean =>
       (apagadoPeloLivro(livroA) && apagadoPeloLivro(livroB)) ||
       arestaApagadaPelaVizinhanca(aId, bId),
     noApagado: (n: NeuronioNaTela): boolean =>
-      apagadoPeloLivro(n.livroId) || (vizinhanca !== null && !vizinhanca.has(n.id)),
+      apagadoPeloLivro(n.livroId) ||
+      (vizinhanca !== null && !vizinhanca.has(n.id)) ||
+      (doAnexo !== null && !doAnexo.has(n.id)),
+    // O satélite segue o dono: apaga com ele pelo livro e pela vizinhança, e
+    // apaga sozinho quando outro satélite é o tocado.
+    sateliteApagado: (s: SateliteDaCena): boolean =>
+      apagadoPeloLivro(livroDe.get(s.donoId)) ||
+      (vizinhanca !== null && !vizinhanca.has(s.donoId)) ||
+      (cena.anexoSelecionado !== null && s.anexoId !== cena.anexoSelecionado),
   }
 }
 
@@ -118,12 +151,13 @@ export function desenhar(
   // qualquer zoom.
   const px = 1 / camera.escala
   const livroDoNeuronio = new Map(cena.neuronios.map((n) => [n.id, n.livroId]))
-  const { internaApagada, ponteApagada, noApagado } = montarChecagens(cena)
+  const { internaApagada, ponteApagada, noApagado, sateliteApagado } = montarChecagens(cena)
 
   ctx.lineCap = 'round'
   if (!cena.soAsPontes) desenharFios(ctx, cena, livroDoNeuronio, internaApagada, px)
   desenharPontes(ctx, cena, livroDoNeuronio, ponteApagada, px)
   desenharNeuronios(ctx, cena, noApagado, px)
+  desenharSatelites(ctx, cena, camera.escala, sateliteApagado, px)
   desenharRotulosAmbiente(ctx, cena, camera.escala, noApagado)
 
   ctx.restore()
@@ -341,6 +375,104 @@ function desenharNeuronios(
   }
 }
 
+/** Meio lado do quadrado e meia diagonal do losango, em pixels de tela. */
+const MEIO_QUADRADO_PX = 2
+const MEIA_DIAGONAL_PX = 2.6
+
+/**
+ * Os itens das pastas: satélites em volta do conceito que escolheram, num fio
+ * curto até ele. A posição é calculada agora, a partir de onde o dono está
+ * desenhado — por isso acompanha o balanço e o arrasto sem código a mais.
+ *
+ * O fio é o de sempre, na cor dos fios, e nunca o da ponte: ponte é o achado
+ * entre conceitos. Os fios até os outros conceitos escolhidos só aparecem com
+ * o satélite tocado — sempre à mostra, eles virariam novelo de perto.
+ */
+function desenharSatelites(
+  ctx: CanvasRenderingContext2D,
+  cena: Cena,
+  escala: number,
+  apagado: (s: SateliteDaCena) => boolean,
+  px: number,
+): void {
+  const visiveis = satelitesVisiveis(cena.satelites, {
+    escala,
+    soAsPontes: cena.soAsPontes,
+    selecionado: cena.selecionado,
+    anexoSelecionado: cena.anexoSelecionado,
+  })
+  if (visiveis.length === 0) return
+
+  const corDaPasta = new Map(cena.livros.map((l) => [l.id, l.cor]))
+  const desenhados: { s: SateliteDaCena; p: Ponto; dono: Ponto; escurecer: number }[] = []
+  for (const s of visiveis) {
+    const dono = cena.posicoes.get(s.donoId)
+    if (!finito(dono)) continue
+    const p = posicaoDoSatelite(dono, s.anexoId, escala)
+    desenhados.push({ s, p, dono, escurecer: apagado(s) ? APAGADO : 1 })
+  }
+
+  ctx.globalCompositeOperation = cena.cores.mistura
+  ctx.strokeStyle = cena.cores.fio
+  ctx.lineWidth = 0.6 * px
+  for (const { s, p, dono, escurecer } of desenhados) {
+    ctx.globalAlpha = 0.45 * escurecer
+    ctx.beginPath()
+    ctx.moveTo(dono.x, dono.y)
+    ctx.lineTo(p.x, p.y)
+    if (s.anexoId === cena.anexoSelecionado) {
+      for (const outroId of s.outrosIds) {
+        const outro = cena.posicoes.get(outroId)
+        if (!finito(outro)) continue
+        ctx.moveTo(p.x, p.y)
+        ctx.lineTo(outro.x, outro.y)
+      }
+    }
+    ctx.stroke()
+  }
+  ctx.globalCompositeOperation = 'source-over'
+
+  const forma = (s: SateliteDaCena, p: Ponto): void => {
+    ctx.beginPath()
+    if (s.forma === 'quadrado') {
+      const m = MEIO_QUADRADO_PX * px
+      ctx.rect(p.x - m, p.y - m, 2 * m, 2 * m)
+    } else {
+      const m = MEIA_DIAGONAL_PX * px
+      ctx.moveTo(p.x, p.y - m)
+      ctx.lineTo(p.x + m, p.y)
+      ctx.lineTo(p.x, p.y + m)
+      ctx.lineTo(p.x - m, p.y)
+      ctx.closePath()
+    }
+  }
+
+  // O mesmo tratamento do ponto de neurônio: o claro da noite (ou a tinta do
+  // dia), com o toque da cor da pasta por cima, como o neurônio tem o do livro.
+  for (const { s, p, escurecer } of desenhados) {
+    forma(s, p)
+    ctx.fillStyle = cena.cores.no
+    ctx.globalAlpha = escurecer
+    ctx.fill()
+    const cor = corDaPasta.get(s.pastaId)
+    if (cor) {
+      ctx.fillStyle = cor
+      ctx.globalAlpha = 0.38 * escurecer
+      ctx.fill()
+    }
+  }
+  ctx.globalAlpha = 1
+
+  const tocado = desenhados.find((d) => d.s.anexoId === cena.anexoSelecionado)
+  if (tocado) {
+    ctx.strokeStyle = cena.cores.papel
+    ctx.lineWidth = 1.5 * px
+    ctx.beginPath()
+    ctx.arc(tocado.p.x, tocado.p.y, (MEIA_DIAGONAL_PX + 4) * px, 0, 2 * Math.PI)
+    ctx.stroke()
+  }
+}
+
 /** Em unidades do mundo, não de tela: crescer com o zoom é o próprio ponto —
  *  é o que faz "aproximar" revelar um nome que não cabia antes. */
 const FONTE_DO_ROTULO = 7
@@ -351,7 +483,7 @@ const FONTE_DO_ROTULO = 7
  * linha na mesma pintura). O mesmo valor de `ESCALA_DE_FOCO` em `Tela.tsx` —
  * focar um neurônio (busca ou duplo toque) já tem que chegar aqui.
  */
-const ESCALA_MINIMA_DOS_ROTULOS = 2.2
+const ESCALA_MINIMA_DOS_ROTULOS = ESCALA_QUE_REVELA
 /** Não sobrecarrega a pintura, mesmo num aglomerado com centenas de nós à mostra. */
 const MAX_ROTULOS_AMBIENTE = 40
 
@@ -440,7 +572,10 @@ function desenharEtiqueta(
 
   const largo = ctx.measureText(n.titulo).width
   const caixaX = Math.min(Math.max(x, largo / 2 + 10), largura - largo / 2 - 10)
-  const caixaY = y - raio - 12
+  // Com satélites em volta, a etiqueta sobe acima da órbita de fora: senão a
+  // caixa dela cobria a metade de cima de quem orbita por cima do ponto.
+  const comSatelites = !cena.soAsPontes && cena.satelites.some((s) => s.donoId === n.id)
+  const caixaY = y - raio - 12 - (comSatelites ? ORBITAS_DO_SATELITE_PX[1] : 0)
 
   ctx.globalAlpha = 0.9
   ctx.fillStyle = cena.cores.sala

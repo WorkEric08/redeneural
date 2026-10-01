@@ -1,4 +1,4 @@
-import type { Conexao, Id, NeuronioNaTela, Ponto } from '@/core'
+import type { AnexoNaTela, Conexao, Id, NeuronioNaTela, Ponto, Vinculo } from '@/core'
 import { semente } from '@/lib/semente'
 
 /**
@@ -192,4 +192,125 @@ export function balanco(id: Id, tempoMs: number): Ponto {
     // devagar, não um círculo perfeito se repetindo.
     y: Math.cos(angulo * 0.87),
   }
+}
+
+// --- satélites: os itens das pastas de acervo -------------------------------
+
+/**
+ * O zoom que revela o que de longe seria ruído: os nomes dos neurônios e os
+ * satélites dos anexos aparecem juntos, na mesma linha (decisão do usuário,
+ * 24/09/2026).
+ */
+export const ESCALA_QUE_REVELA = 2.2
+
+/**
+ * Um item de pasta na Rede: um satélite do conceito que ele escolheu primeiro.
+ * Não é neurônio — não tem posição gravada, não entra no grafo, e o fio dele
+ * nunca é ponte (ver CLAUDE.md, "Pastas de acervo").
+ */
+export interface SateliteDaCena {
+  anexoId: Id
+  /** Quadrado para imagem, losango para link. */
+  forma: 'quadrado' | 'losango'
+  /** O conceito em volta de quem ele orbita: o vínculo de ordem 0. */
+  donoId: Id
+  /** Os outros conceitos que ele escolheu, na ordem — os fios só aparecem com ele tocado. */
+  outrosIds: Id[]
+  /** A pasta: o toque de cor do satélite é o dela. */
+  pastaId: Id
+}
+
+/**
+ * Os satélites a partir do que a store já tem. Anexo sem vínculo — sem
+ * legenda, ou que não se parece com nada — fica só na pasta e não aparece.
+ */
+export function satelitesDaCena(
+  anexos: readonly AnexoNaTela[],
+  vinculos: readonly Vinculo[],
+): SateliteDaCena[] {
+  const porAnexo = new Map<Id, Vinculo[]>()
+  for (const v of vinculos) {
+    const lista = porAnexo.get(v.anexoId)
+    if (lista) lista.push(v)
+    else porAnexo.set(v.anexoId, [v])
+  }
+
+  const satelites: SateliteDaCena[] = []
+  for (const a of anexos) {
+    const escolhas = porAnexo.get(a.id)
+    if (!escolhas || escolhas.length === 0) continue
+    const [dono, ...outros] = [...escolhas].sort(
+      (x, y) => x.ordem - y.ordem || (x.conceitoId < y.conceitoId ? -1 : 1),
+    )
+    satelites.push({
+      anexoId: a.id,
+      forma: a.midia.tipo === 'imagem' ? 'quadrado' : 'losango',
+      donoId: dono!.conceitoId,
+      outrosIds: outros.map((v) => v.conceitoId),
+      pastaId: a.livroId,
+    })
+  }
+  return satelites.sort((x, y) => (x.anexoId < y.anexoId ? -1 : 1))
+}
+
+/**
+ * Os dois anéis da órbita, **em pixels de tela**: o satélite fica sempre à
+ * mesma distância visível do conceito, em qualquer zoom — como o próprio ponto
+ * do neurônio, que não cresce com a câmera.
+ */
+export const ORBITAS_DO_SATELITE_PX = [11, 16] as const
+
+/**
+ * Onde o satélite fica, a partir de onde o dono está desenhado agora. Ângulo e
+ * anel saem da semente do id do **anexo**, e não da ordem entre os irmãos: um
+ * item novo na mesma pasta não empurra os outros — o palácio não se remexe.
+ */
+export function posicaoDoSatelite(dono: Ponto, anexoId: Id, escala: number): Ponto {
+  const [a, b] = semente(anexoId)
+  const angulo = a * 2 * Math.PI
+  const raio = (b < 0.5 ? ORBITAS_DO_SATELITE_PX[0] : ORBITAS_DO_SATELITE_PX[1]) / escala
+  return { x: dono.x + Math.cos(angulo) * raio, y: dono.y + Math.sin(angulo) * raio }
+}
+
+/**
+ * Quem aparece: de perto (o mesmo zoom dos nomes), o satélite do conceito
+ * tocado, e o satélite tocado — mesmo depois de afastar. "Só as pontes" tira
+ * todos: o fio de um anexo nunca é ponte.
+ */
+export function satelitesVisiveis(
+  satelites: readonly SateliteDaCena[],
+  estado: {
+    escala: number
+    soAsPontes: boolean
+    selecionado: Id | null
+    anexoSelecionado: Id | null
+  },
+): SateliteDaCena[] {
+  if (estado.soAsPontes) return []
+  if (estado.escala >= ESCALA_QUE_REVELA) return [...satelites]
+  return satelites.filter(
+    (s) => s.donoId === estado.selecionado || s.anexoId === estado.anexoSelecionado,
+  )
+}
+
+/** O satélite mais perto do toque, dentro do raio — com a distância, para o
+ *  toque decidir entre ele e um neurônio colado nele. */
+export function sateliteEm(
+  ponto: Ponto,
+  visiveis: readonly SateliteDaCena[],
+  posicoes: ReadonlyMap<Id, Ponto>,
+  escala: number,
+  raioDeToque: number,
+): { anexoId: Id; distancia: number } | null {
+  let melhor: { anexoId: Id; distancia: number } | null = null
+  for (const s of visiveis) {
+    const dono = posicoes.get(s.donoId)
+    if (!dono) continue
+    const p = posicaoDoSatelite(dono, s.anexoId, escala)
+    const distancia = Math.hypot(p.x - ponto.x, p.y - ponto.y)
+    if (distancia <= raioDeToque && (melhor === null || distancia < melhor.distancia)) {
+      melhor = { anexoId: s.anexoId, distancia }
+    }
+  }
+  return melhor
 }

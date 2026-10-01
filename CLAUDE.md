@@ -3771,12 +3771,50 @@ item, novo item e novo livro em 320×568, 390×844, 768×1024, 1024×768 e
 1440×900: **nenhuma rolagem lateral** em nenhuma. Tema claro na pasta e no
 item. Nenhum erro no console. 310 testes, typecheck e lint limpos.
 
-### A próxima etapa
+### Etapa 4 de 4: os satélites na Rede (01/10/2026)
 
-4. **Satélites na Rede.** Posição derivada, não gravada: órbita do conceito
-   mais forte, ângulo pela `semente` do id, raio em pixels de tela, calculada a
-   cada pintura — acompanha balanço e arrasto do conceito sem código a mais.
-   Quadrado para imagem, losango para link.
+Feita entre as Atualizações 2 e 3 da série de 30/09, antes de o Mapa mexer na
+tela da Rede.
+
+- **Posição calculada a cada pintura, nunca gravada** (`posicaoDoSatelite`,
+  `features/rede/layout.ts`): em volta do ponto **desenhado** do conceito de
+  ordem 0, num de dois anéis (11 ou 16 px de tela). Ângulo e anel saem da
+  `semente` do id do **anexo**, e não da ordem entre irmãos — um item novo na
+  pasta não empurra os outros. Por partir do ponto desenhado, acompanha o
+  balanço e o arrasto do dono sem código a mais.
+- **Quadrado para imagem, losango para link**, com o mesmo tratamento do ponto
+  de neurônio e o toque da cor da pasta por cima (escolha do usuário).
+- **Quando aparece** (`satelitesVisiveis`): a partir de 2,2× — o mesmo zoom dos
+  nomes, agora uma constante só, `ESCALA_QUE_REVELA` —, com o dono tocado, ou
+  ele mesmo tocado. "Só as pontes" tira todos.
+- **Fios** (escolha do usuário): um curto até o dono, sempre que o satélite
+  aparece, na cor dos fios — nunca na de ponte. Até os outros conceitos que ele
+  escolheu, só com ele tocado.
+- **Tocar** (escolha do usuário): o cartão do pé, como o do neurônio — legenda,
+  pasta e "Abrir", que leva à tela do item —, e acendem só ele e os conceitos
+  dele. Um satélite ou um neurônio, nunca os dois. O satélite orbita dentro do
+  alvo de toque do dono (22 px), então o toque fica com **o mais perto dos
+  dois**; satélite não se arrasta, e duplo toque nele não aproxima.
+- **A etiqueta do neurônio tocado sobe acima da órbita de fora** quando ele tem
+  satélites: visto ampliando a tela, a caixa dela cobria a metade de cima de
+  quem orbitava por cima do ponto.
+
+Verificado no navegador de verdade (build de produção, toque por CDP):
+
+- Dois links pelo formulário e uma imagem pelo seletor de arquivo interceptado
+  se prenderam pelo motor real. A palestra sobre medo de falar em público foi
+  para "Ansiedade antes de apresentar", o artigo de refatoração para
+  "Refatoração" e o gráfico do sono para "Sono e memória".
+- Com a Rede centrada no dono, tocar no ponto calculado do satélite abre o
+  cartão do item, tocar no dono volta ao do neurônio, e "Abrir" leva ao item
+  certo.
+- "Só as pontes" tira os satélites.
+
+Sem rolagem lateral em 320, 412 e 1440 px, nos dois temas. 349 testes (6
+novos), typecheck e lint limpos. Bundle principal: 136,3 KB gzipped.
+
+**Fora daqui:** os satélites são da Rede. Se aparecem no Mapa (Atualizações
+3–4) fica para o plano dele; pasta de acervo não vira ilha.
 
 ### Web agora, nativo depois
 
@@ -4028,8 +4066,7 @@ aviso o dispensa.
     significado com posições gravadas; tocar acende a vizinhança, nomes ao
     aproximar, duplo toque e busca leva a câmera; arrastar neurônio com os
     vizinhos acompanhando e assentando
-24. 🟡 Pastas de acervo — links e imagens como satélites dos conceitos na
-    Rede. **Etapas 1 a 3 de 4 (núcleo, dados e motor, telas) feitas**; faltam os
-    satélites na Rede
-25. 🟡 Atualizações aprovadas (30/09/2026) — **2 de 6 feitas (Busca, Porto)**;
-    seguem satélites de anexo (a etapa 4 da Fase 24), Mapa e Executáveis
+24. ✅ Pastas de acervo — links e imagens como satélites dos conceitos na
+    Rede (as 4 etapas; a última em 01/10/2026)
+25. 🟡 Atualizações aprovadas (30/09/2026) — **2 de 6 feitas (Busca, Porto)**, e
+    os satélites de anexo entre elas e o Mapa; seguem Mapa e Executáveis
