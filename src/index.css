@@ -137,9 +137,6 @@
   --nevoa: oklch(0.99 0.004 262);
   /* O Mapa como carta náutica (02/10/2026): a grade de latitude e longitude, a
      vinheta que escurece a borda do mar e a sombra das ilhas. Tinta de dia. */
-  --mapa-grade: oklch(0.45 0.04 262 / 0.1);
-  --mapa-vinheta: oklch(0.35 0.03 262 / 0.12);
-  --mapa-sombra: oklch(0.3 0.04 262 / 0.22);
 
   --radius: 0.625rem;
 
@@ -195,9 +192,6 @@
     --rede-no: oklch(0.95 0.02 262);
     --rede-mistura: lighter;
     --nevoa: oklch(0.78 0.03 262);
-    --mapa-grade: oklch(0.85 0.04 262 / 0.065);
-    --mapa-vinheta: oklch(0.06 0.02 262 / 0.6);
-    --mapa-sombra: oklch(0 0 0 / 0.55);
   }
 }
 
@@ -230,9 +224,6 @@
   --rede-no: oklch(0.95 0.02 262);
   --rede-mistura: lighter;
   --nevoa: oklch(0.78 0.03 262);
-  --mapa-grade: oklch(0.85 0.04 262 / 0.065);
-  --mapa-vinheta: oklch(0.06 0.02 262 / 0.6);
-  --mapa-sombra: oklch(0 0 0 / 0.55);
 }
 
 /* Congeladas até serem refeitas (pedido do usuário, 13/09/2026): a estante —

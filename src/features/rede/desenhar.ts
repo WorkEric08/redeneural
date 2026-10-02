@@ -32,7 +32,7 @@ export interface CoresDaRede {
   ponte: string
   fio: string
   no: string
-  /** O anel das ideias feitas — o ouro gravado das lombadas, nunca o da ponte. */
+  /** O ponto das ideias feitas — o ouro gravado das lombadas, nunca o da ponte. */
   ouro: string
   /** A névoa das adormecidas. */
   nevoa: string
@@ -64,7 +64,7 @@ export interface Cena {
   anexoSelecionado: Id | null
   /** Ideias adormecidas dos livros executáveis: na névoa, apagadas, e os fios delas mais fracos. */
   adormecidas: ReadonlySet<Id>
-  /** Ideias feitas dos livros executáveis: um anel dourado em volta do ponto. */
+  /** Ideias feitas dos livros executáveis: o próprio ponto fica dourado. */
   feitas: ReadonlySet<Id>
   cores: CoresDaRede
 }
@@ -75,7 +75,6 @@ const DORMENTE = 0.35
 /** O raio do chumaço de névoa em volta de uma adormecida, em px de tela. */
 const RAIO_DA_NEVOA_PX = 13
 /** O anel da ideia feita, a esta distância do ponto, em px de tela. */
-const FOLGA_DO_ANEL_PX = 3.5
 
 /**
  * Quantas faixas de brilho os fios têm. Um `stroke()` por faixa, e não um por
@@ -338,7 +337,7 @@ function desenharNeuronios(
   const corDoLivro = new Map(cena.livros.map((l) => [l.id, l.cor]))
   const grupos = new Map<
     string,
-    { cor: string | undefined; escurecer: number; pontos: [Ponto, number][] }
+    { cor: string | undefined; escurecer: number; feita: boolean; pontos: [Ponto, number][] }
   >()
 
   // A névoa vem antes do ponto: ele fica dentro dela, não por cima de um borrão.
@@ -360,15 +359,16 @@ function desenharNeuronios(
     if (!finito(p)) continue
     const longe = apagado(n)
     const dorme = cena.adormecidas.has(n.id)
-    const chave = `${n.livroId}:${String(longe)}:${String(dorme)}`
+    const feita = cena.feitas.has(n.id)
+    const chave = `${n.livroId}:${String(longe)}:${String(dorme)}:${String(feita)}`
     const raio = raioNaTela(cena.graus.get(n.id) ?? 0) * px
     const grupo = grupos.get(chave)
     if (grupo) grupo.pontos.push([p, raio])
     else {
       // No porto não há livro, então não há o toque da cor de livro nenhum.
-      const cor = n.livroId === null ? undefined : corDoLivro.get(n.livroId)
+      const cor = n.livroId === null || feita ? undefined : corDoLivro.get(n.livroId)
       const escurecer = (longe ? APAGADO : 1) * (dorme ? DORMENTE : 1)
-      grupos.set(chave, { cor, escurecer, pontos: [[p, raio]] })
+      grupos.set(chave, { cor, escurecer, feita, pontos: [[p, raio]] })
     }
   }
 
@@ -381,10 +381,10 @@ function desenharNeuronios(
     ctx.fill()
   }
 
-  for (const { cor, escurecer, pontos } of grupos.values()) {
+  for (const { cor, escurecer, feita, pontos } of grupos.values()) {
     // Sem halo em volta do ponto: num aglomerado denso os halos se somavam em
     // manchas, e a constelação deixava de ser pontos.
-    ctx.fillStyle = cena.cores.no
+    ctx.fillStyle = feita ? cena.cores.ouro : cena.cores.no
     ctx.globalAlpha = escurecer
     circulos(pontos, 1)
 
@@ -395,24 +395,6 @@ function desenharNeuronios(
     }
   }
   ctx.globalAlpha = 1
-
-  // As feitas: um anel de ouro gravado em volta do ponto — o acabamento, e não
-  // a ponte.
-  if (cena.feitas.size > 0) {
-    ctx.strokeStyle = cena.cores.ouro
-    ctx.lineWidth = 1.2 * px
-    for (const n of cena.neuronios) {
-      if (!cena.feitas.has(n.id)) continue
-      const p = cena.posicoes.get(n.id)
-      if (!finito(p)) continue
-      const raio = raioNaTela(cena.graus.get(n.id) ?? 0) * px
-      ctx.globalAlpha = 0.9 * (apagado(n) ? APAGADO : 1)
-      ctx.beginPath()
-      ctx.arc(p.x, p.y, raio + FOLGA_DO_ANEL_PX * px, 0, 2 * Math.PI)
-      ctx.stroke()
-    }
-    ctx.globalAlpha = 1
-  }
 
   const escolhido = cena.selecionado ? cena.posicoes.get(cena.selecionado) : undefined
   if (finito(escolhido) && cena.selecionado) {

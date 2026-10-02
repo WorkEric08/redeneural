@@ -4430,11 +4430,12 @@ volta a ser relevante. Decisões minhas, pela regra da série.
   (abre num toque). Cada ideia ali aparece esmaecida, com "Acordar". Mudar o
   estado, ou abrir a ideia, também acorda.
 - **Rede:** a adormecida ganha um chumaço de névoa, o ponto perde luz, e os
-  fios dela ficam mais fracos. A feita ganha um anel de **ouro gravado** (a
-  decisão da Etapa 0: o ouro das lombadas, nunca o azul da ponte).
+  fios dela ficam mais fracos. A feita **fica dourada** — o próprio ponto, em
+  **ouro gravado**, sem anel em volta (a decisão da Etapa 0 era um anel; trocado em
+  02/10/2026 a pedido do usuário). É o ouro das lombadas, nunca o azul da ponte.
 - **Mapa:** as adormecidas ficam debaixo de uma área de névoa na ilha, visível
   **de qualquer distância** — de longe ela diz onde há ideia parada sem precisar
-  dos pontos. De perto, as feitas são pontos acesos com o anel. As trilhas das
+  dos pontos. As feitas são pontos dourados. As trilhas das
   adormecidas também ficam mais fracas.
 - **A névoa tem token próprio, `--nevoa`**, que sempre clareia: quase branca de
   dia, azul-acinzentada clara à noite. A primeira versão usava `--poeira`, que de
@@ -4565,6 +4566,37 @@ palácio de 35 notas):
 
 Capturas em 320, 412 e 1440 px, nos dois temas, de longe, de perto e com a ilha
 erguida. Bundle principal: 148,4 KB gzipped.
+
+## O Mapa volta a ser simples (02/10/2026)
+
+Segundo ajuste do teste conjunto, pedido do usuário logo depois de ver a carta
+náutica. Quatro mudanças, todas no sentido de tirar enfeite:
+
+- **O fundo do Mapa é o da Rede**: a sala lisa. Saíram a grade de latitude e
+  longitude e a borda escurecida.
+- **A rosa dos ventos saiu.**
+- **A ilha é um círculo simples na cor do livro** — sem sombra, sem anéis de
+  profundidade, sem costa dupla, sem hachura, sem luz de domo. Erguida (a
+  pessoa está segurando), cresce 3% e ganha um contorno claro. As pontes em
+  arco e os nomes em versalete ficaram.
+- **Os neurônios estão sempre à mostra**, como na Rede, e por isso sempre se
+  tocam e se pegam, de qualquer zoom. Perto de uma ilha continuam aparecendo só
+  as trilhas e os nomes. O ponto não leva mais o toque da cor do livro por cima
+  (ele sumiria sobre uma ilha da mesma cor).
+- **A ideia feita é um ponto dourado, sem anel** — na Rede e no Mapa. O anel
+  de ouro gravado (Atualização 6) saiu.
+
+Saíram os tokens `--mapa-grade`, `--mapa-vinheta` e `--mapa-sombra`. O que
+mover ilha e neurônio faz não mudou.
+
+**Efeito da mudança de toque:** segurar a terra em cima de um neurônio (a menos
+de 22 px de tela dele) pega o neurônio, não a ilha — a ilha se pega na terra
+vazia. De longe, em ilha pequena, o neurônio pode ocupar boa parte dela.
+
+Verificado no navegador de verdade (build de produção, toque por CDP, 35
+notas, com ideias feitas semeadas): Mapa de longe e de perto nos dois temas
+(412 px) e a Rede com os pontos dourados; as 13 conferências de arrastar ilha e
+neurônio continuam passando. 420 testes, typecheck e lint limpos.
 
 ## Fases
 

@@ -12,7 +12,7 @@ import {
 } from '@/core'
 import { lerCor, useRepintarAoMudar } from '@/features/rede/canvas'
 import type { Camera } from '@/features/rede/desenhar'
-import { camaraParaEnquadrar, easeOutCubic, vizinhancaDe } from '@/features/rede/layout'
+import { camaraParaEnquadrar, easeOutCubic } from '@/features/rede/layout'
 import type { ControleDaTela, Folgas } from '@/features/rede/Tela'
 import { useCamera } from '@/features/rede/useCamera'
 
@@ -102,9 +102,6 @@ function lerCoresDoMapa(el: HTMLElement): CoresDoMapa {
     fio: lerCor(el, '--rede-fio'),
     ouro: lerCor(el, '--ouro-gravado'),
     nevoa: lerCor(el, '--nevoa'),
-    grade: lerCor(el, '--mapa-grade'),
-    vinheta: lerCor(el, '--mapa-vinheta'),
-    sombra: lerCor(el, '--mapa-sombra'),
   }
 }
 
@@ -358,16 +355,10 @@ export function TelaDoMapa({
     },
   })
 
-  /** Só se toca (e se pega) o ponto que se vê: de longe, só os da vizinhança acesa. */
+  /** Os pontos estão sempre à vista, então todos se tocam (e se pegam). */
   function pontoTocavelEm(mundo: Ponto): Id | null {
     const atual = cenaRef.current
-    const escala = camera.current.escala
-    const vizinhanca = vizinhancaDe(atual.selecionado, atual.conexoes)
-    const tocaveis =
-      escala >= ESCALA_DE_PERTO
-        ? atual.absolutos
-        : new Map([...atual.absolutos].filter(([id]) => vizinhanca?.has(id)))
-    return neuronioNoMapaEm(mundo, tocaveis, RAIO_DO_TOQUE / escala)
+    return neuronioNoMapaEm(mundo, atual.absolutos, RAIO_DO_TOQUE / camera.current.escala)
   }
 
   /**
