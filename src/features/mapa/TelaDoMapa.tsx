@@ -12,7 +12,7 @@ import {
 } from '@/core'
 import { lerCor, useRepintarAoMudar } from '@/features/rede/canvas'
 import type { Camera } from '@/features/rede/desenhar'
-import { camaraParaEnquadrar, easeOutCubic } from '@/features/rede/layout'
+import { camaraParaEnquadrar, easeOutCubic, vizinhancaDe } from '@/features/rede/layout'
 import type { ControleDaTela, Folgas } from '@/features/rede/Tela'
 import { useCamera } from '@/features/rede/useCamera'
 
@@ -255,7 +255,9 @@ export function TelaDoMapa({
       }
     },
     aoDescer(mundo) {
-      // O neurônio que se vê se pega na hora, como na Rede.
+      // O neurônio se pega na hora, como na Rede — mas só de perto: na visão
+      // inicial o dedo navega, e segurar a ilha é que a move.
+      if (camera.current.escala < ESCALA_DE_PERTO) return false
       const tocado = pontoTocavelEm(mundo)
       if (!tocado) return false
       const achada = Object.entries(cenaRef.current.mapa.ilhas).find(([, i]) => tocado in i.pontos)
@@ -355,10 +357,19 @@ export function TelaDoMapa({
     },
   })
 
-  /** Os pontos estão sempre à vista, então todos se tocam (e se pegam). */
+  /**
+   * Só se toca o ponto de que se está perto: de longe um toque é da ilha (e
+   * aproxima dela), salvo a vizinhança acesa do tocado.
+   */
   function pontoTocavelEm(mundo: Ponto): Id | null {
     const atual = cenaRef.current
-    return neuronioNoMapaEm(mundo, atual.absolutos, RAIO_DO_TOQUE / camera.current.escala)
+    const escala = camera.current.escala
+    const vizinhanca = vizinhancaDe(atual.selecionado, atual.conexoes)
+    const tocaveis =
+      escala >= ESCALA_DE_PERTO
+        ? atual.absolutos
+        : new Map([...atual.absolutos].filter(([id]) => vizinhanca?.has(id)))
+    return neuronioNoMapaEm(mundo, tocaveis, RAIO_DO_TOQUE / escala)
   }
 
   /**

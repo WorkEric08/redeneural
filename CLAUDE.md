@@ -4575,12 +4575,15 @@ náutica. Quatro mudanças, todas no sentido de tirar enfeite:
 - **O fundo do Mapa é o da Rede**: a sala lisa. Saíram a grade de latitude e
   longitude e a borda escurecida.
 - **A rosa dos ventos saiu.**
-- **A ilha é um círculo simples na cor do livro** — sem sombra, sem anéis de
-  profundidade, sem costa dupla, sem hachura, sem luz de domo. Erguida (a
-  pessoa está segurando), cresce 3% e ganha um contorno claro. As pontes em
+- **A ilha é um círculo com a borda na cor do livro**, e o interior (a
+  `--parede`) um tom mais claro que o mar, só para os neurônios se destacarem —
+  sem sombra, anéis de profundidade, hachura ou luz de domo. Erguida (a pessoa
+  está segurando), cresce 3% e a borda engrossa. As pontes em
   arco e os nomes em versalete ficaram.
-- **Os neurônios estão sempre à mostra**, como na Rede, e por isso sempre se
-  tocam e se pegam, de qualquer zoom. Perto de uma ilha continuam aparecendo só
+- **Os neurônios estão sempre à mostra**, como na Rede. **Mas só se tocam e se
+  movem de perto** (zoom a partir de `ESCALA_DE_PERTO`, 0,9): na visão inicial
+  um toque em cima de um deles é da ilha e aproxima dela, como antes, e arrastar
+  navega — segurar é que move a ilha. Perto de uma ilha continuam aparecendo só
   as trilhas e os nomes. O ponto não leva mais o toque da cor do livro por cima
   (ele sumiria sobre uma ilha da mesma cor).
 - **A ideia feita é um ponto dourado, sem anel** — na Rede e no Mapa. O anel
@@ -4589,13 +4592,13 @@ náutica. Quatro mudanças, todas no sentido de tirar enfeite:
 Saíram os tokens `--mapa-grade`, `--mapa-vinheta` e `--mapa-sombra`. O que
 mover ilha e neurônio faz não mudou.
 
-**Efeito da mudança de toque:** segurar a terra em cima de um neurônio (a menos
-de 22 px de tela dele) pega o neurônio, não a ilha — a ilha se pega na terra
-vazia. De longe, em ilha pequena, o neurônio pode ocupar boa parte dela.
+**De perto**, segurar a terra a menos de 22 px de um neurônio pega o neurônio, não
+a ilha — a ilha se pega na terra vazia.
 
 Verificado no navegador de verdade (build de produção, toque por CDP, 35
 notas, com ideias feitas semeadas): Mapa de longe e de perto nos dois temas
-(412 px) e a Rede com os pontos dourados; as 13 conferências de arrastar ilha e
+(412 px) e a Rede com os pontos dourados; de longe, arrastar em cima de um
+neurônio só navega e tocar aproxima da ilha; as 13 conferências de arrastar ilha e
 neurônio continuam passando. 420 testes, typecheck e lint limpos.
 
 ## Fases

@@ -9,7 +9,7 @@ import { controleDoArco, espessuraDaPonte, pontesVisiveis, type PonteAgrupada } 
 
 /**
  * O desenho do Mapa, em canvas: o palácio como arquipélago — a sala é o mar,
- * liso como o fundo da Rede, e cada livro é uma ilha: um círculo simples na cor
+ * liso como o fundo da Rede, e cada livro é uma ilha: um círculo com a borda na cor
  * dele, com os neurônios à mostra como pontos, do mesmo jeito que na Rede. As
  * pontes são rotas em arco.
  *
@@ -248,8 +248,9 @@ function desenharPontesAgrupadas(
 }
 
 /**
- * A ilha: um círculo simples na cor do livro. Erguida (a pessoa está
- * segurando), cresce um pouco e ganha um contorno claro.
+ * A ilha: um círculo de borda na cor do livro, com o interior um tom mais
+ * claro que o mar — só para os neurônios se destacarem. Erguida (a pessoa está
+ * segurando), cresce um pouco e a borda engrossa.
  */
 function desenharIlha(
   ctx: CanvasRenderingContext2D,
@@ -262,13 +263,11 @@ function desenharIlha(
   const { centro } = ilha
   ctx.beginPath()
   ctx.arc(centro.x, centro.y, ilha.raio * (erguida ? 1.03 : 1), 0, 2 * Math.PI)
-  ctx.fillStyle = cor ?? cores.parede
+  ctx.fillStyle = cores.parede
   ctx.fill()
-  if (erguida) {
-    ctx.strokeStyle = cores.papel
-    ctx.lineWidth = 2 * px
-    ctx.stroke()
-  }
+  ctx.strokeStyle = cor ?? cores.poeira
+  ctx.lineWidth = (erguida ? 4 : 2.5) * px
+  ctx.stroke()
 }
 
 /**
