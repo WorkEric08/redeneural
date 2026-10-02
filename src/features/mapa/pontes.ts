@@ -138,8 +138,41 @@ export function distanciaAoSegmento(p: Ponto, a: Ponto, b: Ponto): number {
 }
 
 /**
- * A ponte debaixo do dedo, a mais perto dentro da tolerância. A ponte vai de
- * centro a centro e é desenhada por baixo das ilhas — a terra cobre o que está
+ * O quanto a ponte se curva: o ponto de controle do arco sai do meio, para o
+ * lado, a esta fração do comprimento. Uma curva leve, como a rota de uma carta
+ * náutica — e duas pontes que saem da mesma ilha deixam de se sobrepor.
+ */
+export const CURVATURA_DA_PONTE = 0.12
+
+/**
+ * O ponto de controle do arco de `a` a `b` (curva quadrática). Sempre do
+ * mesmo lado do sentido A→B — quem chama passa o livro de menor id como `a`, e
+ * a mesma ponte se curva sempre igual.
+ */
+export function controleDoArco(a: Ponto, b: Ponto): Ponto {
+  const dx = b.x - a.x
+  const dy = b.y - a.y
+  return {
+    x: (a.x + b.x) / 2 - dy * CURVATURA_DA_PONTE,
+    y: (a.y + b.y) / 2 + dx * CURVATURA_DA_PONTE,
+  }
+}
+
+/** O ponto do arco em `t` (0 em `a`, 1 em `b`). */
+export function pontoNoArco(a: Ponto, controle: Ponto, b: Ponto, t: number): Ponto {
+  const u = 1 - t
+  return {
+    x: u * u * a.x + 2 * u * t * controle.x + t * t * b.x,
+    y: u * u * a.y + 2 * u * t * controle.y + t * t * b.y,
+  }
+}
+
+/** Quantos segmentos aproximam o arco no toque — sobra para uma curva tão leve. */
+const PEDACOS_DO_ARCO = 24
+
+/**
+ * A ponte debaixo do dedo, a mais perto dentro da tolerância. A ponte é um arco
+ * de centro a centro, desenhado por baixo das ilhas — a terra cobre o que está
  * dentro delas. Por isso quem chama confere a terra antes (`ilhaEm`): um toque
  * no mar perto da linha só pode estar na parte que se vê.
  */
@@ -154,7 +187,14 @@ export function ponteEm(
     const a = mapa.ilhas[ponte.livroA]
     const b = mapa.ilhas[ponte.livroB]
     if (!a || !b) continue
-    const d = distanciaAoSegmento(ponto, a.centro, b.centro)
+    const controle = controleDoArco(a.centro, b.centro)
+    let d = Infinity
+    let anterior = a.centro
+    for (let i = 1; i <= PEDACOS_DO_ARCO; i++) {
+      const atual = pontoNoArco(a.centro, controle, b.centro, i / PEDACOS_DO_ARCO)
+      d = Math.min(d, distanciaAoSegmento(ponto, anterior, atual))
+      anterior = atual
+    }
     if (d > tolerancia) continue
     if (melhor === null || d < melhor.d) melhor = { ponte, d }
   }

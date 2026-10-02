@@ -140,6 +140,12 @@ export function criarWorkerEngine(): ConnectionEngine {
     reorganizarMapa: (): Promise<MapaDoPalacio> =>
       pedir<'reorganizarMapa'>({ tipo: 'reorganizarMapa' }),
 
+    moverIlhaNoMapa: (livroId: Id, centro: Ponto): Promise<MapaDoPalacio> =>
+      pedir<'moverIlhaNoMapa'>({ tipo: 'moverIlhaNoMapa', livroId, centro }),
+
+    moverNeuronioNoMapa: (id: Id, ponto: Ponto): Promise<MapaDoPalacio> =>
+      pedir<'moverNeuronioNoMapa'>({ tipo: 'moverNeuronioNoMapa', id, ponto }),
+
     moverNeuronioNaRede: (id: Id, ponto: Ponto): Promise<Readonly<Record<Id, Ponto>>> =>
       pedir<'moverNeuronioNaRede'>({ tipo: 'moverNeuronioNaRede', id, ponto }),
 

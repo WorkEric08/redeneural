@@ -155,6 +155,12 @@ interface PalacioStore {
   /** Desenha o Mapa inteiro de novo — só a pedido, em Ajustes. `false` se o motor não conseguiu. */
   reorganizarMapa: () => Promise<boolean>
   /**
+   * A pessoa soltou uma ilha (ou um neurônio) no Mapa. Devolve o mapa como
+   * ficou — a tela anima a chegada até lá — ou null se o motor não conseguiu.
+   */
+  moverIlhaNoMapa: (livroId: string, centro: Ponto) => Promise<MapaDoPalacio | null>
+  moverNeuronioNoMapa: (id: string, ponto: Ponto) => Promise<MapaDoPalacio | null>
+  /**
    * Solta um neurônio arrastado no ponto novo. Devolve o layout reagindo a
    * ele na hora — a tela anima o assentamento com o resultado, sem esperar
    * o próximo render para saber onde a vizinhança parou.
@@ -560,6 +566,28 @@ export const usePalacio = create<PalacioStore>()((set, get) => {
       } catch (e) {
         // Como no modo da busca: a tela já trocou; só não fica lembrado.
         set({ erro: mensagem(e) })
+      }
+    },
+
+    async moverIlhaNoMapa(livroId, centro): Promise<MapaDoPalacio | null> {
+      try {
+        const mapa = await engine.moverIlhaNoMapa(livroId, centro)
+        set({ mapa })
+        return mapa
+      } catch (e) {
+        set({ erro: mensagem(e) })
+        return null
+      }
+    },
+
+    async moverNeuronioNoMapa(id, ponto): Promise<MapaDoPalacio | null> {
+      try {
+        const mapa = await engine.moverNeuronioNoMapa(id, ponto)
+        set({ mapa })
+        return mapa
+      } catch (e) {
+        set({ erro: mensagem(e) })
+        return null
       }
     },
 

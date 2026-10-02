@@ -57,6 +57,8 @@ export default function Rede() {
     modoDaRede: modo,
     carregado,
     moverNeuronioNaRede,
+    moverIlhaNoMapa,
+    moverNeuronioNoMapa,
     definirModoDaRede,
   } = usePalacio()
 
@@ -206,6 +208,8 @@ export default function Rede() {
             selecionado={selecionado}
             onSelecionar={escolherNeuronio}
             onTocarPonte={abrirPonte}
+            onMoverIlha={moverIlhaNoMapa}
+            onMoverNeuronio={moverNeuronioNoMapa}
             controle={controle}
             folgas={FOLGAS}
           />

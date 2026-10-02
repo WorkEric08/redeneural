@@ -4059,9 +4059,9 @@ ilha, e o lugar de cada coisa nela não muda sozinho.
   neurônio) nem o porto (sem livro, sem ilha). Os satélites de anexo ficam só
   na Rede.
 - **O raio cresce com a raiz do tamanho do livro:** `max(70, 34·√n)`.
-- **A costa é orgânica e sempre a mesma.** Ela sai da semente do id (três
-  ondulações) e recorta até 15% do raio, nunca passa dele. Os pontos moram
-  dentro da parte que nunca é recortada, com 16 de margem.
+- ~~A costa é orgânica e sempre a mesma.~~ **Desde 02/10/2026 a ilha é um
+  círculo perfeito** (pedido do usuário): a costa é o raio, e os pontos moram
+  até 16 de margem dele. Ver "O Mapa vira carta náutica".
 - **Dentro da ilha, o lugar é o sentido.** Os vetores do livro são
   centralizados no perfil e reduzidos para 2D por PCA (iteração de potência,
   com partida e sinal fixos, para ser determinístico). Depois são espalhados
@@ -4131,7 +4131,9 @@ próxima atualização a encaixa de novo. Backup de antes do mapa importa sem el
   seleção. O duplo toque foca o neurônio, ou aproxima no mar. Pinça, roda do
   mouse e deslize funcionam como na Rede. (A parte 2 acrescentou tocar na ilha
   e na ponte.)
-- **Sem arrastar ponto:** o lugar é do núcleo.
+- ~~Sem arrastar ponto: o lugar é do núcleo.~~ **Desde 02/10/2026 a pessoa
+  move ilhas e neurônios** — ver "O Mapa vira carta náutica". Sozinho, o mapa
+  continua sem andar.
 - **Sem laço de animação e sem balanço:** a tela pinta quando algo muda, e só.
 - **A seleção sobrevive à troca de modo**, e a câmera vai até ela.
   `?centralizar=` (a busca) e o neurônio recém-criado funcionam nos dois modos:
@@ -4467,6 +4469,102 @@ gzipped.
 **Visto e não resolvido:** de dia, na Rede, a névoa clara sobre a sala clara é
 bem discreta. Quem marca a ideia ali é o ponto esmaecido e os fios mais fracos.
 Fica para a passada de acabamento.
+
+## O Mapa vira carta náutica, e as ilhas se movem com a mão (02/10/2026)
+
+Primeiros ajustes do teste conjunto das seis atualizações. Pedidos do usuário:
+o Mapa "visualmente mais bonito e bem trabalhado", as ilhas como **círculo
+perfeito**, e mover ilhas e neurônios com o dedo, "que nem no modo rede".
+Perguntei duas coisas antes de mexer:
+
+- **A cara:** carta náutica, entre carta náutica, planetário e limpo-moderno.
+- **Arrastar um neurônio até outra ilha:** só dentro da própria ilha, entre só
+  dentro e trocar de livro. Na Rede, arrastar nunca troca de livro, e trocar
+  continua sendo pelo editar ou pelo "Mudar".
+
+### A carta
+
+`desenharMapa.ts`, em camadas:
+
+- **O mar:** a sala com a borda escurecida (vinheta) e uma grade de latitude e
+  longitude presa ao mundo. O passo da grade dobra e divide com o zoom, para as
+  linhas ficarem sempre a 80–180 px uma da outra.
+- **A água em volta de cada ilha:** um raso da cor do livro que se apaga no mar,
+  e três isóbatas (anéis de profundidade) a 9, 20 e 32 do mundo, a de fora
+  tracejada. Com a ilha pequena na tela, só o raso.
+- **As pontes viram rotas em arco** (curva quadrática, curvatura 0,12 do
+  comprimento, sempre do mesmo lado de A→B), com um halo fraco por baixo. Duas
+  pontes da mesma ilha deixam de se sobrepor. O toque segue a curva
+  (`controleDoArco`, `pontoNoArco`), e não a reta.
+- **A ilha:**
+  - uma sombra no mar;
+  - a terra com uma luz de cima à esquerda (um domo, não um disco chapado);
+  - o toque da cor do livro;
+  - a costa dupla, um traço firme e um fio por dentro;
+  - hachura por fora, como as cartas antigas marcavam a praia, só com a ilha
+    grande na tela (mais de 70 px de raio): pequena, vira serrilha.
+- **A rosa dos ventos** no canto de cima, à direita: enfeite discreto, que não
+  anda com o mapa.
+- **Os nomes das ilhas** em versalete espaçado; a contagem em itálico.
+- **Tokens novos**, nos três blocos de tema: `--mapa-grade`, `--mapa-vinheta`
+  e `--mapa-sombra`. De dia, tinta; à noite, a grade é luz fraca e a borda
+  afunda no escuro.
+
+### O círculo
+
+`RECORTE_DA_COSTA`, `contornoDaIlha` e `raioDaCosta` saíram. A costa é o
+raio, e os pontos moram até `raio − MARGEM_DA_COSTA`. O raio de uma ilha
+existente pode encolher um pouco na próxima atualização dela (não divide mais
+por 0,85), sem mover ponto nenhum. Os mapas já gravados continuam válidos: os
+pontos já estavam dentro do círculo menor.
+
+### A mão
+
+| Gesto                                   | O que faz                                                                            |
+| --------------------------------------- | ------------------------------------------------------------------------------------ |
+| Tocar e arrastar um neurônio que se vê  | Leva ele, como na Rede. Não sai da ilha: o dedo vai, o ponto fica na beira de dentro |
+| **Segurar** (380 ms) a terra e arrastar | Ergue a ilha — a sombra desce e abre — e leva ela com todos os neurônios             |
+| Arrastar a terra sem segurar            | Navega, como sempre                                                                  |
+| Segurar e soltar parado                 | Põe a ilha de volta no lugar                                                         |
+
+- **Por que a ilha pede segurar:** ela é grande, e é onde o dedo também
+  navega. Pegar ao primeiro toque tiraria o arrastar do mapa de quem só quer
+  passear. É o mesmo gesto do livro na estante.
+- **O núcleo decide o lugar final**, puro e testado:
+  - `moverIlha`: a ilha fica onde foi solta. Em cima de outra, anda o mínimo
+    até o mar inteiro em volta, sem a reserva de crescimento — o lugar foi da
+    pessoa, e é respeitado o mais perto possível.
+  - `moverPontoNoMapa`: dentro da ilha; colado noutro neurônio, um passo para o
+    lado.
+  - Em nenhum dos dois casos mais nada se mexe. O afastar da ilha que cresceu e
+    o novo procuram vão pela mesma função (`lugarLivreMaisPerto`).
+- **Na tela:** enquanto está na mão, o lugar é só da tela (`comAMao`). Ao
+  soltar, o motor grava em `meta.mapa` e devolve o mapa, e o que estava na mão
+  desliza (260 ms) até o lugar decidido antes de a mão largar.
+- **`useCamera` ganhou `aoSegurar`**: o dedo parado 380 ms sem que `aoDescer`
+  tenha tomado o gesto. Soltar depois de segurar nunca vira toque. A Rede não
+  usa, e não mudou.
+- **Sem retorno de vibração:** o app não usa em nenhum outro gesto.
+
+**Testes:** 6 novos do núcleo — ilha solta no mar, solta em cima de outra,
+neurônio no lugar, fora da ilha, colado noutro, e alvo inexistente —, mais o do
+círculo em `ilhaEm` e o do toque no arco. 420 testes, typecheck e lint limpos.
+
+**Verificado no navegador de verdade** (build de produção, toque por CDP,
+palácio de 35 notas):
+
+- Arrastar a terra sem segurar navega, e a ilha fica.
+- Segurar e arrastar levou Trabalho exatamente aonde soltou, com os neurônios
+  dentro e as outras ilhas paradas.
+- Solta em cima de Psicologia, Saúde foi para o vão mais perto, e Psicologia
+  ficou.
+- O neurônio mudou de lugar sem mexer os outros. Arrastado para fora, ficou
+  junto da beira, dentro da ilha e no mesmo livro.
+- Um toque continua selecionando.
+- Recarregar manteve tudo onde a pessoa deixou.
+
+Capturas em 320, 412 e 1440 px, nos dois temas, de longe, de perto e com a ilha
+erguida. Bundle principal: 148,4 KB gzipped.
 
 ## Fases
 

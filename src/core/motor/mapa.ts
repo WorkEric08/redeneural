@@ -51,13 +51,6 @@ export const MARGEM_DA_COSTA = 16
 export const DISTANCIA_ENTRE_PONTOS = 22
 /** O mar entre duas ilhas. */
 export const FOLGA_ENTRE_ILHAS = 46
-/**
- * O quanto a costa recorta para dentro do raio. O contorno orgânico (desenhado
- * na tela) varia entre `raio × (1 − recorte)` e `raio`: os pontos ficam sempre
- * dentro da parte de dentro, e a ilha nunca passa do raio — a folga entre
- * ilhas vale para o desenho também.
- */
-export const RECORTE_DA_COSTA = 0.15
 
 /**
  * Espaço que cada ilha guarda em volta de si para crescer sem encostar: ao
@@ -85,11 +78,15 @@ export function raioDaIlha(quantos: number): number {
   return Math.max(RAIO_MINIMO_DA_ILHA, RAIO_POR_RAIZ * Math.sqrt(quantos))
 }
 
-/** O raio que contém os pontos com folga — e cabe dentro da costa recortada. */
+/**
+ * O raio que contém os pontos com folga. A ilha é um círculo perfeito (pedido
+ * do usuário, 02/10/2026 — antes a costa era orgânica): a costa é o próprio
+ * raio, e os pontos moram até `raio − MARGEM_DA_COSTA`.
+ */
 function raioQueContem(pontos: Iterable<Ponto>, quantos: number): number {
   let maior = 0
   for (const p of pontos) maior = Math.max(maior, Math.hypot(p.x, p.y))
-  return Math.max(raioDaIlha(quantos), (maior + MARGEM_DA_COSTA) / (1 - RECORTE_DA_COSTA))
+  return Math.max(raioDaIlha(quantos), maior + MARGEM_DA_COSTA)
 }
 
 /** Espiral de girassol: n pontos sem amontoar, sempre na mesma ordem. */
@@ -238,7 +235,7 @@ export function pontosDaIlha(
 
   if (projetados) {
     // Espalha até o raio que a quantidade pede, menos a costa.
-    const alcance = raioDaIlha(ordenados.length) * (1 - RECORTE_DA_COSTA) - MARGEM_DA_COSTA
+    const alcance = raioDaIlha(ordenados.length) - MARGEM_DA_COSTA
     const maior = Math.max(...projetados.map((p) => Math.hypot(p.x, p.y)), 1e-9)
     comVetor.forEach((n, i) => {
       const p = projetados[i]!
@@ -529,24 +526,34 @@ function encaixarIlha(
 
 /**
  * Uma ilha que cresceu e encostou noutra anda o mínimo para fora — ela só, as
- * outras ficam. Procura em anéis cada vez maiores em volta de onde está, e
- * fica com o primeiro lugar livre.
+ * outras ficam. E vai para onde volta a ter a reserva: senão encostaria de
+ * novo no próximo neurônio, e andaria a cada um.
  */
 function afastarIlhaQueCresceu(
   livroId: Id,
   ilha: IlhaDoMapa,
   ilhas: Readonly<Record<Id, IlhaDoMapa>>,
 ): Ponto {
+  return lugarLivreMaisPerto(livroId, ilha, ilhas, comReserva(ilha.raio))
+}
+
+/**
+ * O lugar livre mais perto de onde a ilha está: ela mesma, se não encosta em
+ * nenhuma; senão, anéis cada vez maiores em volta, e o primeiro lugar onde
+ * `raioExigido` cabe com o mar inteiro em volta. Só ela anda.
+ */
+function lugarLivreMaisPerto(
+  livroId: Id,
+  ilha: IlhaDoMapa,
+  ilhas: Readonly<Record<Id, IlhaDoMapa>>,
+  raioExigido: number,
+): Ponto {
   const outras = Object.entries(ilhas).filter(([id]) => id !== livroId)
-  // Só anda se encostou de verdade — enquanto cresce dentro da própria reserva,
-  // fica onde está.
   const encostou = outras.some(([, outra]) => seSobrepoem(ilha, outra))
   if (!encostou) return ilha.centro
 
-  // E quando anda, vai para onde volta a ter a reserva: senão encostaria de
-  // novo no próximo neurônio, e andaria a cada um.
   const livreEm = (centro: Ponto): boolean =>
-    outras.every(([, outra]) => !seSobrepoem({ centro, raio: comReserva(ilha.raio) }, outra))
+    outras.every(([, outra]) => !seSobrepoem({ centro, raio: raioExigido }, outra))
 
   for (let anel = 1; anel < 400; anel++) {
     const distancia = anel * 8
@@ -626,6 +633,70 @@ export function atualizarMapa(
   }
 
   return { ilhas }
+}
+
+// --- a mão da pessoa ---------------------------------------------------------
+
+/**
+ * A pessoa arrastou uma ilha (02/10/2026): ela fica onde foi solta, com todos
+ * os neurônios dela, e só ela se mexe. Solta em cima de outra, anda o mínimo
+ * até ter o mar inteiro em volta — sem a reserva de crescimento: quem decidiu
+ * o lugar foi a pessoa, e ele é respeitado o mais perto possível.
+ */
+export function moverIlha(mapa: MapaDoPalacio, livroId: Id, centro: Ponto): MapaDoPalacio {
+  const ilha = mapa.ilhas[livroId]
+  if (!ilha || !Number.isFinite(centro.x) || !Number.isFinite(centro.y)) return mapa
+  const solta: IlhaDoMapa = { ...ilha, centro: { x: centro.x, y: centro.y } }
+  const ilhas = { ...mapa.ilhas, [livroId]: solta }
+  ilhas[livroId] = { ...solta, centro: lugarLivreMaisPerto(livroId, solta, ilhas, solta.raio) }
+  return { ilhas }
+}
+
+/**
+ * A pessoa arrastou um neurônio dentro da ilha dele (02/10/2026). Ele não sai
+ * dela: solto fora, fica na beira de dentro (`raio − MARGEM_DA_COSTA`). Solto
+ * colado noutro, dá um passo para o lado até achar vão, ainda dentro da ilha.
+ * Ninguém mais se mexe, e a ilha não muda de tamanho.
+ *
+ * `ponto` é no mundo do Mapa, como o dedo o vê.
+ */
+export function moverPontoNoMapa(mapa: MapaDoPalacio, neuronioId: Id, ponto: Ponto): MapaDoPalacio {
+  const achada = Object.entries(mapa.ilhas).find(([, ilha]) => neuronioId in ilha.pontos)
+  if (!achada || !Number.isFinite(ponto.x) || !Number.isFinite(ponto.y)) return mapa
+  const [livroId, ilha] = achada
+
+  const limite = Math.max(0, ilha.raio - MARGEM_DA_COSTA)
+  const dentro = (p: Ponto): Ponto => {
+    const d = Math.hypot(p.x, p.y)
+    return d <= limite ? p : { x: (p.x / d) * limite, y: (p.y / d) * limite }
+  }
+  const outros = Object.entries(ilha.pontos)
+    .filter(([id]) => id !== neuronioId)
+    .map(([, p]) => p)
+  const livre = (p: Ponto): boolean =>
+    outros.every((q) => Math.hypot(q.x - p.x, q.y - p.y) >= DISTANCIA_ENTRE_PONTOS - 1e-6)
+
+  const base = dentro({ x: ponto.x - ilha.centro.x, y: ponto.y - ilha.centro.y })
+  let escolhido = base
+  if (!livre(base)) {
+    const angulo = semente(neuronioId)[0] * 2 * Math.PI
+    for (let passo = 1; passo < 400; passo++) {
+      const r = DISTANCIA_ENTRE_PONTOS * (0.6 + 0.35 * passo)
+      const a = angulo + passo * ANGULO_DOURADO
+      const p = { x: base.x + Math.cos(a) * r, y: base.y + Math.sin(a) * r }
+      if (Math.hypot(p.x, p.y) <= limite && livre(p)) {
+        escolhido = p
+        break
+      }
+    }
+  }
+
+  return {
+    ilhas: {
+      ...mapa.ilhas,
+      [livroId]: { ...ilha, pontos: { ...ilha.pontos, [neuronioId]: escolhido } },
+    },
+  }
 }
 
 /** Onde o neurônio está no mundo do Mapa — `undefined` se ele não está em ilha nenhuma. */

@@ -11,6 +11,8 @@ import {
   estadoAoGuardar,
   quemDesperta,
   mapaCompleto,
+  moverIlha,
+  moverPontoNoMapa,
   ehPonte,
   livroDoPorto,
   construirGrafo,
@@ -277,6 +279,19 @@ async function encaixarNoMapa(): Promise<void> {
 async function reorganizarMapa(): Promise<MapaDoPalacio> {
   const { nos, livros, centroide } = await entradaDoMapa()
   const mapa = mapaCompleto(nos, livros, centroide)
+  await repo.setMapa(mapa)
+  return mapa
+}
+
+/** A mão da pessoa no Mapa: só a ilha (ou o neurônio) que ela soltou anda. */
+async function moverIlhaNoMapa(livroId: Id, centro: Ponto): Promise<MapaDoPalacio> {
+  const mapa = moverIlha(await repo.getMapa(), livroId, centro)
+  await repo.setMapa(mapa)
+  return mapa
+}
+
+async function moverNeuronioNoMapa(id: Id, ponto: Ponto): Promise<MapaDoPalacio> {
+  const mapa = moverPontoNoMapa(await repo.getMapa(), id, ponto)
   await repo.setMapa(mapa)
   return mapa
 }
@@ -833,6 +848,12 @@ async function responder(msg: ParaMotor): Promise<DoMotor> {
       case 'definirModoDaRede':
         await repo.definirModoDaRede(msg.modo)
         return { req: msg.req, ok: true, dados: await repo.getModoDaRede() }
+
+      case 'moverIlhaNoMapa':
+        return { req: msg.req, ok: true, dados: await moverIlhaNoMapa(msg.livroId, msg.centro) }
+
+      case 'moverNeuronioNoMapa':
+        return { req: msg.req, ok: true, dados: await moverNeuronioNoMapa(msg.id, msg.ponto) }
 
       case 'reorganizarMapa':
         return { req: msg.req, ok: true, dados: await reorganizarMapa() }

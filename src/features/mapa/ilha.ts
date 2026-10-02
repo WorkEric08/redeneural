@@ -1,55 +1,11 @@
-import { RECORTE_DA_COSTA, type Id, type MapaDoPalacio, type Ponto } from '@/core'
-import { sorteio } from '@/lib/semente'
+import type { Id, MapaDoPalacio, Ponto } from '@/core'
 
 /**
- * O que a tela do Mapa calcula do próprio lado: o contorno de cada ilha, onde
- * cada ponto está no mundo, quem está debaixo do dedo e o quanto a câmera está
- * perto. Onde cada coisa fica mora no núcleo (`core/motor/mapa.ts`), gravado.
+ * O que a tela do Mapa calcula do próprio lado: onde cada ponto está no mundo,
+ * quem está debaixo do dedo e o quanto a câmera está perto. A ilha é um
+ * círculo perfeito (02/10/2026) — a costa é o raio. Onde cada coisa fica mora
+ * no núcleo (`core/motor/mapa.ts`), gravado.
  */
-
-/** As três ondulações da costa: duas grandes e uma miúda. */
-const ONDULACOES = [2, 3, 5] as const
-
-function ondasDaCosta(livroId: Id) {
-  const ondas = ONDULACOES.map((k, i) => ({
-    k,
-    peso: 0.4 + sorteio(livroId, i * 2) * 0.6,
-    fase: sorteio(livroId, i * 2 + 1) * 2 * Math.PI,
-  }))
-  return { ondas, soma: ondas.reduce((s, o) => s + o.peso, 0) }
-}
-
-function raioNaOnda(ondas: ReturnType<typeof ondasDaCosta>, raio: number, angulo: number): number {
-  // f em [-1, 1]: a soma das ondas dividida pelo maior valor possível.
-  const f =
-    ondas.ondas.reduce((s, o) => s + o.peso * Math.sin(o.k * angulo + o.fase), 0) / ondas.soma
-  return raio * (1 - (RECORTE_DA_COSTA * (1 - f)) / 2)
-}
-
-/**
- * A distância do centro até a costa, num ângulo. Varia entre
- * `raio × (1 − recorte)` e `raio` — os pontos moram dentro da parte de dentro
- * (o núcleo garante), e a ilha nunca passa do raio, que é o que o mar entre as
- * ilhas conta. É o que faz uma ponte terminar exatamente na praia.
- */
-export function raioDaCosta(livroId: Id, raio: number, angulo: number): number {
-  return raioNaOnda(ondasDaCosta(livroId), raio, angulo)
-}
-
-/**
- * A costa de uma ilha, em volta do centro (coordenadas relativas). Orgânica e
- * sempre a mesma: cada livro tem a sua, tirada da semente do id.
- */
-export function contornoDaIlha(livroId: Id, raio: number, passos = 72): Ponto[] {
-  const ondas = ondasDaCosta(livroId)
-  const pontos: Ponto[] = []
-  for (let i = 0; i < passos; i++) {
-    const t = (i / passos) * 2 * Math.PI
-    const r = raioNaOnda(ondas, raio, t)
-    pontos.push({ x: Math.cos(t) * r, y: Math.sin(t) * r })
-  }
-  return pontos
-}
 
 /** Onde cada neurônio está no mundo do Mapa: o centro da ilha mais o lugar dele nela. */
 export function pontosAbsolutos(mapa: MapaDoPalacio): Map<Id, Ponto> {
@@ -77,14 +33,10 @@ export function neuronioNoMapaEm(
   return melhor?.id ?? null
 }
 
-/** A ilha em cuja terra o toque caiu — pela costa de verdade, não pelo círculo. */
+/** A ilha em cuja terra o toque caiu. */
 export function ilhaEm(ponto: Ponto, mapa: MapaDoPalacio): Id | null {
   for (const [livroId, ilha] of Object.entries(mapa.ilhas)) {
-    const dx = ponto.x - ilha.centro.x
-    const dy = ponto.y - ilha.centro.y
-    const d = Math.hypot(dx, dy)
-    if (d > ilha.raio) continue
-    if (d <= raioDaCosta(livroId, ilha.raio, Math.atan2(dy, dx))) return livroId
+    if (Math.hypot(ponto.x - ilha.centro.x, ponto.y - ilha.centro.y) <= ilha.raio) return livroId
   }
   return null
 }

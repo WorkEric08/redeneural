@@ -22,6 +22,8 @@ export const TOLERANCIA_DO_TOQUE = 8
  *  batida perto e rápida da primeira. */
 const JANELA_DO_DUPLO_TOQUE = 350
 const RAIO_DO_DUPLO_TOQUE = 40
+/** Quanto o dedo fica parado para "segurar" — o mesmo da estante e do botão de criar. */
+const ESPERA_DO_SEGURAR = 380
 
 /**
  * O deslize da câmera ao soltar arrastando — padrão sempre ligado desde
@@ -46,6 +48,12 @@ export interface OpcoesDaCamera {
   aoInterromper?: () => void
   /** O primeiro dedo desceu em `mundo`: `true` toma o gesto para quem usa. */
   aoDescer?: (mundo: Ponto) => boolean
+  /**
+   * O dedo ficou parado `ESPERA_DO_SEGURAR` ms sem que `aoDescer` tivesse tomado
+   * o gesto: `true` toma daqui em diante (o Mapa ergue a ilha). Até lá o dedo
+   * arrasta a câmera como sempre — quem não segura, navega.
+   */
+  aoSegurar?: (mundo: Ponto) => boolean
   /** O dedo do gesto tomado andou. */
   aoArrastarTomado?: (mundo: Ponto) => void
   /** Soltou o gesto tomado; `arrastou` diz se passou da tolerância (senão, é toque também). */
@@ -82,6 +90,14 @@ export function useCamera(opcoes: OpcoesDaCamera): {
   const ultimoToque = useRef<{ tempo: number; x: number; y: number } | null>(null)
   /** O gesto atual é de quem usa (`aoDescer` devolveu `true`). */
   const tomado = useRef(false)
+  /** Tomado por segurar: soltar nunca vira toque, mesmo sem ter arrastado. */
+  const seguro = useRef(false)
+  const relogioDoSegurar = useRef<number | null>(null)
+
+  function esquecerOSegurar(): void {
+    if (relogioDoSegurar.current !== null) window.clearTimeout(relogioDoSegurar.current)
+    relogioDoSegurar.current = null
+  }
 
   /** Velocidade do arrasto de câmera (px/ms), suavizada quadro a quadro — só
    *  para decidir o deslize ao soltar. */
@@ -206,8 +222,23 @@ export function useCamera(opcoes: OpcoesDaCamera): {
       // O primeiro dedo a descer decide se o gesto é de quem usa (em cima de
       // um neurônio, na Rede, vira arrastar o nó) ou da câmera. Com um segundo
       // dedo já no ar, é sempre câmera.
+      esquecerOSegurar()
+      seguro.current = false
       if (ponteiros.current.size === 0) {
         tomado.current = opcoes.aoDescer?.(paraOMundo(e.clientX, e.clientY)) ?? false
+        const { aoSegurar } = opcoes
+        if (!tomado.current && aoSegurar) {
+          const { clientX, clientY } = e
+          relogioDoSegurar.current = window.setTimeout(() => {
+            relogioDoSegurar.current = null
+            if (ponteiros.current.size !== 1 || arrastou.current > TOLERANCIA_DO_TOQUE) return
+            if (aoSegurar(paraOMundo(clientX, clientY))) {
+              tomado.current = true
+              seguro.current = true
+              velocidadeDoArrasto.current = { vx: 0, vy: 0 }
+            }
+          }, ESPERA_DO_SEGURAR)
+        }
       }
 
       ponteiros.current.set(e.pointerId, { x: e.clientX, y: e.clientY })
@@ -222,6 +253,7 @@ export function useCamera(opcoes: OpcoesDaCamera): {
       const dy = e.clientY - anterior.y
 
       if (ponteiros.current.size === 2) {
+        esquecerOSegurar()
         // Um segundo dedo desfaz o gesto tomado — vira pinça, como sempre.
         if (tomado.current) {
           tomado.current = false
@@ -245,6 +277,8 @@ export function useCamera(opcoes: OpcoesDaCamera): {
 
       ponteiros.current.set(e.pointerId, { x: e.clientX, y: e.clientY })
       arrastou.current += Math.abs(dx) + Math.abs(dy)
+      // Andou antes do tempo: não era segurar, era navegar.
+      if (arrastou.current > TOLERANCIA_DO_TOQUE) esquecerOSegurar()
 
       if (tomado.current) {
         opcoes.aoArrastarTomado?.(paraOMundo(e.clientX, e.clientY))
@@ -274,9 +308,19 @@ export function useCamera(opcoes: OpcoesDaCamera): {
       const eraUmDedoSo = ponteiros.current.size === 1
       ponteiros.current.delete(e.pointerId)
 
+      esquecerOSegurar()
       const eraTomado = tomado.current
+      const eraSeguro = seguro.current
       tomado.current = false
+      seguro.current = false
       const mundo = paraOMundo(e.clientX, e.clientY)
+
+      // Segurou e soltou: é pôr de volta (ou no lugar novo), nunca um toque.
+      if (eraSeguro) {
+        ultimoToque.current = null
+        opcoes.aoSoltarTomado?.(mundo, arrastou.current > TOLERANCIA_DO_TOQUE)
+        return
+      }
 
       if (eraTomado && eraUmDedoSo && arrastou.current > TOLERANCIA_DO_TOQUE) {
         ultimoToque.current = null
@@ -311,9 +355,11 @@ export function useCamera(opcoes: OpcoesDaCamera): {
     },
 
     onPointerCancel(e) {
+      esquecerOSegurar()
       ponteiros.current.delete(e.pointerId)
       if (tomado.current) opcoes.aoDesistirDoTomado?.()
       tomado.current = false
+      seguro.current = false
     },
 
     onWheel(e) {

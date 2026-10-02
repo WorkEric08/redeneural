@@ -9,8 +9,9 @@ import {
   MAPA_VAZIO,
   mapaCompleto,
   MARGEM_DA_COSTA,
+  moverIlha,
+  moverPontoNoMapa,
   pontoNoMapa,
-  RECORTE_DA_COSTA,
   type MapaDoPalacio,
   type NoDoMapa,
 } from './mapa'
@@ -53,7 +54,7 @@ function dentroDaCosta(mapa: MapaDoPalacio): void {
       expect(
         Math.hypot(p.x, p.y) + MARGEM_DA_COSTA,
         `${id} saiu da ilha ${livroId}`,
-      ).toBeLessThanOrEqual(ilha.raio * (1 - RECORTE_DA_COSTA) + 1e-6)
+      ).toBeLessThanOrEqual(ilha.raio + 1e-6)
     }
   }
 }
@@ -218,5 +219,59 @@ describe('fundirMapas', () => {
     const local: MapaDoPalacio = { ilhas: { b: ilha(100) } }
     const doArquivo: MapaDoPalacio = { ilhas: { a: ilha(0) } }
     expect(Object.keys(fundirMapas(local, doArquivo).ilhas)).toEqual(['a'])
+  })
+})
+
+describe('a mão da pessoa', () => {
+  const MAPA: MapaDoPalacio = {
+    ilhas: {
+      a: { centro: { x: 0, y: 0 }, raio: 80, pontos: { a1: { x: 0, y: 0 }, a2: { x: 30, y: 0 } } },
+      b: { centro: { x: 300, y: 0 }, raio: 80, pontos: { b1: { x: 0, y: 0 } } },
+    },
+  }
+  const distancia = (p: { x: number; y: number }, q: { x: number; y: number }): number =>
+    Math.hypot(p.x - q.x, p.y - q.y)
+
+  it('a ilha solta no mar fica exatamente ali, com os neurônios dela', () => {
+    const depois = moverIlha(MAPA, 'b', { x: 0, y: 400 })
+    expect(depois.ilhas.b?.centro).toEqual({ x: 0, y: 400 })
+    expect(depois.ilhas.b?.pontos).toEqual(MAPA.ilhas.b?.pontos)
+    expect(depois.ilhas.a).toEqual(MAPA.ilhas.a)
+  })
+
+  it('solta em cima de outra, anda o mínimo até o mar inteiro em volta — só ela', () => {
+    const solta = { x: 100, y: 0 }
+    const depois = moverIlha(MAPA, 'b', solta)
+    const b = depois.ilhas.b!
+    expect(distancia(b.centro, { x: 0, y: 0 })).toBeGreaterThanOrEqual(
+      80 + 80 + FOLGA_ENTRE_ILHAS - 1e-6,
+    )
+    expect(distancia(b.centro, solta)).toBeLessThan(distancia(MAPA.ilhas.b!.centro, solta))
+    expect(depois.ilhas.a).toEqual(MAPA.ilhas.a)
+  })
+
+  it('o neurônio vai para onde foi solto, dentro da ilha dele', () => {
+    const depois = moverPontoNoMapa(MAPA, 'a2', { x: -30, y: 20 })
+    expect(depois.ilhas.a?.pontos.a2).toEqual({ x: -30, y: 20 })
+    expect(depois.ilhas.a?.pontos.a1).toEqual({ x: 0, y: 0 })
+    expect(depois.ilhas.a?.raio).toBe(80)
+    expect(depois.ilhas.b).toEqual(MAPA.ilhas.b)
+  })
+
+  it('solto fora da ilha, fica na beira de dentro — nunca sai dela', () => {
+    const depois = moverPontoNoMapa(MAPA, 'a2', { x: 500, y: 0 })
+    expect(depois.ilhas.a?.pontos.a2).toEqual({ x: 80 - MARGEM_DA_COSTA, y: 0 })
+    expect(depois.ilhas.b?.pontos).toEqual(MAPA.ilhas.b?.pontos)
+  })
+
+  it('solto colado noutro, dá um passo para o lado, ainda dentro', () => {
+    const p = moverPontoNoMapa(MAPA, 'a2', { x: 2, y: 1 }).ilhas.a!.pontos.a2!
+    expect(distancia(p, { x: 0, y: 0 })).toBeGreaterThanOrEqual(DISTANCIA_ENTRE_PONTOS - 1e-6)
+    expect(Math.hypot(p.x, p.y)).toBeLessThanOrEqual(80 - MARGEM_DA_COSTA + 1e-6)
+  })
+
+  it('ilha ou neurônio que não existe deixa o mapa como estava', () => {
+    expect(moverIlha(MAPA, 'nenhuma', { x: 1, y: 1 })).toBe(MAPA)
+    expect(moverPontoNoMapa(MAPA, 'nenhum', { x: 1, y: 1 })).toBe(MAPA)
   })
 })

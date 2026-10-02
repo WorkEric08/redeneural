@@ -235,6 +235,14 @@ export interface ConnectionEngine {
    */
   reorganizarMapa(): Promise<MapaDoPalacio>
   /**
+   * A pessoa arrastou uma ilha do Mapa: ela fica onde foi solta, com os
+   * neurônios dela, e só ela anda — se caiu em cima de outra, o mínimo até o mar
+   * inteiro em volta (`moverIlha`).
+   */
+  moverIlhaNoMapa(livroId: Id, centro: Ponto): Promise<MapaDoPalacio>
+  /** A pessoa arrastou um neurônio no Mapa: dentro da ilha dele, sempre (`moverPontoNoMapa`). */
+  moverNeuronioNoMapa(id: Id, ponto: Ponto): Promise<MapaDoPalacio>
+  /**
    * Arrastar um neurônio: onde o dedo soltou vira a âncora dele, e a mesma
    * física de sempre (partida quente, poucas iterações) deixa a vizinhança
    * reagir a partir daí — sem tocar em conexões, só no layout.

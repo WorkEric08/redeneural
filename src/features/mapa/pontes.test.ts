@@ -8,8 +8,10 @@ import {
   distanciaAoSegmento,
   ESPESSURA_MAXIMA_DA_PONTE,
   espessuraDaPonte,
+  controleDoArco,
   ponteEm,
   pontesAMostra,
+  pontoNoArco,
   pontesVisiveis,
   type PonteAgrupada,
 } from './pontes'
@@ -144,7 +146,7 @@ describe('distanciaAoSegmento e ponteEm', () => {
     expect(distanciaAoSegmento({ x: 13, y: 4 }, { x: 0, y: 0 }, { x: 10, y: 0 })).toBe(5)
   })
 
-  it('a ponte mais perto dentro da tolerância, e nada longe dela', () => {
+  it('a ponte é um arco: o toque acha a curva, não a reta entre os centros', () => {
     const mapa: MapaDoPalacio = {
       ilhas: {
         a: { centro: { x: 0, y: 0 }, raio: 70, pontos: {} },
@@ -153,8 +155,23 @@ describe('distanciaAoSegmento e ponteEm', () => {
       },
     }
     const pontes = [ponte('a', 'b', 2), ponte('a', 'c', 1)]
-    expect(ponteEm({ x: 200, y: 6 }, pontes, mapa, 10)?.chave).toBe('a::b')
-    expect(ponteEm({ x: 6, y: 200 }, pontes, mapa, 10)?.chave).toBe('a::c')
+    const meioAB = pontoNoArco(
+      { x: 0, y: 0 },
+      controleDoArco({ x: 0, y: 0 }, { x: 400, y: 0 }),
+      { x: 400, y: 0 },
+      0.5,
+    )
+    const meioAC = pontoNoArco(
+      { x: 0, y: 0 },
+      controleDoArco({ x: 0, y: 0 }, { x: 0, y: 400 }),
+      { x: 0, y: 400 },
+      0.5,
+    )
+    expect(meioAB.y).not.toBeCloseTo(0)
+    expect(ponteEm({ x: meioAB.x, y: meioAB.y + 4 }, pontes, mapa, 10)?.chave).toBe('a::b')
+    expect(ponteEm({ x: meioAC.x + 4, y: meioAC.y }, pontes, mapa, 10)?.chave).toBe('a::c')
+    // Na reta entre os centros, longe da curva, não há ponte.
+    expect(ponteEm({ x: 200, y: 0 }, pontes, mapa, 10)).toBeNull()
     expect(ponteEm({ x: 200, y: 200 }, pontes, mapa, 10)).toBeNull()
   })
 })

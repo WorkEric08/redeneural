@@ -46,6 +46,8 @@ export interface RespostasDoMotor {
   definirModoDaBusca: ModoDaBusca
   definirModoDaRede: ModoDaRede
   reorganizarMapa: MapaDoPalacio
+  moverIlhaNoMapa: MapaDoPalacio
+  moverNeuronioNoMapa: MapaDoPalacio
   moverNeuronioNaRede: Readonly<Record<Id, Ponto>>
   criarAnexo: EstadoDoPalacio
   editarAnexo: EstadoDoPalacio
@@ -82,6 +84,8 @@ export type ParaMotor =
   | { req: number; tipo: 'definirModoDaBusca'; modo: ModoDaBusca }
   | { req: number; tipo: 'definirModoDaRede'; modo: ModoDaRede }
   | { req: number; tipo: 'reorganizarMapa' }
+  | { req: number; tipo: 'moverIlhaNoMapa'; livroId: Id; centro: Ponto }
+  | { req: number; tipo: 'moverNeuronioNoMapa'; id: Id; ponto: Ponto }
   | { req: number; tipo: 'moverNeuronioNaRede'; id: Id; ponto: Ponto }
   | { req: number; tipo: 'criarAnexo'; input: CriarAnexoInput }
   | { req: number; tipo: 'editarAnexo'; input: EditarAnexoInput }

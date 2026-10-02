@@ -4,13 +4,15 @@ import type { Camera } from '@/features/rede/desenhar'
 import { vizinhancaDe } from '@/features/rede/layout'
 import { contar } from '@/lib/plural'
 
-import { contornoDaIlha, ESCALA_DE_PERTO, presencaDePerto } from './ilha'
-import { espessuraDaPonte, pontesVisiveis, type PonteAgrupada } from './pontes'
+import { ESCALA_DE_PERTO, presencaDePerto } from './ilha'
+import { controleDoArco, espessuraDaPonte, pontesVisiveis, type PonteAgrupada } from './pontes'
 
 /**
- * O desenho do Mapa, em canvas: o palácio como arquipélago — a sala é o mar,
- * a parede é a terra, e cada livro tinge a própria ilha com um toque da cor
- * dele, o mesmo toque que pinta os pontos da Rede.
+ * O desenho do Mapa, em canvas: o palácio como arquipélago, numa carta náutica
+ * (02/10/2026) — a sala é o mar, com a grade de latitude e longitude e a borda
+ * escurecida; cada livro é uma ilha redonda, com sombra, os anéis de
+ * profundidade em volta e a costa dupla hachurada, tingida da cor dele; as
+ * pontes são rotas em arco, e uma rosa dos ventos fica no canto.
  *
  * Três distâncias, para o mapa nunca virar novelo:
  *
@@ -42,6 +44,12 @@ export interface CoresDoMapa {
   ouro: string
   /** A névoa das adormecidas. */
   nevoa: string
+  /** A grade de latitude e longitude. */
+  grade: string
+  /** A borda do mar, escurecida. */
+  vinheta: string
+  /** A sombra das ilhas. */
+  sombra: string
 }
 
 export interface CenaDoMapa {
@@ -61,6 +69,8 @@ export interface CenaDoMapa {
   adormecidas: ReadonlySet<Id>
   /** Ideias feitas dos livros executáveis: acesas, com o anel. */
   feitas: ReadonlySet<Id>
+  /** A ilha que a pessoa está segurando: desenhada erguida, por cima das outras. */
+  erguida: Id | null
   /**
    * O que a página põe por cima do canvas, em px: a barra, o seletor e a
    * contagem no alto, os botões no pé. Nome nenhum é escrito ali — por baixo
@@ -83,8 +93,10 @@ const FOLGA_DO_ANEL_PX = 3.5
 /** Nomes de neurônio de perto: o bastante para orientar sem cobrir a ilha. */
 const MAX_NOMES_DE_NEURONIO = 40
 
-const FONTE_DA_ILHA = '600 13px ui-serif, Georgia, serif'
-const FONTE_DA_CONTAGEM = '11px ui-sans-serif, system-ui, sans-serif'
+/** O nome da ilha em versalete, espaçado, como os nomes de terra nas cartas. */
+const FONTE_DA_ILHA = 'small-caps 600 14px ui-serif, Georgia, serif'
+const ESPACO_DO_NOME = '0.06em'
+const FONTE_DA_CONTAGEM = 'italic 11px ui-serif, Georgia, serif'
 const FONTE_DO_NEURONIO = '11px ui-sans-serif, system-ui, sans-serif'
 
 interface Caixa {
@@ -148,20 +160,36 @@ export function desenharMapa(
   const vizinhanca = vizinhancaDe(selecionado, cena.conexoes)
 
   ctx.save()
-  ctx.fillStyle = cores.sala
-  ctx.fillRect(0, 0, largura, altura)
+  desenharMar(ctx, cores, largura, altura)
 
   ctx.save()
   aplicarCamera(ctx, camera, largura, altura)
   ctx.lineCap = 'round'
+  desenharGrade(ctx, cores, camera, largura, altura)
+  for (const [livroId, ilha] of ilhas) {
+    desenharProfundidade(ctx, ilha, corDoLivro.get(livroId), camera.escala, px)
+  }
   desenharPontesAgrupadas(
     ctx,
     cena,
     pontesVisiveis(cena.pontes, camera.escala, cena.todasAsPontes),
     px,
   )
-  for (const [livroId, ilha] of ilhas) {
-    desenharIlha(ctx, livroId, ilha.centro, ilha.raio, corDoLivro.get(livroId), cores, px)
+  // A erguida por último: ela passa por cima das outras enquanto anda.
+  const emOrdem = [
+    ...ilhas.filter(([id]) => id !== cena.erguida),
+    ...ilhas.filter(([id]) => id === cena.erguida),
+  ]
+  for (const [livroId, ilha] of emOrdem) {
+    desenharIlha(
+      ctx,
+      ilha,
+      corDoLivro.get(livroId),
+      cores,
+      camera.escala,
+      px,
+      livroId === cena.erguida,
+    )
   }
   desenharNevoa(ctx, cena)
   if (perto > 0) {
@@ -190,6 +218,7 @@ export function desenharMapa(
   if (camera.escala >= ESCALA_DE_PERTO) {
     desenharNomesDeNeuronios(ctx, cena, naTela, largura, altura, ocupadas, vizinhanca)
   }
+  desenharRosaDosVentos(ctx, cores, largura, cena.cobertas.topo)
 
   if (selecionado !== null && vizinhanca !== null) {
     ctx.globalAlpha = VEU
@@ -201,10 +230,128 @@ export function desenharMapa(
   ctx.restore()
 }
 
+/** `#rrggbb` com transparência — a cor do livro é sempre hex (ver `livroSchema`). */
+function comAlfa(hex: string, alfa: number): string {
+  const n = Number.parseInt(hex.slice(1), 16)
+  if (hex.length !== 7 || Number.isNaN(n)) return `rgba(128, 128, 128, ${String(alfa)})`
+  return `rgba(${String((n >> 16) & 255)}, ${String((n >> 8) & 255)}, ${String(n & 255)}, ${String(alfa)})`
+}
+
+const TRANSPARENTE = 'rgba(0, 0, 0, 0)'
+
+/** O mar: a sala, e a borda escurecida — o papel da carta envelhece pelas margens. */
+function desenharMar(
+  ctx: CanvasRenderingContext2D,
+  cores: CoresDoMapa,
+  largura: number,
+  altura: number,
+): void {
+  ctx.fillStyle = cores.sala
+  ctx.fillRect(0, 0, largura, altura)
+  const meio = { x: largura / 2, y: altura / 2 }
+  const vinheta = ctx.createRadialGradient(
+    meio.x,
+    meio.y,
+    Math.min(largura, altura) * 0.32,
+    meio.x,
+    meio.y,
+    Math.hypot(largura, altura) * 0.55,
+  )
+  vinheta.addColorStop(0, TRANSPARENTE)
+  vinheta.addColorStop(1, cores.vinheta)
+  ctx.fillStyle = vinheta
+  ctx.fillRect(0, 0, largura, altura)
+}
+
 /**
- * Uma ponte por par de ilhas, de centro a centro e **por baixo** delas: a
- * terra cobre o pedaço de dentro, e o que se vê sai exatamente pela praia — e
- * some debaixo de qualquer ilha que esteja no caminho.
+ * A grade de latitude e longitude, presa ao mundo — anda com o mapa. O passo
+ * dobra e divide com o zoom para as linhas ficarem sempre a uma distância
+ * confortável na tela, nunca virando trama.
+ */
+function desenharGrade(
+  ctx: CanvasRenderingContext2D,
+  cores: CoresDoMapa,
+  camera: Camera,
+  largura: number,
+  altura: number,
+): void {
+  let passo = 50
+  while (passo * camera.escala < 80) passo *= 2
+  while (passo * camera.escala > 180 && passo > 25) passo /= 2
+  const x0 = (-largura / 2 - camera.x) / camera.escala
+  const x1 = (largura / 2 - camera.x) / camera.escala
+  const y0 = (-altura / 2 - camera.y) / camera.escala
+  const y1 = (altura / 2 - camera.y) / camera.escala
+
+  ctx.beginPath()
+  for (let x = Math.ceil(x0 / passo) * passo; x <= x1; x += passo) {
+    ctx.moveTo(x, y0)
+    ctx.lineTo(x, y1)
+  }
+  for (let y = Math.ceil(y0 / passo) * passo; y <= y1; y += passo) {
+    ctx.moveTo(x0, y)
+    ctx.lineTo(x1, y)
+  }
+  ctx.strokeStyle = cores.grade
+  ctx.lineWidth = 1 / camera.escala
+  ctx.stroke()
+}
+
+/** Até onde a água rasa vai, e onde caem os anéis de profundidade, em volta da costa. */
+const AGUA_RASA = 34
+const ISOBATAS = [
+  { distancia: 9, alfa: 0.32 },
+  { distancia: 20, alfa: 0.2 },
+  { distancia: 32, alfa: 0.11 },
+] as const
+
+/**
+ * A água em volta da ilha: um raso da cor do livro que se apaga no mar, e os
+ * anéis de profundidade (isóbatas) — o de fora tracejado, como nas cartas. Com
+ * a ilha muito pequena na tela, só o raso: os anéis virariam borrão.
+ */
+function desenharProfundidade(
+  ctx: CanvasRenderingContext2D,
+  ilha: IlhaDoMapa,
+  cor: string | undefined,
+  escala: number,
+  px: number,
+): void {
+  if (!cor) return
+  const { centro, raio } = ilha
+  const raso = ctx.createRadialGradient(
+    centro.x,
+    centro.y,
+    raio,
+    centro.x,
+    centro.y,
+    raio + AGUA_RASA,
+  )
+  raso.addColorStop(0, comAlfa(cor, 0.16))
+  raso.addColorStop(1, comAlfa(cor, 0))
+  ctx.fillStyle = raso
+  ctx.beginPath()
+  ctx.arc(centro.x, centro.y, raio + AGUA_RASA, 0, 2 * Math.PI)
+  ctx.fill()
+
+  if (raio * escala < 22) return
+  ctx.strokeStyle = cor
+  ctx.lineWidth = 0.9 * px
+  ISOBATAS.forEach(({ distancia, alfa }, i) => {
+    ctx.globalAlpha = alfa
+    ctx.setLineDash(i === ISOBATAS.length - 1 ? [3 * px, 4 * px] : [])
+    ctx.beginPath()
+    ctx.arc(centro.x, centro.y, raio + distancia, 0, 2 * Math.PI)
+    ctx.stroke()
+  })
+  ctx.setLineDash([])
+  ctx.globalAlpha = 1
+}
+
+/**
+ * Uma ponte por par de ilhas: uma rota em arco, de centro a centro e **por
+ * baixo** delas — a terra cobre o pedaço de dentro, e o que se vê sai pela
+ * praia. Um halo largo e fraco por baixo, e o traço por cima.
  */
 function desenharPontesAgrupadas(
   ctx: CanvasRenderingContext2D,
@@ -213,60 +360,171 @@ function desenharPontesAgrupadas(
   px: number,
 ): void {
   ctx.strokeStyle = cena.cores.ponte
-  ctx.globalAlpha = 0.8
   for (const ponte of pontes) {
     const a = cena.mapa.ilhas[ponte.livroA]
     const b = cena.mapa.ilhas[ponte.livroB]
     if (!a || !b) continue
-    ctx.lineWidth = espessuraDaPonte(ponte.quantidade) * px
+    const controle = controleDoArco(a.centro, b.centro)
+    const espessura = espessuraDaPonte(ponte.quantidade)
     ctx.beginPath()
     ctx.moveTo(a.centro.x, a.centro.y)
-    ctx.lineTo(b.centro.x, b.centro.y)
+    ctx.quadraticCurveTo(controle.x, controle.y, b.centro.x, b.centro.y)
+    ctx.globalAlpha = 0.12
+    ctx.lineWidth = (espessura + 6) * px
+    ctx.stroke()
+    ctx.globalAlpha = 0.85
+    ctx.lineWidth = espessura * px
     ctx.stroke()
   }
   ctx.globalAlpha = 1
 }
 
+/**
+ * A ilha: sombra no mar, a terra com uma luz vinda de cima à esquerda (um
+ * domo, não um disco chapado), o toque da cor do livro, e a costa dupla — o
+ * traço firme e um fio por dentro — hachurada por fora quando a ilha está
+ * grande na tela. Erguida (a pessoa está segurando), a sombra desce e abre,
+ * e a ilha cresce um pouco.
+ */
 function desenharIlha(
   ctx: CanvasRenderingContext2D,
-  livroId: Id,
-  centro: Ponto,
-  raio: number,
+  ilha: IlhaDoMapa,
   cor: string | undefined,
   cores: CoresDoMapa,
+  escala: number,
   px: number,
+  erguida: boolean,
 ): void {
-  tracarCosta(ctx, centro, contornoDaIlha(livroId, raio))
+  const { centro } = ilha
+  const raio = ilha.raio * (erguida ? 1.03 : 1)
+  const tinta = cor ?? cores.poeira
+
+  const desce = raio * (erguida ? 0.16 : 0.07)
+  const sombra = ctx.createRadialGradient(
+    centro.x + desce * 0.5,
+    centro.y + desce,
+    raio * 0.7,
+    centro.x + desce * 0.5,
+    centro.y + desce,
+    raio * (erguida ? 1.28 : 1.14),
+  )
+  sombra.addColorStop(0, cores.sombra)
+  sombra.addColorStop(1, TRANSPARENTE)
+  ctx.fillStyle = sombra
+  ctx.beginPath()
+  ctx.arc(centro.x + desce * 0.5, centro.y + desce, raio * (erguida ? 1.28 : 1.14), 0, 2 * Math.PI)
+  ctx.fill()
+
+  ctx.beginPath()
+  ctx.arc(centro.x, centro.y, raio, 0, 2 * Math.PI)
   ctx.fillStyle = cores.parede
   ctx.fill()
   if (cor) {
     ctx.fillStyle = cor
-    ctx.globalAlpha = 0.14
+    ctx.globalAlpha = 0.13
     ctx.fill()
-    ctx.strokeStyle = cor
-    ctx.globalAlpha = 0.55
-    ctx.lineWidth = 1.2 * px
+    ctx.globalAlpha = 1
+  }
+  const luz = ctx.createRadialGradient(
+    centro.x - raio * 0.38,
+    centro.y - raio * 0.42,
+    0,
+    centro.x - raio * 0.38,
+    centro.y - raio * 0.42,
+    raio * 1.25,
+  )
+  luz.addColorStop(0, 'rgba(255, 255, 255, 0.13)')
+  luz.addColorStop(1, 'rgba(255, 255, 255, 0)')
+  ctx.fillStyle = luz
+  ctx.fill()
+
+  ctx.strokeStyle = tinta
+  ctx.globalAlpha = erguida ? 1 : 0.8
+  ctx.lineWidth = (erguida ? 2 : 1.4) * px
+  ctx.stroke()
+  ctx.globalAlpha = 0.32
+  ctx.lineWidth = 0.8 * px
+  ctx.beginPath()
+  ctx.arc(centro.x, centro.y, Math.max(0, raio - 4 * px), 0, 2 * Math.PI)
+  ctx.stroke()
+
+  // A hachura da costa: traços curtos para fora, como as cartas antigas
+  // marcavam a praia. Só com a ilha grande na tela — pequena, vira serrilha.
+  if (raio * escala > 70) {
+    const passos = 72
+    const dentro = raio + 1.5 * px
+    const fora = raio + 4.5 * px
+    ctx.beginPath()
+    for (let i = 0; i < passos; i++) {
+      const a = (i / passos) * 2 * Math.PI
+      ctx.moveTo(centro.x + Math.cos(a) * dentro, centro.y + Math.sin(a) * dentro)
+      ctx.lineTo(centro.x + Math.cos(a) * fora, centro.y + Math.sin(a) * fora)
+    }
+    ctx.globalAlpha = 0.28
+    ctx.lineWidth = 0.8 * px
     ctx.stroke()
   }
   ctx.globalAlpha = 1
 }
 
-/** A costa como curva suave: quadráticas pelos pontos médios, sem quinas. */
-function tracarCosta(ctx: CanvasRenderingContext2D, centro: Ponto, costa: readonly Ponto[]): void {
+/**
+ * A rosa dos ventos, no canto de cima à direita, logo abaixo da barra —
+ * enfeite de carta, discreto, que não anda com o mapa.
+ */
+function desenharRosaDosVentos(
+  ctx: CanvasRenderingContext2D,
+  cores: CoresDoMapa,
+  largura: number,
+  topo: number,
+): void {
+  const r = 17
+  const x = largura - 34
+  const y = topo - 50
+  ctx.save()
+  ctx.translate(x, y)
+  ctx.strokeStyle = cores.poeira
+  ctx.fillStyle = cores.poeira
+  ctx.lineWidth = 0.8
+  ctx.globalAlpha = 0.35
   ctx.beginPath()
-  const n = costa.length
-  const meio = (a: Ponto, b: Ponto): Ponto => ({
-    x: centro.x + (a.x + b.x) / 2,
-    y: centro.y + (a.y + b.y) / 2,
-  })
-  const inicio = meio(costa[n - 1]!, costa[0]!)
-  ctx.moveTo(inicio.x, inicio.y)
-  for (let i = 0; i < n; i++) {
-    const p = costa[i]!
-    const m = meio(p, costa[(i + 1) % n]!)
-    ctx.quadraticCurveTo(centro.x + p.x, centro.y + p.y, m.x, m.y)
+  ctx.arc(0, 0, r, 0, 2 * Math.PI)
+  ctx.stroke()
+  ctx.beginPath()
+  ctx.arc(0, 0, r - 4, 0, 2 * Math.PI)
+  ctx.stroke()
+
+  // As quatro pontas: norte e sul compridas, leste e oeste curtas; metade de
+  // cada ponta cheia, metade vazia, como nas rosas desenhadas à mão.
+  const ponta = (angulo: number, comprimento: number): void => {
+    const c = Math.cos(angulo)
+    const s = Math.sin(angulo)
+    const lado = 3.2
+    ctx.beginPath()
+    ctx.moveTo(0, 0)
+    ctx.lineTo(c * comprimento, s * comprimento)
+    ctx.lineTo(-s * lado, c * lado)
+    ctx.closePath()
+    ctx.globalAlpha = 0.55
+    ctx.fill()
+    ctx.beginPath()
+    ctx.moveTo(0, 0)
+    ctx.lineTo(c * comprimento, s * comprimento)
+    ctx.lineTo(s * lado, -c * lado)
+    ctx.closePath()
+    ctx.globalAlpha = 0.4
+    ctx.stroke()
   }
-  ctx.closePath()
+  ponta(-Math.PI / 2, r + 3)
+  ponta(Math.PI / 2, r + 1)
+  ponta(0, r - 4)
+  ponta(Math.PI, r - 4)
+
+  ctx.globalAlpha = 0.7
+  ctx.font = 'small-caps 600 9px ui-serif, Georgia, serif'
+  ctx.textAlign = 'center'
+  ctx.textBaseline = 'bottom'
+  ctx.fillText('N', 0, -r - 4)
+  ctx.restore()
 }
 
 /**
@@ -437,6 +695,7 @@ function desenharNomesDasIlhas(
 
     const quantos = contar(Object.keys(ilha.pontos).length, 'neurônio', 'neurônios')
     ctx.font = FONTE_DA_ILHA
+    ctx.letterSpacing = ESPACO_DO_NOME
     const largo = Math.max(ctx.measureText(livro.titulo).width, 60)
     const x = Math.min(Math.max(centro.x, largo / 2 + 8), largura - largo / 2 - 8)
     const topo = centro.y - raio
@@ -446,6 +705,7 @@ function desenharNomesDasIlhas(
 
     ctx.fillStyle = cena.cores.papel
     escreverComHalo(ctx, livro.titulo, x, topo - 20, cena.cores)
+    ctx.letterSpacing = '0px'
     ctx.font = FONTE_DA_CONTAGEM
     ctx.fillStyle = cena.cores.poeira
     escreverComHalo(ctx, quantos, x, topo - 6, cena.cores)
