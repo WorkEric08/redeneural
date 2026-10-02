@@ -4638,6 +4638,43 @@ em 390×844, com o corpo rolando; em 1440×900 continua diálogo centralizado, s
 rolar. Dez rotas em 320, 768, 1024 e 1440 px sem rolagem lateral; nenhum erro no
 console. 420 testes, typecheck e lint limpos.
 
+## Folhas sem rolagem, cantos mais retos e o tipo do livro numa fileira (02/10/2026)
+
+Pedido do usuário depois da auditoria acima: otimizar o layout das folhas para
+elas não precisarem rolar, deixar os ícones de seleção menos redondos (os chips
+de 44 px, com cantos de pílula, ficaram mais redondos que os de 36 px) e
+compactar a escolha de tipo na tela de novo livro. A rolagem da folha continua
+existindo como rede de segurança (lista sem limite), mas as folhas de tamanho
+conhecido agora cabem na metade da tela em 390×844 e 412×892.
+
+- **Cantos:** `.chip` de pílula (999px) para 10px — vale em todo chip do app
+  (Rede|Mapa, os modos da busca, o livro do neurônio, os filtros). As pílulas
+  de "Pontes com" no espiar viraram `rounded-lg`. Botões de ícone continuam
+  redondos (são ícone, não seleção).
+- **Escolha de livro em duas colunas** (`EscolhaDeLivro`, usada em "Escolher
+  livro", "Onde guardar?" e "Em qual livro executável?"): opções compactas
+  (`.opcao`, 44 px, cantos de 10px, ponto da cor, nome e `Check`) em vez de
+  linhas de 56 px. "Automático" e "Criar livro novo" ocupam a largura toda
+  (`col-span-2`). Com oito livros a folha caiu de 477 px de conteúdo para 280.
+- **O espiar do livro lista 3 neurônios** (antes 6), com linhas de 44 px, uma
+  linha "e mais N" mais baixa e as pontes numa fileira só que rola de lado
+  (`faixa-rolavel`): de 577 px para 386. Quem quer ver todos abre o livro.
+- **Andamento** (`FolhaDeEstado`): linhas de 48 px (eram 56).
+- **Tela de novo livro:** os dois blocos de chips (Livro | Pasta, e o chip de
+  livro executável) viraram **um controle segmentado** de uma fileira só
+  (`.segmentado`/`.segmento`): **Livro | Executável | Pasta**. Criando, as três;
+  editando, só Livro | Executável (o tipo não muda), e uma pasta não mostra
+  nada. "Adormece com N dias" só aparece com Executável. Saíram ~60 px, e o
+  formulário (com o espaço de 16 px entre campos da auditoria) passou a caber em
+  390×844 mesmo com o Executável ligado.
+
+Medido com o Chrome (build de produção) em 390×844 e 412×892: espiar, escolher
+livro, "Onde guardar?", andamento, filtros da Rede e do Mapa, apagar e
+reorganizar — todas cabem sem rolar. Em 320×568 (folha de 300 px) o espiar, o
+andamento e as listas de livros ainda rolam, como esperado nessa altura.
+Nenhuma rolagem lateral; nenhum erro no console. 420 testes, typecheck e lint
+limpos.
+
 ## Fases
 
 0. ✅ Esqueleto (Vite/React/TS/Tailwind/PWA/Capacitor)

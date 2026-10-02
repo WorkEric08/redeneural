@@ -96,7 +96,7 @@ function Conteudo({
                 else if (estado === estadoAtual) onFechar()
                 else definir(estado, null)
               }}
-              className="flex min-h-14 w-full items-center gap-3.5 px-4 text-left"
+              className="flex min-h-12 w-full items-center gap-3.5 px-4 text-left"
             >
               <span className="text-poeira shrink-0">
                 <IconeDoEstado estado={estado} />

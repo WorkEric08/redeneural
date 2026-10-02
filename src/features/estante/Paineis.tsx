@@ -39,7 +39,7 @@ interface Props {
 }
 
 /** Quantos neurônios o espiar lista antes de mandar abrir o livro. */
-const NEURONIOS_NO_ESPIAR = 6
+const NEURONIOS_NO_ESPIAR = 3
 
 /**
  * Os painéis que a estante abre. Um de cada vez, na mesma folha: trocar do menu
@@ -106,7 +106,7 @@ function EspiarPasta({ livro, anexos, onAbrirLivro }: Props & { livro: Livro }) 
   const aMais = dela.length - NEURONIOS_NO_ESPIAR
 
   return (
-    <div className="flex flex-col gap-5">
+    <div className="flex flex-col gap-3">
       <Cabecalho livro={livro}>Pasta · {contar(dela.length, 'item', 'itens')}</Cabecalho>
 
       {dela.length === 0 ? (
@@ -124,11 +124,11 @@ function EspiarPasta({ livro, anexos, onAbrirLivro }: Props & { livro: Livro }) 
       ) : (
         <ul className="cartao flex flex-col">
           {dela.slice(0, NEURONIOS_NO_ESPIAR).map((a) => (
-            <li key={a.id} className="linha-de-lista min-h-12 p-0">
+            <li key={a.id} className="linha-de-lista min-h-11 p-0">
               <Link
                 to={`/anexo/${a.id}`}
                 replace
-                className="flex min-h-12 w-full items-center gap-3 px-4 py-2 text-sm"
+                className="flex min-h-11 w-full items-center gap-3 px-4 py-2 text-sm"
               >
                 <span
                   className={`min-w-0 flex-1 truncate ${a.legenda ? '' : 'text-poeira italic'}`}
@@ -141,7 +141,7 @@ function EspiarPasta({ livro, anexos, onAbrirLivro }: Props & { livro: Livro }) 
             </li>
           ))}
           {aMais > 0 && (
-            <li className="linha-de-lista text-poeira min-h-11 py-2 text-xs">
+            <li className="linha-de-lista text-poeira min-h-9 py-1.5 text-xs">
               e mais {contar(aMais, 'item', 'itens')} dentro da pasta
             </li>
           )}
@@ -196,7 +196,7 @@ function Espiar({ livro, livros, neuronios, pontes, onAbrirLivro }: Props & { li
   const aMais = dele.length - NEURONIOS_NO_ESPIAR
 
   return (
-    <div className="flex flex-col gap-5">
+    <div className="flex flex-col gap-3">
       <Cabecalho livro={livro}>
         {contar(dele.length, 'neurônio', 'neurônios')}
         {totalDePontes > 0 && (
@@ -224,11 +224,11 @@ function Espiar({ livro, livros, neuronios, pontes, onAbrirLivro }: Props & { li
       ) : (
         <ul className="cartao flex flex-col">
           {dele.slice(0, NEURONIOS_NO_ESPIAR).map((n) => (
-            <li key={n.id} className="linha-de-lista min-h-12 p-0">
+            <li key={n.id} className="linha-de-lista min-h-11 p-0">
               <Link
                 to={`/neuronio/${n.id}`}
                 replace
-                className="flex min-h-12 w-full items-center gap-3 px-4 py-2 text-sm"
+                className="flex min-h-11 w-full items-center gap-3 px-4 py-2 text-sm"
               >
                 <span className="min-w-0 flex-1 truncate">{n.titulo}</span>
                 {n.processando && <EtiquetaProcessando />}
@@ -237,7 +237,7 @@ function Espiar({ livro, livros, neuronios, pontes, onAbrirLivro }: Props & { li
             </li>
           ))}
           {aMais > 0 && (
-            <li className="linha-de-lista text-poeira min-h-11 py-2 text-xs">
+            <li className="linha-de-lista text-poeira min-h-9 py-1.5 text-xs">
               e mais {contar(aMais, 'neurônio', 'neurônios')} dentro do livro
             </li>
           )}
@@ -247,11 +247,11 @@ function Espiar({ livro, livros, neuronios, pontes, onAbrirLivro }: Props & { li
       {ligacoes.length > 0 && (
         <section>
           <h3 className="rotulo-de-secao">Pontes com</h3>
-          <ul className="flex flex-wrap gap-2">
+          <ul className="faixa-rolavel flex gap-2">
             {ligacoes.map(({ outro, quantas }) => (
               <li
                 key={outro.id}
-                className="border-ponte/35 flex h-9 items-center gap-2 rounded-full border pr-3 pl-2.5 text-sm"
+                className="border-ponte/35 flex h-9 shrink-0 items-center gap-2 rounded-lg border pr-3 pl-2.5 text-sm"
               >
                 <span
                   className="size-2 shrink-0 rounded-full"

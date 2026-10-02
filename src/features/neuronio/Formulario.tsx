@@ -238,16 +238,17 @@ export function Formulario({
           }}
           antes={
             automatico && (
-              <li className="linha-de-lista p-0">
+              <li className="col-span-2">
                 <button
                   type="button"
+                  aria-pressed={livroId === null}
                   onClick={() => {
                     setLivroId(null)
                     fecharEscolhaDeLivro()
                   }}
-                  className="flex min-h-14 w-full items-center gap-3.5 px-4 text-left"
+                  className="opcao py-1.5"
                 >
-                  <Sparkles size={16} aria-hidden className="text-poeira -mx-px shrink-0" />
+                  <Sparkles size={16} aria-hidden className="text-poeira shrink-0" />
                   <span className="min-w-0 flex-1">
                     <span className="block truncate">Automático</span>
                     <span className="text-poeira block truncate text-xs">

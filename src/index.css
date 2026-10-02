@@ -2133,7 +2133,7 @@ img {
     gap: 8px;
     padding-inline: 14px;
     border: 1px solid var(--linha);
-    border-radius: 999px;
+    border-radius: 10px;
     color: var(--poeira);
     font-size: 0.8rem;
     transition:
@@ -2146,6 +2146,75 @@ img {
     border-color: transparent;
     background: var(--realce);
     color: var(--papel);
+  }
+
+  /* Uma escolha entre poucas, numa fileira só: as opções dividem a largura e
+     o contorno é um só — ocupa a altura de um chip, e não a de um chip por
+     opção. Cantos retos (10px), como o chip. */
+  .segmentado {
+    display: grid;
+    grid-auto-flow: column;
+    grid-auto-columns: 1fr;
+    overflow: hidden;
+    border: 1px solid var(--linha);
+    border-radius: 10px;
+    background: var(--parede);
+  }
+
+  .segmento {
+    display: flex;
+    height: 42px;
+    min-width: 0;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding-inline: 6px;
+    color: var(--poeira);
+    font-size: 0.8rem;
+    white-space: nowrap;
+    transition:
+      background-color 120ms ease,
+      color 120ms ease;
+  }
+
+  .segmento + .segmento {
+    border-left: 1px solid var(--linha);
+  }
+
+  .segmento[aria-pressed='true'] {
+    background: var(--realce);
+    color: var(--papel);
+  }
+
+  /* Uma opção de escolha dentro de uma folha (os livros de "Onde guardar?"):
+     compacta, para duas caberem lado a lado em vez de uma lista de linhas
+     altas. O escolhido acende como o chip. */
+  .opcao {
+    display: flex;
+    width: 100%;
+    min-height: 44px;
+    min-width: 0;
+    align-items: center;
+    gap: 10px;
+    padding-inline: 12px;
+    border: 1px solid var(--linha);
+    border-radius: 10px;
+    background: var(--sala);
+    color: var(--papel);
+    font-size: 0.9rem;
+    text-align: left;
+    transition:
+      background-color 120ms ease,
+      border-color 120ms ease;
+  }
+
+  .opcao:active,
+  .opcao[aria-pressed='true'] {
+    background: var(--realce);
+  }
+
+  .opcao[aria-pressed='true'] {
+    border-color: transparent;
   }
 
   /* A barra de app das telas internas (BarraDeTopo.tsx). Translúcida e com

@@ -35,13 +35,9 @@ export function FolhaGuardarEm({
         escolhido={neuronio?.livroId ?? null}
         onEscolher={onEscolher}
         depois={
-          <li className="linha-de-lista p-0">
-            <button
-              type="button"
-              onClick={onCriarLivro}
-              className="flex min-h-14 w-full items-center gap-3.5 px-4 text-left"
-            >
-              <Plus size={18} aria-hidden className="text-poeira -mx-0.5 shrink-0" />
+          <li className="col-span-2">
+            <button type="button" onClick={onCriarLivro} className="opcao">
+              <Plus size={16} aria-hidden className="text-poeira shrink-0" />
               <span className="min-w-0 flex-1 truncate">Criar livro novo</span>
             </button>
           </li>

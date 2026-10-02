@@ -1,4 +1,4 @@
-import { BookOpen, Hammer, Paperclip, Shuffle } from 'lucide-react'
+import { BookOpen, Hammer, type LucideIcon, Paperclip, Shuffle } from 'lucide-react'
 import { useState } from 'react'
 
 import { botao } from '@/components/botao'
@@ -26,6 +26,15 @@ const REFERENCIA_DA_AMOSTRA_PX = 130
  * a proporção entre as opções sem pagar esse custo de altura.
  */
 const REFERENCIA_DAS_OPCOES_PX = 56
+
+type ChaveDeTipo = 'livro' | 'executavel' | 'pasta'
+
+interface OpcaoDeTipo {
+  chave: ChaveDeTipo
+  rotulo: string
+  nomeAcessivel: string
+  Icone: LucideIcon
+}
 
 interface Props {
   inicial: NovoLivro
@@ -79,6 +88,41 @@ export function FormularioDeLivro({
 
   const podeEnviar = titulo.trim().length > 0 && !ocupado
 
+  const opcoesDeTipo: OpcaoDeTipo[] = [
+    { chave: 'livro', rotulo: 'Livro', nomeAcessivel: 'Livro', Icone: BookOpen },
+    ...(podeSerExecutavel || tipo
+      ? [
+          {
+            chave: 'executavel',
+            rotulo: 'Executável',
+            nomeAcessivel: 'Livro executável',
+            Icone: Hammer,
+          } as const,
+        ]
+      : []),
+    ...(tipo
+      ? [
+          {
+            chave: 'pasta',
+            rotulo: 'Pasta',
+            nomeAcessivel: 'Pasta de links e imagens',
+            Icone: Paperclip,
+          } as const,
+        ]
+      : []),
+  ]
+  const atual: ChaveDeTipo =
+    tipo?.valor === 'acervo' ? 'pasta' : podeSerExecutavel && executavel ? 'executavel' : 'livro'
+
+  function escolherTipo(chave: ChaveDeTipo): void {
+    if (chave === 'pasta') {
+      tipo?.onMudar('acervo')
+      return
+    }
+    tipo?.onMudar('conceitos')
+    setExecutavel(chave === 'executavel')
+  }
+
   return (
     <form
       className="flex flex-col gap-4"
@@ -104,69 +148,48 @@ export function FormularioDeLivro({
       // login, pagamento ou endereço.
       autoComplete="off"
     >
-      {tipo && (
-        <div role="group" aria-label="Tipo" className="flex gap-2">
-          <button
-            type="button"
-            aria-pressed={tipo.valor === 'conceitos'}
-            onClick={() => {
-              tipo.onMudar('conceitos')
-            }}
-            className="chip"
-          >
-            <BookOpen size={15} aria-hidden />
-            Livro
-          </button>
-          <button
-            type="button"
-            aria-pressed={tipo.valor === 'acervo'}
-            onClick={() => {
-              tipo.onMudar('acervo')
-            }}
-            className="chip"
-          >
-            <Paperclip size={15} aria-hidden />
-            Pasta de links e imagens
-          </button>
+      {/* O que é este livro, numa fileira só: livro comum, livro de ideias para
+          fazer (01/10/2026) ou, só ao criar, pasta de acervo. O tipo não muda
+          depois; o executável muda quando a pessoa quiser — por isso editando
+          sobram duas opções. Eram dois blocos de chips, um sobre o outro. */}
+      {opcoesDeTipo.length > 1 && (
+        <div role="group" aria-label="Tipo" className="segmentado">
+          {opcoesDeTipo.map(({ chave, rotulo, nomeAcessivel, Icone }) => (
+            <button
+              key={chave}
+              type="button"
+              aria-pressed={atual === chave}
+              aria-label={nomeAcessivel}
+              onClick={() => {
+                escolherTipo(chave)
+              }}
+              className="segmento"
+            >
+              <Icone size={15} aria-hidden className="shrink-0" />
+              {rotulo}
+            </button>
+          ))}
         </div>
       )}
 
-      {/* Um livro de ideias para fazer (01/10/2026). Logo abaixo do tipo, porque
-          é do mesmo jeito uma decisão sobre que livro é este — mas, ao
-          contrário do tipo, muda quando a pessoa quiser. */}
-      {podeSerExecutavel && (
-        <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
-          <button
-            type="button"
-            aria-pressed={executavel}
-            onClick={() => {
-              setExecutavel((v) => !v)
+      {podeSerExecutavel && executavel && (
+        <label className="text-poeira flex items-center gap-2 text-sm">
+          Adormece com
+          <input
+            value={dias}
+            onChange={(evento) => {
+              setDias(evento.target.value)
             }}
-            className="chip"
-          >
-            <Hammer size={15} aria-hidden />
-            Livro executável
-          </button>
-          {executavel && (
-            <label className="text-poeira flex items-center gap-2 text-sm">
-              Adormece com
-              <input
-                value={dias}
-                onChange={(evento) => {
-                  setDias(evento.target.value)
-                }}
-                type="number"
-                inputMode="numeric"
-                min={0}
-                max={DIAS_PARA_ADORMECER_MAXIMO}
-                aria-label="Dias parada até adormecer"
-                autoComplete="off"
-                className="campo text-papel h-11 w-16 px-2 text-center"
-              />
-              dias parada
-            </label>
-          )}
-        </div>
+            type="number"
+            inputMode="numeric"
+            min={0}
+            max={DIAS_PARA_ADORMECER_MAXIMO}
+            aria-label="Dias parada até adormecer"
+            autoComplete="off"
+            className="campo text-papel h-11 w-16 px-2 text-center"
+          />
+          dias parada
+        </label>
       )}
 
       <div className="flex items-end gap-4">
