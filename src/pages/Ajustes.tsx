@@ -146,7 +146,7 @@ export default function Ajustes() {
                 onChange={(e) => {
                   void definirIntensidadeDaLuz(Number(e.target.value))
                 }}
-                className="accent-realce w-full"
+                className="accent-realce h-11 w-full"
               />
             </div>
           </div>

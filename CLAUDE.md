@@ -4601,6 +4601,43 @@ notas, com ideias feitas semeadas): Mapa de longe e de perto nos dois temas
 neurônio só navega e tocar aproxima da ilha; as 13 conferências de arrastar ilha e
 neurônio continuam passando. 420 testes, typecheck e lint limpos.
 
+## Auditoria mobile: folhas na metade da tela e alvos de toque (02/10/2026)
+
+Pedido do usuário: rever o app inteiro atrás de itens fora do padrão mobile e do
+padrão do projeto, e, nas folhas (bottom sheets), fazer a lista rolar em vez de a
+folha crescer até o topo.
+
+- **A folha para na metade da tela** (`.folha`, abaixo de 768 px):
+  `max-height: min(max(50dvh, 300px), 88dvh)`, e o `.folha-corpo` rola por dentro,
+  com a alça fixa em cima. Antes era 88dvh — uma lista de livros chegava quase
+  ao topo. O piso de 300 px é para tela baixa e para o teclado aberto, que
+  encolhe o `dvh` (`interactive-widget=resizes-content`). A partir de 768 px
+  (diálogo centralizado) continua `min(88dvh, 720px)`.
+- **Alvo de toque de 44 px no mínimo** (o padrão iOS/Android que o projeto já
+  adotava em `botao` e nas linhas de lista): `.chip` 36 → 44, `botao`
+  `pequeno` 40 → 44, o campo "Adormece com N dias" 36 → 44, o controle de
+  intensidade da luz (`range` nativo, antes só a altura da trilha) `h-11`, e o
+  botão "Mudar" do aviso flutuante.
+- **Texto secundário a partir de 12 px**: `.rotulo-de-secao` (11,5 → 12 px), os
+  nomes dos panos/larguras/comprimentos do formulário de livro e a etiqueta
+  "processando" (11,2 → 12 px).
+- **Custo:** os alvos maiores empurraram o formulário de novo livro 19 px além
+  de 390×844, onde ele cabia sem rolar; o espaço entre os campos (`gap`) foi de
+  20 para 16 px e ele voltou a caber (em 320×568 já rolava, e rola 1 px menos).
+
+**Visto e não mudado:** a porta usa `vh` (`--pt-altura`) — fica como está, por
+instrução do usuário. A lombada gravada e as legendas decorativas da estante
+têm texto menor que 12 px, de propósito: é gravação em objeto, não texto de
+leitura. A folha "Escolher livro" (formulário do neurônio) é a única sem texto
+de título visível (as outras dizem "Em qual livro executável?", "Onde guardar?"
+ou o nome do neurônio) — apontado, não alterado.
+
+Verificado no navegador de verdade (build de produção, toque por CDP): a folha
+"Escolher livro" (8 linhas) com 446 px em 412×892, 300 px em 320×568 e 422 px
+em 390×844, com o corpo rolando; em 1440×900 continua diálogo centralizado, sem
+rolar. Dez rotas em 320, 768, 1024 e 1440 px sem rolagem lateral; nenhum erro no
+console. 420 testes, typecheck e lint limpos.
+
 ## Fases
 
 0. ✅ Esqueleto (Vite/React/TS/Tailwind/PWA/Capacitor)

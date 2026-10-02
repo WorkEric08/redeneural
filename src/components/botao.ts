@@ -31,7 +31,7 @@ const TIPOS = {
 
 const TAMANHOS = {
   normal: 'h-12 rounded-xl px-5 text-[0.95rem]',
-  pequeno: 'h-10 rounded-lg px-3.5 text-sm',
+  pequeno: 'h-11 rounded-lg px-3.5 text-sm',
   icone: 'size-11 rounded-full',
 } as const
 

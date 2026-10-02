@@ -81,7 +81,7 @@ export function FormularioDeLivro({
 
   return (
     <form
-      className="flex flex-col gap-5"
+      className="flex flex-col gap-4"
       onSubmit={(evento) => {
         evento.preventDefault()
         if (podeEnviar) {
@@ -161,7 +161,7 @@ export function FormularioDeLivro({
                 max={DIAS_PARA_ADORMECER_MAXIMO}
                 aria-label="Dias parada até adormecer"
                 autoComplete="off"
-                className="campo text-papel h-9 w-16 px-2 text-center"
+                className="campo text-papel h-11 w-16 px-2 text-center"
               />
               dias parada
             </label>
@@ -227,7 +227,7 @@ export function FormularioDeLivro({
                 className="sr-only"
               />
               <span className="pano-amostra" style={{ backgroundColor: p.cor }} aria-hidden />
-              <span className="text-poeira text-[0.7rem] leading-tight">{p.nome}</span>
+              <span className="text-poeira text-xs leading-tight">{p.nome}</span>
             </label>
           ))}
         </div>
@@ -249,7 +249,7 @@ export function FormularioDeLivro({
             <span className="pano-amostra largura-amostra largura-amostra--auto" aria-hidden>
               <Shuffle size={16} aria-hidden />
             </span>
-            <span className="text-poeira text-[0.7rem] leading-tight">Automática</span>
+            <span className="text-poeira text-xs leading-tight">Automática</span>
           </label>
           {LARGURAS.map((l) => (
             <label key={l.chave} className="pano-opcao">
@@ -267,7 +267,7 @@ export function FormularioDeLivro({
                 aria-hidden
                 style={{ width: `${String(l.px)}px`, backgroundColor: cor }}
               />
-              <span className="text-poeira text-[0.7rem] leading-tight">{l.rotulo}</span>
+              <span className="text-poeira text-xs leading-tight">{l.rotulo}</span>
             </label>
           ))}
         </div>
@@ -292,7 +292,7 @@ export function FormularioDeLivro({
             >
               <Shuffle size={16} aria-hidden />
             </span>
-            <span className="text-poeira text-[0.7rem] leading-tight">Automático</span>
+            <span className="text-poeira text-xs leading-tight">Automático</span>
           </label>
           {COMPRIMENTOS.map((c) => (
             <label key={c.chave} className="pano-opcao">
@@ -313,7 +313,7 @@ export function FormularioDeLivro({
                   backgroundColor: cor,
                 }}
               />
-              <span className="text-poeira text-[0.7rem] leading-tight">{c.rotulo}</span>
+              <span className="text-poeira text-xs leading-tight">{c.rotulo}</span>
             </label>
           ))}
         </div>

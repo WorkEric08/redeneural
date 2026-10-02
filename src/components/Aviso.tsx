@@ -67,7 +67,7 @@ export function Aviso() {
           <span className="min-w-0 flex-1">{mensagem}</span>
           <Link
             to={{ search: botao.busca }}
-            className="-my-2 -mr-2 shrink-0 rounded-lg px-3 py-2 font-semibold underline-offset-4 hover:underline"
+            className="-my-3 -mr-2 inline-flex min-h-11 shrink-0 items-center rounded-lg px-3 font-semibold underline-offset-4 hover:underline"
           >
             {botao.rotulo}
           </Link>
