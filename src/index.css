@@ -132,6 +132,9 @@
   --rede-fio: oklch(0.42 0.07 262);
   --rede-no: oklch(0.3 0.045 262);
   --rede-mistura: multiply;
+  /* A névoa das ideias adormecidas (Rede e Mapa): sempre clareia, como névoa
+     de verdade — de dia é quase branca; à noite, um azul-acinzentado claro. */
+  --nevoa: oklch(0.99 0.004 262);
 
   --radius: 0.625rem;
 
@@ -186,6 +189,7 @@
     --rede-fio: oklch(0.72 0.085 272);
     --rede-no: oklch(0.95 0.02 262);
     --rede-mistura: lighter;
+    --nevoa: oklch(0.78 0.03 262);
   }
 }
 
@@ -217,6 +221,7 @@
   --rede-fio: oklch(0.72 0.085 272);
   --rede-no: oklch(0.95 0.02 262);
   --rede-mistura: lighter;
+  --nevoa: oklch(0.78 0.03 262);
 }
 
 /* Congeladas até serem refeitas (pedido do usuário, 13/09/2026): a estante —

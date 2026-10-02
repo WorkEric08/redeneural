@@ -133,6 +133,8 @@ function lerCores(el: HTMLElement): CoresDaRede {
     ponte: lerCor(el, '--ponte'),
     fio: lerCor(el, '--rede-fio'),
     no: lerCor(el, '--rede-no'),
+    ouro: lerCor(el, '--ouro-gravado'),
+    nevoa: lerCor(el, '--nevoa'),
     mistura: ehMistura(mistura) ? mistura : 'source-over',
   }
 }

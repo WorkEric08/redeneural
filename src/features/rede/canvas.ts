@@ -60,3 +60,39 @@ export function useRepintarAoMudar(
     }
   }, [pintar, aoTrocarDeTema])
 }
+
+const SPRITES_DE_NEVOA = new Map<string, HTMLCanvasElement>()
+
+/**
+ * Um chumaço de névoa na cor pedida: um degradê redondo, do quase cheio no
+ * meio ao nada na borda. Desenhado uma vez por cor e reaproveitado — a Rede
+ * repinta a cada quadro com o balanço, e um degradê novo por ideia adormecida
+ * a cada quadro pesaria numa WebView.
+ *
+ * O degradê é feito em branco e só depois tingido (`source-in`): degradê de
+ * uma cor para `transparent` pode escurecer a borda, conforme o navegador.
+ */
+export function spriteDeNevoa(cor: string): HTMLCanvasElement {
+  const pronto = SPRITES_DE_NEVOA.get(cor)
+  if (pronto) return pronto
+
+  const lado = 64
+  const sprite = document.createElement('canvas')
+  sprite.width = lado
+  sprite.height = lado
+  const ctx = sprite.getContext('2d')
+  if (ctx) {
+    const meio = lado / 2
+    const degrade = ctx.createRadialGradient(meio, meio, 0, meio, meio, meio)
+    degrade.addColorStop(0, 'rgba(255, 255, 255, 0.85)')
+    degrade.addColorStop(0.45, 'rgba(255, 255, 255, 0.45)')
+    degrade.addColorStop(1, 'rgba(255, 255, 255, 0)')
+    ctx.fillStyle = degrade
+    ctx.fillRect(0, 0, lado, lado)
+    ctx.globalCompositeOperation = 'source-in'
+    ctx.fillStyle = cor
+    ctx.fillRect(0, 0, lado, lado)
+  }
+  SPRITES_DE_NEVOA.set(cor, sprite)
+  return sprite
+}

@@ -49,6 +49,12 @@ export interface NovoLivro {
   diasParaAdormecer: number
 }
 
+/** O neurônio que acabou de nascer, e as ideias adormecidas que ele acordou. */
+export interface NeuronioCriado {
+  neuronio: NeuronioNaTela
+  acordadas: { id: string; titulo: string }[]
+}
+
 export interface NovoAnexo {
   livroId: string
   legenda: string
@@ -100,7 +106,7 @@ interface PalacioStore {
    * Devolve o neurônio já com o livro final — num "Automático", o que o Porto
    * escolheu, ou `null` se ele ficou no porto — ou null se o motor não conseguiu.
    */
-  criarNeuronio: (novo: NovoNeuronio) => Promise<NeuronioNaTela | null>
+  criarNeuronio: (novo: NovoNeuronio) => Promise<NeuronioCriado | null>
   editarNeuronio: (id: string, mudancas: NovoNeuronio) => Promise<boolean>
   /** `false` se o motor não conseguiu — quem confirmou fica onde está e lê o erro. */
   apagarNeuronio: (id: string) => Promise<boolean>
@@ -115,6 +121,11 @@ interface PalacioStore {
     estado: EstadoDaIdeia,
     resultadoLink: string | null,
   ) => Promise<boolean>
+  /**
+   * Um toque numa ideia de livro executável: abrir a tela dela, ou o
+   * "Acordar". Otimista — fora de livro executável não faz nada.
+   */
+  tocar: (id: string) => Promise<void>
   /**
    * Nasce no `lugar` tocado (ou no buraco mais perto dele). Devolve o id do
    * livro criado, ou null se o motor não conseguiu.
@@ -213,7 +224,7 @@ export const usePalacio = create<PalacioStore>()((set, get) => {
       }
     },
 
-    async criarNeuronio(novo): Promise<NeuronioNaTela | null> {
+    async criarNeuronio(novo): Promise<NeuronioCriado | null> {
       const id = newId()
       const agora = new Date()
 
@@ -241,12 +252,13 @@ export const usePalacio = create<PalacioStore>()((set, get) => {
       set((s) => ({ neuronios: [provisorio, ...s.neuronios], ocupado: true, erro: null }))
 
       try {
-        const { neuronio, neuronios, conexoes, posicoesDaRede, vinculos, mapa } =
+        const { neuronio, neuronios, conexoes, posicoesDaRede, vinculos, mapa, acordadas } =
           await engine.criarNeuronio({ id, ...novo })
         // O palácio inteiro, não só o que foi escrito: um reprocessamento tira o
-        // "processando…" dos outros também.
+        // "processando…" dos outros também — e o despertar mexeu no toque de
+        // outras ideias.
         set({ neuronios, conexoes, posicoesDaRede, vinculos, mapa })
-        return neuronio
+        return { neuronio, acordadas }
       } catch (e) {
         // Desfaz o otimismo: o Worker não conseguiu, então não fingimos que deu.
         set((s) => ({ neuronios: s.neuronios.filter((n) => n.id !== id), erro: mensagem(e) }))
@@ -339,6 +351,24 @@ export const usePalacio = create<PalacioStore>()((set, get) => {
           erro: mensagem(e),
         }))
         return false
+      }
+    },
+
+    async tocar(id): Promise<void> {
+      const ideia = get().neuronios.find((n) => n.id === id)
+      const livro = get().livros.find((l) => l.id === ideia?.livroId)
+      if (!ideia || !livro?.executavel) return
+      set((s) => ({
+        neuronios: s.neuronios.map((n) => (n.id === id ? { ...n, ultimoToque: new Date() } : n)),
+      }))
+
+      try {
+        const tocada = await engine.tocar(id)
+        if (tocada) {
+          set((s) => ({ neuronios: s.neuronios.map((n) => (n.id === id ? tocada : n)) }))
+        }
+      } catch (e) {
+        set({ erro: mensagem(e) })
       }
     },
 

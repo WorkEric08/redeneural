@@ -1,4 +1,5 @@
 import type { Conexao, Id, IlhaDoMapa, Livro, MapaDoPalacio, NeuronioNaTela, Ponto } from '@/core'
+import { spriteDeNevoa } from '@/features/rede/canvas'
 import type { Camera } from '@/features/rede/desenhar'
 import { vizinhancaDe } from '@/features/rede/layout'
 import { contar } from '@/lib/plural'
@@ -22,6 +23,10 @@ import { espessuraDaPonte, pontesVisiveis, type PonteAgrupada } from './pontes'
  * 3. **Com um neurônio tocado** — o resto do mapa esmaece debaixo de um véu, e
  *    por cima ficam as conexões dele, uma por uma, até nos outros livros.
  *
+ * Nos livros executáveis, as ideias adormecidas ficam debaixo de uma névoa na
+ * ilha — de qualquer distância —, e as feitas, de perto, são pontos acesos com
+ * um anel de ouro gravado.
+ *
  * Aqui não há estado nem `useEffect` — é uma função que recebe a cena e pinta.
  */
 
@@ -33,6 +38,10 @@ export interface CoresDoMapa {
   no: string
   ponte: string
   fio: string
+  /** O anel das ideias feitas — o ouro gravado das lombadas, nunca o da ponte. */
+  ouro: string
+  /** A névoa das adormecidas. */
+  nevoa: string
 }
 
 export interface CenaDoMapa {
@@ -48,6 +57,10 @@ export interface CenaDoMapa {
   /** "Ver todas as pontes": de longe também, sem o limite por ilha. */
   todasAsPontes: boolean
   selecionado: Id | null
+  /** Ideias adormecidas dos livros executáveis: debaixo da névoa, e mais apagadas. */
+  adormecidas: ReadonlySet<Id>
+  /** Ideias feitas dos livros executáveis: acesas, com o anel. */
+  feitas: ReadonlySet<Id>
   /**
    * O que a página põe por cima do canvas, em px: a barra, o seletor e a
    * contagem no alto, os botões no pé. Nome nenhum é escrito ali — por baixo
@@ -61,6 +74,12 @@ export interface CenaDoMapa {
 const RAIO_DO_PONTO_PX = 2.2
 /** O quanto o véu do neurônio tocado apaga o resto do mapa. */
 const VEU = 0.62
+/** O quanto uma ideia adormecida, e as trilhas dela, perdem de luz — sem sumir. */
+const DORMENTE = 0.35
+/** O raio de névoa em volta de cada adormecida, no mundo: vira uma área na ilha. */
+const RAIO_DA_NEVOA = 24
+/** O anel da ideia feita, a esta distância do ponto, em px de tela. */
+const FOLGA_DO_ANEL_PX = 3.5
 /** Nomes de neurônio de perto: o bastante para orientar sem cobrir a ilha. */
 const MAX_NOMES_DE_NEURONIO = 40
 
@@ -144,14 +163,23 @@ export function desenharMapa(
   for (const [livroId, ilha] of ilhas) {
     desenharIlha(ctx, livroId, ilha.centro, ilha.raio, corDoLivro.get(livroId), cores, px)
   }
+  desenharNevoa(ctx, cena)
   if (perto > 0) {
     desenharTrilhas(ctx, cena, perto, px)
     for (const [livroId, ilha] of ilhas) {
-      const pontos = Object.values(ilha.pontos).map((p) => ({
-        x: ilha.centro.x + p.x,
-        y: ilha.centro.y + p.y,
-      }))
-      desenharPontos(ctx, pontos, corDoLivro.get(livroId), cores, perto, px)
+      const acordadas: Ponto[] = []
+      const dormentes: Ponto[] = []
+      const feitas: Ponto[] = []
+      for (const [id, p] of Object.entries(ilha.pontos)) {
+        const ponto = { x: ilha.centro.x + p.x, y: ilha.centro.y + p.y }
+        if (cena.adormecidas.has(id)) dormentes.push(ponto)
+        else if (cena.feitas.has(id)) feitas.push(ponto)
+        else acordadas.push(ponto)
+      }
+      const cor = corDoLivro.get(livroId)
+      desenharPontos(ctx, acordadas, cor, cores, perto, px)
+      desenharPontos(ctx, dormentes, cor, cores, perto * DORMENTE, px)
+      desenharFeitas(ctx, feitas, cores, perto, px)
     }
   }
   ctx.restore()
@@ -241,6 +269,56 @@ function tracarCosta(ctx: CanvasRenderingContext2D, centro: Ponto, costa: readon
   ctx.closePath()
 }
 
+/**
+ * A névoa das adormecidas: um chumaço por ideia, grande no mundo — perto umas
+ * das outras, viram uma área só na ilha. Aparece de qualquer distância: de
+ * longe ela diz onde há ideia parada sem precisar dos pontos.
+ */
+function desenharNevoa(ctx: CanvasRenderingContext2D, cena: CenaDoMapa): void {
+  if (cena.adormecidas.size === 0) return
+  const nevoa = spriteDeNevoa(cena.cores.nevoa)
+  const lado = 2 * RAIO_DA_NEVOA
+  ctx.globalAlpha = 0.55
+  for (const id of cena.adormecidas) {
+    const p = cena.absolutos.get(id)
+    if (!finito(p)) continue
+    ctx.drawImage(nevoa, p.x - RAIO_DA_NEVOA, p.y - RAIO_DA_NEVOA, lado, lado)
+  }
+  ctx.globalAlpha = 1
+}
+
+/** As feitas: pontos acesos, com o anel de ouro gravado em volta. */
+function desenharFeitas(
+  ctx: CanvasRenderingContext2D,
+  pontos: readonly Ponto[],
+  cores: CoresDoMapa,
+  presenca: number,
+  px: number,
+): void {
+  if (pontos.length === 0) return
+  const raio = RAIO_DO_PONTO_PX * 1.15 * px
+  ctx.beginPath()
+  for (const p of pontos) {
+    ctx.moveTo(p.x + raio, p.y)
+    ctx.arc(p.x, p.y, raio, 0, 2 * Math.PI)
+  }
+  ctx.fillStyle = cores.papel
+  ctx.globalAlpha = presenca
+  ctx.fill()
+
+  const anel = raio + FOLGA_DO_ANEL_PX * px
+  ctx.beginPath()
+  for (const p of pontos) {
+    ctx.moveTo(p.x + anel, p.y)
+    ctx.arc(p.x, p.y, anel, 0, 2 * Math.PI)
+  }
+  ctx.strokeStyle = cores.ouro
+  ctx.lineWidth = 1.2 * px
+  ctx.globalAlpha = 0.9 * presenca
+  ctx.stroke()
+  ctx.globalAlpha = 1
+}
+
 /** O tracejado da trilha, em px de tela — o mesmo na legenda. */
 export const TRACEJADO_DA_TRILHA_PX = [3, 3] as const
 
@@ -255,21 +333,28 @@ function desenharTrilhas(
   px: number,
 ): void {
   const livroDe = new Map(cena.neuronios.map((n) => [n.id, n.livroId]))
-  ctx.beginPath()
-  for (const c of cena.conexoes) {
-    const livro = livroDe.get(c.aId)
-    if (livro === null || livro === undefined || livro !== livroDe.get(c.bId)) continue
-    const a = cena.absolutos.get(c.aId)
-    const b = cena.absolutos.get(c.bId)
-    if (!finito(a) || !finito(b)) continue
-    ctx.moveTo(a.x, a.y)
-    ctx.lineTo(b.x, b.y)
+  // Duas passadas: as trilhas de quem dorme saem mais fracas.
+  const tracar = (dormentes: boolean): void => {
+    ctx.beginPath()
+    for (const c of cena.conexoes) {
+      const livro = livroDe.get(c.aId)
+      if (livro === null || livro === undefined || livro !== livroDe.get(c.bId)) continue
+      const dorme = cena.adormecidas.has(c.aId) || cena.adormecidas.has(c.bId)
+      if (dorme !== dormentes) continue
+      const a = cena.absolutos.get(c.aId)
+      const b = cena.absolutos.get(c.bId)
+      if (!finito(a) || !finito(b)) continue
+      ctx.moveTo(a.x, a.y)
+      ctx.lineTo(b.x, b.y)
+    }
+    ctx.globalAlpha = 0.6 * presenca * (dormentes ? DORMENTE : 1)
+    ctx.stroke()
   }
   ctx.strokeStyle = cena.cores.fio
-  ctx.globalAlpha = 0.6 * presenca
   ctx.lineWidth = 0.9 * px
   ctx.setLineDash(TRACEJADO_DA_TRILHA_PX.map((d) => d * px))
-  ctx.stroke()
+  tracar(false)
+  tracar(true)
   ctx.setLineDash([])
   ctx.globalAlpha = 1
 }
@@ -478,7 +563,8 @@ function desenharVizinhanca(
     const p = cena.absolutos.get(id)
     const livro = livroDe.get(id)
     if (!finito(p)) continue
-    desenharPontos(ctx, [p], livro ? corDoLivro.get(livro) : undefined, cores, 1, px)
+    if (cena.feitas.has(id)) desenharFeitas(ctx, [p], cores, 1, px)
+    else desenharPontos(ctx, [p], livro ? corDoLivro.get(livro) : undefined, cores, 1, px)
   }
   ctx.strokeStyle = cores.papel
   ctx.lineWidth = 1.5 * px

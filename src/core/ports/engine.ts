@@ -147,6 +147,12 @@ export interface ResultadoDeEscrita {
   mapa: MapaDoPalacio
   /** Um conceito novo ou mudado pode virar a melhor âncora de algum anexo. */
   vinculos: Vinculo[]
+  /**
+   * As ideias adormecidas que a nova acordou — ligadas a ela por uma conexão
+   * forte (`quemDesperta`), da mais forte para a mais fraca. Vazio ao editar:
+   * só uma ideia nova desperta alguém.
+   */
+  acordadas: { id: Id; titulo: string }[]
 }
 
 /** Só o que a tela precisa mostrar enquanto espera. */
@@ -185,6 +191,12 @@ export interface ConnectionEngine {
     estado: EstadoDaIdeia,
     resultadoLink: string | null,
   ): Promise<NeuronioNaTela[]>
+  /**
+   * Um toque numa ideia de livro executável — abrir a tela dela, ou o
+   * "Acordar". Só o `ultimoToque` muda. Fora de livro executável não grava
+   * nada e devolve `null`: o relógio do adormecer só existe lá.
+   */
+  tocar(id: Id): Promise<NeuronioNaTela | null>
 
   /** Livro não mexe no grafo: devolve só a estante, já com o livro no lugar. */
   criarLivro(input: CriarLivroInput): Promise<EstanteGravada>

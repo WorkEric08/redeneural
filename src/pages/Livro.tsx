@@ -1,11 +1,17 @@
-import { BookOpen, ChevronDown, ChevronRight, Search } from 'lucide-react'
+import { BookOpen, ChevronDown, ChevronRight, Search, Sunrise } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { Link, useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 
 import { BarraDeTopo } from '@/components/BarraDeTopo'
 import { botao } from '@/components/botao'
 import { EtiquetaProcessando } from '@/components/EtiquetaProcessando'
-import { ESTADOS_DA_IDEIA, estadoVisivel, type EstadoDaIdeia, type NeuronioNaTela } from '@/core'
+import {
+  ESTADOS_DA_IDEIA,
+  estaAdormecida,
+  estadoVisivel,
+  type EstadoDaIdeia,
+  type NeuronioNaTela,
+} from '@/core'
 import { Pasta } from '@/features/acervo/Pasta'
 import { vizinhosPorNeuronio } from '@/features/estante/resumo'
 import { ROTULO_DO_ESTADO, TITULO_DA_SECAO } from '@/features/executaveis/estados'
@@ -30,10 +36,16 @@ import { usePalacio } from '@/store/palacio'
  * "Para fazer" e "Feitas" —, e cada cartão ganha à esquerda o círculo do
  * estado, que abre a folha de mudar (`?estado=<id>`, na URL como os outros
  * painéis: o voltar fecha).
+ *
+ * As que ficaram paradas mais que os dias do livro moram numa seção à parte,
+ * "Adormecidas", recolhida e só com a contagem — sem cobrança, sem cor de
+ * alerta. Cada uma tem "Acordar", e mudar o estado ou abrir a ideia também
+ * acorda. O relógio é o de quando a tela abriu: acordar uma ideia aqui a tira
+ * da seção na hora, mesmo num livro de 0 dias.
  */
 export default function Livro() {
   const { livroId } = useParams()
-  const { livros, neuronios, conexoes, carregado, definirEstado } = usePalacio()
+  const { livros, neuronios, conexoes, carregado, definirEstado, tocar } = usePalacio()
   const [busca] = useSearchParams()
   const navegar = useNavigate()
   const { key } = useLocation()
@@ -48,6 +60,9 @@ export default function Livro() {
   // Cada cartão abre e fecha por conta própria — ver os fios de dois
   // neurônios ao mesmo tempo, comparando, é um uso legítimo desta tela.
   const [abertos, setAbertos] = useState<ReadonlySet<string>>(new Set())
+  // Calculado na hora de mostrar, com o relógio de quando a tela abriu.
+  const [agora] = useState(() => new Date())
+  const [verAdormecidas, setVerAdormecidas] = useState(false)
 
   function fecharEstado(): void {
     // O React Router chama de 'default' a primeira entrada da sessão.
@@ -97,11 +112,13 @@ export default function Livro() {
 
   const escolhidoParaEstado = livro.executavel ? meus.find((n) => n.id === estadoAberto) : undefined
 
-  function cartao(n: NeuronioNaTela, estado: EstadoDaIdeia | null) {
+  const dormindo = (n: NeuronioNaTela): boolean => estaAdormecida(n, livro, agora)
+
+  function cartao(n: NeuronioNaTela, estado: EstadoDaIdeia | null, adormecida = false) {
     const aberto = abertos.has(n.id)
     return (
       <li key={n.id} className="cartao">
-        <div className="flex items-stretch">
+        <div className={`flex items-stretch ${adormecida ? 'opacity-70' : ''}`}>
           {estado && (
             // O círculo do andamento, com alvo de toque próprio: mudar o
             // estado não pode disputar o dedo com abrir os fios.
@@ -158,6 +175,21 @@ export default function Livro() {
         {aberto && (
           <div className="border-linha border-t px-2 py-2">
             <Fios lista={vizinhos.get(n.id) ?? []} />
+          </div>
+        )}
+
+        {adormecida && (
+          <div className="border-linha flex justify-end border-t px-3 py-2">
+            <button
+              type="button"
+              onClick={() => {
+                void tocar(n.id)
+              }}
+              className={botao({ tipo: 'secundario', tamanho: 'pequeno' })}
+            >
+              <Sunrise size={15} aria-hidden />
+              Acordar
+            </button>
           </div>
         )}
       </li>
@@ -222,7 +254,7 @@ export default function Livro() {
         ) : livro.executavel ? (
           <div className="flex flex-col gap-6">
             {ESTADOS_DA_IDEIA.map((estado) => {
-              const daSecao = meus.filter((n) => estadoVisivel(n, livro) === estado)
+              const daSecao = meus.filter((n) => !dormindo(n) && estadoVisivel(n, livro) === estado)
               if (daSecao.length === 0) return null
               return (
                 <section key={estado} aria-label={TITULO_DA_SECAO[estado]}>
@@ -233,6 +265,31 @@ export default function Livro() {
                 </section>
               )
             })}
+
+            {meus.some(dormindo) && (
+              <section aria-label="Adormecidas">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setVerAdormecidas((v) => !v)
+                  }}
+                  aria-expanded={verAdormecidas}
+                  className="rotulo-de-secao flex min-h-11 w-full items-center gap-1.5 text-left"
+                >
+                  Adormecidas · {String(meus.filter(dormindo).length)}
+                  <ChevronDown
+                    size={14}
+                    aria-hidden
+                    className={`transition-transform ${verAdormecidas ? 'rotate-180' : ''}`}
+                  />
+                </button>
+                {verAdormecidas && (
+                  <ul className="flex flex-col gap-3">
+                    {meus.filter(dormindo).map((n) => cartao(n, estadoVisivel(n, livro), true))}
+                  </ul>
+                )}
+              </section>
+            )}
           </div>
         ) : (
           <ul className="flex flex-col gap-3">{meus.map((n) => cartao(n, null))}</ul>

@@ -102,6 +102,8 @@ export function criarWorkerEngine(): ConnectionEngine {
     ): Promise<NeuronioNaTela[]> =>
       pedir<'definirEstado'>({ tipo: 'definirEstado', id, estado, resultadoLink }),
 
+    tocar: (id: Id): Promise<NeuronioNaTela | null> => pedir<'tocar'>({ tipo: 'tocar', id }),
+
     criarLivro: (input: CriarLivroInput): Promise<EstanteGravada> =>
       pedir<'criarLivro'>({ tipo: 'criarLivro', input }),
 

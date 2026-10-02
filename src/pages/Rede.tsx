@@ -14,6 +14,7 @@ import { BarraDeTopo } from '@/components/BarraDeTopo'
 import { botao } from '@/components/botao'
 import { Folha } from '@/components/Folha'
 import { OpcoesDoMapa } from '@/features/mapa/OpcoesDoMapa'
+import { marcasDoAndamento } from '@/features/executaveis/andamento'
 import { ParesDaPonte } from '@/features/mapa/ParesDaPonte'
 import { agruparPontes, pontesAMostra, type PonteAgrupada } from '@/features/mapa/pontes'
 import { TelaDoMapa } from '@/features/mapa/TelaDoMapa'
@@ -134,6 +135,13 @@ export default function Rede() {
   const posicoes = useMemo(() => new Map(Object.entries(posicoesDaRede)), [posicoesDaRede])
   const graus = useMemo(() => grausDoMapa(conexoes), [conexoes])
   const satelites = useMemo(() => satelitesDaCena(anexos, vinculos), [anexos, vinculos])
+  // As adormecidas e as feitas dos livros executáveis — com o relógio de quando
+  // a tela abriu, como na tela do livro.
+  const [agora] = useState(() => new Date())
+  const { adormecidas, feitas } = useMemo(
+    () => marcasDoAndamento(neuronios, livros, agora),
+    [neuronios, livros, agora],
+  )
   // As pontes do Mapa, uma por par de livros: o canvas desenha e toca, e a
   // folha da ponte lista o que ela junta — a mesma conta para os dois.
   const pontesDoMapa = useMemo(
@@ -193,6 +201,8 @@ export default function Rede() {
             graus={graus}
             pontes={pontesDoMapa}
             todasAsPontes={todasAsPontes}
+            adormecidas={adormecidas}
+            feitas={feitas}
             selecionado={selecionado}
             onSelecionar={escolherNeuronio}
             onTocarPonte={abrirPonte}
@@ -212,6 +222,8 @@ export default function Rede() {
               selecionado,
               satelites,
               anexoSelecionado,
+              adormecidas,
+              feitas,
             }}
             onSelecionar={escolherNeuronio}
             onSelecionarAnexo={escolherAnexo}

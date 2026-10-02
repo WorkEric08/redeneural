@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 
+import { textoDoDespertar } from '@/features/executaveis/despertar'
 import { useCriarLivroExecutavel } from '@/features/executaveis/useCriarLivroExecutavel'
 import { Formulario } from '@/features/neuronio/Formulario'
 import { FolhaGuardarEm } from '@/features/porto/FolhaGuardarEm'
@@ -71,14 +72,21 @@ export default function Novo() {
         rotuloDeEnvio="Criar neurônio"
         voltarPara="/"
         onEnviar={(dados) => {
-          void criarNeuronio(dados).then((criado) => {
-            if (!criado) return
+          void criarNeuronio(dados).then((resultado) => {
+            if (!resultado) return
+            const { neuronio: criado, acordadas } = resultado
+            // O despertar é dito na hora de salvar, discreto, no mesmo aviso do
+            // Porto quando os dois acontecem.
+            const despertou = textoDoDespertar(acordadas.map((a) => a.titulo))
             if (dados.livroId === null && criado.livroId !== null) {
               const livro = livros.find((l) => l.id === criado.livroId)
-              avisar(`Guardado em ${livro?.titulo ?? 'um livro'}.`, {
+              const guardado = `Guardado em ${livro?.titulo ?? 'um livro'}.`
+              avisar(despertou ? `${guardado} ${despertou}` : guardado, {
                 rotulo: 'Mudar',
                 busca: `?guardar=${criado.id}`,
               })
+            } else if (despertou) {
+              avisar(despertou)
             }
             if (criado.livroId !== null) {
               irParaARede(criado.id)

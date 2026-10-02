@@ -49,6 +49,24 @@ export function estadoAoGuardar(
   return anterior?.estado ?? null
 }
 
+export const MS_POR_DIA = 86_400_000
+
+/**
+ * A ideia está adormecida: mora num livro executável, não está feita, e ficou
+ * parada mais que os dias do livro desde o último toque. Calculado na hora de
+ * mostrar, com o relógio de quem mostra — sem tarefa em segundo plano, e
+ * igual sem rede. Com 0 dias, adormece logo depois de qualquer toque: é para
+ * testar.
+ */
+export function estaAdormecida(
+  ideia: { estado: EstadoDaIdeia | null; ultimoToque: Date },
+  livro: Pick<Livro, 'executavel' | 'diasParaAdormecer'> | undefined,
+  agora: Date,
+): boolean {
+  if (!livro?.executavel || ideia.estado === 'feita') return false
+  return agora.getTime() - ideia.ultimoToque.getTime() > livro.diasParaAdormecer * MS_POR_DIA
+}
+
 /**
  * O estado que a tela mostra: só num livro executável. Uma ideia que estava
  * num livro antes de ele virar executável ainda não tem estado — está "para

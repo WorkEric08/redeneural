@@ -3979,8 +3979,8 @@ Atualização 5) e neurônio no porto votam, mas não vencem — aí a pessoa es
 
 **O `LIMIAR_FORTE` não nasceu aqui.** O documento o queria num lugar só, para o
 Porto e para o despertar da Atualização 6; com o voto, o Porto não o usa, e uma
-constante sem uso não entra (regra 7 do mestre). Ele nasce na Atualização 6, com
-calibração própria.
+constante sem uso não entra (regra 7 do mestre). Ele nasceu na Atualização 6, com
+calibração própria: **0,7** (ver "Ideias executáveis, parte 2").
 
 #### O que muda quando não há livro
 
@@ -4299,7 +4299,7 @@ minhas, pela regra da série.
     quem estava no livro antes de ele virar executável.
 - **`ultimoToque`** é o relógio do adormecer. A migração usa a última edição.
   Nesta parte ele anda ao nascer, ao entrar num livro executável e ao mudar de
-  estado. Abrir, editar, "Acordar" e o despertar por conexão entram na
+  estado. Abrir, editar, "Acordar" e o despertar por conexão entraram na
   Atualização 6, que é quem os pede.
 - **`resultadoLink`** só se grava junto de "feita", e só http/https (a mesma
   régua do link de anexo). Mudar de estado depois não o apaga.
@@ -4345,8 +4345,7 @@ minhas, pela regra da série.
 - **Tela da ideia:** o andamento num botão que abre a mesma folha e, feita, o
   "Resultado" abrindo o link. Fora de livro executável, o "Tornar executável".
 - **Livros de pensamentos não mudaram** — verificado.
-- **O visual da Rede e do Mapa ainda não mudou** (névoa, anel das feitas): é a
-  Atualização 6.
+- **O visual da Rede e do Mapa** (névoa, anel das feitas) veio na Atualização 6.
 
 **Puro e testado:** `estadoAoGuardar`, `entraEmExecutavel`, `estadoVisivel` e
 `clampDiasParaAdormecer` (8 testes). No repositório:
@@ -4374,6 +4373,100 @@ palácio de 35 notas com os vetores do e5):
 Sem rolagem lateral em 320, 412, 768, 1024 e 1440 px, nos dois temas; nenhum
 erro no console. 404 testes (15 novos), typecheck e lint limpos. Bundle
 principal: 145,0 KB gzipped.
+
+### Ideias executáveis, parte 2: adormecer e despertar (Atualização 6)
+
+Uma ideia executável parada **adormece** — sem cobrança — e **acorda** quando
+volta a ser relevante. Decisões minhas, pela regra da série.
+
+#### Adormecer
+
+- **A regra** (`estaAdormecida`, `core/domain/executavel.ts`, pura e testada):
+  livro executável, estado diferente de "feita", e mais de `diasParaAdormecer`
+  dias desde o `ultimoToque`.
+- **Calculada na hora de mostrar**, sem tarefa em segundo plano e igual sem
+  rede. O relógio é o de quando a tela abriu (`useState(() => new Date())`):
+  acordar uma ideia a tira da névoa na hora, mesmo num livro de 0 dias, e ela
+  só volta a dormir na próxima abertura.
+- **0 dias é para testar:** a ideia adormece logo depois de qualquer toque. Com
+  1 dia, o que foi tocado hoje continua acordado — verificado.
+- **O que é um toque** (`ultimoToque`):
+  - criar, entrar num livro executável e mudar o estado (Atualização 5);
+  - abrir a tela da ideia (`tocar`, ao montar a tela);
+  - editar (o motor, ao gravar uma ideia de livro executável);
+  - o "Acordar";
+  - o despertar por conexão.
+    Fora de livro executável, `tocar` não grava nada.
+
+#### Despertar
+
+- **`LIMIAR_FORTE = 0,7`**, num lugar só (`core/motor/despertar.ts`).
+  Calibrado com o e5 de verdade: cada uma das 33 notas de teste entrou como
+  "nova" no palácio das outras.
+  - De 0,7 para cima todo par é parente de verdade: débito técnico e
+    refatoração, reserva de emergência e antifrágil, cache e memória de
+    trabalho, o grupo dos recomeços.
+  - Entre 0,6 e 0,7 aparecem pares fracos; abaixo, falsos ("Ansiedade antes de
+    apresentar" com "Ouvido relativo").
+  - Com 0,7, 20 das 33 notas acordariam alguém.
+  - O score é relativo à escala do palácio (`escalaEmb`), então o número vale
+    para outro tamanho.
+- **`quemDesperta`** (puro, testado): toda ideia de livro executável ligada à
+  nova por uma conexão forte ganha um toque; as que dormiam voltam como
+  "acordadas", da conexão mais forte para a mais fraca.
+  - Só uma ideia **nova** desperta alguém, em qualquer livro; editar não.
+  - Roda no motor depois de as conexões assentarem, e as acordadas vêm em
+    `ResultadoDeEscrita.acordadas`.
+- **O aviso** é o flutuante de sempre, na hora de salvar: "Isso acordou
+  “Refatoração”." No máximo dois nomes, e o resto vira contagem ("e mais 2",
+  `textoDoDespertar`). Quando o Porto também guardou sozinho, os dois vão no
+  mesmo aviso, com o "Mudar".
+
+#### O que se vê
+
+- **Tela do livro:** seção "Adormecidas · N", depois das outras, recolhida
+  (abre num toque). Cada ideia ali aparece esmaecida, com "Acordar". Mudar o
+  estado, ou abrir a ideia, também acorda.
+- **Rede:** a adormecida ganha um chumaço de névoa, o ponto perde luz, e os
+  fios dela ficam mais fracos. A feita ganha um anel de **ouro gravado** (a
+  decisão da Etapa 0: o ouro das lombadas, nunca o azul da ponte).
+- **Mapa:** as adormecidas ficam debaixo de uma área de névoa na ilha, visível
+  **de qualquer distância** — de longe ela diz onde há ideia parada sem precisar
+  dos pontos. De perto, as feitas são pontos acesos com o anel. As trilhas das
+  adormecidas também ficam mais fracas.
+- **A névoa tem token próprio, `--nevoa`**, que sempre clareia: quase branca de
+  dia, azul-acinzentada clara à noite. A primeira versão usava `--poeira`, que de
+  dia é azul-escuro e virava uma mancha na ilha. A névoa é um sprite desenhado
+  uma vez por cor e reaproveitado (`spriteDeNevoa`): a Rede repinta a cada
+  quadro com o balanço, e um degradê novo por ideia a cada quadro pesaria numa
+  WebView.
+- **Sem cobrança:** nenhuma notificação, nenhum contador fora da própria seção
+  do livro, nada em vermelho.
+
+**Testes:** `estaAdormecida`, `quemDesperta`, `textoDoDespertar` e
+`marcasDoAndamento` (13 novos).
+
+**Verificado no navegador de verdade** (build de produção, toque por CDP,
+palácio de 35 notas com os vetores do e5), num livro executável de 0 dias com
+"Refatoração" para fazer e "Testes automatizados" feita:
+
+- A adormecida apareceu em "Adormecidas · 1", recolhida, e a feita ficou em
+  "Feitas".
+- "Acordar" gravou o toque e devolveu a ideia a "Para fazer" na hora.
+- Uma nota nova sobre pagar a dívida técnica, no livro de Programação, ligou-se
+  a "Refatoração" com score 1,00. O aviso disse "Isso acordou “Refatoração”.", e
+  o toque foi gravado.
+- Abrir a tela da ideia e editá-la gravaram toques.
+- Com 1 dia, nada adormeceu.
+- A névoa e o anel apareceram na Rede e no Mapa, nos dois temas.
+
+Sem rolagem lateral em 320, 768 e 1440 px com a seção aberta; nenhum erro no
+console. 417 testes, typecheck e lint limpos. Bundle principal: 146,4 KB
+gzipped.
+
+**Visto e não resolvido:** de dia, na Rede, a névoa clara sobre a sala clara é
+bem discreta. Quem marca a ideia ali é o ponto esmaecido e os fios mais fracos.
+Fica para a passada de acabamento.
 
 ## Fases
 
@@ -4414,6 +4507,7 @@ principal: 145,0 KB gzipped.
     vizinhos acompanhando e assentando
 24. ✅ Pastas de acervo — links e imagens como satélites dos conceitos na
     Rede (as 4 etapas; a última em 01/10/2026)
-25. 🟡 Atualizações aprovadas (30/09/2026) — **5 de 6 feitas (Busca, Porto,
-    Mapa partes 1 e 2, Executáveis parte 1)**, e os satélites de anexo entre o
-    Porto e o Mapa; segue a parte 2 dos Executáveis (adormecer e despertar)
+25. ✅ Atualizações aprovadas (30/09/2026) — as 6 feitas (Busca, Porto, Mapa
+    partes 1 e 2, Executáveis partes 1 e 2), e os satélites de anexo entre o
+    Porto e o Mapa. **Falta o teste conjunto do usuário**, com os ajustes que
+    vierem dele

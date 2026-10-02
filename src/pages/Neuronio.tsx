@@ -1,5 +1,5 @@
 import { ExternalLink, Hammer, PencilLine, Search, Trash2 } from 'lucide-react'
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link, useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 
 import { BarraDeTopo } from '@/components/BarraDeTopo'
@@ -55,6 +55,7 @@ export default function Neuronio() {
     guardarNeuronio,
     definirEstado,
     avisar,
+    tocar,
   } = usePalacio()
   const criarLivroExecutavel = useCriarLivroExecutavel()
 
@@ -72,6 +73,13 @@ export default function Neuronio() {
     () => vizinhosPorNeuronio(neuronios, livros, conexoes),
     [neuronios, livros, conexoes],
   )
+
+  // Abrir uma ideia de livro executável é um toque: o relógio do adormecer
+  // recomeça, e ela acorda se dormia. Uma vez por ideia aberta.
+  const idParaTocar = livro?.executavel && neuronio ? neuronio.id : null
+  useEffect(() => {
+    if (idParaTocar) void tocar(idParaTocar)
+  }, [idParaTocar, tocar])
 
   if (!neuronio) {
     return (

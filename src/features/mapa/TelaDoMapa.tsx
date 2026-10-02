@@ -49,6 +49,8 @@ function lerCoresDoMapa(el: HTMLElement): CoresDoMapa {
     no: lerCor(el, '--rede-no'),
     ponte: lerCor(el, '--ponte'),
     fio: lerCor(el, '--rede-fio'),
+    ouro: lerCor(el, '--ouro-gravado'),
+    nevoa: lerCor(el, '--nevoa'),
   }
 }
 
@@ -61,6 +63,8 @@ interface Props {
   /** Da mais forte para a mais fraca (`agruparPontes`). */
   pontes: readonly PonteAgrupada[]
   todasAsPontes: boolean
+  adormecidas: ReadonlySet<Id>
+  feitas: ReadonlySet<Id>
   selecionado: Id | null
   onSelecionar: (id: Id | null) => void
   onTocarPonte: (ponte: PonteAgrupada) => void
@@ -77,6 +81,8 @@ export function TelaDoMapa({
   graus,
   pontes,
   todasAsPontes,
+  adormecidas,
+  feitas,
   selecionado,
   onSelecionar,
   onTocarPonte,
@@ -98,6 +104,8 @@ export function TelaDoMapa({
     graus,
     pontes,
     todasAsPontes,
+    adormecidas,
+    feitas,
     selecionado,
     cobertas: folgas,
   }

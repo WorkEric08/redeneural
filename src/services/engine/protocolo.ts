@@ -34,6 +34,7 @@ export interface RespostasDoMotor {
   apagarNeuronio: EstadoDoPalacio
   guardarNeuronio: NeuronioGuardado
   definirEstado: NeuronioNaTela[]
+  tocar: NeuronioNaTela | null
   criarLivro: EstanteGravada
   editarLivro: Livro[]
   apagarLivro: EstadoDoPalacio
@@ -69,6 +70,7 @@ export type ParaMotor =
       estado: EstadoDaIdeia
       resultadoLink: string | null
     }
+  | { req: number; tipo: 'tocar'; id: Id }
   | { req: number; tipo: 'criarLivro'; input: CriarLivroInput }
   | { req: number; tipo: 'editarLivro'; input: EditarLivroInput }
   | { req: number; tipo: 'apagarLivro'; livroId: Id }

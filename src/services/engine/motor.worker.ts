@@ -9,6 +9,7 @@ import {
   clampDiasParaAdormecer,
   entraEmExecutavel,
   estadoAoGuardar,
+  quemDesperta,
   mapaCompleto,
   ehPonte,
   livroDoPorto,
@@ -365,11 +366,12 @@ async function escrever(
       }
     : novoNeuronio(input, agora)
   // Escolher um livro executável — o "Quero executar isso" da captura, ou o
-  // livro trocado ao editar — é entrar nele: "para fazer", e um toque.
+  // livro trocado ao editar — é entrar nele: "para fazer". E editar uma ideia
+  // de livro executável é um toque (quem nasce já nasce tocada).
   const base: Neuronio = {
     ...escrito,
     estado: estadoAoGuardar(existente, livro),
-    ...(existente && entraEmExecutavel(existente.livroId, livro) ? { ultimoToque: agora } : {}),
+    ...(existente && livro?.executavel ? { ultimoToque: agora } : {}),
   }
 
   // Persiste o texto antes de a inferência começar: se o Worker morrer agora,
@@ -414,6 +416,8 @@ async function escrever(
   if (!existente && input.livroId === null) await guardarPeloPorto(completo.id)
   // Depois do Porto: a ilha é a do livro que ficou decidido.
   await encaixarNoMapa()
+  // Só uma ideia nova desperta alguém — com as conexões dela já assentadas.
+  const acordadas = existente ? [] : await despertar(completo.id)
 
   const depois = await estadoAtual()
   const naTela = depois.neuronios.find((n) => n.id === completo.id)
@@ -425,7 +429,39 @@ async function escrever(
     posicoesDaRede: depois.posicoesDaRede,
     vinculos: depois.vinculos,
     mapa: depois.mapa,
+    acordadas,
   }
+}
+
+/**
+ * Toda ideia de livro executável ligada forte à nova ganha um toque
+ * (`quemDesperta`); as que dormiam voltam como "acordadas", para a tela dizer
+ * quem. Roda depois das conexões, e o relógio é o de agora — o mesmo que
+ * decide quem dormia.
+ */
+async function despertar(novoId: Id): Promise<{ id: Id; titulo: string }[]> {
+  const [conexoes, neuronios, livros] = await Promise.all([
+    repo.listConexoesDe(novoId),
+    repo.listNeuronios(),
+    repo.listLivros(),
+  ])
+  const agora = new Date()
+  const ideias = new Map(neuronios.map((n) => [n.id, n]))
+  const { tocadas, acordadas } = quemDesperta(
+    novoId,
+    conexoes,
+    ideias,
+    new Map(livros.map((l) => [l.id, l])),
+    agora,
+  )
+  for (const id of tocadas) {
+    const ideia = ideias.get(id)
+    if (ideia) await repo.upsertNeuronio({ ...ideia, ultimoToque: agora })
+  }
+  return acordadas.flatMap((id) => {
+    const ideia = ideias.get(id)
+    return ideia ? [{ id, titulo: ideia.titulo }] : []
+  })
 }
 
 /**
@@ -518,6 +554,21 @@ async function definirEstado(
     ultimoToque: new Date(),
   })
   return (await repo.listNeuronios()).map(paraTela)
+}
+
+/**
+ * Abrir a tela de uma ideia de livro executável, ou o "Acordar": só o relógio
+ * do adormecer anda. Fora de livro executável não grava nada.
+ */
+async function tocar(id: Id): Promise<NeuronioNaTela | null> {
+  const neuronio = await repo.getNeuronio(id)
+  if (!neuronio || neuronio.livroId === null) return null
+  const livro = await repo.getLivro(neuronio.livroId)
+  if (!livro?.executavel) return null
+
+  const tocado: Neuronio = { ...neuronio, ultimoToque: new Date() }
+  await repo.upsertNeuronio(tocado)
+  return paraTela(tocado)
 }
 
 /**
@@ -740,6 +791,9 @@ async function responder(msg: ParaMotor): Promise<DoMotor> {
           ok: true,
           dados: await definirEstado(msg.id, msg.estado, msg.resultadoLink),
         }
+
+      case 'tocar':
+        return { req: msg.req, ok: true, dados: await tocar(msg.id) }
 
       case 'apagarNeuronio':
         return { req: msg.req, ok: true, dados: await apagarNeuronio(msg.neuronioId) }
