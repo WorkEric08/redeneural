@@ -266,7 +266,7 @@ function desenharIlha(
   ctx.fillStyle = cores.parede
   ctx.fill()
   ctx.strokeStyle = cor ?? cores.poeira
-  ctx.lineWidth = (erguida ? 4 : 2.5) * px
+  ctx.lineWidth = (erguida ? 2.5 : 1.25) * px
   ctx.stroke()
 }
 
