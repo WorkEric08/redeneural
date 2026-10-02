@@ -113,16 +113,16 @@ export function pontesVisiveis(
 }
 
 /** O teto da espessura, em px de tela: um par muito ligado não vira faixa. */
-export const ESPESSURA_MAXIMA_DA_PONTE = 7
+export const ESPESSURA_MAXIMA_DA_PONTE = 3
 
 /**
  * A espessura da ponte em px de tela: cresce com a quantidade de conexões e
- * para no teto. A de uma conexão só (1,5 px) já é mais grossa que a trilha
- * (menos de 1 px) — trilha e ponte se distinguem pela espessura e pelo
- * tracejado, não só pela cor.
+ * para no teto. A de uma conexão só tem 1 px, cheia e na cor de ponte; a trilha
+ * (menos de 1 px) é tracejada e na cor dos fios — a diferença está no
+ * tracejado e na cor, não só na espessura.
  */
 export function espessuraDaPonte(quantidade: number): number {
-  return Math.min(ESPESSURA_MAXIMA_DA_PONTE, 1.5 + Math.max(0, quantidade - 1) * 0.9)
+  return Math.min(ESPESSURA_MAXIMA_DA_PONTE, 1 + Math.max(0, quantidade - 1) * 0.25)
 }
 
 /** A distância de um ponto até um segmento. */

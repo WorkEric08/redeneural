@@ -219,7 +219,7 @@ function desenharMar(
 /**
  * Uma ponte por par de ilhas: uma rota em arco, de centro a centro e **por
  * baixo** delas — a terra cobre o pedaço de dentro, e o que se vê sai pela
- * praia. Um halo largo e fraco por baixo, e o traço por cima.
+ * praia. Um traço fino, sem halo.
  */
 function desenharPontesAgrupadas(
   ctx: CanvasRenderingContext2D,
@@ -237,9 +237,6 @@ function desenharPontesAgrupadas(
     ctx.beginPath()
     ctx.moveTo(a.centro.x, a.centro.y)
     ctx.quadraticCurveTo(controle.x, controle.y, b.centro.x, b.centro.y)
-    ctx.globalAlpha = 0.12
-    ctx.lineWidth = (espessura + 6) * px
-    ctx.stroke()
     ctx.globalAlpha = 0.85
     ctx.lineWidth = espessura * px
     ctx.stroke()

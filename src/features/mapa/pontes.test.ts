@@ -134,7 +134,7 @@ describe('pontesAMostra', () => {
 
 describe('espessuraDaPonte', () => {
   it('cresce com a quantidade e para no teto', () => {
-    expect(espessuraDaPonte(1)).toBe(1.5)
+    expect(espessuraDaPonte(1)).toBe(1)
     expect(espessuraDaPonte(3)).toBeGreaterThan(espessuraDaPonte(2))
     expect(espessuraDaPonte(1000)).toBe(ESPESSURA_MAXIMA_DA_PONTE)
   })
