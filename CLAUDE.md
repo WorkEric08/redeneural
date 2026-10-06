@@ -4911,7 +4911,10 @@ agora é sempre escuro, nos dois temas**: comparado pixel a pixel, a estante é 
 e de noite (só os 32 pixels dos cantos arredondados diferem). Parede `#0B1230`, trilho de
 10 px `#121A44`, tábua de 8 px `#1A2557` com a linha `#3446A6` (1,6 px) no topo, o fio dourado
 (1,2 px a 50%) logo abaixo e sombra de 10 px, pilastras `#12204F` com borda `#2A3A8A` de 24 px
-à esquerda e **14 px à direita**. Penumbra de 62% a 10% em 32% da altura; a vinheta ficou.
+à esquerda e **14 px à direita**. A penumbra de 62% a 10% em 32% da altura **saiu** (pedido
+do usuário, 06/10/2026, depois da madeira): **nenhuma sombra cai sobre o alto dos livros** —
+nem a penumbra, nem a sombra de 10 px embaixo da tábua, nem a do trilho de cima. A vinheta
+das bordas ficou.
 Desvios: o prompt dizia "como hoje" para as pilastras, mas hoje as duas tinham 24 px (segui
 os números); e "6 px da base" da tábua colidiria com a linha do topo, então o fio ficou logo
 abaixo dela.

@@ -55,8 +55,8 @@ function mesmoLugar(a: LugarDaEstante | null, prateleira: number, lugar: number)
 /**
  * O móvel: a estante em que os livros moram.
  *
- * Duas laterais iguais de madeira, o trilho em cima, prateleiras com a penumbra
- * da tábua de cima caindo sobre os livros, e a base que fecha a última prateleira.
+ * Duas laterais iguais de madeira, o trilho em cima, prateleiras sem sombra sobre
+ * os livros, e a base que fecha a última prateleira.
  * A estrutura é CSS sobre duas texturas de madeira (`src/assets`); o fundo atrás dos
  * livros é liso. Acompanha a largura da tela, e é sempre escura, nos dois temas.
  *
@@ -195,7 +195,6 @@ export function Movel({
                 ),
               )}
             </div>
-            <span className="movel-penumbra" aria-hidden />
             <span className="movel-tabua" aria-hidden />
           </div>
         ))}

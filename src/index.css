@@ -483,7 +483,6 @@ img {
   background:
     linear-gradient(180deg, rgb(150 180 255 / 0.2) 0 1px, transparent 1px 55%, rgb(0 0 0 / 0.45)),
     url('./assets/madeira-azul-h.webp') 20% 30% / 520px auto;
-  box-shadow: 0 4px 9px rgb(0 0 0 / 0.6);
 }
 
 /* O corpo: o fundo atrás dos livros, liso (a madeira é só da estrutura), e as
@@ -494,7 +493,7 @@ img {
   background: var(--mv-parede);
 }
 
-/* `isolation`: os z-index de dentro (fileira, penumbra) ficam presos ao vão.
+/* `isolation`: os z-index de dentro (a fileira) ficam presos ao vão.
    Sem isso a fileira subiria por cima das pilastras e do luar, e os livros
    deixariam de sumir atrás da pilastra da direita. */
 .movel-vao {
@@ -591,25 +590,13 @@ img {
   transform: translateY(-4px);
 }
 
-/* A sombra que a tábua de cima joga sobre o topo dos livros. É ela que dá
-   fundura à prateleira; sem isso o móvel vira um quadro. */
-.movel-penumbra {
-  position: absolute;
-  top: 0;
-  right: 0;
-  left: 0;
-  z-index: 2;
-  /* Em % porque a fileira agora muda de altura: a sombra da tábua de cima cai
-     sempre sobre o mesmo terço do livro. */
-  height: 32%;
-  pointer-events: none;
-  background: linear-gradient(180deg, rgb(0 0 0 / 0.62) 0%, rgb(0 0 0 / 0.1) 100%);
-}
+/* Nenhuma sombra cai sobre o alto dos livros — nem a da tábua de cima nem a do
+   trilho (pedido do usuário, 06/10/2026): a lombada se vê inteira, na cor dela. */
 
 /* A tábua: 8px de madeira de veio no comprimento, nítida e escura. De cima para
    baixo: o fio de luz da quina (1px), a canaleta escura que a separa dos livros
    (1px), o fio dourado (1,2px a 50%), a face de madeira e, no pé, a quina de
-   sombra (1,2px) que a recorta. Embaixo dela cai uma sombra de 10px. */
+   sombra (1,2px) que a recorta. */
 .movel-tabua {
   position: relative;
   display: block;
@@ -625,17 +612,6 @@ img {
     ),
     linear-gradient(180deg, rgb(4 9 28 / 0.08), rgb(4 9 28 / 0.3)),
     url('./assets/madeira-azul-h.webp') 60% 50% / 520px auto;
-}
-
-.movel-tabua::after {
-  content: '';
-  position: absolute;
-  top: 100%;
-  right: 0;
-  left: 0;
-  height: 10px;
-  pointer-events: none;
-  background: linear-gradient(180deg, rgb(0 0 0 / 0.5), transparent);
 }
 
 /* A base — o que fecha a última prateleira (referência do usuário, 06/10/2026):
