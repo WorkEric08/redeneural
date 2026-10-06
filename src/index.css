@@ -227,8 +227,8 @@
   /* O móvel Noite. A madeira (as duas texturas de `src/assets`) veste a
      estrutura — laterais, trilho, tábuas e base —, nunca o fundo atrás dos livros. */
   --mv-parede: #0b1230;
-  /* O friso de luz no topo da tábua: translúcido, para a madeira aparecer por baixo. */
-  --mv-tabua-linha: rgb(150 180 255 / 0.3);
+  /* O fio de luz na quina da tábua: translúcido, para a madeira aparecer por baixo. */
+  --mv-tabua-linha: rgb(150 180 255 / 0.36);
   --mv-ouro: #e8c471;
   /* A aresta de uma peça de madeira: só sombra, nunca uma linha de cor sólida. */
   --mv-sombra: #03060f;
@@ -606,9 +606,10 @@ img {
   background: linear-gradient(180deg, rgb(0 0 0 / 0.62) 0%, rgb(0 0 0 / 0.1) 100%);
 }
 
-/* A tábua: 8px de madeira de veio no comprimento, com a linha clara no topo
-   (1,6px) e, logo abaixo, o fio dourado (1,2px a 50%). Embaixo dela cai uma
-   sombra de 10px. */
+/* A tábua: 8px de madeira de veio no comprimento, nítida e escura. De cima para
+   baixo: o fio de luz da quina (1px), a canaleta escura que a separa dos livros
+   (1px), o fio dourado (1,2px a 50%), a face de madeira e, no pé, a quina de
+   sombra (1,2px) que a recorta. Embaixo dela cai uma sombra de 10px. */
 .movel-tabua {
   position: relative;
   display: block;
@@ -616,12 +617,13 @@ img {
   background:
     linear-gradient(
       180deg,
-      var(--mv-tabua-linha) 0 1.6px,
-      transparent 1.6px 2px,
+      var(--mv-tabua-linha) 0 1px,
+      rgb(0 0 0 / 0.6) 1px 2px,
       color-mix(in srgb, var(--mv-ouro) 50%, transparent) 2px 3.2px,
-      transparent 3.2px 100%
+      transparent 3.2px 6.8px,
+      rgb(0 0 0 / 0.85) 6.8px 100%
     ),
-    linear-gradient(180deg, transparent 40%, rgb(0 0 0 / 0.4)),
+    linear-gradient(180deg, rgb(4 9 28 / 0.08), rgb(4 9 28 / 0.3)),
     url('./assets/madeira-azul-h.webp') 60% 50% / 520px auto;
 }
 

@@ -4978,6 +4978,9 @@ assoalho e do "estante em CSS, sem imagem" não vale mais.
   dentro dele um **painel rebaixado de veio na vertical** (`.movel-base-painel`, a fresa escura
   em cima e à esquerda e a luz fina embaixo). Um véu leve de verniz tira o jeito de madeira
   crua. **É mais larga que o corpo**, 4 px de cada lado (`--mv-projecao`), como no móvel da foto.
+- **A tábua das prateleiras** (8 px) é nítida e escura, na cor da madeira: o fio de luz da quina, a
+  canaleta escura que a separa dos livros, o fio dourado, a face de madeira (véu leve, veio
+  à mostra) e a quina de sombra no pé que a recorta.
 - **Uma versão para cada quantidade de prateleiras (1 a 6):** `--mv-base` vale 52, 46, 42, 38,
   34 e 30 px (`.movel[data-prateleiras='N']`, escrito por `Movel.tsx`). Com poucas prateleiras
   a fileira é alta (até 132 px) e há altura de sobra, então a base cresce; com seis ela
