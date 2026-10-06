@@ -57,10 +57,8 @@ function enfeites(p: Prateleira): Extract<Lugar, { tipo: 'enfeite' }>[] {
 describe('o enfeite no estilo Noite', () => {
   const todos = montarPrateleiras([], [], 4).flatMap(enfeites)
 
-  it('sorteia a forma entre as cinco do enfeite, a largura entre 24, 38 e 52 e a altura entre 63% e 93,5%', () => {
-    expect(new Set(todos.map((e) => e.estilo))).toEqual(
-      new Set(['solido', 'faixa', 'duas-cores', 'fio', 'degrade']),
-    )
+  it('sorteia a forma entre as três sem escurecer o topo, a largura entre 24, 38 e 52 e a altura entre 63% e 93,5%', () => {
+    expect(new Set(todos.map((e) => e.estilo))).toEqual(new Set(['solido', 'faixa', 'fio']))
     expect(new Set(todos.map((e) => e.largura))).toEqual(new Set([24, 38, 52]))
     for (const e of todos) {
       expect(e.altura).toBeGreaterThanOrEqual(63)

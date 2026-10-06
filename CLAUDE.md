@@ -4871,7 +4871,9 @@ Com a lista de formas o formulário **rola** no celular (~1075 px em 390 de larg
 (faixa, fio, bloco de cima do "duas cores") se misturam com `--fg`, que num livro escuro é
 o texto claro — no enfeite isso desenhava um bloco e filetes esbranquiçados. O enfeite
 sobrescreve `--fg` com `TOM_DO_DETALHE_DO_ENFEITE` (`#070d2e`, mais escuro que o fundo), então os
-detalhes viram sulco, não brilho. O único claro do enfeite são os filetes dourados.
+detalhes viram sulco, não brilho. O único claro do enfeite são os filetes dourados. **O
+enfeite também não escurece o topo:** "duas cores" e "degradê" saíram do sorteio (o bloco e o
+degradê escuros no alto liam como sombra), e ficam só `solido`, `faixa` e `fio`.
 
 ### Os estados
 
@@ -4894,7 +4896,7 @@ detalhes viram sulco, não brilho. O único claro do enfeite são os filetes dou
 ### Os enfeites
 
 Lombada **`#1B2A6B`** sem título, emblema nem contagem, sem lavagem de luz (a cor real: é o
-que faz os livros seus saltarem). Forma entre `solido`, `faixa`, `duas-cores`, `fio` e `degrade`,
+que faz os livros seus saltarem). Forma entre `solido`, `faixa` e `fio` (eram cinco; ver acima),
 largura 24, 38 ou 52 px e altura de 63% a 93,5% — tudo sorteado pela semente do lugar
 (prateleira, ordem), então o mesmo lugar dá sempre o mesmo enfeite. **Isso reverte o pedido
 de 14/09/2026** (todo enfeite do mesmo tamanho, sem filete dourado), por decisão do prompt

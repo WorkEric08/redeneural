@@ -40,13 +40,16 @@ export const ALTURA_MAXIMA_DA_LOMBADA = 93.5
  */
 export const COR_DO_ENFEITE = '#1B2A6B'
 /**
- * O tom dos detalhes da forma do enfeite (a faixa, o fio, o bloco de cima da
- * "duas cores"). Os livros da pessoa misturam o detalhe com o texto claro; no
- * enfeite isso dava luz branca no alto, então aqui o detalhe é um azul mais
- * escuro que o fundo — sulco, nunca brilho.
+ * O tom dos detalhes da forma do enfeite (a faixa e o fio). Os livros da pessoa
+ * misturam o detalhe com o texto claro; no enfeite isso dava luz branca no alto,
+ * então aqui o detalhe é um azul mais escuro que o fundo — sulco, nunca brilho.
  */
 export const TOM_DO_DETALHE_DO_ENFEITE = '#070d2e'
-const ESTILOS_DO_ENFEITE = ['solido', 'faixa', 'duas-cores', 'fio', 'degrade'] as const
+/**
+ * Só formas que não tonalizam o topo: "duas cores" e "degradê" escurecem o alto
+ * do enfeite, e ali isso lia como sombra (pedido do usuário, 06/10/2026).
+ */
+const ESTILOS_DO_ENFEITE = ['solido', 'faixa', 'fio'] as const
 const LARGURAS_DO_ENFEITE = [24, 38, 52] as const
 
 /** Os filetes dourados saem num em cada 5 enfeites isolados — e em todo grupo. */
