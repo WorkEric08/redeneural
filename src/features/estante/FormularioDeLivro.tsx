@@ -2,13 +2,20 @@ import { BookOpen, Hammer, type LucideIcon, Paperclip, Shuffle } from 'lucide-re
 import { useState } from 'react'
 
 import { botao } from '@/components/botao'
-import { clampDiasParaAdormecer, DIAS_PARA_ADORMECER_MAXIMO, type TipoDeLivro } from '@/core'
+import {
+  clampDiasParaAdormecer,
+  DIAS_PARA_ADORMECER_MAXIMO,
+  type EstiloDaLombada,
+  type TipoDeLivro,
+} from '@/core'
 import type { NovoLivro } from '@/store/palacio'
 
 import { COMPRIMENTOS } from './comprimentos'
 import { EmblemaDaLombada } from './EmblemaDaLombada'
+import { FORMAS } from './formas'
 import { LARGURAS } from './larguras'
-import { PANOS, pano } from './panos'
+import { geometriaDaLombada } from './lombadaNoite'
+import { PANOS } from './panos'
 
 /**
  * Só para a amostra: o comprimento é gravado em % da fileira (o mesmo mundo
@@ -26,6 +33,10 @@ const REFERENCIA_DA_AMOSTRA_PX = 130
  * a proporção entre as opções sem pagar esse custo de altura.
  */
 const REFERENCIA_DAS_OPCOES_PX = 56
+
+/** A miniatura de cada forma: a proporção de uma lombada de largura média. */
+const LARGURA_DA_MINIATURA_PX = 22
+const ALTURA_DA_MINIATURA_PX = 40
 
 type ChaveDeTipo = 'livro' | 'executavel' | 'pasta'
 
@@ -53,10 +64,11 @@ interface Props {
 }
 
 /**
- * Nome e pano de um livro — o mesmo formulário para criar e para editar, como o
+ * Nome, cor, forma e medidas de um livro — o mesmo formulário para criar e para editar, como o
  * do neurônio.
  *
- * A amostra ao lado é a lombada como ela vai ficar na estante, com a mesma
+ * A amostra ao lado é a lombada como ela vai ficar na estante (forma, cor,
+ * largura, comprimento e emblema; sem estado), com a mesma
  * lavagem de luz. Um quadradinho de cor pura enganaria: na prateleira nenhum
  * pano aparece com a cor que tem.
  *
@@ -75,6 +87,7 @@ export function FormularioDeLivro({
 }: Props) {
   const [titulo, setTitulo] = useState(inicial.titulo)
   const [cor, setCor] = useState(inicial.cor)
+  const [estilo, setEstilo] = useState(inicial.estilo)
   // Sem seção própria no formulário: um livro editado mantém o emblema que já
   // tinha, só não dá mais para escolher um novo.
   const emblema = inicial.emblema
@@ -87,6 +100,23 @@ export function FormularioDeLivro({
   const podeSerExecutavel = (tipo?.valor ?? tipoFixo ?? 'conceitos') === 'conceitos'
 
   const podeEnviar = titulo.trim().length > 0 && !ocupado
+
+  // A amostra não vive numa fileira: o comprimento (em % dela) vira px por uma
+  // referência, e o tamanho do título se mede nesses px.
+  const larguraDaAmostra = larguraLombada ?? 38
+  const alturaDaAmostra =
+    comprimentoLombada === null
+      ? 96
+      : Math.round((comprimentoLombada / 100) * REFERENCIA_DA_AMOSTRA_PX)
+  const tituloDaAmostra = titulo.trim() || '…'
+  const geo = geometriaDaLombada({
+    estilo,
+    cor,
+    titulo: tituloDaAmostra,
+    largura: larguraDaAmostra,
+    altura: alturaDaAmostra,
+    intensidadeDaLuz,
+  })
 
   const opcoesDeTipo: OpcaoDeTipo[] = [
     { chave: 'livro', rotulo: 'Livro', nomeAcessivel: 'Livro', Icone: BookOpen },
@@ -132,6 +162,7 @@ export function FormularioDeLivro({
           onEnviar({
             titulo: titulo.trim(),
             cor,
+            estilo,
             emblema,
             larguraLombada,
             comprimentoLombada,
@@ -220,37 +251,60 @@ export function FormularioDeLivro({
           <span
             aria-hidden
             className="lombada lombada--amostra cores-de-antes"
+            data-estilo={geo.estilo}
             style={{
-              ...pano(cor, intensidadeDaLuz),
-              ...(larguraLombada !== null && { width: `${String(larguraLombada)}px` }),
-              ...(comprimentoLombada !== null && {
-                height: `${String(Math.round((comprimentoLombada / 100) * REFERENCIA_DA_AMOSTRA_PX))}px`,
-              }),
+              ...geo.style,
+              width: `${String(larguraDaAmostra)}px`,
+              height: `${String(alturaDaAmostra)}px`,
             }}
           >
-            <span className="lombada-titulo">{titulo.trim() || '…'}</span>
-            <EmblemaDaLombada chave={tipo?.valor === 'acervo' ? 'pasta' : emblema} />
+            <span className="lombada-titulo">{tituloDaAmostra}</span>
+            {geo.emblemaCabe && (
+              <EmblemaDaLombada chave={tipo?.valor === 'acervo' ? 'pasta' : emblema} />
+            )}
           </span>
         </div>
       </div>
 
       <fieldset className="flex flex-col">
-        <legend className="rotulo-de-secao">Pano</legend>
-        <div className="grid grid-cols-4 gap-x-2 gap-y-3">
+        <legend className="rotulo-de-secao">Cor</legend>
+        <div role="radiogroup" aria-label="Cor" className="grid grid-cols-5 gap-x-2 gap-y-3">
           {PANOS.map((p) => (
             <label key={p.cor} className="pano-opcao">
               <input
                 type="radio"
-                name="pano"
+                name="cor"
                 value={p.cor}
-                checked={cor.toLowerCase() === p.cor}
+                checked={cor.toLowerCase() === p.cor.toLowerCase()}
                 onChange={() => {
                   setCor(p.cor)
                 }}
                 className="sr-only"
               />
               <span className="pano-amostra" style={{ backgroundColor: p.cor }} aria-hidden />
-              <span className="text-poeira text-xs leading-tight">{p.nome}</span>
+              <span className="text-poeira text-center text-xs leading-tight">{p.nome}</span>
+            </label>
+          ))}
+        </div>
+      </fieldset>
+
+      <fieldset className="flex flex-col">
+        <legend className="rotulo-de-secao">Forma</legend>
+        <div role="radiogroup" aria-label="Forma" className="grid grid-cols-2 gap-x-2">
+          {FORMAS.map((f) => (
+            <label key={f.chave} className="forma-opcao">
+              <input
+                type="radio"
+                name="forma"
+                value={f.chave}
+                checked={estilo === f.chave}
+                onChange={() => {
+                  setEstilo(f.chave)
+                }}
+                className="sr-only"
+              />
+              <MiniaturaDaForma estilo={f.chave} cor={cor} intensidadeDaLuz={intensidadeDaLuz} />
+              <span className="text-poeira text-sm leading-tight">{f.rotulo}</span>
             </label>
           ))}
         </div>
@@ -352,5 +406,33 @@ export function FormularioDeLivro({
         </button>
       </div>
     </form>
+  )
+}
+
+/** A lombada em miniatura: só a forma e a cor, sem título — é o que muda de uma opção para outra. */
+function MiniaturaDaForma({
+  estilo,
+  cor,
+  intensidadeDaLuz,
+}: {
+  estilo: EstiloDaLombada
+  cor: string
+  intensidadeDaLuz: number
+}) {
+  const geo = geometriaDaLombada({
+    estilo,
+    cor,
+    titulo: '',
+    largura: LARGURA_DA_MINIATURA_PX,
+    altura: ALTURA_DA_MINIATURA_PX,
+    intensidadeDaLuz,
+  })
+  return (
+    <span
+      aria-hidden
+      className="lombada lombada--miniatura"
+      data-estilo={geo.estilo}
+      style={geo.style}
+    />
   )
 }

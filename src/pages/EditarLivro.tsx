@@ -34,6 +34,7 @@ export default function EditarLivro() {
           inicial={{
             titulo: livro.titulo,
             cor: livro.cor,
+            estilo: livro.estilo,
             emblema: livro.emblema,
             larguraLombada: livro.larguraLombada,
             comprimentoLombada: livro.comprimentoLombada,

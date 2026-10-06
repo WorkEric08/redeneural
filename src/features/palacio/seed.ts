@@ -8,7 +8,7 @@ import { DIAS_PARA_ADORMECER_PADRAO, type Livro, type Neuronio, type PalacioRepo
  *
  * Ids e datas são fixos de propósito: rodar o seed duas vezes não duplica nada.
  *
- * As cores são pano de encadernação — ver a paleta de lombadas em index.css.
+ * As cores são tons da paleta Noite (`PALETA_NOITE`): Violeta, Petróleo e Vinho.
  */
 
 const T0 = new Date('2026-01-01T12:00:00.000Z')
@@ -24,7 +24,8 @@ export const SEED_LIVROS: Livro[] = [
   {
     id: PSICOLOGIA,
     titulo: 'Psicologia',
-    cor: '#7b6ae0',
+    cor: '#3A2F6B',
+    estilo: 'solido',
     prateleira: 0,
     ordem: 0,
     tipo: 'conceitos',
@@ -38,7 +39,8 @@ export const SEED_LIVROS: Livro[] = [
   {
     id: PROGRAMACAO,
     titulo: 'Programação',
-    cor: '#3e9a93',
+    cor: '#17505A',
+    estilo: 'solido',
     prateleira: 2,
     ordem: 0,
     tipo: 'conceitos',
@@ -52,7 +54,8 @@ export const SEED_LIVROS: Livro[] = [
   {
     id: MUSICA,
     titulo: 'Música',
-    cor: '#c8734a',
+    cor: '#4A2540',
+    estilo: 'solido',
     prateleira: 1,
     ordem: 0,
     tipo: 'conceitos',

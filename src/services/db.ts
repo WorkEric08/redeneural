@@ -1,8 +1,10 @@
 import Dexie, { type EntityTable, type Table } from 'dexie'
 
 import {
+  corMaisProxima,
   DIAS_PARA_ADORMECER_PADRAO,
   distribuicaoAntiga,
+  ESTILO_PADRAO,
   posicoesAntigas,
   type Anexo,
   type ArquivoDoAnexo,
@@ -261,6 +263,25 @@ export function createDb(name: string = DB_NAME): PalacioDB {
           estado: n.estado ?? null,
           ultimoToque: n.ultimoToque ?? n.updatedAt,
           resultadoLink: n.resultadoLink ?? null,
+        })),
+      )
+    })
+
+  // v12 (06/10/2026): a estante no estilo Noite. Todo livro ganha a forma
+  // `solido` e a cor vai ao tom mais próximo da paleta de 10 — `cor` e `estilo`
+  // não são indexados, então não há índice novo.
+  db.version(12)
+    .stores({})
+    .upgrade(async (tx) => {
+      const livros = tx.table<Omit<Livro, 'estilo'> & Partial<Pick<Livro, 'estilo'>>, string>(
+        'livros',
+      )
+      const antigos = await livros.toArray()
+      await livros.bulkPut(
+        antigos.map((l) => ({
+          ...l,
+          cor: corMaisProxima(l.cor),
+          estilo: l.estilo ?? ESTILO_PADRAO,
         })),
       )
     })

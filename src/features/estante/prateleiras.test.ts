@@ -16,7 +16,8 @@ function livro(
   const l: Livro = {
     id,
     titulo: `Livro ${id}`,
-    cor: '#7b6ae0',
+    cor: '#3A2F6B',
+    estilo: 'solido',
     prateleira,
     ordem,
     tipo: 'conceitos',
@@ -27,7 +28,7 @@ function livro(
     diasParaAdormecer: 30,
     createdAt: T0,
   }
-  return { livro: l, neuronios: 3, anexos: 0, internas: 0, saindo: 0, altura: 0.5 }
+  return { livro: l, neuronios: 3, anexos: 0, internas: 0, saindo: 0, altura: 0.5, andamento: null }
 }
 
 /** `L:id` para livro, `E` para enfeite, `_` para vaga — a fileira num relance. */
@@ -40,6 +41,66 @@ function fileira(p: Prateleira, ate = 6): string[] {
 function livrosDe(prateleiras: readonly Prateleira[]): Extract<Lugar, { tipo: 'livro' }>[] {
   return prateleiras.flatMap((p) => p.lugares.filter((x) => x.tipo === 'livro'))
 }
+
+function enfeites(p: Prateleira): Extract<Lugar, { tipo: 'enfeite' }>[] {
+  return p.lugares.filter((x): x is Extract<Lugar, { tipo: 'enfeite' }> => x.tipo === 'enfeite')
+}
+
+describe('o enfeite no estilo Noite', () => {
+  const todos = montarPrateleiras([], [], 4).flatMap(enfeites)
+
+  it('sorteia a forma entre as cinco do enfeite, a largura entre 24, 38 e 52 e a altura entre 63% e 93,5%', () => {
+    expect(new Set(todos.map((e) => e.estilo))).toEqual(
+      new Set(['solido', 'faixa', 'duas-cores', 'fio', 'degrade']),
+    )
+    expect(new Set(todos.map((e) => e.largura))).toEqual(new Set([24, 38, 52]))
+    for (const e of todos) {
+      expect(e.altura).toBeGreaterThanOrEqual(63)
+      expect(e.altura).toBeLessThanOrEqual(93.5)
+    }
+  })
+
+  it('o mesmo lugar dá sempre o mesmo enfeite, mesmo com a estante mudando', () => {
+    const [a] = montarPrateleiras([], [], 2)
+    const [b] = montarPrateleiras([livro('x', 1, 3)], [{ prateleira: 1, ordem: 9 }], 3)
+    expect(enfeites(b!).map((e) => [e.indice, e.estilo, e.altura, e.largura])).toEqual(
+      enfeites(a!).map((e) => [e.indice, e.estilo, e.altura, e.largura]),
+    )
+  })
+
+  it('enfeite com outro enfeite ao lado forma um grupo e leva os filetes dourados', () => {
+    const [p] = montarPrateleiras([], [], 1)
+    expect(enfeites(p!).every((e) => e.dourado)).toBe(true)
+  })
+
+  it('o enfeite isolado só tem dourado se o sorteio pedir: uma minoria, cerca de 1 em 5', () => {
+    // Um livro em cada lugar par deixa todo enfeite entre dois livros, isolado.
+    const livros = Array.from({ length: 4 }, (_, prateleira) =>
+      Array.from({ length: LUGARES_POR_PRATELEIRA / 2 }, (_, i) =>
+        livro(`l${String(prateleira)}-${String(i)}`, prateleira, i * 2),
+      ),
+    ).flat()
+    const isolados = montarPrateleiras(livros, [], 4).flatMap(enfeites)
+    const comDourado = isolados.filter((e) => e.dourado).length
+
+    expect(isolados).toHaveLength(4 * (LUGARES_POR_PRATELEIRA / 2))
+    expect(comDourado).toBeGreaterThan(0)
+    expect(comDourado).toBeLessThan(isolados.length / 2)
+  })
+
+  it('tirar o vizinho enfeite de um enfeite isolado tira o dourado de grupo dele', () => {
+    const cercado = montarPrateleiras([livro('a', 0, 4), livro('b', 0, 6)], [], 1)[0]!
+      .lugares[5] as Extract<Lugar, { tipo: 'enfeite' }>
+    const comGrupo = montarPrateleiras([], [], 1)[0]!.lugares[5] as Extract<
+      Lugar,
+      { tipo: 'enfeite' }
+    >
+    expect(comGrupo.dourado).toBe(true)
+    // Isolado, o dourado é o do sorteio do lugar — o mesmo número, sem o grupo.
+    expect(typeof cercado.dourado).toBe('boolean')
+    expect({ ...cercado, dourado: comGrupo.dourado }).toEqual(comGrupo)
+  })
+})
 
 describe('montarPrateleiras', () => {
   it('cada prateleira tem sempre todos os lugares, com livro ou sem', () => {
@@ -70,15 +131,21 @@ describe('montarPrateleiras', () => {
     expect(fileira(p1!, 3)).toEqual(['E', 'E', '_'])
   })
 
-  it('a cor de um enfeite é do lugar: pôr um livro ao lado não a troca', () => {
+  it('a forma, a altura e a largura de um enfeite são do lugar: pôr um livro ao lado não as troca', () => {
     const vazio = montarPrateleiras([], [], 1)[0]!.lugares[5]
     const comVizinho = montarPrateleiras([livro('a', 0, 4)], [], 1)[0]!.lugares[5]
     expect(comVizinho).toEqual(vazio)
   })
 
-  it('vaga e enfeite têm a mesma largura: tirar um enfeite não faz a fileira andar', () => {
-    const [p] = montarPrateleiras([], [{ prateleira: 0, ordem: 0 }], 1)
-    expect(p!.lugares[0]!.largura).toBe(p!.lugares[1]!.largura)
+  it('a vaga tem a largura que o enfeite daquele lugar tinha: tirá-lo não faz a fileira andar', () => {
+    const cheia = montarPrateleiras([], [], 1)[0]!
+    const comVagas = montarPrateleiras(
+      [],
+      Array.from({ length: LUGARES_POR_PRATELEIRA }, (_, i) => ({ prateleira: 0, ordem: i })),
+      1,
+    )[0]!
+    expect(comVagas.lugares.every((l) => l.tipo === 'vazio')).toBe(true)
+    expect(comVagas.lugares.map((l) => l.largura)).toEqual(cheia.lugares.map((l) => l.largura))
   })
 
   it('nunca perde um livro, nem os de fora da grade (dados de antes dos lugares)', () => {

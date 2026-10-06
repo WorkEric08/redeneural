@@ -8,6 +8,8 @@
 
 import type { MapaDoPalacio } from '../motor/mapa'
 
+import type { EstiloDaLombada } from './paletaNoite'
+
 export type Id = string
 
 /**
@@ -28,8 +30,10 @@ export interface Livro {
   id: Id
   tipo: TipoDeLivro
   titulo: string
-  /** Cor da lombada, em hex (#rrggbb). */
+  /** Cor da lombada, em hex (#rrggbb): um dos 10 tons de `PALETA_NOITE`. */
   cor: string
+  /** A forma da lombada na estante (estilo Noite, 06/10/2026). */
+  estilo: EstiloDaLombada
   /**
    * Em qual prateleira o livro mora — gravado, e não calculado (desde a Fase
    * 10). Antes disso a prateleira era 100% derivada da posição na estante
@@ -286,7 +290,10 @@ export interface LivroSnapshot {
   /** Ausente em backups de antes das pastas de acervo — o import trata como `'conceitos'`. */
   tipo?: TipoDeLivro | undefined
   titulo: string
+  /** Hex livre: backup de antes da paleta Noite — o import leva ao tom mais próximo. */
   cor: string
+  /** Ausente em backups de antes da paleta Noite — o import trata como `'solido'`. */
+  estilo?: EstiloDaLombada | undefined
   /**
    * Ausente em backups anteriores a 12/09/2026, quando a estante ainda não
    * guardava ordem. O import reconstrói a ordem daquela época a partir de

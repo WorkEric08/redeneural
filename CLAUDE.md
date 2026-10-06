@@ -355,7 +355,7 @@ revisão. Não adiantar fases.
 ## Modelo de dados
 
 ```
-livros:     { id, tipo: 'conceitos' | 'acervo', titulo, cor, prateleira, ordem, executavel, diasParaAdormecer, createdAt }
+livros:     { id, tipo: 'conceitos' | 'acervo', titulo, cor, estilo, prateleira, ordem, executavel, diasParaAdormecer, createdAt }
 neuronios:  { id, livroId: string | null, titulo, conteudo, embedding: Float32Array | null,
               estado: 'para_fazer' | 'fazendo' | 'feita' | null, ultimoToque, resultadoLink, createdAt, updatedAt }
 conexoes:   { id, aId, bId, score, emb, rr, cross, mantidaPorA, mantidaPorB, updatedAt }
@@ -650,6 +650,11 @@ liga, em vez de só ser da cor deles.
 E a regra que já valia continua: **ouro significa uma coisa só — a conexão que atravessa
 livros**. Ação primária é papel claro sobre a sala, nunca ouro.
 
+> **Substituído em 06/10/2026 (estilo Noite):** o ouro deixou de ser "só do título" e
+> de significar a ponte (a ponte é azul desde 15/09). Na estante ele **marca estado**
+> (Fazendo, Feita) e **acabamento** (filetes dos enfeites, fio da prateleira). Ver
+> "A estante no estilo Noite".
+
 Ideia guardada para a passada final: na primeira referência a luz azul **dessatura as
 lombadas** — de longe não se vê a cor real dos livros. Na estante afastada as cores
 chegam lavadas de azul e ganham cor de verdade quando você se aproxima.
@@ -687,13 +692,14 @@ em `public/`, com subset latino. Os nomes dos tokens não mudam.
 Três rotas: `/` (estante), `/livro/:livroId`, `/laboratorio`.
 
 - **A altura da lombada é a quantidade de neurônios** — a única métrica que a estante
-  mostra sem você abrir nada. O ponto dourado no topo marca livro com fio saindo.
+  mostra sem você abrir nada. (O ponto no topo, "livro com fio saindo", só aparece desde
+  06/10/2026 no livro que acende por ponte, em azul — ver "A estante no estilo Noite".)
 - **De longe a luz lava a cor do pano.** A lombada é `color-mix` da cor do livro com
   `--lavagem`; dentro do livro a barra usa a cor real, sem lavagem. É a primeira
   referência virando regra: distância desbota.
-- **A lombada é sempre um objeto escuro**, nos dois temas — é o que faz a gravação em
-  ouro (`--ouro-gravado`) continuar legível numa sala clara. Livro é escuro contra
-  parede, não o contrário.
+- **A lombada é sempre um objeto escuro**, nos dois temas. Livro é escuro contra
+  parede, não o contrário. (Desde 06/10/2026 o título não é mais gravado em ouro: é
+  claro ou escuro conforme a cor, e o **Creme é o único tom claro** da paleta.)
 - **O fio dourado carrega o nome do livro do outro lado.** Sem isso, "atravessa livros"
   não quer dizer nada para quem está lendo.
 - **Score zero é tracejado**, conforme a regra do design system.
@@ -967,7 +973,7 @@ do usuário. Botão direito e a tecla de menu abrem o menu; Enter e Espaço espi
   store é otimista. **Apagar apaga em cascata** (neurônios e fios), com
   confirmação que diz quantos neurônios vão junto, e reprocessa — exceto livro
   vazio, que não tem vizinho a perder.
-- **Panos**: 8 cores hex (`features/estante/panos.ts`), nenhuma na faixa do ouro.
+- **Panos** (substituídos em 06/10/2026 pela paleta Noite de 10 tons — ver "A estante no estilo Noite"): 8 cores hex (`features/estante/panos.ts`), nenhuma na faixa do ouro.
   O formulário sugere o primeiro pano sem uso e mostra a lombada sob a mesma
   lavagem da estante, porque na prateleira nenhum pano aparece com a cor que tem.
 
@@ -4784,6 +4790,142 @@ instantâneo.
 **Não verificado num navegador de verdade nesta sessão.** Typecheck e lint
 limpos.
 
+## A estante no estilo Noite (06/10/2026)
+
+Pedido do usuário: levar a estante (`Estante.tsx`, `Movel`, `Lombada`, `LugarSemLivro`,
+`FormularioDeLivro`) para o estilo visual "Noite" e deixar quem usa controlar a forma e a
+cor de cada livro. Feito em oito passos, um por vez; as decisões abaixo foram do usuário
+ou, onde o prompt dele não bastava, confirmadas por ele antes de implementar.
+
+### As quatro regras de design que mudaram
+
+Estas quatro regras deixaram de valer como estavam escritas acima:
+
+1. **Ouro deixa de ser só do título.** O título é claro ou escuro conforme a cor. O ouro
+   marca **estado** (Fazendo, Feita) e **acabamento** (filetes dos enfeites, fio da tábua).
+2. **O azul-claro `#7FA8FF` (`#A9C4FF` no ponto) é exclusivo da ponte.** Nenhum outro
+   elemento da lombada o usa. O token global `--ponte` (Rede, Mapa, textos) **não mudou**
+   e é outro tom: a ponte da estante usa literais próprios, só na lombada.
+3. **A lombada continua sendo objeto escuro.** O Creme (`#F1EEE6`) é o único tom claro.
+4. **A cor do livro é um dos 10 tons da paleta, não um hex livre.**
+
+### Dados
+
+- `Livro.estilo`: `solido`, `faixa`, `duas-cores`, `contorno`, `ponto`, `fio`, `degrade`,
+  `papel`, `metade` ou `bloco`, padrão `'solido'`, validado com Zod. Dexie **v12**: todo livro ganha
+  `solido` e a `cor` vai ao tom mais próximo.
+- `core/domain/paletaNoite.ts`: a paleta, as formas e `corMaisProxima(hex)` (distância em
+  Lab, ΔE76). `Livro.cor` continua um hex guardado, mas o repositório **só aceita um dos
+  10** (em qualquer caixa de hex); o **backup** aceita hex livre e o mapeia em vez de
+  recusar, e `estilo` ausente vira `solido`.
+- Paleta Noite: Azul base `#1B2A6B` (o padrão de livro novo), Azul profundo `#12204F`, Azul
+  vivo `#2A3A8A`, Azul noite `#0E1744`, Azul médio `#243580`, Petróleo `#17505A`, Violeta
+  `#3A2F6B`, Vinho `#4A2540`, Grafite `#2D3A4F`, Creme `#F1EEE6`.
+- **O mapeamento em Lab pesa a luminosidade mais que o matiz.** Como a paleta é toda escura
+  exceto o Creme, os panos antigos claros caem assim: Violeta `#7b6ae0` e Azul `#5b7fd6` →
+  Azul vivo; **Terracota `#c8734a` → Creme**; Ardósia e Musgo → Petróleo; Couro → Vinho.
+  Quem tinha Terracota passou a ter lombada creme. O seed foi fixado à mão (Violeta,
+  Petróleo, Vinho).
+- Cor do texto: `#F2F2F5` ou `#14141C` quando a luminância (0,299R + 0,587G + 0,114B) passa de
+  0,55 — só o Creme.
+
+### A lombada
+
+`features/estante/lombadaNoite.ts` (puro) calcula e `.lombada` em `index.css` desenha. As
+dez formas são um pseudo-elemento só (`::before`) lido de `data-estilo`; a sombra lateral é o
+`::after`; o papel é sempre Creme com texto escuro, título como foi digitado e a contagem
+de ideias no pé (a cor guardada continua valendo na Rede e no Mapa).
+
+- **Em repouso** o fundo é a cor lavada `color-mix(srgb, cor 84%, #5565B5 16%)`; escolhido,
+  erguido e alvo usam a cor real. **O slider de luz** (Ajustes) escala a lavagem: 42 (o
+  padrão) dá os 16%, 0 mostra a cor real e 100 chega a 38%.
+- **Só `transform` e `opacity` animam.** Saíram as transições de cor da lombada e a
+  animação do halo da ponte.
+- **O tamanho do título** é `min(0,46 × W, espaço ÷ (n × 0,9))`, piso de 9 px, e o que não
+  cabe vira reticências. Dois desvios do desenho, medidos no navegador: o espaço é a **zona
+  do título da forma** (no sólido, 75% de H — a conta do desenho; com 0,75 × H fixo "FAIXA"
+  virava "FAI…"), e cada caractere conta **0,9** do corpo, não 0,78 (a Literata em negrito,
+  maiúscula e com 0,1em dá média 0,81 e O, D, M passam de 0,9: "CONTORNO" virava
+  "CONTOR…").
+- **A altura em px** vem de `useAlturaDaFileira`, que **mede** a fileira em vez de repetir a
+  fórmula do CSS. Medido, a lombada de verdade tem as mesmas proporções de antes (altura de
+  63% a 93,5% da fileira, largura de 24 a 68 px).
+- **O emblema** só aparece se o título terminar acima dele, nunca no papel (a contagem ocupa
+  o pé) nem no livro Feito (o disco ocupa o pé); usa a cor do texto, para ler no Creme.
+- **Fantasma, abertura do livro, Rede e Mapa** ficaram só com cor e título.
+
+### O formulário
+
+Cor: 10 amostras (`radiogroup`, 5 por linha), cada uma com o nome em português. Forma: lista
+de 10 opções em 2 colunas, com a miniatura da lombada ao lado do nome, na cor atual do
+formulário. A amostra mostra forma, cor, largura, comprimento e emblema ao vivo, **sem
+estado** e sem a contagem do papel. Editar carrega e salva `estilo` e `cor` do mesmo jeito.
+Com a lista de formas o formulário **rola** no celular (~1075 px em 390 de largura, contra
+~840 antes); o botão de criar continua preso no pé.
+
+### Os estados
+
+- **Ponte:** `data-ponte` ganha moldura de 1 px `#7FA8FF`, anel de 3 px a 30% e o ponto
+  `#A9C4FF` a 7 px do topo. **O ponto só existe com `data-ponte`**: o pontinho que marcava
+  sempre "este livro tem fio saindo" deixou de existir (o prompt dizia "substitui").
+- **Os três estados do livro executável não tinham origem no livro** — Fazendo, Feita e
+  Adormecido eram do neurônio (`estadoVisivel`, `estaAdormecida`). Regra confirmada pelo
+  usuário, em `andamentoDoLivro` (`core/domain/executavel.ts`, puro, testado), só para livro
+  executável (pasta nunca): **Feita** — há ideias e todas estão feitas; **Adormecido** —
+  sobrou ideia por fazer e todas dormem; **Fazendo** — alguma ideia **acordada** está em
+  "fazendo"; o resto não tem marca. Exclusivos entre si. A estante usa o relógio de quando
+  a tela abriu, então o livro só adormece na próxima abertura.
+- **Fazendo:** tira `#E8C471` no topo (`max(2px; 1,25% H)`) e ponto logo acima. **Feita:**
+  disco `#E8C471` a 90% de H com a marca `#1C1504`. **Adormecido:** a lombada a 42% de
+  opacidade com a névoa `#A9BAF0` de 12% a 40% (a névoa também fica a 42%: a opacidade é do
+  botão inteiro). O vão do arrasto (20%) vence o adormecido.
+- O leitor de tela ganhou "em andamento", "tudo feito" ou "adormecido" no nome da lombada.
+
+### Os enfeites
+
+Lombada **`#1B2A6B`** sem título, emblema nem contagem, sem lavagem de luz (a cor real: é o
+que faz os livros seus saltarem). Forma entre `solido`, `faixa`, `duas-cores`, `fio` e `degrade`,
+largura 24, 38 ou 52 px e altura de 63% a 93,5% — tudo sorteado pela semente do lugar
+(prateleira, ordem), então o mesmo lugar dá sempre o mesmo enfeite. **Isso reverte o pedido
+de 14/09/2026** (todo enfeite do mesmo tamanho, sem filete dourado), por decisão do prompt
+novo. **A vaga tem a largura que o enfeite daquele lugar teria**, para tirar o enfeite não
+mexer a fileira. Filetes dourados (9,4% e 11,9% de H, de 1,6 e 0,8 px, e 90,6%, 1,6 px, a
+85%) saem em todo enfeite com outro enfeite ao lado (grupo) e em 1 de 5 dos isolados — como
+quase todo enfeite tem vizinho enfeite, **quase todos levam dourado**. Os gestos (tocar abre
+`/novo-livro`, segurar abre o menu do lugar) não mudaram.
+
+### O móvel
+
+Dentro de `.cores-de-antes`, como variáveis `--mv-*`, sem tocar nos tokens globais. **O escopo
+agora é sempre escuro, nos dois temas**: comparado pixel a pixel, a estante é idêntica de dia
+e de noite (só os 32 pixels dos cantos arredondados diferem). Parede `#0B1230`, trilho de
+10 px `#121A44`, tábua de 8 px `#1A2557` com a linha `#3446A6` (1,6 px) no topo, o fio dourado
+(1,2 px a 50%) logo abaixo e sombra de 10 px, pilastras `#12204F` com borda `#2A3A8A` de 24 px
+à esquerda e **14 px à direita**. Penumbra de 62% a 10% em 32% da altura; a vinheta ficou.
+Desvios: o prompt dizia "como hoje" para as pilastras, mas hoje as duas tinham 24 px (segui
+os números); e "6 px da base" da tábua colidiria com a linha do topo, então o fio ficou logo
+abaixo dela.
+
+### Verificado
+
+Chrome (Playwright-core, build de produção): as 10 formas nas larguras 24, 38, 52 e 68 em
+fileiras de 92 e 132 px; as 10 cores × 10 formas a 24 px com título legível; ponte, Fazendo,
+Feita, Adormecido, escolhido e erguido; os dois temas idênticos; sem rolagem lateral em 320,
+412, 768 e 1440. Gestos (por mouse): tocar espia, segurar ergue e soltar parado abre o menu,
+arrastar para um lugar vazio leva só o livro e deixa uma vaga, soltar sobre um livro o empurra
+para o buraco mais perto, tocar numa vaga ou num enfeite abre o novo livro naquele lugar,
+segurar um enfeite abre o menu do lugar, e tudo sobrevive a recarregar. 474 testes, tipos e
+lint limpos. **Não verificado num aparelho de verdade** (toque real, teclado aberto).
+
+### O que ficou de fora, ou visível
+
+- A contagem do papel a 24 px tem ~5 px de corpo (22% de W, como no desenho): ilegível.
+- Títulos longos em lombada baixa mostram reticências (o piso de 9 px é do desenho).
+- Pastilhas de cor da Rede, do Mapa e das listas leem `livro.cor` direto: o Azul noite quase
+  some sobre a sala escura e o Creme é muito claro no tema claro. O desenho mandava herdar.
+- No papel feito, a contagem e o disco se sobrepõem um pouco.
+- O tom `#7FA8FF` da ponte na estante difere do `--ponte` da Rede e do Mapa.
+
 ## Fases
 
 0. ✅ Esqueleto (Vite/React/TS/Tailwind/PWA/Capacitor)
@@ -4827,3 +4969,5 @@ limpos.
     partes 1 e 2, Executáveis partes 1 e 2), e os satélites de anexo entre o
     Porto e o Mapa. **Falta o teste conjunto do usuário**, com os ajustes que
     vierem dele
+26. ✅ A estante no estilo Noite — paleta de 10 tons, 10 formas de lombada,
+    estados do livro executável, enfeites e móvel (06/10/2026)

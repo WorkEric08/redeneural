@@ -1,6 +1,7 @@
 import type { CriarLivroInput } from '../ports/engine'
 
 import { clampDiasParaAdormecer, DIAS_PARA_ADORMECER_PADRAO } from './executavel'
+import { ESTILO_PADRAO } from './paletaNoite'
 import type { Livro } from './types'
 
 /**
@@ -15,6 +16,7 @@ export function novoLivro(input: CriarLivroInput, agora: Date, ordem: number): L
     tipo,
     titulo: input.titulo.trim(),
     cor: input.cor,
+    estilo: input.estilo ?? ESTILO_PADRAO,
     prateleira: Math.max(0, Math.trunc(input.prateleira)),
     ordem,
     emblema: input.emblema ?? null,

@@ -78,3 +78,32 @@ export function estadoVisivel(
 ): EstadoDaIdeia | null {
   return livro?.executavel ? (ideia.estado ?? 'para_fazer') : null
 }
+
+/**
+ * O andamento de um livro inteiro, para a lombada na estante (06/10/2026). O
+ * livro não tem estado próprio: sai das ideias dele, e só num livro
+ * executável.
+ *
+ * - `feita`: tem ideias e todas estão feitas;
+ * - `adormecido`: sobrou ideia por fazer e todas elas estão adormecidas;
+ * - `fazendo`: alguma ideia acordada está em andamento;
+ * - `null`: o resto — só "para fazer", ou sem ideia nenhuma. Sem marca.
+ *
+ * As três são exclusivas entre si.
+ */
+export type AndamentoDoLivro = 'fazendo' | 'feita' | 'adormecido'
+
+export function andamentoDoLivro(
+  livro: Pick<Livro, 'executavel' | 'diasParaAdormecer'>,
+  ideias: readonly { estado: EstadoDaIdeia | null; ultimoToque: Date }[],
+  agora: Date,
+): AndamentoDoLivro | null {
+  if (!livro.executavel || ideias.length === 0) return null
+
+  const porFazer = ideias.filter((i) => estadoVisivel(i, livro) !== 'feita')
+  if (porFazer.length === 0) return 'feita'
+
+  const acordadas = porFazer.filter((i) => !estaAdormecida(i, livro, agora))
+  if (acordadas.length === 0) return 'adormecido'
+  return acordadas.some((i) => estadoVisivel(i, livro) === 'fazendo') ? 'fazendo' : null
+}

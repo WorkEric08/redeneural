@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import {
+  andamentoDoLivro,
   clampDiasParaAdormecer,
   DIAS_PARA_ADORMECER_MAXIMO,
   DIAS_PARA_ADORMECER_PADRAO,
@@ -10,6 +11,7 @@ import {
   estadoVisivel,
   MS_POR_DIA,
 } from './executavel'
+import type { EstadoDaIdeia } from './types'
 
 const EXECUTAVEL = { id: 'exe', executavel: true }
 const OUTRO_EXECUTAVEL = { id: 'exe-2', executavel: true }
@@ -108,5 +110,59 @@ describe('clampDiasParaAdormecer', () => {
     expect(clampDiasParaAdormecer(-3)).toBe(0)
     expect(clampDiasParaAdormecer(9999)).toBe(DIAS_PARA_ADORMECER_MAXIMO)
     expect(clampDiasParaAdormecer(Number.NaN)).toBe(DIAS_PARA_ADORMECER_PADRAO)
+  })
+})
+
+describe('andamentoDoLivro', () => {
+  const AGORA = new Date('2026-10-06T12:00:00.000Z')
+  const dias = (n: number): Date => new Date(AGORA.getTime() - n * MS_POR_DIA)
+  const LIVRO = { executavel: true, diasParaAdormecer: 30 }
+
+  const ideia = (estado: EstadoDaIdeia | null, paradaHa = 0) => ({
+    estado,
+    ultimoToque: dias(paradaHa),
+  })
+
+  it('livro que não é executável, ou sem ideia, não tem andamento', () => {
+    expect(andamentoDoLivro({ ...LIVRO, executavel: false }, [ideia('fazendo')], AGORA)).toBeNull()
+    expect(andamentoDoLivro(LIVRO, [], AGORA)).toBeNull()
+  })
+
+  it('fazendo: alguma ideia acordada está em andamento', () => {
+    expect(andamentoDoLivro(LIVRO, [ideia('fazendo'), ideia('para_fazer')], AGORA)).toBe('fazendo')
+  })
+
+  it('feita: tem ideias e todas estão feitas', () => {
+    expect(andamentoDoLivro(LIVRO, [ideia('feita'), ideia('feita', 90)], AGORA)).toBe('feita')
+  })
+
+  it('uma ideia por fazer tira o livro de feita', () => {
+    expect(andamentoDoLivro(LIVRO, [ideia('feita'), ideia('para_fazer')], AGORA)).toBeNull()
+  })
+
+  it('adormecido: sobrou ideia por fazer e todas dormem, mesmo as feitas ao lado', () => {
+    const dormindo = [ideia('para_fazer', 40), ideia('fazendo', 60), ideia('feita')]
+    expect(andamentoDoLivro(LIVRO, dormindo, AGORA)).toBe('adormecido')
+  })
+
+  it('uma ideia acordada impede o livro de adormecer', () => {
+    expect(
+      andamentoDoLivro(LIVRO, [ideia('para_fazer', 40), ideia('para_fazer', 1)], AGORA),
+    ).toBeNull()
+  })
+
+  it('uma ideia fazendo que adormeceu não conta como fazendo', () => {
+    expect(andamentoDoLivro(LIVRO, [ideia('fazendo', 40), ideia('feita')], AGORA)).toBe(
+      'adormecido',
+    )
+  })
+
+  it('ideia sem estado, num livro que acabou de virar executável, está para fazer', () => {
+    expect(andamentoDoLivro(LIVRO, [ideia(null)], AGORA)).toBeNull()
+  })
+
+  it('com 0 dias, adormece logo depois de qualquer toque', () => {
+    const impaciente = { executavel: true, diasParaAdormecer: 0 }
+    expect(andamentoDoLivro(impaciente, [ideia('fazendo', 1)], AGORA)).toBe('adormecido')
   })
 })

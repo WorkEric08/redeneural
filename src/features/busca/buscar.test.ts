@@ -10,7 +10,8 @@ const LIVROS: Livro[] = [
   {
     id: 'psi',
     titulo: 'Psicologia',
-    cor: '#7b6ae0',
+    cor: '#3A2F6B',
+    estilo: 'solido',
     prateleira: 0,
     ordem: 0,
     tipo: 'conceitos',
@@ -24,7 +25,8 @@ const LIVROS: Livro[] = [
   {
     id: 'mus',
     titulo: 'Música',
-    cor: '#c8734a',
+    cor: '#3A2F6B',
+    estilo: 'solido',
     prateleira: 1,
     ordem: 0,
     tipo: 'conceitos',

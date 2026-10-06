@@ -1,4 +1,4 @@
-import { DIAS_PARA_ADORMECER_PADRAO, primeiroLugarDaEstante } from '@/core'
+import { DIAS_PARA_ADORMECER_PADRAO, ESTILO_PADRAO, primeiroLugarDaEstante } from '@/core'
 import { COMPRIMENTO_PADRAO } from '@/features/estante/comprimentos'
 import { LARGURA_PADRAO } from '@/features/estante/larguras'
 import { panoSugerido } from '@/features/estante/panos'
@@ -26,6 +26,7 @@ export function useCriarLivroExecutavel(): (titulo: string) => Promise<string | 
       {
         titulo: titulo.trim(),
         cor: panoSugerido(livros),
+        estilo: ESTILO_PADRAO,
         emblema: null,
         larguraLombada: LARGURA_PADRAO,
         comprimentoLombada: COMPRIMENTO_PADRAO,

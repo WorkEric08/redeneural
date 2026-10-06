@@ -17,6 +17,7 @@ import {
   type Conexao,
   type CriarAnexoInput,
   type EstadoDaIdeia,
+  type EstiloDaLombada,
   type Livro,
   type MapaDoPalacio,
   type ModoDaBusca,
@@ -41,6 +42,7 @@ export interface NovoNeuronio {
 export interface NovoLivro {
   titulo: string
   cor: string
+  estilo: EstiloDaLombada
   emblema: string | null
   larguraLombada: number | null
   comprimentoLombada: number | null
@@ -447,6 +449,7 @@ export const usePalacio = create<PalacioStore>()((set, get) => {
                 ...l,
                 titulo: mudancas.titulo.trim(),
                 cor: mudancas.cor,
+                estilo: mudancas.estilo,
                 emblema: mudancas.emblema,
                 larguraLombada: mudancas.larguraLombada,
                 comprimentoLombada: mudancas.comprimentoLombada,

@@ -10,7 +10,8 @@ const LIVROS: Livro[] = [
   {
     id: 'psi',
     titulo: 'Psicologia',
-    cor: '#7b6ae0',
+    cor: '#3A2F6B',
+    estilo: 'solido',
     prateleira: 0,
     ordem: 0,
     tipo: 'conceitos',
@@ -24,7 +25,8 @@ const LIVROS: Livro[] = [
   {
     id: 'prog',
     titulo: 'Programação',
-    cor: '#3e9a93',
+    cor: '#3A2F6B',
+    estilo: 'solido',
     prateleira: 0,
     ordem: 1,
     tipo: 'conceitos',
@@ -38,7 +40,8 @@ const LIVROS: Livro[] = [
   {
     id: 'vazio',
     titulo: 'Botânica',
-    cor: '#56a063',
+    cor: '#3A2F6B',
+    estilo: 'solido',
     prateleira: 0,
     ordem: 2,
     tipo: 'conceitos',
@@ -192,5 +195,19 @@ describe('pontesEntreLivros', () => {
   it('ignora fio para neurônio que não está na tela', () => {
     const mapa = pontesEntreLivros(NEURONIOS, [conexao('p1', 'fantasma', true)])
     expect(mapa.size).toBe(0)
+  })
+})
+
+describe('montarEstante: andamento', () => {
+  const AGORA = new Date('2026-10-06T12:00:00.000Z')
+  const exe: Livro = { ...LIVROS[0]!, id: 'exe', executavel: true }
+
+  it('o livro executável herda o andamento das ideias dele; os outros ficam sem', () => {
+    const ideia = { ...neuronio('n1', 'exe'), estado: 'fazendo' as const, ultimoToque: AGORA }
+    const estante = montarEstante([exe, LIVROS[1]!], [ideia, neuronio('n2', 'prog')], [], [], AGORA)
+    expect(estante.map((e) => [e.livro.id, e.andamento])).toEqual([
+      ['exe', 'fazendo'],
+      ['prog', null],
+    ])
   })
 })

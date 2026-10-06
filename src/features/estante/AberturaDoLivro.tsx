@@ -4,6 +4,7 @@ import { createPortal } from 'react-dom'
 import type { Livro } from '@/core'
 
 import type { Abertura } from './abertura'
+import { corDoTexto } from './lombadaNoite'
 
 /** Em ms. Somados, menos de um segundo: abrir livro é gesto de todo dia, não cerimônia. */
 const VOO = 460
@@ -111,6 +112,7 @@ export function AberturaDoLivro({ livro, geometria: g, onAberto }: Props) {
 
   const estilo = {
     '--pano': livro.cor,
+    '--fg': corDoTexto(livro.cor),
     '--grossura': `${String(g.grossura)}px`,
     '--meia-largura': `${String(g.largura / 2)}px`,
     '--aumento-da-lombada': g.aumentoDaLombada,
@@ -127,7 +129,7 @@ export function AberturaDoLivro({ livro, geometria: g, onAberto }: Props) {
         <div ref={corpo} className="abertura-livro cores-de-antes" style={estilo}>
           <div className="abertura-miolo" />
           <div className="abertura-lombada lombada">
-            <span className="lombada-titulo">{livro.titulo}</span>
+            <span className="abertura-lombada-titulo">{livro.titulo}</span>
           </div>
           <div ref={capa} className="abertura-capa">
             <div className="abertura-capa-frente">

@@ -1,10 +1,12 @@
-import { useMemo, type CSSProperties } from 'react'
+import { useMemo, useRef, type CSSProperties } from 'react'
 
 import type { Id, Vaga } from '@/core'
 
 import { Fantasma, Lombada, type EstadoDaLombada } from './Lombada'
-import { montarPrateleiras, type Lugar } from './prateleiras'
+import { geometriaDaLombada } from './lombadaNoite'
+import { COR_DO_ENFEITE, montarPrateleiras, type Lugar } from './prateleiras'
 import type { LivroNaEstante } from './resumo'
+import { useAlturaDaFileira } from './useAlturaDaFileira'
 import {
   useManipularLivros,
   type LugarDaEstante,
@@ -66,6 +68,8 @@ export function Movel({
   onNovo,
   onAcoesDoLugar,
 }: Props) {
+  const movel = useRef<HTMLDivElement>(null)
+  const alturaDaFileira = useAlturaDaFileira(movel)
   const prateleiras = useMemo(
     () => montarPrateleiras(estante, vagas, quantidadeDePrateleiras),
     [estante, vagas, quantidadeDePrateleiras],
@@ -104,6 +108,7 @@ export function Movel({
     // O número de prateleiras é o divisor de que a folha precisa para a estante
     // se medir pela tela (ver .movel-fila em index.css).
     <div
+      ref={movel}
       className="movel cores-de-antes"
       style={{ '--mv-prateleiras': prateleiras.length } as CSSProperties}
     >
@@ -128,6 +133,7 @@ export function Movel({
                     ponte={(pontesDoFoco?.get(lugar.item.livro.id) ?? 0) > 0}
                     chegando={chegandoId === lugar.item.livro.id}
                     intensidadeDaLuz={intensidadeDaLuz}
+                    alturaDaFileira={alturaDaFileira}
                     manipular={manipular(lugar.item.livro.id)}
                   />
                 ) : (
@@ -135,6 +141,7 @@ export function Movel({
                     key={`lugar-${String(lugar.indice)}`}
                     lugar={lugar}
                     prateleira={prateleira}
+                    alturaDaFileira={alturaDaFileira}
                     alvo={mesmoLugar(alvo, prateleira, lugar.indice)}
                     realce={
                       mesmoLugar(lugarSegurado, prateleira, lugar.indice) ||
@@ -167,18 +174,21 @@ export function Movel({
  * Um lugar sem livro. A coluna inteira da fileira, e não só a lombada: tocar
  * acima de um enfeite baixo ainda é tocar no lugar dele.
  *
- * O enfeite continua sem título e sem luz — mas agora é da pessoa: tocar
+ * O enfeite continua sem título e sem luz (a cor real, sem lavagem) — mas é da pessoa: tocar
  * escreve um livro exatamente ali, segurar deixa tirá-lo ou devolvê-lo.
  */
 function LugarSemLivro({
   lugar,
   prateleira,
+  alturaDaFileira,
   alvo,
   realce,
   manipular,
 }: {
   lugar: Exclude<Lugar, { tipo: 'livro' }>
   prateleira: number
+  /** A altura da fileira em px, para a forma do enfeite se medir. */
+  alturaDaFileira: number
   /** O livro na mão vai cair aqui. */
   alvo: boolean
   /** Segurado agora, ou com o menu aberto. */
@@ -199,19 +209,40 @@ function LugarSemLivro({
       aria-label={`${nome}, ${oQueTem}: criar um livro aqui`}
       {...manipular}
     >
-      {lugar.tipo === 'enfeite' && (
-        <span
-          aria-hidden
-          className="lombada lombada--enfeite"
-          style={{
-            // A mesma regra da lombada de verdade — a luz lava a cor do pano —,
-            // só que com muito menos luz chegando: 8..38% contra os 58% de um
-            // livro seu. É o que faz os seus saltarem no meio deles.
-            backgroundColor: `color-mix(in oklab, var(--lombada-${String(lugar.pano)}) ${String(Math.round(8 + lugar.luz * 30))}%, var(--lavagem))`,
-            height: `${String(lugar.altura)}%`,
-          }}
-        />
-      )}
+      {lugar.tipo === 'enfeite' && <Enfeite lugar={lugar} alturaDaFileira={alturaDaFileira} />}
     </button>
+  )
+}
+
+/**
+ * O enfeite: uma lombada azul sem título, no desenho das de verdade. Sem lavagem
+ * de luz — a luz da sala chega nos livros da pessoa, e é isso que os faz
+ * saltar no meio dos enfeites.
+ */
+function Enfeite({
+  lugar,
+  alturaDaFileira,
+}: {
+  lugar: Extract<Lugar, { tipo: 'enfeite' }>
+  alturaDaFileira: number
+}) {
+  const geo = geometriaDaLombada({
+    estilo: lugar.estilo,
+    cor: COR_DO_ENFEITE,
+    titulo: '',
+    largura: lugar.largura,
+    altura: (lugar.altura * alturaDaFileira) / 100,
+    intensidadeDaLuz: 0,
+  })
+
+  return (
+    <span
+      aria-hidden
+      className="lombada lombada--enfeite"
+      data-estilo={geo.estilo}
+      style={{ ...geo.style, height: `${String(lugar.altura)}%` }}
+    >
+      {lugar.dourado && <span className="lombada-filetes" />}
+    </span>
   )
 }

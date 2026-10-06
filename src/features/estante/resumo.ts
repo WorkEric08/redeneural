@@ -1,4 +1,11 @@
-import type { Conexao, Id, Livro, NeuronioNaTela } from '@/core'
+import {
+  andamentoDoLivro,
+  type AndamentoDoLivro,
+  type Conexao,
+  type Id,
+  type Livro,
+  type NeuronioNaTela,
+} from '@/core'
 
 /**
  * As contas que a estante mostra.
@@ -54,6 +61,8 @@ export interface LivroNaEstante {
   saindo: number
   /** Altura da lombada, 0..1 — a única métrica que a estante mostra sem abrir nada. */
   altura: number
+  /** Fazendo, feita ou adormecido — só num livro executável (ver `andamentoDoLivro`). */
+  andamento: AndamentoDoLivro | null
 }
 
 /**
@@ -66,12 +75,18 @@ export function montarEstante(
   neuronios: readonly NeuronioNaTela[],
   conexoes: readonly Conexao[],
   anexos: readonly { livroId: Id }[] = [],
+  agora: Date = new Date(),
 ): LivroNaEstante[] {
   const livroDoNeuronio = new Map(neuronios.map((n) => [n.id, n.livroId]))
 
   const contagem = new Map<string, number>()
+  const ideias = new Map<string, NeuronioNaTela[]>()
   for (const n of neuronios) {
-    if (n.livroId !== null) contagem.set(n.livroId, (contagem.get(n.livroId) ?? 0) + 1)
+    if (n.livroId === null) continue
+    contagem.set(n.livroId, (contagem.get(n.livroId) ?? 0) + 1)
+    const lista = ideias.get(n.livroId)
+    if (lista) lista.push(n)
+    else ideias.set(n.livroId, [n])
   }
   const itens = new Map<string, number>()
   for (const a of anexos) itens.set(a.livroId, (itens.get(a.livroId) ?? 0) + 1)
@@ -103,6 +118,7 @@ export function montarEstante(
     internas: internas.get(livro.id) ?? 0,
     saindo: saindo.get(livro.id) ?? 0,
     altura: guardado(livro.id) / maior,
+    andamento: andamentoDoLivro(livro, ideias.get(livro.id) ?? [], agora),
   }))
 }
 

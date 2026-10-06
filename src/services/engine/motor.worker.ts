@@ -623,6 +623,7 @@ async function editarLivro(input: EditarLivroInput): Promise<Livro[]> {
     ...existente,
     titulo: input.titulo.trim(),
     cor: input.cor,
+    estilo: input.estilo,
     emblema: input.emblema,
     larguraLombada: input.larguraLombada,
     comprimentoLombada: input.comprimentoLombada,

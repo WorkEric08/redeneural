@@ -12,6 +12,7 @@ import { beforeEach, describe, expect, it } from 'vitest'
 
 import {
   conexaoId,
+  ehCorDaPaleta,
   LUGARES_POR_PRATELEIRA,
   type Conexao,
   type Livro,
@@ -38,7 +39,8 @@ function livro(id: string, titulo: string, ordem = 0, prateleira = 0): Livro {
     id,
     tipo: 'conceitos',
     titulo,
-    cor: '#6d5bd0',
+    cor: '#3A2F6B',
+    estilo: 'solido',
     prateleira,
     ordem,
     emblema: null,
@@ -677,6 +679,7 @@ describe('migração para a v3', () => {
           | 'larguraLombada'
           | 'comprimentoLombada'
           | 'tipo'
+          | 'estilo'
           | 'executavel'
           | 'diasParaAdormecer'
         >,
@@ -729,6 +732,7 @@ describe('migração para a v4', () => {
           | 'larguraLombada'
           | 'comprimentoLombada'
           | 'tipo'
+          | 'estilo'
           | 'executavel'
           | 'diasParaAdormecer'
         >,
@@ -788,6 +792,7 @@ describe('migração para a v6', () => {
           | 'larguraLombada'
           | 'comprimentoLombada'
           | 'tipo'
+          | 'estilo'
           | 'executavel'
           | 'diasParaAdormecer'
         >,
@@ -834,7 +839,12 @@ describe('migração para a v7', () => {
       .table<
         Omit<
           Livro,
-          'larguraLombada' | 'comprimentoLombada' | 'tipo' | 'executavel' | 'diasParaAdormecer'
+          | 'larguraLombada'
+          | 'comprimentoLombada'
+          | 'tipo'
+          | 'estilo'
+          | 'executavel'
+          | 'diasParaAdormecer'
         >,
         string
       >('livros')
@@ -885,7 +895,7 @@ describe('migração para a v8', () => {
     antigo.version(7).stores({})
     await antigo
       .table<
-        Omit<Livro, 'comprimentoLombada' | 'tipo' | 'executavel' | 'diasParaAdormecer'>,
+        Omit<Livro, 'comprimentoLombada' | 'tipo' | 'estilo' | 'executavel' | 'diasParaAdormecer'>,
         string
       >('livros')
       .bulkPut([
@@ -1041,5 +1051,86 @@ describe('livros executáveis', () => {
       estado: 'feita',
       resultadoLink: 'https://exemplo.com/texto',
     })
+  })
+})
+
+describe('migração para a v12', () => {
+  // Antes de 06/10/2026 a cor era um hex livre e não havia forma de lombada.
+  it('todo livro ganha a forma sólido e a cor vai ao tom mais próximo da paleta', async () => {
+    const nome = `palacio-migracao-v12-${String(nth)}`
+
+    const antigo = new Dexie(nome)
+    antigo.version(1).stores({
+      livros: 'id, createdAt',
+      neuronios: 'id, livroId, updatedAt',
+      conexoes: 'id, aId, bId, updatedAt',
+    })
+    antigo.version(2).stores({ meta: 'chave' })
+    antigo.version(3).stores({ livros: 'id, createdAt, ordem' })
+    antigo.version(4).stores({ livros: 'id, createdAt, ordem, prateleira' })
+    antigo.version(5).stores({ etiquetas: 'prateleira' })
+    antigo.version(6).stores({})
+    antigo.version(7).stores({})
+    antigo.version(8).stores({})
+    antigo.version(9).stores({ vagas: '[prateleira+ordem], prateleira' })
+    antigo.version(10).stores({
+      anexos: 'id, livroId, updatedAt',
+      arquivos: 'anexoId',
+      vinculos: 'id, anexoId, conceitoId',
+    })
+    antigo.version(11).stores({})
+    const base = {
+      tipo: 'conceitos',
+      prateleira: 0,
+      emblema: null,
+      larguraLombada: 34,
+      comprimentoLombada: null,
+      executavel: false,
+      diasParaAdormecer: 30,
+      createdAt: T0,
+    }
+    await antigo.table('livros').bulkPut([
+      { ...base, id: 'a', titulo: 'Roxo', cor: '#7b6ae0', ordem: 0 },
+      { ...base, id: 'b', titulo: 'Quase creme', cor: '#efece3', ordem: 1 },
+      { ...base, id: 'c', titulo: 'Já da paleta', cor: '#12204f', ordem: 2 },
+    ])
+    antigo.close()
+
+    const migrado = createDexieRepo(createDb(nome))
+    const livros = await migrado.listLivros()
+
+    for (const l of livros) {
+      expect(l.estilo).toBe('solido')
+      expect(ehCorDaPaleta(l.cor)).toBe(true)
+    }
+    expect(livros.find((l) => l.id === 'a')?.cor).toBe('#2A3A8A')
+    expect(livros.find((l) => l.id === 'b')?.cor).toBe('#F1EEE6')
+    expect(livros.find((l) => l.id === 'c')?.cor).toBe('#12204F')
+    // A migração não mexeu em mais nada.
+    expect(livros.find((l) => l.id === 'a')).toMatchObject({ larguraLombada: 34, titulo: 'Roxo' })
+  })
+})
+
+describe('cor e forma da lombada', () => {
+  it('grava e devolve a forma escolhida', async () => {
+    await repo.upsertLivro({ ...livro('l1', 'Psicologia'), estilo: 'papel', cor: '#F1EEE6' })
+    expect(await repo.getLivro('l1')).toMatchObject({ estilo: 'papel', cor: '#F1EEE6' })
+  })
+
+  it('recusa uma cor fora da paleta Noite', async () => {
+    await expect(
+      repo.upsertLivro({ ...livro('l1', 'Psicologia'), cor: '#7b6ae0' }),
+    ).rejects.toThrow()
+  })
+
+  it('aceita o tom da paleta em hex minúsculo', async () => {
+    await repo.upsertLivro({ ...livro('l1', 'Psicologia'), cor: '#1b2a6b' })
+    expect((await repo.getLivro('l1'))?.cor).toBe('#1b2a6b')
+  })
+
+  it('recusa uma forma que não existe', async () => {
+    await expect(
+      repo.upsertLivro({ ...livro('l1', 'Psicologia'), estilo: 'espiral' as never }),
+    ).rejects.toThrow()
   })
 })

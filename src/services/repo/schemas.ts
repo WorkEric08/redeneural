@@ -1,11 +1,14 @@
 import { z } from 'zod'
 
-import { DIAS_PARA_ADORMECER_MAXIMO } from '@/core'
+import { DIAS_PARA_ADORMECER_MAXIMO, ehCorDaPaleta, ESTILOS_DA_LOMBADA } from '@/core'
 
 /** CLAUDE.md §7: validar a entrada antes de gravar no IndexedDB. */
 
 const id = z.string().min(1)
 const hexColor = z.string().regex(/^#[0-9a-fA-F]{6}$/, 'cor deve ser hex #rrggbb')
+/** Um livro só grava um dos tons da paleta Noite; o backup traz hex livre e é mapeado antes. */
+const corDaPaleta = hexColor.refine(ehCorDaPaleta, 'cor fora da paleta Noite')
+const estiloDaLombada = z.enum(ESTILOS_DA_LOMBADA)
 const unitInterval = z.number().min(0).max(1)
 
 const ordem = z.number().int().min(0)
@@ -30,7 +33,8 @@ export const livroSchema = z
     id,
     tipo: tipoDeLivro,
     titulo: z.string().trim().min(1).max(120),
-    cor: hexColor,
+    cor: corDaPaleta,
+    estilo: estiloDaLombada,
     prateleira: ordem,
     ordem,
     emblema,
@@ -143,7 +147,10 @@ export const snapshotSchema = z.object({
       // Opcional: backup de antes das pastas de acervo (24/09/2026) — tudo era conceito.
       tipo: tipoDeLivro.optional(),
       titulo: z.string(),
+      // Hex livre: o import leva ao tom mais próximo da paleta (`livroFromSnapshot`).
       cor: hexColor,
+      // Opcional: backup de antes da paleta Noite (06/10/2026) não tinha forma.
+      estilo: estiloDaLombada.optional(),
       // Opcional: backup de antes de 12/09/2026 não tinha ordem de estante.
       ordem: ordem.optional(),
       // Opcional: backup de antes da Fase 10 (13-14/09/2026) não tinha prateleira.

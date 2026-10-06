@@ -1,5 +1,6 @@
 import { base64ToBytes, base64ToEmbedding, bytesToBase64, embeddingToBase64 } from './base64'
 import { clampDiasParaAdormecer, DIAS_PARA_ADORMECER_PADRAO } from './executavel'
+import { corMaisProxima, ESTILO_PADRAO } from './paletaNoite'
 import type {
   Anexo,
   AnexoSnapshot,
@@ -30,6 +31,7 @@ export function livroToSnapshot(l: Livro): LivroSnapshot {
     tipo: l.tipo,
     titulo: l.titulo,
     cor: l.cor,
+    estilo: l.estilo,
     prateleira: l.prateleira,
     ordem: l.ordem,
     emblema: l.emblema,
@@ -51,7 +53,9 @@ export function livroFromSnapshot(s: LivroSnapshot, prateleira: number, ordem: n
     id: s.id,
     tipo: s.tipo ?? 'conceitos',
     titulo: s.titulo,
-    cor: s.cor,
+    // Hex fora da paleta (backup de antes dela) é mapeado, não recusado.
+    cor: corMaisProxima(s.cor),
+    estilo: s.estilo ?? ESTILO_PADRAO,
     prateleira,
     ordem,
     emblema: s.emblema ?? null,

@@ -51,9 +51,12 @@ export default function Estante() {
   // limpa a URL, sem repetir esta leitura).
   const [chegandoId, setChegandoId] = useState<string | null>(() => busca.get('chegou'))
 
+  // O relógio de quando a tela abriu: o adormecer é calculado na hora de mostrar,
+  // e a lombada só muda de estado na próxima abertura (como na tela do livro).
+  const [agora] = useState(() => new Date())
   const estante = useMemo(
-    () => montarEstante(livros, neuronios, conexoes, anexos),
-    [livros, neuronios, conexoes, anexos],
+    () => montarEstante(livros, neuronios, conexoes, anexos, agora),
+    [livros, neuronios, conexoes, anexos, agora],
   )
   const pontes = useMemo(() => pontesEntreLivros(neuronios, conexoes), [neuronios, conexoes])
   const esperandoNoPorto = noPorto(neuronios).length

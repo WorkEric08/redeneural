@@ -1,5 +1,6 @@
 import type { ModoDaBusca } from '../domain/modoDaBusca'
 import type { ModoDaRede } from '../domain/modoDaRede'
+import type { EstiloDaLombada } from '../domain/paletaNoite'
 import type { MapaDoPalacio } from '../motor/mapa'
 import type { AnexoNaTela, NeuronioNaTela } from '../domain/tela'
 import type { Conexao, EstadoDaIdeia, Id, Livro, TipoDeLivro, Vaga, Vinculo } from '../domain/types'
@@ -41,6 +42,8 @@ export interface CriarLivroInput {
   id: Id
   titulo: string
   cor: string
+  /** Ausente é `'solido'`. */
+  estilo?: EstiloDaLombada
   /** Em qual prateleira a pessoa tocou "criar". */
   prateleira: number
   /**
@@ -89,6 +92,7 @@ export interface EditarLivroInput {
   id: Id
   titulo: string
   cor: string
+  estilo: EstiloDaLombada
   emblema: string | null
   larguraLombada: number | null
   comprimentoLombada: number | null

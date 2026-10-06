@@ -3,17 +3,18 @@ import { createPortal } from 'react-dom'
 import { contar } from '@/lib/plural'
 
 import { EmblemaDaLombada } from './EmblemaDaLombada'
-import { pano } from './panos'
+import { geometriaDaLombada } from './lombadaNoite'
+import { ALTURA_MAXIMA_DA_LOMBADA, ALTURA_MINIMA_DA_LOMBADA } from './prateleiras'
 import type { LivroNaEstante } from './resumo'
 import type { ManipulacaoDaLombada } from './useManipularLivros'
 
-/**
- * Em % da fileira, não em pixels: a fileira agora cresce com a tela (ver
- * .movel-fila), e a proporção entre livro e prateleira é que tem de ficar de
- * pé. São os mesmos 58..86 px sobre a fileira de 92 px de antes.
- */
-const ALTURA_MINIMA = 63
-const ALTURA_MAXIMA = 93.5
+/** O que o leitor de tela diz do andamento — a lombada só o mostra com cor. */
+const LEGENDA_DO_ANDAMENTO = {
+  nenhum: '',
+  fazendo: ', em andamento',
+  feita: ', tudo feito',
+  adormecido: ', adormecido',
+} as const
 
 /**
  * - `repouso`: na prateleira, sob a luz que lava a cor.
@@ -37,6 +38,8 @@ interface Props {
   chegando: boolean
   /** 0-100: o quanto a luz da sala lava a cor do pano em repouso. */
   intensidadeDaLuz: number
+  /** A altura da fileira em px: a lombada é % dela, e o título se mede em px. */
+  alturaDaFileira: number
   manipular: ManipulacaoDaLombada
 }
 
@@ -46,8 +49,8 @@ interface Props {
  * Por padrão a altura vem da quantidade de neurônios — é a única coisa que a
  * estante conta sem você abrir nada. `Livro.comprimentoLombada` deixa
  * escolher a altura na mão, abrindo mão desse sinal para aquele livro (ver o
- * comentário em `core/domain/types.ts`). O título vai gravado em ouro, como
- * numa lombada de verdade.
+ * comentário em `core/domain/types.ts`). A forma (`Livro.estilo`) e o texto
+ * claro ou escuro saem da cor — ver `lombadaNoite.ts` e `.lombada` em index.css.
  *
  * A largura vem da semente do id (ver `prateleiras.ts`) ou de
  * `Livro.larguraLombada`: varia como numa estante de verdade, mas é sempre a
@@ -64,11 +67,21 @@ export function Lombada({
   ponte,
   chegando,
   intensidadeDaLuz,
+  alturaDaFileira,
   manipular,
 }: Props) {
   const altura =
-    item.livro.comprimentoLombada ?? ALTURA_MINIMA + item.altura * (ALTURA_MAXIMA - ALTURA_MINIMA)
+    item.livro.comprimentoLombada ??
+    ALTURA_MINIMA_DA_LOMBADA + item.altura * (ALTURA_MAXIMA_DA_LOMBADA - ALTURA_MINIMA_DA_LOMBADA)
   const ehPasta = item.livro.tipo === 'acervo'
+  const geo = geometriaDaLombada({
+    estilo: item.livro.estilo,
+    cor: item.livro.cor,
+    titulo: item.livro.titulo,
+    largura,
+    altura: (altura * alturaDaFileira) / 100,
+    intensidadeDaLuz,
+  })
 
   return (
     <button
@@ -80,23 +93,47 @@ export function Lombada({
       data-ponte={ponte || undefined}
       data-chegando={chegando || undefined}
       className="lombada lombada--livro"
+      data-estilo={geo.estilo}
+      data-andamento={item.andamento ?? undefined}
       style={{
-        ...pano(item.livro.cor, intensidadeDaLuz),
+        ...geo.style,
         height: `${String(Math.round(altura * 10) / 10)}%`,
         width: `${String(largura)}px`,
       }}
       aria-label={
         ehPasta
           ? `${item.livro.titulo}, pasta com ${contar(item.anexos, 'item', 'itens')}`
-          : `${item.livro.titulo}, ${contar(item.neuronios, 'neurônio', 'neurônios')}`
+          : `${item.livro.titulo}, ${contar(item.neuronios, 'neurônio', 'neurônios')}${LEGENDA_DO_ANDAMENTO[item.andamento ?? 'nenhum']}`
       }
       aria-haspopup="dialog"
       {...manipular}
     >
       <span className="lombada-titulo">{item.livro.titulo}</span>
+      {item.livro.estilo === 'papel' && (
+        <span className="lombada-contagem" aria-hidden>
+          {ehPasta ? item.anexos : item.neuronios}
+        </span>
+      )}
 
-      {item.saindo > 0 && <span className="lombada-ponto brilho-ponte" aria-hidden />}
-      <EmblemaDaLombada chave={ehPasta ? 'pasta' : item.livro.emblema} />
+      {ponte && <span className="lombada-ponto" aria-hidden />}
+      {item.andamento === 'fazendo' && (
+        <>
+          <span className="lombada-fazendo-faixa" aria-hidden />
+          <span className="lombada-fazendo-ponto" aria-hidden />
+        </>
+      )}
+      {item.andamento === 'feita' && (
+        <span className="lombada-feita" aria-hidden>
+          <svg viewBox="0 0 10 10" fill="none" stroke="currentColor" strokeWidth="1.8">
+            <path d="M2.2 5.3 4.3 7.4 7.9 2.8" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        </span>
+      )}
+      {/* O pé da feita é do disco: o emblema não cabe junto. */}
+      {geo.emblemaCabe && item.andamento !== 'feita' && (
+        <EmblemaDaLombada chave={ehPasta ? 'pasta' : item.livro.emblema} />
+      )}
+      {item.andamento === 'adormecido' && <span className="lombada-nevoa" aria-hidden />}
     </button>
   )
 }
@@ -118,13 +155,24 @@ export function Fantasma({
   caixa: DOMRect
   registrar: (elemento: HTMLElement | null) => void
 }) {
+  // Só cor e título: o livro na mão não leva forma nem estado.
+  const geo = geometriaDaLombada({
+    estilo: 'solido',
+    cor: item.livro.cor,
+    titulo: item.livro.titulo,
+    largura: caixa.width,
+    altura: caixa.height,
+    intensidadeDaLuz: 0,
+  })
+
   return createPortal(
     <span
       ref={registrar}
       aria-hidden
       className="lombada lombada--fantasma cores-de-antes"
+      data-estilo={geo.estilo}
       style={{
-        ...pano(item.livro.cor),
+        ...geo.style,
         left: caixa.left,
         top: caixa.top,
         width: caixa.width,

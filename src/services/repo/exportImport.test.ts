@@ -29,7 +29,8 @@ const LIVROS: Livro[] = [
   {
     id: 'psi',
     titulo: 'Psicologia',
-    cor: '#6d5bd0',
+    cor: '#3A2F6B',
+    estilo: 'solido',
     prateleira: 0,
     ordem: 0,
     tipo: 'conceitos',
@@ -43,7 +44,8 @@ const LIVROS: Livro[] = [
   {
     id: 'prog',
     titulo: 'Programação',
-    cor: '#2f7a6f',
+    cor: '#17505A',
+    estilo: 'solido',
     prateleira: 0,
     ordem: 1,
     tipo: 'conceitos',
@@ -57,7 +59,8 @@ const LIVROS: Livro[] = [
   {
     id: 'mus',
     titulo: 'Música',
-    cor: '#b4553a',
+    cor: '#4A2540',
+    estilo: 'solido',
     prateleira: 0,
     ordem: 2,
     tipo: 'conceitos',
@@ -211,7 +214,8 @@ describe('exportar num navegador e importar noutro', () => {
     await destino.upsertLivro({
       id: 'meu',
       titulo: 'Meu livro',
-      cor: '#123456',
+      cor: '#2D3A4F',
+      estilo: 'solido',
       prateleira: 0,
       ordem: 0,
       tipo: 'conceitos',
@@ -312,7 +316,8 @@ describe('a ordem da estante no backup', () => {
     await destino.upsertLivro({
       id: 'meu',
       titulo: 'Meu livro',
-      cor: '#123456',
+      cor: '#2D3A4F',
+      estilo: 'solido',
       prateleira: 0,
       ordem: 0,
       tipo: 'conceitos',
@@ -336,7 +341,8 @@ describe('a ordem da estante no backup', () => {
     await destino.upsertLivro({
       id: 'meu',
       titulo: 'Meu livro',
-      cor: '#123456',
+      cor: '#2D3A4F',
+      estilo: 'solido',
       prateleira: 0,
       ordem: 12,
       tipo: 'conceitos',
@@ -624,5 +630,60 @@ describe('livros executáveis no backup', () => {
     }
 
     await expect(repoVazio().importAll(mexido)).rejects.toThrow()
+  })
+})
+
+describe('cor e forma da lombada no backup', () => {
+  it('a forma e a cor da paleta viajam e voltam iguais', async () => {
+    const origem = await palacioPovoado()
+    const [primeiro] = await origem.listLivros()
+    await origem.upsertLivro({ ...primeiro!, cor: '#F1EEE6', estilo: 'duas-cores' })
+    const snapshot = await origem.exportAll()
+
+    const destino = repoVazio()
+    await destino.importAll(snapshot)
+
+    expect(await destino.getLivro(primeiro!.id)).toMatchObject({
+      cor: '#F1EEE6',
+      estilo: 'duas-cores',
+    })
+  })
+
+  // Backup de antes de 06/10/2026: hex livre e nenhuma forma.
+  it('backup de antes leva o hex livre ao tom mais próximo e a forma vira sólido', async () => {
+    const origem = await palacioPovoado()
+    const snapshot = await origem.exportAll()
+    const antigo = {
+      ...snapshot,
+      livros: snapshot.livros.map((l) => ({
+        id: l.id,
+        tipo: l.tipo,
+        titulo: l.titulo,
+        cor: '#7b6ae0',
+        prateleira: l.prateleira,
+        ordem: l.ordem,
+        createdAt: l.createdAt,
+      })),
+    }
+
+    const destino = repoVazio()
+    await destino.importAll(antigo)
+
+    const livros = await destino.listLivros()
+    expect(livros.length).toBeGreaterThan(0)
+    for (const l of livros) {
+      expect(l.estilo).toBe('solido')
+      expect(l.cor).toBe('#2A3A8A')
+    }
+  })
+
+  it('uma forma que não existe recusa o arquivo', async () => {
+    const snapshot = await (await palacioPovoado()).exportAll()
+    const mexido = {
+      ...snapshot,
+      livros: snapshot.livros.map((l) => ({ ...l, estilo: 'espiral' })),
+    }
+
+    await expect(repoVazio().importAll(mexido as never)).rejects.toThrow()
   })
 })
