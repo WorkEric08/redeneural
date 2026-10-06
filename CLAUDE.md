@@ -4867,6 +4867,12 @@ estado** e sem a contagem do papel. Editar carrega e salva `estilo` e `cor` do m
 Com a lista de formas o formulário **rola** no celular (~1075 px em 390 de largura, contra
 ~840 antes); o botão de criar continua preso no pé.
 
+**O enfeite nunca tem luz branca (06/10/2026, pedido do usuário):** os detalhes da forma
+(faixa, fio, bloco de cima do "duas cores") se misturam com `--fg`, que num livro escuro é
+o texto claro — no enfeite isso desenhava um bloco e filetes esbranquiçados. O enfeite
+sobrescreve `--fg` com `TOM_DO_DETALHE_DO_ENFEITE` (`#070d2e`, mais escuro que o fundo), então os
+detalhes viram sulco, não brilho. O único claro do enfeite são os filetes dourados.
+
 ### Os estados
 
 - **Ponte:** `data-ponte` ganha moldura de 1 px `#7FA8FF`, anel de 3 px a 30% e o ponto

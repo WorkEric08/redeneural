@@ -10,6 +10,7 @@ import {
   LARGURA_MINIMA_DO_LIVRO,
   larguraDosLivrosDaPrateleira,
   montarPrateleiras,
+  TOM_DO_DETALHE_DO_ENFEITE,
   type Lugar,
 } from './prateleiras'
 import type { LivroNaEstante } from './resumo'
@@ -285,7 +286,13 @@ function Enfeite({
       aria-hidden
       className="lombada lombada--enfeite"
       data-estilo={geo.estilo}
-      style={{ ...geo.style, height: `${String(lugar.altura)}%` }}
+      style={
+        {
+          ...geo.style,
+          '--fg': TOM_DO_DETALHE_DO_ENFEITE,
+          height: `${String(lugar.altura)}%`,
+        } as CSSProperties
+      }
     >
       {lugar.dourado && <span className="lombada-filetes" />}
     </span>

@@ -39,6 +39,13 @@ export const ALTURA_MAXIMA_DA_LOMBADA = 93.5
  * enfeite (estilo Noite, 06/10/2026; antes todos tinham o mesmo tamanho).
  */
 export const COR_DO_ENFEITE = '#1B2A6B'
+/**
+ * O tom dos detalhes da forma do enfeite (a faixa, o fio, o bloco de cima da
+ * "duas cores"). Os livros da pessoa misturam o detalhe com o texto claro; no
+ * enfeite isso dava luz branca no alto, então aqui o detalhe é um azul mais
+ * escuro que o fundo — sulco, nunca brilho.
+ */
+export const TOM_DO_DETALHE_DO_ENFEITE = '#070d2e'
 const ESTILOS_DO_ENFEITE = ['solido', 'faixa', 'duas-cores', 'fio', 'degrade'] as const
 const LARGURAS_DO_ENFEITE = [24, 38, 52] as const
 
