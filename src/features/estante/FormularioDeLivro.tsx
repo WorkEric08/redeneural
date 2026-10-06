@@ -323,21 +323,24 @@ export function FormularioDeLivro({
       <fieldset className="flex flex-col">
         <legend className="rotulo-de-secao">Largura</legend>
         <div className="flex flex-wrap items-end gap-2">
-          <label className="pano-opcao">
-            <input
-              type="radio"
-              name="largura"
-              checked={larguraLombada === null}
-              onChange={() => {
-                setLarguraLombada(null)
-              }}
-              className="sr-only"
-            />
-            <span className="pano-amostra largura-amostra largura-amostra--auto" aria-hidden>
-              <Shuffle size={16} aria-hidden />
-            </span>
-            <span className="text-poeira text-xs leading-tight">Automática</span>
-          </label>
+          {/* O enfeite sempre mostra a largura que tem: "automática" não diria qual é. */}
+          {!enfeite && (
+            <label className="pano-opcao">
+              <input
+                type="radio"
+                name="largura"
+                checked={larguraLombada === null}
+                onChange={() => {
+                  setLarguraLombada(null)
+                }}
+                className="sr-only"
+              />
+              <span className="pano-amostra largura-amostra largura-amostra--auto" aria-hidden>
+                <Shuffle size={16} aria-hidden />
+              </span>
+              <span className="text-poeira text-xs leading-tight">Automática</span>
+            </label>
+          )}
           {LARGURAS.map((l) => (
             <label key={l.chave} className="pano-opcao">
               <input
@@ -357,30 +360,46 @@ export function FormularioDeLivro({
               <span className="text-poeira text-xs leading-tight">{l.rotulo}</span>
             </label>
           ))}
+          {/* Uma medida que nenhuma opção fixa tem (a do sorteio) aparece como ela é. */}
+          {larguraLombada !== null && !LARGURAS.some((l) => l.px === larguraLombada) && (
+            <label className="pano-opcao">
+              <input type="radio" name="largura" checked readOnly className="sr-only" />
+              <span
+                className="pano-amostra largura-amostra"
+                aria-hidden
+                style={{ width: `${String(larguraLombada)}px`, backgroundColor: cor }}
+              />
+              <span className="text-poeira text-xs leading-tight">
+                {String(Math.round(larguraLombada))} px
+              </span>
+            </label>
+          )}
         </div>
       </fieldset>
 
       <fieldset className="flex flex-col">
         <legend className="rotulo-de-secao">Comprimento</legend>
         <div className="flex flex-wrap items-end gap-2">
-          <label className="pano-opcao">
-            <input
-              type="radio"
-              name="comprimento"
-              checked={comprimentoLombada === null}
-              onChange={() => {
-                setComprimentoLombada(null)
-              }}
-              className="sr-only"
-            />
-            <span
-              className="pano-amostra comprimento-amostra comprimento-amostra--auto"
-              aria-hidden
-            >
-              <Shuffle size={16} aria-hidden />
-            </span>
-            <span className="text-poeira text-xs leading-tight">Automático</span>
-          </label>
+          {!enfeite && (
+            <label className="pano-opcao">
+              <input
+                type="radio"
+                name="comprimento"
+                checked={comprimentoLombada === null}
+                onChange={() => {
+                  setComprimentoLombada(null)
+                }}
+                className="sr-only"
+              />
+              <span
+                className="pano-amostra comprimento-amostra comprimento-amostra--auto"
+                aria-hidden
+              >
+                <Shuffle size={16} aria-hidden />
+              </span>
+              <span className="text-poeira text-xs leading-tight">Automático</span>
+            </label>
+          )}
           {COMPRIMENTOS.map((c) => (
             <label key={c.chave} className="pano-opcao">
               <input
@@ -403,6 +422,23 @@ export function FormularioDeLivro({
               <span className="text-poeira text-xs leading-tight">{c.rotulo}</span>
             </label>
           ))}
+          {comprimentoLombada !== null &&
+            !COMPRIMENTOS.some((c) => c.percentual === comprimentoLombada) && (
+              <label className="pano-opcao">
+                <input type="radio" name="comprimento" checked readOnly className="sr-only" />
+                <span
+                  className="pano-amostra comprimento-amostra"
+                  aria-hidden
+                  style={{
+                    height: `${String(Math.round((comprimentoLombada / 100) * REFERENCIA_DAS_OPCOES_PX))}px`,
+                    backgroundColor: cor,
+                  }}
+                />
+                <span className="text-poeira text-xs leading-tight">
+                  {String(Math.round(comprimentoLombada))}%
+                </span>
+              </label>
+            )}
         </div>
       </fieldset>
 

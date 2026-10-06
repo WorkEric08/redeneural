@@ -42,10 +42,6 @@ export default function EditarEnfeite() {
     )
   }
 
-  // O que está gravado, com o `null` de "a do sorteio" — o enfeite mostrado já tem
-  // as medidas resolvidas.
-  const gravado = enfeites.find((e) => e.prateleira === prateleira && e.ordem === lugar)
-
   return (
     <div className="flex min-h-dvh flex-col">
       <BarraDeTopo voltarPara="/" icone="fechar" titulo="Editar enfeite" />
@@ -58,8 +54,10 @@ export default function EditarEnfeite() {
             cor: atual.cor,
             estilo: atual.estilo,
             emblema: null,
-            larguraLombada: gravado?.larguraLombada ?? null,
-            comprimentoLombada: gravado?.comprimentoLombada ?? null,
+            // As medidas que o enfeite tem agora, sorteadas ou gravadas: a tela mostra
+            // qual é a largura e o comprimento dele, e não um "automático".
+            larguraLombada: atual.larguraNatural,
+            comprimentoLombada: atual.altura,
             executavel: false,
             diasParaAdormecer: 30,
           }}

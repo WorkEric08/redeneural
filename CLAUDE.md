@@ -5069,6 +5069,10 @@ grafo), e ao largar sobre um livro valem **as mesmas regras do livro**.
 - **Editar.** O menu do lugar ganhou "Editar o enfeite", que leva a `/enfeite/:prateleira/:lugar/editar`
   — a tela cheia do livro (`FormularioDeLivro` com `enfeite`: sem nome, tipo, emblema nem
   executável). O enfeite sorteado também se edita; salvar o grava, e o que não foi mexido fica.
+- **A tela mostra a medida real.** Editar abre com a largura e o comprimento que o enfeite tem
+  agora (sorteados ou gravados), e não com um "automático": o enfeite não tem a opção
+  "Automática", e uma medida que nenhuma opção fixa tem (o comprimento sorteado, 63–93,5%)
+  aparece como uma opção a mais, "85%" por exemplo, já marcada. Salvar grava as duas medidas.
 - **Fora daqui:** os filetes dourados não se escolhem (vêm do sorteio ou do que o enfeite já
   tinha); "voltar ao sorteado" é tirar o enfeite e pôr outro.
 - **Verificado** no Chrome (build de produção, mouse): editar pelo menu, gravar, arrastar para
