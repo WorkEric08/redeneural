@@ -4017,11 +4017,39 @@ limpos. Bundle principal: 133,7 KB gzipped.
 
 ### O Porto (Atualização 2)
 
+> **Revisto em 07/10/2026 (pedido do usuário):** em "Automático" o neurônio **nunca mais
+> fica no porto por falta de resposta clara** — o motor escolhe sempre um livro pelo que
+> está escrito. O porto só recebe quem nasce quando **não existe nenhum livro** que possa
+> recebê-lo (de conceitos e não executável). A regra de 3 votos mínimos saiu; ver
+> "O automático sempre escolhe um livro" abaixo. O resto desta seção é o histórico.
+
 Pelo "+", o livro de um neurônio novo começa em **"Automático"**: o motor lê o
 texto, calcula as conexões como sempre e guarda no livro que os mais parecidos
-apontam. Sem resposta clara, o neurônio fica **no porto** (`livroId = null`) e a
-pessoa escolhe. Livro escolhido à mão — no chip, ou vindo de "Novo neurônio
+apontam. ~~Sem resposta clara, o neurônio fica **no porto** (`livroId = null`) e a
+pessoa escolhe.~~ Livro escolhido à mão — no chip, ou vindo de "Novo neurônio
 neste livro" — não passa pelo Porto, e editar também não.
+
+#### O automático sempre escolhe um livro (07/10/2026)
+
+`livroAutomatico` (`core/motor/porto.ts`, puro, no lugar de `livroDoPorto`) devolve **sempre
+um livro**, e `null` só sem livro disponível. Os mesmos 5 vizinhos votam, mas:
+
+- **Votam só os neurônios que moram num livro disponível** (de conceitos, não executável).
+  Antes, quem estava num executável ou no porto votava e não vencia, e a pergunta era da
+  pessoa; agora o texto vai para o livro disponível que mais se parece com ele.
+- **Vence o livro com mais votos, sem mínimo.** Empate: a maior soma de cossenos (o mais
+  perto do texto), depois a ordem da estante. Num palácio com poucos neurônios o mais
+  parecido já decide.
+- **Sem vizinho nenhum para votar** (o primeiro neurônio, ou texto sem vetor): o primeiro
+  livro disponível, na ordem da estante.
+- **A tela não mudou:** o aviso "Guardado em X." com "Mudar" já era o caminho de quem o motor
+  decidia. A pergunta "Onde guardar?" só abre agora quando não há livro nenhum que receba.
+- **Custo assumido:** o que antes caía no porto por ser ambíguo agora vai para o palpite mais
+  provável, e erra de vez em quando — o "Mudar" é a saída. Visto no navegador (e5 de verdade,
+  palácio de exemplo): cache → Programação e ensaio no violão → Música, certos; "ansiedade ao
+  apresentar" → Música, em vez de Psicologia (parece com prática de palco); um texto sem
+  relação nenhuma (receita de bolo) foi para Música em vez do porto. **Precisão não medida de
+  novo** com as 33 notas da calibração de 01/10 — só a regra mudou, não o modelo.
 
 #### A regra: voto dos 5 mais parecidos, não a soma das conexões fortes
 

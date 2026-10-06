@@ -26,11 +26,12 @@ export interface CriarNeuronioInput {
   id: Id
   /**
    * Ao criar, `null` é "Automático": o motor lê o texto, calcula as conexões e
-   * guarda no livro que os mais parecidos apontam (ver `livroDoPorto`) — ou
-   * deixa no porto, sem livro, quando a resposta não é clara.
+   * guarda no livro que os mais parecidos apontam (ver `livroAutomatico`) — sempre
+   * num livro. Só sem nenhum livro que possa recebê-lo (de conceitos e não
+   * executável) o neurônio fica no porto, sem livro, esperando a pessoa.
    *
    * Ao editar, `null` só mantém no porto quem já estava lá: editar nunca
-   * passa pelo Porto.
+   * escolhe livro sozinho.
    */
   livroId: Id | null
   titulo: string

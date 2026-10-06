@@ -15,11 +15,12 @@ import { usePalacio } from '@/store/palacio'
  * inferência inteira (embedding, conexões e posição já gravados), então a
  * Rede nunca abre com o neurônio "no meio do processamento".
  *
- * Pelo "+", o livro começa em "Automático" (o Porto, 01/10/2026): o motor
- * guarda no livro que os mais parecidos apontam e o aviso oferece "Mudar"; sem
- * resposta clara, o neurônio fica no porto e a pergunta "Onde guardar?" abre
- * aqui mesmo, por cima do que a pessoa acabou de escrever. Responder guarda e
- * segue para a Rede; fechar segue para a Rede com ele no porto.
+ * Pelo "+", o livro começa em "Automático": o motor guarda no livro que os mais
+ * parecidos apontam — sempre num livro (07/10/2026) — e o aviso oferece "Mudar".
+ * Só sem nenhum livro que possa recebê-lo (de conceitos e não executável) o
+ * neurônio fica no porto e a pergunta "Onde guardar?" abre aqui mesmo, por cima do
+ * que a pessoa acabou de escrever. Responder guarda e segue para a Rede; fechar
+ * segue para a Rede com ele no porto.
  */
 export default function Novo() {
   const [busca, setBusca] = useSearchParams()

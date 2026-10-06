@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import { no, vetor } from './fixtures'
 import { perfilDoPalacio, type NoDoGrafo } from './grafo'
-import { livroDoPorto } from './porto'
+import { livroAutomatico } from './porto'
 
 /** Três livros, cada um num canto: psi no eixo 0, prog no 4, mus no 8. */
 const PALACIO: NoDoGrafo[] = [
@@ -17,46 +17,77 @@ const PALACIO: NoDoGrafo[] = [
   no('mus-3', 'mus', { 8: 1, 11: 0.2 }),
 ]
 const PERFIL = perfilDoPalacio(PALACIO)
+const TODOS = ['psi', 'prog', 'mus']
 
 function novo(pares: Record<number, number>) {
   return { id: 'novo', embedding: vetor(pares) }
 }
 
-describe('livroDoPorto', () => {
-  it('guarda no livro quando três dos cinco mais parecidos são dele', () => {
-    expect(livroDoPorto(novo({ 4: 1, 5: 0.1 }), PALACIO, PERFIL)).toBe('prog')
+describe('livroAutomatico', () => {
+  it('vai para o livro dos vizinhos mais parecidos', () => {
+    expect(livroAutomatico(novo({ 4: 1, 5: 0.1 }), PALACIO, PERFIL, TODOS)).toBe('prog')
+    expect(livroAutomatico(novo({ 8: 1, 9: 0.1 }), PALACIO, PERFIL, TODOS)).toBe('mus')
   })
 
-  it('pergunta quando os mais parecidos se dividem entre livros', () => {
-    // Igualmente perto de psi e de prog: 3 de um e 2 do outro não acontece.
+  it('nunca devolve o porto: mesmo dividido entre dois livros, escolhe um', () => {
+    // Igualmente perto de psi e de prog — antes, sem 3 votos, isto ia para o porto.
     const dividido = [...PALACIO.slice(0, 2), ...PALACIO.slice(3, 5), ...PALACIO.slice(6)]
     const perfil = perfilDoPalacio(dividido)
-    expect(livroDoPorto(novo({ 0: 1, 4: 1 }), dividido, perfil)).toBeNull()
+    const escolhido = livroAutomatico(novo({ 0: 1, 4: 1 }), dividido, perfil, TODOS)
+    expect(['psi', 'prog']).toContain(escolhido)
   })
 
-  it('palácio pequeno demais para três votos sempre pergunta', () => {
+  it('dividido, vence o livro com mais votos entre os cinco', () => {
+    const alvo = novo({ 0: 1, 4: 0.9 })
+    // 3 de psi e 2 de prog entre os cinco mais parecidos.
+    const nos = [...PALACIO.slice(0, 3), ...PALACIO.slice(3, 5)]
+    const perfil = perfilDoPalacio(nos)
+    expect(livroAutomatico(alvo, nos, perfil, TODOS)).toBe('psi')
+  })
+
+  it('palácio pequeno: com poucos neurônios o mais parecido já decide', () => {
     const pequeno = PALACIO.slice(0, 2)
-    expect(livroDoPorto(novo({ 0: 1 }), pequeno, perfilDoPalacio(pequeno))).toBeNull()
+    expect(livroAutomatico(novo({ 0: 1 }), pequeno, perfilDoPalacio(pequeno), TODOS)).toBe('psi')
+  })
+
+  it('empate de votos: o livro mais perto do texto', () => {
+    // Um voto de cada: o texto está bem mais perto de prog.
+    const dois = [no('psi-1', 'psi', { 0: 1, 1: 0.9 }), no('prog-1', 'prog', { 4: 1, 5: 0.1 })]
+    const perfil = perfilDoPalacio(dois)
+    expect(livroAutomatico(novo({ 4: 1, 5: 0.1 }), dois, perfil, TODOS)).toBe('prog')
+  })
+
+  it('palácio sem neurônio nenhum para votar: o primeiro livro da estante', () => {
+    expect(livroAutomatico(novo({ 0: 1 }), [], PERFIL, ['mus', 'psi'])).toBe('mus')
   })
 
   it('o próprio neurônio não vota em si mesmo', () => {
     const comEle = [...PALACIO, { ...novo({ 8: 1 }), livroId: 'mus' }]
-    expect(livroDoPorto(novo({ 4: 1, 5: 0.1 }), comEle, PERFIL)).toBe('prog')
+    expect(livroAutomatico(novo({ 4: 1, 5: 0.1 }), comEle, PERFIL, TODOS)).toBe('prog')
   })
 
-  it('livro excluído vota mas não vence — aí a pessoa escolhe', () => {
-    expect(livroDoPorto(novo({ 4: 1, 5: 0.1 }), PALACIO, PERFIL, new Set(['prog']))).toBeNull()
+  it('livro que não pode receber (executável) não vota nem vence: vai para o que mais se parece entre os outros', () => {
+    // O texto é de programação, mas prog não está entre os disponíveis.
+    const escolhido = livroAutomatico(novo({ 4: 1, 5: 0.1 }), PALACIO, PERFIL, ['psi', 'mus'])
+    expect(['psi', 'mus']).toContain(escolhido)
+    expect(escolhido).not.toBe('prog')
   })
 
-  it('neurônio no porto vota, mas não leva ninguém para lugar nenhum', () => {
+  it('neurônio no porto não vota', () => {
     const comPorto = PALACIO.map((n) => (n.livroId === 'prog' ? { ...n, livroId: null } : n))
-    expect(livroDoPorto(novo({ 4: 1, 5: 0.1 }), comPorto, PERFIL)).toBeNull()
+    const escolhido = livroAutomatico(novo({ 4: 1, 5: 0.1 }), comPorto, PERFIL, TODOS)
+    expect(escolhido).not.toBeNull()
+    expect(escolhido).not.toBe('prog')
+  })
+
+  it('sem nenhum livro que possa receber, não há o que escolher: null', () => {
+    expect(livroAutomatico(novo({ 0: 1 }), PALACIO, PERFIL, [])).toBeNull()
   })
 
   it('não depende da ordem de entrada', () => {
     const alvo = novo({ 8: 1, 9: 0.1 })
-    expect(livroDoPorto(alvo, [...PALACIO].reverse(), PERFIL)).toBe(
-      livroDoPorto(alvo, PALACIO, PERFIL),
+    expect(livroAutomatico(alvo, [...PALACIO].reverse(), PERFIL, TODOS)).toBe(
+      livroAutomatico(alvo, PALACIO, PERFIL, TODOS),
     )
   })
 })

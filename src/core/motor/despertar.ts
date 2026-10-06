@@ -4,7 +4,7 @@ import type { Conexao, Id, Livro, Neuronio } from '../domain/types'
 /**
  * A partir deste score uma conexão é **forte** — o lugar único do documento.
  * Hoje só o despertar a usa: o Porto vota pelos mais parecidos (ver
- * `livroDoPorto`), e não pelas conexões fortes.
+ * `livroAutomatico`), e não pelas conexões fortes.
  *
  * Calibrado com o e5 de verdade (01/10/2026): cada uma das 33 notas de teste
  * entrou como "nova" no palácio das outras, com a régua do motor. De 0,7 para

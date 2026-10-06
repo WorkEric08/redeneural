@@ -14,7 +14,7 @@ import {
   moverIlha,
   moverPontoNoMapa,
   ehPonte,
-  livroDoPorto,
+  livroAutomatico,
   construirGrafo,
   estadoDosVizinhos,
   ITERACOES_LAYOUT_COMPLETO,
@@ -396,7 +396,7 @@ async function escrever(
 
   // Persiste o texto antes de a inferência começar: se o Worker morrer agora,
   // o que se perde é o cálculo, nunca o que a pessoa escreveu. Um neurônio em
-  // "Automático" é gravado no porto, sem livro, pelo mesmo motivo.
+  // "Automático" é gravado sem livro até o motor ler o texto, pelo mesmo motivo.
   await repo.upsertNeuronio(base)
 
   await embedding.ready()
@@ -432,9 +432,9 @@ async function escrever(
     await reancorarTodos()
   }
 
-  // O Porto só vale para quem acabou de nascer em "Automático".
-  if (!existente && input.livroId === null) await guardarPeloPorto(completo.id)
-  // Depois do Porto: a ilha é a do livro que ficou decidido.
+  // "Automático" só vale para quem acabou de nascer: o motor escolhe o livro pelo texto.
+  if (!existente && input.livroId === null) await guardarAutomaticamente(completo.id)
+  // Depois da escolha: a ilha é a do livro que ficou decidido.
   await encaixarNoMapa()
   // Só uma ideia nova desperta alguém — com as conexões dela já assentadas.
   const acordadas = existente ? [] : await despertar(completo.id)
@@ -485,27 +485,34 @@ async function despertar(novoId: Id): Promise<{ id: Id; titulo: string }[]> {
 }
 
 /**
- * Leva ao livro que os mais parecidos apontam, quando a resposta é clara. Sem
- * ela o neurônio fica no porto, e a tela pergunta. Roda depois das conexões,
- * com o perfil já assentado — a mesma régua delas.
+ * Leva o neurônio de "Automático" a um livro, pelo que está escrito: o que os mais
+ * parecidos apontam (`livroAutomatico`). **Sempre um livro** (decisão do usuário,
+ * 07/10/2026): o porto só recebe o neurônio quando não existe livro nenhum que possa
+ * recebê-lo — e aí a tela pergunta. Roda depois das conexões, com o perfil já
+ * assentado — a mesma régua delas.
  */
-async function guardarPeloPorto(id: Id): Promise<void> {
+async function guardarAutomaticamente(id: Id): Promise<void> {
   const [perfil, neuronios, livros] = await Promise.all([
     repo.getPerfil(),
     repo.listNeuronios(),
     repo.listLivros(),
   ])
   const alvo = neuronios.find((n) => n.id === id)
-  if (!perfil || !alvo?.embedding) return
+  if (!alvo) return
 
-  // Um livro executável nunca recebe ideia sozinho: só por escolha.
-  const executaveis = new Set(livros.filter((l) => l.executavel).map((l) => l.id))
-  const livroId = livroDoPorto(
-    { id, embedding: alvo.embedding },
-    nosDeNeuronios(neuronios),
-    perfil,
-    executaveis,
-  )
+  // Um livro executável nunca recebe ideia sozinho: só por escolha. A lista vem na
+  // ordem da estante, que é o desempate e o destino de quem não tem com quem comparar.
+  const disponiveis = livros.filter((l) => l.tipo === 'conceitos' && !l.executavel).map((l) => l.id)
+
+  const livroId =
+    perfil && alvo.embedding
+      ? livroAutomatico(
+          { id, embedding: alvo.embedding },
+          nosDeNeuronios(neuronios),
+          perfil,
+          disponiveis,
+        )
+      : (disponiveis[0] ?? null)
   if (livroId !== null) await guardar(id, livroId)
 }
 
