@@ -1,4 +1,3 @@
-import { Check } from 'lucide-react'
 import { useState } from 'react'
 
 import { botao } from '@/components/botao'
@@ -79,36 +78,35 @@ function Conteudo({
   }
 
   return (
-    <div className="flex flex-col gap-4">
-      <h2 className="font-titulo truncate px-1 text-xl leading-snug font-semibold tracking-tight">
+    <div className="flex flex-col gap-3">
+      {/* O título inteiro, quebrando em linhas: a folha existe para mudar o
+          andamento DESTA ideia, e cortar o nome com reticências esconde qual é. */}
+      <h2 className="font-titulo px-1 text-xl leading-snug font-semibold tracking-tight [overflow-wrap:anywhere]">
         {neuronio.titulo}
       </h2>
 
-      <ul className="cartao flex flex-col">
+      {/* As três opções numa fileira só (e não numa lista de três linhas): a
+          folha inteira cabe sem rolar mesmo numa tela baixa ou com o teclado
+          aberto para digitar o link. */}
+      <div role="group" aria-label="Andamento" className="segmentado">
         {OPCOES.map((estado) => (
-          <li key={estado} className="linha-de-lista p-0">
-            <button
-              type="button"
-              disabled={gravando}
-              aria-pressed={escolhido === estado}
-              onClick={() => {
-                if (estado === 'feita') setEscolhido('feita')
-                else if (estado === estadoAtual) onFechar()
-                else definir(estado, null)
-              }}
-              className="flex min-h-12 w-full items-center gap-3.5 px-4 text-left"
-            >
-              <span className="text-poeira shrink-0">
-                <IconeDoEstado estado={estado} />
-              </span>
-              <span className="min-w-0 flex-1 truncate">{ROTULO_DO_ESTADO[estado]}</span>
-              {escolhido === estado && (
-                <Check size={18} aria-hidden className="text-papel shrink-0" />
-              )}
-            </button>
-          </li>
+          <button
+            key={estado}
+            type="button"
+            disabled={gravando}
+            aria-pressed={escolhido === estado}
+            onClick={() => {
+              if (estado === 'feita') setEscolhido('feita')
+              else if (estado === estadoAtual) onFechar()
+              else definir(estado, null)
+            }}
+            className="segmento h-12"
+          >
+            <IconeDoEstado estado={estado} tamanho={16} />
+            {ROTULO_DO_ESTADO[estado]}
+          </button>
         ))}
-      </ul>
+      </div>
 
       {escolhido === 'feita' && (
         <form
@@ -119,29 +117,29 @@ function Conteudo({
             if (valido && !gravando) definir('feita', link.trim() || null)
           }}
         >
-          <label className="flex flex-col">
-            <span className="rotulo-de-secao">Link do resultado</span>
-            <input
-              value={link}
-              onChange={(e) => {
-                setLink(e.target.value)
-              }}
-              type="url"
-              inputMode="url"
-              autoComplete="off"
-              enterKeyHint="done"
-              placeholder="https://… (opcional)"
-              aria-invalid={!valido}
-              className="campo h-12 px-4"
-            />
-          </label>
+          {/* Sem rótulo à parte: o placeholder já diz o que é, e uma linha a menos é o
+              que deixa a folha caber inteira com o teclado aberto numa tela baixa. */}
+          <input
+            value={link}
+            onChange={(e) => {
+              setLink(e.target.value)
+            }}
+            type="url"
+            inputMode="url"
+            autoComplete="off"
+            enterKeyHint="done"
+            aria-label="Link do resultado"
+            placeholder="Link do resultado (opcional)"
+            aria-invalid={!valido}
+            className="campo h-11 px-4"
+          />
           {!valido && (
             <p className="text-destructive px-1 text-xs">Um link começa com http:// ou https://.</p>
           )}
           <button
             type="submit"
             disabled={!valido || gravando}
-            className={botao({ tipo: 'primario', largo: true })}
+            className={botao({ tipo: 'primario', largo: true, tamanho: 'pequeno' })}
           >
             {estadoAtual === 'feita' ? 'Salvar' : 'Marcar como feita'}
           </button>

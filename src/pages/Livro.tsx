@@ -139,7 +139,7 @@ export default function Livro() {
             className="active:bg-realce hover:bg-realce/60 flex min-w-0 flex-1 flex-col gap-1.5 px-4 pt-4 pb-3 text-left transition-colors"
           >
             <span className="flex items-start justify-between gap-3">
-              <span className="font-titulo min-w-0 truncate text-[1.05rem] leading-snug font-semibold">
+              <span className="font-titulo line-clamp-2 min-w-0 text-[1.05rem] leading-snug font-semibold [overflow-wrap:anywhere]">
                 {n.titulo}
               </span>
               <span className="flex shrink-0 items-center gap-2">

@@ -4683,6 +4683,10 @@ limpos.
 
 ## Folhas que se esticam, como os sheets do Spotify (05/10/2026)
 
+> **Revisto em 06/10/2026:** a folha só abre pela metade quando o conteúdo **não cabe** na
+> tela; o que cabe abre inteiro, sem esticar nem rolar — ver "Mostrar tudo sem deslize
+> vertical". O resto desta seção continua valendo.
+
 Pedido do usuário: as folhas passam a crescer conforme o conteúdo, com duas
 paradas de altura e o efeito de esticar. **Isto substitui o teto fixo de metade
 da tela** da auditoria de 02/10/2026 (`max-height: min(max(50dvh, 300px), 88dvh)`):
@@ -4965,6 +4969,47 @@ lint limpos. **Não verificado num aparelho de verdade** (toque real, teclado ab
   some sobre a sala escura e o Creme é muito claro no tema claro. O desenho mandava herdar.
 - No papel feito, a contagem e o disco se sobrepõem um pouco.
 - O tom `#7FA8FF` da ponte na estante difere do `--ponte` da Rede e do Mapa.
+
+## Mostrar tudo sem deslize vertical: as folhas e o andamento (06/10/2026)
+
+Pedido do usuário, sobre os livros executáveis: melhorar de forma geral, e em especial a
+folha (bottom sheet) de uma ideia adormecida, que **deve mostrar todo o conteúdo sem
+precisar deslizar**. A regra que vale daqui em diante, para qualquer tela ou folha:
+**dê sempre preferência a mostrar todo o conteúdo sem deslize vertical.**
+
+### A folha abre inteira quando cabe
+
+`paradasDaFolha(natural, tela)` (`components/paradasDaFolha.ts`, puro, testado) decide as
+alturas. **Revoga em parte** "Folhas que se esticam" (05/10/2026), em que a folha abria
+**no máximo pela metade** da tela: um conteúdo de 420 px numa tela de 568 px, ou com o
+teclado aberto (a janela encolhe, `interactive-widget=resizes-content`), abria em 300 px e
+pedia deslize para ser lido.
+
+- **Cabe em 92% da tela:** abre no tamanho do conteúdo — sem esticar, sem rolar.
+- **Passa disso:** o de sempre — abre pela metade (piso de 300 px), estica até 92% e rola
+  ali dentro. O gesto de esticar e o elástico não mudaram.
+
+### A folha do andamento (`FolhaDeEstado`)
+
+- **O título inteiro**, quebrando em linhas — antes terminava em reticências, e a folha
+  existe para mudar o andamento _desta_ ideia.
+- **As três opções numa fileira só** (`.segmentado`), e não três linhas de 48 px: a folha
+  caiu de 270 para **177 px**, e de 420 para **285 px** com o link da "Feita".
+- **O link do resultado sem rótulo à parte** (o placeholder diz "Link do resultado
+  (opcional)"; o `aria-label` continua) e campo e botão com 44 px.
+- **Medido no navegador, sem rolagem nenhuma** em 320, 390 e 412 px, com título comprido,
+  e **também com o teclado aberto** (janela a 55%, 312 px de altura em 320 de largura) —
+  o pior caso, que antes rolava 120 px.
+
+Na lista do livro, o título de cada cartão quebra em até **duas linhas** (`line-clamp-2`)
+em vez de ser cortado na primeira — vale para livro comum e executável.
+
+### O que não mudou, de propósito
+
+Não criei funcionalidade nova nos executáveis (regra 10 do mestre): o pedido de "melhorar de
+forma geral" virou ajuste de tela, não de comportamento. A seção "Adormecidas" continua
+recolhida (dois toques para ver e acordar), e a folha do andamento não diz que a ideia está
+adormecida nem há quantos dias — sugestão, não implementada.
 
 ## Fases
 

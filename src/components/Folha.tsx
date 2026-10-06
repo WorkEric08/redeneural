@@ -7,6 +7,8 @@ import {
   type ReactNode,
 } from 'react'
 
+import { paradasDaFolha, type Paradas } from './paradasDaFolha'
+
 interface Props {
   aberta: boolean
   /** Nome acessível do painel — "Espiar Música", "Um livro novo". */
@@ -17,13 +19,6 @@ interface Props {
 
 /** Só o celular tem paradas de altura; do tablet em diante é diálogo centralizado. */
 const CONSULTA_DO_CELULAR = '(max-width: 767.98px)'
-/** Altura em que a folha abre: metade da tela, com um piso para tela baixa e teclado aberto. */
-const FRACAO_DO_MEIO = 0.5
-const PISO_DO_MEIO_PX = 300
-/** Altura máxima, depois de esticada: perto do topo, sem encostar nele. */
-const FRACAO_DA_CHEIA = 0.92
-/** Entre as duas paradas só há o que esticar se a diferença for visível. */
-const DIFERENCA_MINIMA_PX = 8
 /** Passou da parada de cima, o dedo continua mandando, mas a folha só segue uma fração. */
 const RESISTENCIA_DO_ESTICAR = 0.35
 const ESTICAR_MAXIMO_PX = 36
@@ -39,13 +34,6 @@ const LIMIAR_DO_GESTO_PX = 6
 const DURACAO_DO_ARREMATE_MS = 190
 
 type Parada = 'meio' | 'cheio'
-
-interface Paradas {
-  meio: number
-  cheio: number
-  /** Há duas alturas de verdade: a folha abre pela metade e se estica. */
-  expansivel: boolean
-}
 
 interface Arrasto {
   pointerId: number | null
@@ -72,9 +60,11 @@ interface Arrasto {
  * folha só obedece.
  *
  * **Duas paradas de altura** (02/10/2026, no molde dos sheets do Spotify): a
- * folha abre pela metade da tela — ou no tamanho do conteúdo, se ele for menor —
- * e, se o conteúdo passa disso, **estica** até perto do topo ao ser puxada para
- * cima. Só na parada de cima a lista rola por dentro; antes disso o dedo que sobe
+ * folha abre no tamanho do conteúdo, se ele cabe na tela (até 92% dela) — sem
+ * esticar e sem rolar — e, só se ele passa disso, abre pela metade e **estica**
+ * até perto do topo ao ser puxada para cima. (Até 06/10/2026 abria sempre no
+ * máximo pela metade: um conteúdo de 420px numa tela de 568px, ou com o
+ * teclado aberto, pedia deslize para ser lido inteiro.) Só na parada de cima a lista rola por dentro; antes disso o dedo que sobe
  * estica a folha, e o que desce a recolhe, e depois de recolhida, fecha. O
  * efeito elástico: passou da parada de cima, a folha segue o dedo a uma fração e
  * volta macia ao soltar.
@@ -132,16 +122,8 @@ export function Folha({ aberta, rotulo, onFechar, children }: Props) {
       parseFloat(estilo.paddingTop) +
       parseFloat(estilo.paddingBottom) +
       cont.offsetHeight
-    const tela = window.innerHeight
-    const tetoDoMeio = Math.min(
-      Math.max(tela * FRACAO_DO_MEIO, PISO_DO_MEIO_PX),
-      tela * FRACAO_DA_CHEIA,
-    )
-    const meio = Math.min(natural, tetoDoMeio)
-    const cheio = Math.min(natural, tela * FRACAO_DA_CHEIA)
-    const expansivel = cheio - meio > DIFERENCA_MINIMA_PX
-
-    paradas.current = { meio, cheio: expansivel ? cheio : meio, expansivel }
+    paradas.current = paradasDaFolha(natural, window.innerHeight)
+    const { expansivel } = paradas.current
     if (!expansivel) parada.current = 'meio'
     d.dataset.expansivel = String(expansivel)
     d.dataset.altura = parada.current
