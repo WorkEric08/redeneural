@@ -204,6 +204,10 @@ describe('as laterais sólidas', () => {
     return larguras.reduce((total, w) => total + w, 0) + larguras.length - 1
   }
 
+  /** O que a fileira inteira ocupa, com o 1px entre os lugares. */
+  const larguraDaFileiraDe = (p: Prateleira): number =>
+    p.lugares.reduce((total, l) => total + l.largura, 0) + p.lugares.length - 1
+
   const livrosDoPrefixo = (p: Prateleira): number[] =>
     p.lugares.filter((l) => l.tipo === 'livro').map((l) => l.largura)
 
@@ -229,9 +233,8 @@ describe('as laterais sólidas', () => {
     expect(ocupadoAteOUltimoLivro(ajustada)).toBeLessThanOrEqual(300)
     expect(livrosDoPrefixo(ajustada)).toEqual([38, 38])
 
-    // Nenhum lugar sumiu e só enfeite encolheu — nunca abaixo do mínimo.
-    expect(ajustada.lugares).toHaveLength(natural.lugares.length)
-    ajustada.lugares.forEach((l, i) => {
+    // Até o último livro nenhum lugar sumiu e só enfeite encolheu — nunca abaixo do mínimo.
+    ajustada.lugares.slice(0, 10).forEach((l, i) => {
       const antes = natural.lugares[i]!
       expect(l.indice).toBe(antes.indice)
       if (l.tipo === 'enfeite') {
@@ -248,13 +251,27 @@ describe('as laterais sólidas', () => {
     expect(comVaga.lugares.map((l) => l.largura)).toEqual(comEnfeite.lugares.map((l) => l.largura))
   })
 
-  it('o que vem depois do último livro usa a mesma escala, sem passar da largura de sempre', () => {
+  it('nada fica pela metade atrás da lateral: a fileira inteira cabe, qualquer que seja a largura', () => {
     const estante = [livro('a', 0, 0, 38), livro('b', 0, 9, 38)]
-    const natural = montarPrateleiras(estante, [], 1)[0]!
-    const ajustada = montarPrateleiras(estante, [], 1, 300)[0]!
-    for (const [i, l] of ajustada.lugares.slice(10).entries()) {
-      expect(l.largura).toBeLessThanOrEqual(natural.lugares[10 + i]!.largura)
+    for (const util of [120, 200, 300, 361, 412, 700]) {
+      const p = montarPrateleiras(estante, [], 1, util)[0]!
+      expect(larguraDaFileiraDe(p)).toBeLessThanOrEqual(util + 0.01)
     }
+  })
+
+  it('o que sobra no fim é repartido entre os enfeites depois do último livro, sem vão', () => {
+    const estante = [livro('a', 0, 0, 38), livro('b', 0, 9, 38)]
+    for (const util of [300, 361, 412]) {
+      const p = montarPrateleiras(estante, [], 1, util)[0]!
+      expect(larguraDaFileiraDe(p)).toBeGreaterThan(util - LARGURA_MINIMA_DO_ENFEITE)
+      expect(livrosDoPrefixo(p)).toEqual([38, 38])
+    }
+  })
+
+  it('um livro depois do que não cabe continua inteiro, e nenhum enfeite o atropela', () => {
+    const estante = [livro('a', 0, 0, 38), livro('b', 0, 20, 38)]
+    const p = montarPrateleiras(estante, [], 1, 700)[0]!
+    expect(livrosDoPrefixo(p)).toEqual([38, 38])
   })
 
   it('se nem com todos os enfeites no mínimo cabe, os que estão mais perto da lateral somem', () => {
@@ -280,8 +297,11 @@ describe('as laterais sólidas', () => {
     expect(ajustada.lugares.slice(0, ate + 1).every((l) => l.tipo === 'livro')).toBe(true)
   })
 
-  it('prateleira sem livro não tem o que proteger', () => {
-    expect(montarPrateleiras([], [], 1, 50)).toEqual(montarPrateleiras([], [], 1))
+  it('prateleira sem livro também não corta enfeite na lateral', () => {
+    expect(montarPrateleiras([], [], 1, 10_000)).toEqual(montarPrateleiras([], [], 1))
+    const p = montarPrateleiras([], [], 1, 300)[0]!
+    expect(larguraDaFileiraDe(p)).toBeLessThanOrEqual(300.01)
+    expect(larguraDaFileiraDe(p)).toBeGreaterThan(300 - LARGURA_MINIMA_DO_ENFEITE)
   })
 
   it('é determinístico: a mesma largura dá sempre a mesma fileira', () => {
@@ -293,8 +313,8 @@ describe('as laterais sólidas', () => {
     const estante = [livro('a', 0, 0, 38), livro('b', 0, 9, 38), livro('c', 1, 0, 38)]
     const natural = montarPrateleiras(estante, [], 2)
     const ajustada = montarPrateleiras(estante, [], 2, 300)
-    expect(ajustada[1]).toEqual(natural[1])
-    expect(ajustada[0]).not.toEqual(natural[0])
+    expect(ajustada[1]!.lugares[0]).toEqual(natural[1]!.lugares[0])
+    expect(ajustada[0]!.lugares[1]).not.toEqual(natural[0]!.lugares[1])
   })
 })
 

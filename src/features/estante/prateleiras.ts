@@ -185,6 +185,55 @@ function larguraDaFileira(lugares: readonly Lugar[], escala: number): number {
  * mudar de espessura no meio da prateleira.
  */
 export function ajustarALargura(lugares: readonly Lugar[], larguraUtil: number): Lugar[] {
+  return semCortarNaLateral(encolherParaCaber(lugares, larguraUtil), larguraUtil)
+}
+
+/**
+ * Nada fica pela metade atrás da lateral: o primeiro enfeite ou vaga que não cabe
+ * inteiro encolhe até a lateral (se ainda sobrar o mínimo de um enfeite) e os
+ * seguintes somem — livro nunca é tirado. Uma sobra menor que o mínimo é repartida
+ * entre os enfeites depois do último livro, para a parede não ficar com um vão ao
+ * lado da lateral. Só aparência: nada é gravado.
+ */
+function semCortarNaLateral(lugares: readonly Lugar[], larguraUtil: number): Lugar[] {
+  const mantidos: Lugar[] = []
+  let usado = 0
+  let cheia = false
+  for (const l of lugares) {
+    const largura = usado === 0 ? l.largura : l.largura + FOLGA_ENTRE_LUGARES
+    if (l.tipo === 'livro') {
+      mantidos.push(l)
+      usado += largura
+    } else if (cheia) {
+      continue
+    } else if (usado + largura <= larguraUtil + 0.01) {
+      mantidos.push(l)
+      usado += largura
+    } else {
+      // O último a caber encolhe até a lateral, se sobrar o mínimo de um enfeite.
+      const resto = larguraUtil - usado - (usado === 0 ? 0 : FOLGA_ENTRE_LUGARES)
+      if (resto >= LARGURA_MINIMA_DO_ENFEITE) {
+        mantidos.push({ ...l, largura: resto })
+        usado = larguraUtil
+      }
+      cheia = true
+    }
+  }
+  if (!cheia) return mantidos
+
+  let ultimoLivro = -1
+  mantidos.forEach((l, i) => {
+    if (l.tipo === 'livro') ultimoLivro = i
+  })
+  const depois = mantidos.length - 1 - ultimoLivro
+  const sobra = larguraUtil - usado
+  if (depois <= 0 || sobra <= 0) return mantidos
+  return mantidos.map((l, i): Lugar =>
+    i > ultimoLivro && l.tipo !== 'livro' ? { ...l, largura: l.largura + sobra / depois } : l,
+  )
+}
+
+function encolherParaCaber(lugares: readonly Lugar[], larguraUtil: number): Lugar[] {
   let ultimo = -1
   lugares.forEach((l, i) => {
     if (l.tipo === 'livro') ultimo = i

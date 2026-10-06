@@ -4944,6 +4944,12 @@ inteiros**.
   nada é gravado, e os lugares que sobram mantêm o índice. A escala vale também depois do
   último livro, para o enfeite não mudar de espessura no meio da prateleira. A vaga encolhe
   junto com o enfeite, então a fileira não anda quando um vira o outro.
+- **Nem enfeite fica pela metade na lateral** (revisto em 06/10/2026, pedido do usuário: o
+  último enfeite aparecia cortado atrás da lateral direita). `semCortarNaLateral` roda depois do
+  ajuste acima: o primeiro enfeite ou vaga que não cabe inteiro **encolhe até a lateral** (se
+  sobrar os 10 px mínimos) e os seguintes somem; uma sobra menor que isso é repartida entre os
+  enfeites depois do último livro. Resultado medido em 320, 360, 412, 768 e 1440 px: nenhum
+  lugar passa da borda da fileira. O `overflow: hidden` da fileira fica só de rede de segurança.
 - **A largura útil é medida**, não calculada: `useMedidasDaFileira` (que substituiu
   `useAlturaDaFileira`) observa a primeira fileira e entrega altura e largura. Antes da
   primeira medida a fileira fica do tamanho de sempre.
