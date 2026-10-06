@@ -1,4 +1,10 @@
-import { chaveDoLugar, LUGARES_POR_PRATELEIRA, type EstiloDaLombada, type Vaga } from '@/core'
+import {
+  chaveDoLugar,
+  LUGARES_POR_PRATELEIRA,
+  type EstiloDaLombada,
+  type Livro,
+  type Vaga,
+} from '@/core'
 import { semente, sorteio } from '@/lib/semente'
 
 import type { LivroNaEstante } from './resumo'
@@ -58,9 +64,54 @@ export interface Prateleira {
   lugares: Lugar[]
 }
 
+/** A largura de um livro na fileira: a escolhida na mão, ou a da semente do id. */
+export function larguraDoLivroGravado(livro: Pick<Livro, 'id' | 'larguraLombada'>): number {
+  const [a] = semente(livro.id)
+  return livro.larguraLombada ?? Math.round(30 + a * 16)
+}
+
 function larguraDoLivro(item: LivroNaEstante): number {
-  const [a] = semente(item.livro.id)
-  return item.livro.larguraLombada ?? Math.round(30 + a * 16)
+  return larguraDoLivroGravado(item.livro)
+}
+
+/**
+ * As laterais do móvel são sólidas: nenhum livro passa delas nem fica cortado
+ * ao meio. Quem cede é o enfeite — e a vaga, que tem a largura dele —: ele
+ * encolhe até esta largura, a versão mais fina possível, para os livros
+ * caberem inteiros. (06/10/2026; antes os livros somiam atrás da pilastra da
+ * direita.)
+ */
+export const LARGURA_MINIMA_DO_ENFEITE = 10
+
+/** O espaço entre dois lugares da fileira — o `gap` de `.movel-fila`. */
+const FOLGA_ENTRE_LUGARES = 1
+
+/** A menor lombada que um livro pode ter (a "Fina" do formulário). */
+export const LARGURA_MINIMA_DO_LIVRO = 24
+
+/** Quanto os livros, sozinhos, ocupam da fileira — com a folga entre eles. */
+export function larguraDosLivros(larguras: readonly number[]): number {
+  if (larguras.length === 0) return 0
+  return larguras.reduce((total, w) => total + w, 0) + (larguras.length - 1) * FOLGA_ENTRE_LUGARES
+}
+
+/** O que os livros de uma prateleira ocupam, dado o estado da estante. */
+export function larguraDosLivrosDaPrateleira(
+  livros: readonly Pick<Livro, 'id' | 'larguraLombada' | 'prateleira'>[],
+  prateleira: number,
+): number {
+  return larguraDosLivros(
+    livros.filter((l) => l.prateleira === prateleira).map(larguraDoLivroGravado),
+  )
+}
+
+/**
+ * Uma mudança deixa a prateleira pior se os livros dela passam a ocupar mais
+ * do que a fileira tem. Quem já estava além do limite (uma tela mais estreita
+ * que a de quando o livro foi guardado) pode ser mexido, desde que não piore.
+ */
+export function cabeNaPrateleira(antes: number, depois: number, larguraUtil: number): boolean {
+  return depois <= larguraUtil || depois <= antes
 }
 
 function chaveDoEnfeite(prateleira: number, indice: number): string {
@@ -96,10 +147,83 @@ function enfeite(prateleira: number, indice: number): Lugar {
   }
 }
 
+function larguraComEscala(natural: number, escala: number): number {
+  return Math.max(LARGURA_MINIMA_DO_ENFEITE, Math.round(natural * escala))
+}
+
+/** A fileira de `lugares`, na escala dada (1 = enfeites e vagas do tamanho de sempre). */
+function larguraDaFileira(lugares: readonly Lugar[], escala: number): number {
+  const larguras = lugares.map((l) =>
+    l.tipo === 'livro' ? l.largura : larguraComEscala(l.largura, escala),
+  )
+  return larguras.reduce((total, w) => total + w, 0) + (larguras.length - 1) * FOLGA_ENTRE_LUGARES
+}
+
+/**
+ * Faz a fileira caber entre as laterais sem cortar nenhum livro.
+ *
+ * Só o que vem até o último livro é protegido — depois dele é enfeite, e
+ * enfeite pode ficar atrás da lateral. Em ordem:
+ *
+ * 1. cabe do tamanho de sempre: não muda nada;
+ * 2. senão, enfeites e vagas encolhem na mesma escala, até a largura mínima;
+ * 3. senão, enfeites e vagas somem, do mais perto da lateral para o mais
+ *    longe, até os livros caberem (só aparência: nada é gravado). Se os livros
+ *    sozinhos passam da fileira, não há o que fazer — o resto da conta avisa.
+ *
+ * A escala vale também para o que vem depois do último livro, para o enfeite não
+ * mudar de espessura no meio da prateleira.
+ */
+export function ajustarALargura(lugares: readonly Lugar[], larguraUtil: number): Lugar[] {
+  let ultimo = -1
+  lugares.forEach((l, i) => {
+    if (l.tipo === 'livro') ultimo = i
+  })
+  if (ultimo < 0 || larguraDaFileira(lugares.slice(0, ultimo + 1), 1) <= larguraUtil) {
+    return [...lugares]
+  }
+
+  let protegidos = lugares.slice(0, ultimo + 1)
+  const tail = lugares.slice(ultimo + 1)
+  let semEnfeites = [...protegidos]
+
+  // Passo 3: tira os que não são livro, do fim para o começo, até caber na escala mínima.
+  const removidos = new Set<number>()
+  for (
+    let i = protegidos.length - 1;
+    i >= 0 && larguraDaFileira(semEnfeites, 0) > larguraUtil;
+    i -= 1
+  ) {
+    if (protegidos[i]?.tipo === 'livro') continue
+    removidos.add(i)
+    semEnfeites = protegidos.filter((_, j) => !removidos.has(j))
+  }
+  protegidos = semEnfeites
+
+  // Passo 2: a maior escala em que o que sobrou cabe (a conta só cresce com a escala).
+  let baixo = 0
+  let alto = 1
+  for (let k = 0; k < 24; k += 1) {
+    const meio = (baixo + alto) / 2
+    if (larguraDaFileira(protegidos, meio) <= larguraUtil) baixo = meio
+    else alto = meio
+  }
+  const escala = baixo
+
+  return [...protegidos, ...tail].map((l): Lugar =>
+    l.tipo === 'livro' ? l : { ...l, largura: larguraComEscala(l.largura, escala) },
+  )
+}
+
 export function montarPrateleiras(
   estante: readonly LivroNaEstante[],
   vagas: readonly Vaga[],
   quantidadeDePrateleiras: number,
+  /**
+   * Quanto a fileira tem entre as laterais, em px — medido na tela. Sem ele (ainda
+   * não medido, ou nos testes), a fileira fica do tamanho de sempre.
+   */
+  larguraUtil?: number,
 ): Prateleira[] {
   const livroNoLugar = new Map(estante.map((item) => [chaveDoLugar(item.livro), item]))
   const abertas = new Set(vagas.map(chaveDoLugar))
@@ -140,6 +264,11 @@ export function montarPrateleiras(
         largura: larguraDoLivro(item),
       }))
 
-    return { chave: `p${String(prateleira)}`, lugares: [...lugaresComGrupo, ...transbordo] }
+    const todos = [...lugaresComGrupo, ...transbordo]
+
+    return {
+      chave: `p${String(prateleira)}`,
+      lugares: larguraUtil === undefined ? todos : ajustarALargura(todos, larguraUtil),
+    }
   })
 }

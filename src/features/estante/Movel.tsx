@@ -1,12 +1,19 @@
 import { useMemo, useRef, type CSSProperties } from 'react'
 
-import type { Id, Vaga } from '@/core'
+import { moverLivroNaEstante, type Id, type Vaga } from '@/core'
 
 import { Fantasma, Lombada, type EstadoDaLombada } from './Lombada'
 import { geometriaDaLombada } from './lombadaNoite'
-import { COR_DO_ENFEITE, montarPrateleiras, type Lugar } from './prateleiras'
+import {
+  cabeNaPrateleira,
+  COR_DO_ENFEITE,
+  LARGURA_MINIMA_DO_LIVRO,
+  larguraDosLivrosDaPrateleira,
+  montarPrateleiras,
+  type Lugar,
+} from './prateleiras'
 import type { LivroNaEstante } from './resumo'
-import { useAlturaDaFileira } from './useAlturaDaFileira'
+import { useMedidasDaFileira } from './useMedidasDaFileira'
 import {
   useManipularLivros,
   type LugarDaEstante,
@@ -35,6 +42,8 @@ interface Props {
   /** Põe o livro no lugar `(prateleira, lugar)` — mesma assinatura da store. */
   onMover: (livroId: string, prateleira: number, lugar: number) => void
   onNovo: (prateleira: number, lugar: number) => void
+  /** O livro não cabe inteiro entre as laterais daquela prateleira: nada foi feito. */
+  onSemEspaco: (prateleira: number) => void
   onAcoesDoLugar: (prateleira: number, lugar: number) => void
 }
 
@@ -66,22 +75,53 @@ export function Movel({
   onAcoes,
   onMover,
   onNovo,
+  onSemEspaco,
   onAcoesDoLugar,
 }: Props) {
   const movel = useRef<HTMLDivElement>(null)
-  const alturaDaFileira = useAlturaDaFileira(movel)
+  const { altura: alturaDaFileira, largura: larguraUtil } = useMedidasDaFileira(movel)
   const prateleiras = useMemo(
-    () => montarPrateleiras(estante, vagas, quantidadeDePrateleiras),
-    [estante, vagas, quantidadeDePrateleiras],
+    () => montarPrateleiras(estante, vagas, quantidadeDePrateleiras, larguraUtil ?? undefined),
+    [estante, vagas, quantidadeDePrateleiras, larguraUtil],
   )
+
+  // As laterais são sólidas: um livro só vai (ou nasce) numa prateleira onde os
+  // livros dela continuam cabendo inteiros. Os enfeites cedem espaço até a
+  // largura mínima, então o que decide é a soma dos livros.
+  function podeMover(livroId: string, prateleira: number, lugar: number): boolean {
+    if (larguraUtil === null) return true
+    const livros = estante.map((e) => e.livro)
+    const depois = moverLivroNaEstante(livros, livroId, prateleira, lugar)
+    if (!depois) return true // sem lugar livre: quem recusa é a store, com o aviso dela
+    return cabeNaPrateleira(
+      larguraDosLivrosDaPrateleira(livros, prateleira),
+      larguraDosLivrosDaPrateleira(depois, prateleira),
+      larguraUtil,
+    )
+  }
+
+  function podeCriar(prateleira: number): boolean {
+    if (larguraUtil === null) return true
+    const livros = estante.map((e) => e.livro)
+    const antes = larguraDosLivrosDaPrateleira(livros, prateleira)
+    return cabeNaPrateleira(antes, antes + LARGURA_MINIMA_DO_LIVRO + 1, larguraUtil)
+  }
   const { gesto, lugarSegurado, manipular, manipularLugar, registrarFantasma } = useManipularLivros(
     {
       onEspiar,
       onAcoes,
       onMover: (livroId, alvo) => {
+        if (!podeMover(livroId, alvo.prateleira, alvo.lugar)) {
+          onSemEspaco(alvo.prateleira)
+          return
+        }
         onMover(livroId, alvo.prateleira, alvo.lugar)
       },
       onTocarLugar: ({ prateleira, lugar }) => {
+        if (!podeCriar(prateleira)) {
+          onSemEspaco(prateleira)
+          return
+        }
         onNovo(prateleira, lugar)
       },
       onAcoesDoLugar: ({ prateleira, lugar }) => {

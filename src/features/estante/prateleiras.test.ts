@@ -2,7 +2,15 @@ import { describe, expect, it } from 'vitest'
 
 import { LUGARES_POR_PRATELEIRA, type Livro, type Vaga } from '@/core'
 
-import { montarPrateleiras, type Lugar, type Prateleira } from './prateleiras'
+import {
+  cabeNaPrateleira,
+  LARGURA_MINIMA_DO_ENFEITE,
+  larguraDosLivros,
+  larguraDosLivrosDaPrateleira,
+  montarPrateleiras,
+  type Lugar,
+  type Prateleira,
+} from './prateleiras'
 import type { LivroNaEstante } from './resumo'
 
 const T0 = new Date('2026-01-01T12:00:00.000Z')
@@ -184,5 +192,140 @@ describe('montarPrateleiras', () => {
     const [x] = livrosDe(montarPrateleiras([livro('psi', 0, 0, null)], [], 1))
     expect(x!.largura).toBeGreaterThanOrEqual(30)
     expect(x!.largura).toBeLessThanOrEqual(46)
+  })
+})
+
+describe('as laterais sólidas', () => {
+  /** O que a fileira ocupa do primeiro lugar até o último livro, com o 1px entre eles. */
+  function ocupadoAteOUltimoLivro(p: Prateleira): number {
+    let ultimo = -1
+    p.lugares.forEach((l, i) => {
+      if (l.tipo === 'livro') ultimo = i
+    })
+    const larguras = p.lugares.slice(0, ultimo + 1).map((l) => l.largura)
+    return larguras.reduce((total, w) => total + w, 0) + larguras.length - 1
+  }
+
+  const livrosDoPrefixo = (p: Prateleira): number[] =>
+    p.lugares.filter((l) => l.tipo === 'livro').map((l) => l.largura)
+
+  it('cabendo do tamanho de sempre, nada muda', () => {
+    const estante = [livro('a', 0, 0, 38), livro('b', 0, 9, 38)]
+    expect(montarPrateleiras(estante, [], 1, 10_000)).toEqual(montarPrateleiras(estante, [], 1))
+  })
+
+  it('sem enfeite entre os livros que precise ceder, também não muda', () => {
+    const estante = [livro('a', 0, 0, 38), livro('b', 0, 1, 38)]
+    const natural = montarPrateleiras(estante, [], 1)
+    expect(montarPrateleiras(estante, [], 1, 120)[0]!.lugares.slice(0, 2)).toEqual(
+      natural[0]!.lugares.slice(0, 2),
+    )
+  })
+
+  it('o livro longe da lateral esquerda faz os enfeites encolherem, e ele cabe inteiro', () => {
+    const estante = [livro('a', 0, 0, 38), livro('b', 0, 9, 38)]
+    const natural = montarPrateleiras(estante, [], 1)[0]!
+    expect(ocupadoAteOUltimoLivro(natural)).toBeGreaterThan(300)
+
+    const ajustada = montarPrateleiras(estante, [], 1, 300)[0]!
+    expect(ocupadoAteOUltimoLivro(ajustada)).toBeLessThanOrEqual(300)
+    expect(livrosDoPrefixo(ajustada)).toEqual([38, 38])
+
+    // Nenhum lugar sumiu e só enfeite encolheu — nunca abaixo do mínimo.
+    expect(ajustada.lugares).toHaveLength(natural.lugares.length)
+    ajustada.lugares.forEach((l, i) => {
+      const antes = natural.lugares[i]!
+      expect(l.indice).toBe(antes.indice)
+      if (l.tipo === 'enfeite') {
+        expect(l.largura).toBeGreaterThanOrEqual(LARGURA_MINIMA_DO_ENFEITE)
+        expect(l.largura).toBeLessThanOrEqual(antes.largura)
+      }
+    })
+  })
+
+  it('a vaga encolhe junto com o enfeite: a fileira não anda quando um vira o outro', () => {
+    const estante = [livro('a', 0, 0, 38), livro('b', 0, 9, 38)]
+    const comEnfeite = montarPrateleiras(estante, [], 1, 300)[0]!
+    const comVaga = montarPrateleiras(estante, [{ prateleira: 0, ordem: 4 }], 1, 300)[0]!
+    expect(comVaga.lugares.map((l) => l.largura)).toEqual(comEnfeite.lugares.map((l) => l.largura))
+  })
+
+  it('o que vem depois do último livro usa a mesma escala, sem passar da largura de sempre', () => {
+    const estante = [livro('a', 0, 0, 38), livro('b', 0, 9, 38)]
+    const natural = montarPrateleiras(estante, [], 1)[0]!
+    const ajustada = montarPrateleiras(estante, [], 1, 300)[0]!
+    for (const [i, l] of ajustada.lugares.slice(10).entries()) {
+      expect(l.largura).toBeLessThanOrEqual(natural.lugares[10 + i]!.largura)
+    }
+  })
+
+  it('se nem com todos os enfeites no mínimo cabe, os que estão mais perto da lateral somem', () => {
+    const estante = [livro('a', 0, 0, 38), livro('b', 0, 9, 38)]
+    const natural = montarPrateleiras(estante, [], 1)[0]!
+    const ajustada = montarPrateleiras(estante, [], 1, 120)[0]!
+
+    expect(ocupadoAteOUltimoLivro(ajustada)).toBeLessThanOrEqual(120)
+    expect(livrosDoPrefixo(ajustada)).toEqual([38, 38])
+    expect(ajustada.lugares.length).toBeLessThan(natural.lugares.length)
+
+    // O que sobrou continua na ordem, e os livros não trocaram de lugar.
+    const indices = ajustada.lugares.map((l) => l.indice)
+    expect([...indices].sort((a, b) => a - b)).toEqual(indices)
+    expect(ajustada.lugares.filter((l) => l.tipo === 'livro').map((l) => l.indice)).toEqual([0, 9])
+  })
+
+  it('livros que sozinhos passam da fileira ficam todos, sem enfeite nenhum antes do último', () => {
+    const estante = [livro('a', 0, 0, 68), livro('b', 0, 3, 68), livro('c', 0, 7, 68)]
+    const ajustada = montarPrateleiras(estante, [], 1, 150)[0]!
+    expect(livrosDoPrefixo(ajustada)).toEqual([68, 68, 68])
+    const ate = ajustada.lugares.findLastIndex((l) => l.tipo === 'livro')
+    expect(ajustada.lugares.slice(0, ate + 1).every((l) => l.tipo === 'livro')).toBe(true)
+  })
+
+  it('prateleira sem livro não tem o que proteger', () => {
+    expect(montarPrateleiras([], [], 1, 50)).toEqual(montarPrateleiras([], [], 1))
+  })
+
+  it('é determinístico: a mesma largura dá sempre a mesma fileira', () => {
+    const estante = [livro('a', 0, 0, 52), livro('b', 0, 11, 24)]
+    expect(montarPrateleiras(estante, [], 2, 280)).toEqual(montarPrateleiras(estante, [], 2, 280))
+  })
+
+  it('só a prateleira com o problema é ajustada', () => {
+    const estante = [livro('a', 0, 0, 38), livro('b', 0, 9, 38), livro('c', 1, 0, 38)]
+    const natural = montarPrateleiras(estante, [], 2)
+    const ajustada = montarPrateleiras(estante, [], 2, 300)
+    expect(ajustada[1]).toEqual(natural[1])
+    expect(ajustada[0]).not.toEqual(natural[0])
+  })
+})
+
+describe('quanto os livros ocupam', () => {
+  it('soma as larguras e o 1px entre dois livros', () => {
+    expect(larguraDosLivros([])).toBe(0)
+    expect(larguraDosLivros([38])).toBe(38)
+    expect(larguraDosLivros([38, 24, 68])).toBe(38 + 24 + 68 + 2)
+  })
+
+  it('conta só os livros da prateleira pedida', () => {
+    const livros = [livro('a', 0, 0, 38), livro('b', 0, 3, 52), livro('c', 1, 0, 68)].map(
+      (e) => e.livro,
+    )
+    expect(larguraDosLivrosDaPrateleira(livros, 0)).toBe(38 + 52 + 1)
+    expect(larguraDosLivrosDaPrateleira(livros, 1)).toBe(68)
+    expect(larguraDosLivrosDaPrateleira(livros, 2)).toBe(0)
+  })
+})
+
+describe('cabeNaPrateleira', () => {
+  it('cabe enquanto os livros ficam dentro da fileira', () => {
+    expect(cabeNaPrateleira(300, 372, 372)).toBe(true)
+    expect(cabeNaPrateleira(300, 373, 372)).toBe(false)
+  })
+
+  it('quem já estava além do limite pode ser mexido, desde que não piore', () => {
+    expect(cabeNaPrateleira(400, 400, 372)).toBe(true)
+    expect(cabeNaPrateleira(400, 390, 372)).toBe(true)
+    expect(cabeNaPrateleira(400, 410, 372)).toBe(false)
   })
 })

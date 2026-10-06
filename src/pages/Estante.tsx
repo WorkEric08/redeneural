@@ -41,6 +41,7 @@ export default function Estante() {
     apagarLivro,
     tirarEnfeite,
     porEnfeite,
+    avisar,
   } = usePalacio()
   const { painel, abrir, trocar, fechar } = usePainel()
   const navegar = useNavigate()
@@ -144,6 +145,9 @@ export default function Estante() {
           }}
           onNovo={(prateleira, lugar) => {
             void navegar(`/novo-livro?prateleira=${String(prateleira)}&lugar=${String(lugar)}`)
+          }}
+          onSemEspaco={(prateleira) => {
+            avisar(`A prateleira ${String(prateleira + 1)} não tem espaço para mais um livro.`)
           }}
           onAcoesDoLugar={(prateleira, lugar) => {
             abrir({ tipo: 'lugar', prateleira, lugar })

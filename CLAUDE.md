@@ -4906,6 +4906,46 @@ Desvios: o prompt dizia "como hoje" para as pilastras, mas hoje as duas tinham 2
 os números); e "6 px da base" da tábua colidiria com a linha do topo, então o fio ficou logo
 abaixo dela.
 
+### As laterais são sólidas (06/10/2026)
+
+Pedido do usuário, depois do estilo Noite: nenhum livro (que não seja enfeite) passa das
+laterais do móvel nem fica cortado ao meio quando a estante é reorganizada. **Isto revoga
+a regra antiga** de que os livros "somem atrás da pilastra da direita, como em estante
+cheia". O corte vinha de a largura de cada lugar depender do conteúdo: enfeites de 24, 38
+ou 52 px e livros de 24 a 68 px, então um livro empurrado ou solto na ponta da fileira podia
+ficar atrás da lateral.
+
+Escolhas do usuário: os **enfeites mudam de largura, até a versão mais fina possível**, e a
+adaptação considera isso; e os livros **já gravados** onde não cabem são **mostrados
+inteiros**.
+
+- **A fileira termina onde a pilastra da direita começa** (`margin-right: 14px` em
+  `.movel-fila`, com `overflow: hidden`): o que passa da lateral é cortado ali. Só enfeite
+  pode ser cortado.
+- **`ajustarALargura`** (`prateleiras.ts`, puro, testado) protege tudo até o **último livro**
+  da prateleira: se não cabe do tamanho de sempre, enfeites e vagas encolhem **na mesma
+  escala**, até `LARGURA_MINIMA_DO_ENFEITE` (10 px); se nem assim cabe, enfeites e vagas
+  **somem, do mais perto da lateral para o mais longe**, até os livros caberem. Só aparência:
+  nada é gravado, e os lugares que sobram mantêm o índice. A escala vale também depois do
+  último livro, para o enfeite não mudar de espessura no meio da prateleira. A vaga encolhe
+  junto com o enfeite, então a fileira não anda quando um vira o outro.
+- **A largura útil é medida**, não calculada: `useMedidasDaFileira` (que substituiu
+  `useAlturaDaFileira`) observa a primeira fileira e entrega altura e largura. Antes da
+  primeira medida a fileira fica do tamanho de sempre.
+- **Mover ou criar é recusado** quando os livros da prateleira de destino deixariam de caber
+  (os enfeites cedem, então o que conta é a soma dos livros, com 1 px entre eles): o livro
+  volta e o aviso diz "A prateleira N não tem espaço para mais um livro." (`cabeNaPrateleira`).
+  Quem já estava além do limite pode ser mexido, desde que não piore. Tocar um lugar vazio
+  para criar só vale se couber o menor livro (24 px).
+- **Medido no navegador** com livros espalhados até o lugar 25 (larguras de 24 a 68): todos
+  inteiros em 320, 412, 768 e 1440 px; seis livros de 52 px lotam uma prateleira de 362 px e
+  o sétimo é recusado; para uma prateleira com folga ele vai.
+
+**O que não é coberto:** se os livros **sozinhos** passam da fileira (oito livros de 68 px em
+320 px), não há onde encolher e eles continuam cortados; mexer na **largura de um livro**
+no formulário (de Fina para Grande) e o menu "criar aqui" do lugar não passam pela
+recusa — a adaptação visual cobre os dois, mas não os impede.
+
 ### Verificado
 
 Chrome (Playwright-core, build de produção): as 10 formas nas larguras 24, 38, 52 e 68 em

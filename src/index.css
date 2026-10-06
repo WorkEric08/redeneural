@@ -489,6 +489,10 @@ img {
   align-items: flex-end;
   gap: 1px;
   padding-left: 26px;
+  /* Até a pilastra da direita (14px): a lateral é sólida. O que passa dela é
+     cortado aqui — só enfeite, porque os livros cabem (ver
+     `ajustarALargura` em prateleiras.ts). */
+  margin-right: 14px;
   overflow: hidden;
   /* A fileira em si não recebe toque; quem recebe são os lugares — o livro
      (.lombada--livro) e o lugar sem livro (.lugar). */
