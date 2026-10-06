@@ -475,13 +475,16 @@ img {
   --mv-base: 30px;
 }
 
-/* O trilho de cima: a tampa do móvel, em madeira de veio no comprimento. */
+/* O trilho de cima: a tampa do móvel, em madeira de veio no comprimento. Escura,
+   como a moldura da base: um véu de sombra por cima da madeira, e só um fio de luz
+   na quina — o veio aparece, mas a peça assenta. */
 .movel-cornija {
   display: block;
   height: var(--mv-trilho);
   margin-inline: var(--mv-projecao);
   background:
-    linear-gradient(180deg, rgb(150 180 255 / 0.2) 0 1px, transparent 1px 55%, rgb(0 0 0 / 0.45)),
+    linear-gradient(180deg, rgb(150 180 255 / 0.12) 0 1px, transparent 1px 55%, rgb(0 0 0 / 0.6)),
+    linear-gradient(rgb(4 9 28 / 0.45), rgb(4 9 28 / 0.45)),
     url('./assets/madeira-azul-h.webp') 20% 30% / 520px auto;
 }
 

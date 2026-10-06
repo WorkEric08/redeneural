@@ -5002,6 +5002,9 @@ assoalho e do "estante em CSS, sem imagem" não vale mais.
 - **A tábua das prateleiras** (8 px) é nítida e escura, na cor da madeira: o fio de luz da quina, a
   canaleta escura que a separa dos livros, o fio dourado, a face de madeira (véu leve, veio
   à mostra) e a quina de sombra no pé que a recorta.
+- **O tampo** (`.movel-cornija`, o trilho de 10 px em cima) é escuro como a moldura da base
+  (07/10/2026, pedido do usuário): véu de sombra (`rgb(4 9 28 / 0.45)`) sobre a madeira e só um
+  fio de luz de 1 px na quina.
 - **Uma versão para cada quantidade de prateleiras (1 a 6):** `--mv-base` vale 52, 46, 42, 38,
   34 e 30 px (`.movel[data-prateleiras='N']`, escrito por `Movel.tsx`). Com poucas prateleiras
   a fileira é alta (até 132 px) e há altura de sobra, então a base cresce; com seis ela
