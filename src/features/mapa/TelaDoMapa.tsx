@@ -17,7 +17,14 @@ import type { ControleDaTela, Folgas } from '@/features/rede/Tela'
 import { useCamera } from '@/features/rede/useCamera'
 
 import { desenharMapa, type CenaDoMapa, type CoresDoMapa } from './desenharMapa'
-import { bordasDoMapa, ESCALA_DE_PERTO, ilhaEm, neuronioNoMapaEm, pontosAbsolutos } from './ilha'
+import {
+  bordasDoMapa,
+  ESCALA_DE_PERTO,
+  ilhaEm,
+  neuronioNoMapaEm,
+  pontosAbsolutos,
+  RAZAO_DO_VERTICE,
+} from './ilha'
 import { ponteEm, pontesVisiveis, type PonteAgrupada } from './pontes'
 
 /**
@@ -435,11 +442,12 @@ export function TelaDoMapa({
     const ilha = cenaRef.current.mapa.ilhas[livroId]
     if (!ilha) return
     const r = ilha.raio * MAR_EM_VOLTA_DA_ILHA
+    const lado = r * RAZAO_DO_VERTICE
     const { x, y } = ilha.centro
     const alvo = enquadramento(
       [
-        { x: x - r, y: y - r },
-        { x: x + r, y: y + r },
+        { x: x - lado, y: y - r },
+        { x: x + lado, y: y + r },
       ],
       ESCALA_DE_PERTO,
     )

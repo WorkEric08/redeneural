@@ -4737,6 +4737,37 @@ lint limpos.
 campo (o único é "Criar livro executável", dentro da escolha do porto) e o
 ritmo do elástico sob um dedo real.
 
+## As ilhas viram hexágonos, e as linhas afinam (05/10/2026)
+
+Pedido do usuário na tela da Rede, modo Mapa.
+
+- **A ilha é um hexágono regular**, com um lado reto em cima e embaixo e os
+  vértices à esquerda e à direita. O `raio` gravado passou a ser o **apótema**
+  (do centro ao meio de um lado), e não o vértice: assim o hexágono **contém** o
+  círculo que o núcleo continua usando para espaçar ilhas, soltar pontos e
+  prender o neurônio arrastado — nada do que já estava dentro de uma ilha ficou
+  fora, e **nenhum dado gravado mudou** (o núcleo `core/motor/mapa.ts` não foi
+  tocado). O vértice fica a `raio / cos 30°` (≈ 1,155 × o raio), em
+  `RAZAO_DO_VERTICE`. O nome da ilha continua em cima, porque o lado de cima
+  está a um raio do centro.
+- **O toque é o hexágono** (`dentroDoHexagono`, `ilhaEm`) e o enquadramento
+  (`bordasDoMapa`, aproximar de uma ilha) conta os vértices, mais largos que o
+  raio. O resto — pontos, arrastar neurônio, arrastar ilha — é o de antes.
+- **Custo assumido:** o espaçamento entre ilhas continua medido em círculos, então
+  os cantos podem chegar mais perto que os 46 de mar quando duas ilhas grandes
+  (raio acima de ~150) ficam alinhadas na horizontal, vértice com vértice. Com os
+  tamanhos de hoje não se encostam; se um palácio crescer a ponto de isso
+  aparecer, a conta mora em `seSobrepoem` e `separarIlhas`.
+- **Linhas mais finas** (cerca de 25%): ponte de 1 → 0,75 px e teto de 3 → 2,25
+  px (`espessuraDaPonte`); borda da ilha de 1,25 → 1 px (2,5 → 2 px segurada);
+  trilhas de 0,9 → 0,7 px; as conexões do neurônio tocado de 1,3 → 1 px (trilha)
+  e 1,8 → 1,4 px (ponte).
+
+Verificado no navegador de verdade (build de produção, toque por CDP, 35 notas):
+Mapa de longe e de perto nos dois temas; as 13 conferências de arrastar ilha e
+neurônio continuam passando. 422 testes (2 novos: o hexágono e os vértices),
+typecheck e lint limpos.
+
 ## Fases
 
 0. ✅ Esqueleto (Vite/React/TS/Tailwind/PWA/Capacitor)

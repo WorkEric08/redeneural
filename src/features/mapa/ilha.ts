@@ -3,9 +3,25 @@ import type { Id, MapaDoPalacio, Ponto } from '@/core'
 /**
  * O que a tela do Mapa calcula do próprio lado: onde cada ponto está no mundo,
  * quem está debaixo do dedo e o quanto a câmera está perto. A ilha é um
- * círculo perfeito (02/10/2026) — a costa é o raio. Onde cada coisa fica mora
- * no núcleo (`core/motor/mapa.ts`), gravado.
+ * hexágono regular (05/10/2026; era um círculo desde 02/10) com o **raio como
+ * apótema**: a distância do centro ao meio de cada lado. Assim o hexágono contém
+ * o círculo que o núcleo usa para pontos e espaçamento (`core/motor/mapa.ts`,
+ * gravado), e nada do que já estava dentro de uma ilha passa a ficar fora.
  */
+
+/** Do apótema ao vértice de um hexágono regular: 1 / cos 30°. */
+export const RAZAO_DO_VERTICE = 2 / Math.sqrt(3)
+
+/**
+ * Hexágono de lado horizontal em cima e embaixo (vértices à esquerda e à
+ * direita): dentro quando o ponto está aquém dos três pares de lados, cujas
+ * normais ficam a 90°, 30° e −30°.
+ */
+export function dentroDoHexagono(ponto: Ponto, centro: Ponto, apotema: number): boolean {
+  const x = Math.abs(ponto.x - centro.x)
+  const y = Math.abs(ponto.y - centro.y)
+  return y <= apotema && x * (Math.sqrt(3) / 2) + y / 2 <= apotema
+}
 
 /** Onde cada neurônio está no mundo do Mapa: o centro da ilha mais o lugar dele nela. */
 export function pontosAbsolutos(mapa: MapaDoPalacio): Map<Id, Ponto> {
@@ -36,17 +52,20 @@ export function neuronioNoMapaEm(
 /** A ilha em cuja terra o toque caiu. */
 export function ilhaEm(ponto: Ponto, mapa: MapaDoPalacio): Id | null {
   for (const [livroId, ilha] of Object.entries(mapa.ilhas)) {
-    if (Math.hypot(ponto.x - ilha.centro.x, ponto.y - ilha.centro.y) <= ilha.raio) return livroId
+    if (dentroDoHexagono(ponto, ilha.centro, ilha.raio)) return livroId
   }
   return null
 }
 
 /** A caixa que enquadra o mapa inteiro: as bordas de cada ilha. */
 export function bordasDoMapa(mapa: MapaDoPalacio): Ponto[] {
-  return Object.values(mapa.ilhas).flatMap((ilha) => [
-    { x: ilha.centro.x - ilha.raio, y: ilha.centro.y - ilha.raio },
-    { x: ilha.centro.x + ilha.raio, y: ilha.centro.y + ilha.raio },
-  ])
+  return Object.values(mapa.ilhas).flatMap((ilha) => {
+    const lado = ilha.raio * RAZAO_DO_VERTICE
+    return [
+      { x: ilha.centro.x - lado, y: ilha.centro.y - ilha.raio },
+      { x: ilha.centro.x + lado, y: ilha.centro.y + ilha.raio },
+    ]
+  })
 }
 
 /**

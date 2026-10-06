@@ -4,12 +4,12 @@ import type { Camera } from '@/features/rede/desenhar'
 import { vizinhancaDe } from '@/features/rede/layout'
 import { contar } from '@/lib/plural'
 
-import { ESCALA_DE_PERTO, presencaDePerto } from './ilha'
+import { ESCALA_DE_PERTO, presencaDePerto, RAZAO_DO_VERTICE } from './ilha'
 import { controleDoArco, espessuraDaPonte, pontesVisiveis, type PonteAgrupada } from './pontes'
 
 /**
  * O desenho do Mapa, em canvas: o palácio como arquipélago — a sala é o mar,
- * liso como o fundo da Rede, e cada livro é uma ilha: um círculo com a borda na cor
+ * liso como o fundo da Rede, e cada livro é uma ilha: um hexágono com a borda na cor
  * dele, com os neurônios à mostra como pontos, do mesmo jeito que na Rede. As
  * pontes são rotas em arco.
  *
@@ -245,7 +245,7 @@ function desenharPontesAgrupadas(
 }
 
 /**
- * A ilha: um círculo de borda na cor do livro, com o interior um tom mais
+ * A ilha: um hexágono de borda na cor do livro, com o interior um tom mais
  * claro que o mar — só para os neurônios se destacarem. Erguida (a pessoa está
  * segurando), cresce um pouco e a borda engrossa.
  */
@@ -258,12 +258,22 @@ function desenharIlha(
   erguida: boolean,
 ): void {
   const { centro } = ilha
+  const vertice = ilha.raio * RAZAO_DO_VERTICE * (erguida ? 1.03 : 1)
+  // Lado reto em cima e embaixo: vértices a 0°, 60°, 120°…
   ctx.beginPath()
-  ctx.arc(centro.x, centro.y, ilha.raio * (erguida ? 1.03 : 1), 0, 2 * Math.PI)
+  for (let i = 0; i < 6; i++) {
+    const a = (i * Math.PI) / 3
+    const x = centro.x + Math.cos(a) * vertice
+    const y = centro.y + Math.sin(a) * vertice
+    if (i === 0) ctx.moveTo(x, y)
+    else ctx.lineTo(x, y)
+  }
+  ctx.closePath()
   ctx.fillStyle = cores.parede
   ctx.fill()
   ctx.strokeStyle = cor ?? cores.poeira
-  ctx.lineWidth = (erguida ? 2.5 : 1.25) * px
+  ctx.lineJoin = 'miter'
+  ctx.lineWidth = (erguida ? 2 : 1) * px
   ctx.stroke()
 }
 
@@ -317,7 +327,7 @@ function desenharTrilhas(
     ctx.stroke()
   }
   ctx.strokeStyle = cena.cores.fio
-  ctx.lineWidth = 0.9 * px
+  ctx.lineWidth = 0.7 * px
   ctx.setLineDash(TRACEJADO_DA_TRILHA_PX.map((d) => d * px))
   tracar(false)
   tracar(true)
@@ -509,11 +519,11 @@ function desenharVizinhanca(
     ctx.lineTo(destino.x, destino.y)
     if (mesmoLivro) {
       ctx.strokeStyle = cores.fio
-      ctx.lineWidth = 1.3 * px
+      ctx.lineWidth = 1 * px
       ctx.setLineDash(TRACEJADO_DA_TRILHA_PX.map((d) => d * px))
     } else {
       ctx.strokeStyle = cores.ponte
-      ctx.lineWidth = 1.8 * px
+      ctx.lineWidth = 1.4 * px
       // Score zero é tracejado, como em todo o app: o vizinho menos ruim.
       ctx.setLineDash(c.score === 0 ? [2 * px, 5 * px] : [])
     }

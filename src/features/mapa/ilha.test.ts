@@ -5,6 +5,7 @@ import type { MapaDoPalacio } from '@/core'
 import {
   bordasDoMapa,
   ESCALA_DE_PERTO,
+  dentroDoHexagono,
   ilhaEm,
   neuronioNoMapaEm,
   pontosAbsolutos,
@@ -43,9 +44,36 @@ describe('ilhaEm', () => {
     expect(ilhaEm({ x: 0, y: 400 }, MAPA)).toBeNull()
   })
 
-  it('a costa é o círculo: dentro do raio é terra, fora é mar', () => {
-    expect(ilhaEm({ x: 100 + 79.9, y: 0 }, MAPA)).toBe('psi')
-    expect(ilhaEm({ x: 100 + 80.1, y: 0 }, MAPA)).toBeNull()
+  it('a costa é o hexágono: o raio é o apótema, de cima e de baixo', () => {
+    expect(ilhaEm({ x: 100, y: -79.9 }, MAPA)).toBe('psi')
+    expect(ilhaEm({ x: 100, y: -80.1 }, MAPA)).toBeNull()
+    expect(ilhaEm({ x: 100, y: 79.9 }, MAPA)).toBe('psi')
+  })
+
+  it('o vértice vai além do raio: o hexágono contém o círculo, e os cantos são terra', () => {
+    // O vértice fica a raio / cos 30° ≈ 92,4 do centro, à esquerda e à direita.
+    expect(ilhaEm({ x: 100 + 92, y: 0 }, MAPA)).toBe('psi')
+    expect(ilhaEm({ x: 100 + 92.6, y: 0 }, MAPA)).toBeNull()
+    // Um ponto de qualquer direção dentro do círculo do raio é terra.
+    for (let a = 0; a < 360; a += 15) {
+      const r = (a * Math.PI) / 180
+      expect(ilhaEm({ x: 100 + Math.cos(r) * 79.9, y: Math.sin(r) * 79.9 }, MAPA)).toBe('psi')
+    }
+  })
+})
+
+describe('dentroDoHexagono', () => {
+  it('os lados inclinados cortam o canto: a 45° o limite é mais perto que o do círculo do vértice', () => {
+    const centro = { x: 0, y: 0 }
+    // Na direção de 45° a borda do hexágono de apótema 100 está a 100 / cos(15°).
+    const limite = 100 / Math.cos((15 * Math.PI) / 180)
+    const c = Math.cos(Math.PI / 4)
+    expect(dentroDoHexagono({ x: c * (limite - 0.5), y: c * (limite - 0.5) }, centro, 100)).toBe(
+      true,
+    )
+    expect(dentroDoHexagono({ x: c * (limite + 0.5), y: c * (limite + 0.5) }, centro, 100)).toBe(
+      false,
+    )
   })
 })
 
@@ -65,7 +93,9 @@ describe('presencaDePerto', () => {
 
 describe('bordasDoMapa', () => {
   it('as bordas de cada ilha, para o enquadramento', () => {
-    expect(bordasDoMapa(MAPA)).toContainEqual({ x: 180, y: 80 })
-    expect(bordasDoMapa(MAPA)).toContainEqual({ x: -370, y: -20 })
+    // Em cima e embaixo, o apótema; dos lados, o vértice (raio / cos 30°).
+    const lado = 80 * (2 / Math.sqrt(3))
+    expect(bordasDoMapa(MAPA)).toContainEqual({ x: 100 + lado, y: 80 })
+    expect(bordasDoMapa(MAPA)).toContainEqual({ x: -300 - 70 * (2 / Math.sqrt(3)), y: -20 })
   })
 })
