@@ -11,13 +11,20 @@ interface Props {
   tamanho?: 'miniatura' | 'inteira'
   /** Quem chama decide a caixa (proporção, cantos); aqui só se preenche. */
   className?: string
+  /** Pequena demais para texto: o link mostra só o ícone, sem o domínio embaixo. */
+  compacta?: boolean
 }
 
 /**
  * O rosto de um anexo: a imagem gravada, a miniatura do vídeo ou o domínio do
  * link. Decorativo (`alt=""`) — a legenda está sempre ao lado.
  */
-export function Miniatura({ anexo, tamanho = 'miniatura', className = '' }: Props) {
+export function Miniatura({
+  anexo,
+  tamanho = 'miniatura',
+  className = '',
+  compacta = false,
+}: Props) {
   // Inteira, a caixa já nasce na proporção da imagem: reserva o espaço antes de
   // os bytes chegarem, e nada pula quando ela aparece.
   const proporcao =
@@ -33,7 +40,7 @@ export function Miniatura({ anexo, tamanho = 'miniatura', className = '' }: Prop
       {anexo.midia.tipo === 'imagem' ? (
         <ImagemGravada anexo={anexo} tamanho={tamanho} />
       ) : (
-        <RostoDoLink url={anexo.midia.url} />
+        <RostoDoLink url={anexo.midia.url} compacta={compacta} />
       )}
     </span>
   )
@@ -57,12 +64,17 @@ function ImagemGravada({
  * A miniatura do YouTube vem da rede: offline, ou se o vídeo sumiu, o `<img>`
  * falha e fica o glifo com o domínio — o link continua sendo o que é.
  */
-function RostoDoLink({ url }: { url: string }) {
+function RostoDoLink({ url, compacta }: { url: string; compacta: boolean }) {
   const [falhou, setFalhou] = useState(false)
   const miniatura = miniaturaDoLink(url)
 
   if (!miniatura || falhou) {
-    return <Glifo icone={<Link2 size={22} aria-hidden />} legenda={dominioDe(url)} />
+    return (
+      <Glifo
+        icone={<Link2 size={22} aria-hidden />}
+        {...(compacta ? {} : { legenda: dominioDe(url) })}
+      />
+    )
   }
 
   return (

@@ -3837,6 +3837,31 @@ novos), typecheck e lint limpos. Bundle principal: 136,3 KB gzipped.
 **Fora daqui:** os satélites são da Rede. Se aparecem no Mapa (Atualizações
 3–4) fica para o plano dele; pasta de acervo não vira ilha.
 
+### A pasta tem 8 imagens e 8 links, com um "+" e um contador (07/10/2026)
+
+Pedido do usuário: a pasta passa a comportar **até 8 imagens e 8 links**, organizados no
+layout dela, mostrando só um "+" e um contador que desce a cada item guardado — sem mostrar
+os oito lugares. Duas leituras minhas, avisadas a ele: "anexos" são os **links** (o outro
+tipo de item da pasta), e o contador é o de **quantos ainda cabem**.
+
+- **A regra** (`core/domain/pasta.ts`, pura): `restantesNaPasta(anexos, livroId)` devolve
+  quantas imagens e quantos links ainda cabem, cada tipo na sua conta. O **Worker recusa** o
+  nono item de um tipo (`criarAnexo`, com a frase `pastaCheia`); a tela só mostra o "+"
+  enquanto cabe, mas quem garante é o motor. Pasta que **já passava** do limite não perde
+  nada: conta 0 restantes e deixa de aceitar aquele tipo.
+- **O layout:** duas seções. **Imagens** em grade de 2 colunas (3 e 4 a partir de 768 e 1024
+  px, como era); **Links** em lista, uma linha por link (rosto pequeno só com o ícone — o
+  domínio já está no texto ao lado —, legenda e com que conceito combinou). Cada seção
+  termina com **um só "+"** dentro de uma caixa tracejada, com o número de quantos ainda
+  cabem (8, 7, 6…); com 0 o "+" some. O "N itens" e o botão "Adicionar" do alto, e o cartão
+  de pasta vazia, saíram: o "+" de cada seção os substitui.
+- **O "+" leva ao formulário já no tipo certo** (`/novo-anexo?livro=&tipo=imagem|link`). No
+  formulário, o tipo que encheu a pasta fica desabilitado.
+- **Verificado** no Chrome (build de produção): pasta com 3 imagens e 5 links mostra "5" e
+  "3"; guardar um link pelo "+" levou o contador de 3 para 2 sem mexer no das imagens; com 7
+  links, guardar o oitavo fez o "+" sumir; com a pasta cheia o formulário desabilita os dois
+  tipos e o motor recusa o nono com "A pasta já tem 8 links.". 549 testes.
+
 ### Web agora, nativo depois
 
 | Capacidade                         | Web (PWA)                                                          | Nativo (Capacitor)                                |

@@ -1,6 +1,7 @@
 import { useNavigate, useSearchParams } from 'react-router-dom'
 
 import { BarraDeTopo } from '@/components/BarraDeTopo'
+import { restantesNaPasta, type TipoDeItem } from '@/core'
 import { FormularioDeAnexo } from '@/features/acervo/FormularioDeAnexo'
 import { usePalacio } from '@/store/palacio'
 
@@ -11,10 +12,13 @@ import { usePalacio } from '@/store/palacio'
 export default function NovoAnexo() {
   const [busca] = useSearchParams()
   const navegar = useNavigate()
-  const { livros, carregado, ocupado, criarAnexo } = usePalacio()
+  const { livros, anexos, carregado, ocupado, criarAnexo } = usePalacio()
 
   const livroId = busca.get('livro')
   const pasta = livros.find((l) => l.id === livroId && l.tipo === 'acervo')
+  const pedido = busca.get('tipo')
+  const tipoInicial: TipoDeItem | undefined =
+    pedido === 'imagem' || pedido === 'link' ? pedido : undefined
 
   if (!pasta) {
     return (
@@ -47,6 +51,10 @@ export default function NovoAnexo() {
       <div className="animar-entrada flex flex-1 flex-col pt-4">
         <FormularioDeAnexo
           modo="novo"
+          tipoInicial={tipoInicial}
+          cheios={(['imagem', 'link'] as const).filter(
+            (t) => restantesNaPasta(anexos, pasta.id)[t] === 0,
+          )}
           ocupado={ocupado}
           onCriar={(legenda, conteudo) => {
             void criarAnexo({ livroId: pasta.id, legenda, conteudo }).then((id) => {

@@ -26,7 +26,9 @@ import {
   OPCOES_PADRAO,
   paraTela,
   perfilDoPalacio,
+  pastaCheia,
   primeiroLugarLivre,
+  restantesNaPasta,
   recalcularVizinhanca,
   SEM_RERANK,
   textoDoNeuronio,
@@ -705,6 +707,10 @@ async function processarAnexo(a: Anexo): Promise<void> {
 async function criarAnexo(input: CriarAnexoInput): Promise<EstadoDoPalacio> {
   const livro = await repo.getLivro(input.livroId)
   if (livro?.tipo !== 'acervo') throw new Error('um anexo só mora numa pasta')
+  // 8 imagens e 8 links por pasta: a tela só mostra o "+" enquanto cabe, mas quem
+  // garante é o motor.
+  const restantes = restantesNaPasta(await repo.listAnexos(input.livroId), input.livroId)
+  if (restantes[input.conteudo.tipo] === 0) throw new Error(pastaCheia(input.conteudo.tipo))
 
   let midia: MidiaDoAnexo
   let arquivo: ArquivoDoAnexo | undefined

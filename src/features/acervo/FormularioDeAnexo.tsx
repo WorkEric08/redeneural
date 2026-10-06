@@ -2,7 +2,7 @@ import { ImagePlus, Link2, RefreshCw } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 
 import { botao } from '@/components/botao'
-import type { AnexoNaTela } from '@/core'
+import type { AnexoNaTela, TipoDeItem } from '@/core'
 import { escolherImagem, type ImagemEscolhida } from '@/services/native/midia'
 import type { NovoAnexo } from '@/store/palacio'
 
@@ -12,6 +12,10 @@ import { Miniatura } from './Miniatura'
 type Props =
   | {
       modo: 'novo'
+      /** O tipo com que o formulário abre: o do "+" que a pessoa tocou na pasta. */
+      tipoInicial?: TipoDeItem | undefined
+      /** Os tipos que já encheram a pasta (8 cada) — não dá para escolhê-los. */
+      cheios?: readonly TipoDeItem[]
       ocupado: boolean
       onCriar: (legenda: string, conteudo: NovoAnexo['conteudo']) => void
     }
@@ -38,7 +42,10 @@ type ImagemComPrevia = ImagemEscolhida & { previa: string }
 export function FormularioDeAnexo(props: Props) {
   const editando = props.modo === 'editar' ? props.anexo : null
 
-  const [tipo, setTipo] = useState<'link' | 'imagem'>(editando?.midia.tipo ?? 'link')
+  const [tipo, setTipo] = useState<TipoDeItem>(
+    editando?.midia.tipo ?? (props.modo === 'novo' ? props.tipoInicial : undefined) ?? 'link',
+  )
+  const cheios = props.modo === 'novo' ? (props.cheios ?? []) : []
   const [url, setUrl] = useState(editando?.midia.tipo === 'link' ? editando.midia.url : '')
   const [legenda, setLegenda] = useState(editando?.legenda ?? '')
   const [escolhida, setEscolhida] = useState<ImagemComPrevia | null>(null)
@@ -99,10 +106,11 @@ export function FormularioDeAnexo(props: Props) {
           <button
             type="button"
             aria-pressed={tipo === 'link'}
+            disabled={cheios.includes('link')}
             onClick={() => {
               setTipo('link')
             }}
-            className="chip"
+            className="chip disabled:opacity-45"
           >
             <Link2 size={15} aria-hidden />
             Link
@@ -110,10 +118,11 @@ export function FormularioDeAnexo(props: Props) {
           <button
             type="button"
             aria-pressed={tipo === 'imagem'}
+            disabled={cheios.includes('imagem')}
             onClick={() => {
               setTipo('imagem')
             }}
-            className="chip"
+            className="chip disabled:opacity-45"
           >
             <ImagePlus size={15} aria-hidden />
             Imagem
