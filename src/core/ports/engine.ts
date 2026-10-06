@@ -3,7 +3,17 @@ import type { ModoDaRede } from '../domain/modoDaRede'
 import type { EstiloDaLombada } from '../domain/paletaNoite'
 import type { MapaDoPalacio } from '../motor/mapa'
 import type { AnexoNaTela, NeuronioNaTela } from '../domain/tela'
-import type { Conexao, EstadoDaIdeia, Id, Livro, TipoDeLivro, Vaga, Vinculo } from '../domain/types'
+import type {
+  Conexao,
+  DadosDoEnfeite,
+  EnfeiteGravado,
+  EstadoDaIdeia,
+  Id,
+  Livro,
+  TipoDeLivro,
+  Vaga,
+  Vinculo,
+} from '../domain/types'
 import type { Ponto } from '../motor/redeLayout'
 
 export interface CriarNeuronioInput {
@@ -101,15 +111,20 @@ export interface EditarLivroInput {
   diasParaAdormecer: number
 }
 
-/** O que a estante grava além do grafo: onde cada livro está e os lugares deixados abertos. */
+/**
+ * O que a estante grava além do grafo: onde cada livro está, os lugares deixados
+ * abertos e os enfeites que a pessoa definiu ou moveu.
+ */
 export interface EstanteGravada {
   livros: Livro[]
   vagas: Vaga[]
+  enfeites: EnfeiteGravado[]
 }
 
 export interface EstadoDoPalacio {
   livros: Livro[]
   vagas: Vaga[]
+  enfeites: EnfeiteGravado[]
   neuronios: NeuronioNaTela[]
   conexoes: Conexao[]
   /** Quantas prateleiras a estante tem — gravado, ajustável em Ajustes. */
@@ -219,9 +234,17 @@ export interface ConnectionEngine {
    */
   moverLivro(id: Id, prateleira: number, lugar: number): Promise<EstanteGravada>
   /** Tira o enfeite de um lugar sem livro, deixando a madeira à mostra. */
-  tirarEnfeite(prateleira: number, lugar: number): Promise<Vaga[]>
+  tirarEnfeite(prateleira: number, lugar: number): Promise<EstanteGravada>
   /** Põe um enfeite de volta num lugar aberto. */
-  porEnfeite(prateleira: number, lugar: number): Promise<Vaga[]>
+  porEnfeite(prateleira: number, lugar: number): Promise<EstanteGravada>
+  /** Grava o enfeite que a pessoa definiu — cor, forma e medidas, como as de um livro. */
+  salvarEnfeite(enfeite: EnfeiteGravado): Promise<EstanteGravada>
+  /**
+   * Põe o enfeite de `origem` em `destino` com as regras do livro: lugar sem livro,
+   * só ele se move; com livro, a fila empurra até o buraco mais perto. O lugar
+   * de onde saiu fica aberto. `dados` é a cara que a tela mostrava nele.
+   */
+  moverEnfeite(origem: Vaga, destino: Vaga, dados: DadosDoEnfeite): Promise<EstanteGravada>
   /**
    * Quantas prateleiras a estante tem. Recusa diminuir se sobrar livro numa
    * prateleira que deixaria de existir — mova os livros antes.

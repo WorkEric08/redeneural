@@ -60,6 +60,11 @@ interface Props {
   tipo?: { valor: TipoDeLivro; onMudar: (tipo: TipoDeLivro) => void }
   /** Editando: o tipo do livro, que não muda — decide se ele pode ser executável. */
   tipoFixo?: TipoDeLivro
+  /**
+   * Um enfeite, e não um livro (07/10/2026): cor, forma, largura e comprimento, como
+   * o livro — mas sem nome, tipo nem emblema. O enfeite é só visual.
+   */
+  enfeite?: boolean
   onEnviar: (dados: NovoLivro) => void
 }
 
@@ -83,6 +88,7 @@ export function FormularioDeLivro({
   intensidadeDaLuz,
   tipo,
   tipoFixo,
+  enfeite = false,
   onEnviar,
 }: Props) {
   const [titulo, setTitulo] = useState(inicial.titulo)
@@ -97,9 +103,9 @@ export function FormularioDeLivro({
   // Texto, e não número: o campo pode ficar vazio enquanto se digita.
   const [dias, setDias] = useState(String(inicial.diasParaAdormecer))
   // Uma pasta de acervo nunca é executável.
-  const podeSerExecutavel = (tipo?.valor ?? tipoFixo ?? 'conceitos') === 'conceitos'
+  const podeSerExecutavel = !enfeite && (tipo?.valor ?? tipoFixo ?? 'conceitos') === 'conceitos'
 
-  const podeEnviar = titulo.trim().length > 0 && !ocupado
+  const podeEnviar = (enfeite || titulo.trim().length > 0) && !ocupado
 
   // A amostra não vive numa fileira: o comprimento (em % dela) vira px por uma
   // referência, e o tamanho do título se mede nesses px.
@@ -108,7 +114,7 @@ export function FormularioDeLivro({
     comprimentoLombada === null
       ? 96
       : Math.round((comprimentoLombada / 100) * REFERENCIA_DA_AMOSTRA_PX)
-  const tituloDaAmostra = titulo.trim() || '…'
+  const tituloDaAmostra = enfeite ? '' : titulo.trim() || '…'
   const geo = geometriaDaLombada({
     estilo,
     cor,
@@ -223,23 +229,27 @@ export function FormularioDeLivro({
         </label>
       )}
 
-      <div className="flex items-end gap-4">
-        <label className="flex min-w-0 flex-1 flex-col">
-          <span className="rotulo-de-secao">Nome</span>
-          <input
-            value={titulo}
-            onChange={(evento) => {
-              setTitulo(evento.target.value)
-            }}
-            maxLength={120}
-            autoComplete="off"
-            enterKeyHint="done"
-            placeholder={
-              tipo?.valor === 'acervo' ? 'Vídeos, referências, fotos…' : 'Uma área do que você sabe'
-            }
-            className="campo font-titulo h-13 px-4 text-lg"
-          />
-        </label>
+      <div className={enfeite ? 'flex justify-center' : 'flex items-end gap-4'}>
+        {!enfeite && (
+          <label className="flex min-w-0 flex-1 flex-col">
+            <span className="rotulo-de-secao">Nome</span>
+            <input
+              value={titulo}
+              onChange={(evento) => {
+                setTitulo(evento.target.value)
+              }}
+              maxLength={120}
+              autoComplete="off"
+              enterKeyHint="done"
+              placeholder={
+                tipo?.valor === 'acervo'
+                  ? 'Vídeos, referências, fotos…'
+                  : 'Uma área do que você sabe'
+              }
+              className="campo font-titulo h-13 px-4 text-lg"
+            />
+          </label>
+        )}
 
         {/* Altura fixa no teto do que a amostra pode medir (o "Enorme" dos
             presets, ~127px, cabe dentro de 130): sem isto, trocar o
@@ -259,7 +269,7 @@ export function FormularioDeLivro({
             }}
           >
             <span className="lombada-titulo">{tituloDaAmostra}</span>
-            {geo.emblemaCabe && (
+            {geo.emblemaCabe && !enfeite && (
               <EmblemaDaLombada chave={tipo?.valor === 'acervo' ? 'pasta' : emblema} />
             )}
           </span>

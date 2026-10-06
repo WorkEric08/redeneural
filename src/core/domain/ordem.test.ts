@@ -1,7 +1,10 @@
 import { describe, expect, it } from 'vitest'
 
+import type { DadosDoEnfeite, EnfeiteGravado, Vaga } from './types'
 import {
+  enfeitesSemLivroEmCima,
   LUGARES_POR_PRATELEIRA,
+  moverEnfeiteNaEstante,
   moverLivroNaEstante,
   primeiroLugarDaEstante,
   primeiroLugarLivre,
@@ -158,5 +161,126 @@ describe('vagasDepoisDeMover', () => {
     const antes = [l('a', 0, 1)]
     const depois = [l('a', 1, 0)]
     expect(vagasDepoisDeMover(vagas, antes, depois, 'a')).toEqual(vagas)
+  })
+})
+
+describe('moverEnfeiteNaEstante', () => {
+  const dados: DadosDoEnfeite = {
+    cor: '#4A2540',
+    estilo: 'contorno',
+    larguraLombada: 52,
+    comprimentoLombada: 90,
+    dourado: true,
+    detalheEscuro: false,
+  }
+  const vazio = { vagas: [] as Vaga[], enfeites: [] as EnfeiteGravado[] }
+
+  function mover(
+    livros: L[],
+    origem: [number, number],
+    destino: [number, number],
+    resto: { vagas: Vaga[]; enfeites: EnfeiteGravado[] } = vazio,
+  ) {
+    return moverEnfeiteNaEstante(
+      { livros, ...resto },
+      { prateleira: origem[0], ordem: origem[1] },
+      { prateleira: destino[0], ordem: destino[1] },
+      dados,
+    )
+  }
+
+  it('lugar sem livro: só o enfeite anda, e o lugar de onde saiu fica aberto', () => {
+    const livros = [l('a', 0, 3)]
+    const depois = mover(livros, [0, 6], [0, 9])!
+
+    expect(depois.livros).toEqual(livros)
+    expect(depois.enfeites).toEqual([{ ...dados, prateleira: 0, ordem: 9 }])
+    expect(depois.vagas).toEqual([{ prateleira: 0, ordem: 6 }])
+  })
+
+  it('o enfeite que estava no destino dá lugar a ele, e a vaga do destino fecha', () => {
+    const resto = {
+      vagas: [{ prateleira: 0, ordem: 9 }],
+      enfeites: [{ ...dados, cor: '#17505A', prateleira: 0, ordem: 9 }],
+    }
+    const depois = mover([], [0, 6], [0, 9], resto)!
+
+    expect(depois.enfeites).toEqual([{ ...dados, prateleira: 0, ordem: 9 }])
+    expect(depois.vagas).toEqual([{ prateleira: 0, ordem: 6 }])
+  })
+
+  it('sobre um livro: a fila empurra até o buraco mais perto, como entre livros', () => {
+    const livros = [l('a', 0, 3), l('b', 0, 4), l('c', 0, 6)]
+    const depois = mover(livros, [0, 9], [0, 3])!
+
+    expect(lugares(depois.livros)).toEqual({ a: [0, 4], b: [0, 5], c: [0, 6] })
+    expect(depois.enfeites).toEqual([{ ...dados, prateleira: 0, ordem: 3 }])
+    expect(depois.vagas).toEqual([{ prateleira: 0, ordem: 9 }])
+  })
+
+  it('o buraco que o enfeite deixou pode ser ocupado pelo livro empurrado: nesse caso não vira vaga', () => {
+    const livros = [l('a', 0, 3), l('b', 0, 4)]
+    const depois = mover(livros, [0, 5], [0, 3])!
+
+    expect(lugares(depois.livros)).toEqual({ a: [0, 4], b: [0, 5] })
+    expect(depois.vagas).toEqual([])
+  })
+
+  it('o enfeite gravado embaixo de um livro empurrado some', () => {
+    const resto = {
+      vagas: [],
+      enfeites: [{ ...dados, prateleira: 0, ordem: 4 }],
+    }
+    const depois = mover([l('a', 0, 3)], [0, 8], [0, 3], resto)!
+
+    expect(lugares(depois.livros)).toEqual({ a: [0, 4] })
+    expect(depois.enfeites.map((e) => e.ordem)).toEqual([3])
+  })
+
+  it('entre prateleiras: o livro do destino é empurrado na prateleira dele', () => {
+    const depois = mover([l('a', 1, 2)], [0, 5], [1, 2])!
+
+    expect(lugares(depois.livros)).toEqual({ a: [1, 3] })
+    expect(depois.enfeites).toEqual([{ ...dados, prateleira: 1, ordem: 2 }])
+    expect(depois.vagas).toEqual([{ prateleira: 0, ordem: 5 }])
+  })
+
+  it('prateleira cheia de livros: recusa, e nada muda', () => {
+    const cheia = Array.from({ length: LUGARES_POR_PRATELEIRA }, (_, i) => l(`x${String(i)}`, 1, i))
+    expect(mover(cheia, [0, 5], [1, 4])).toBeNull()
+  })
+
+  it('largar no mesmo lugar não muda nada', () => {
+    const resto = { vagas: [], enfeites: [{ ...dados, prateleira: 0, ordem: 6 }] }
+    const depois = mover([l('a', 0, 3)], [0, 6], [0, 6], resto)!
+
+    expect(depois.enfeites).toEqual(resto.enfeites)
+    expect(depois.vagas).toEqual([])
+  })
+
+  it('não muta as entradas', () => {
+    const livros = [l('a', 0, 3)]
+    const resto = { vagas: [] as Vaga[], enfeites: [] as EnfeiteGravado[] }
+    mover(livros, [0, 3 + 3], [0, 3], resto)
+    expect(livros).toEqual([l('a', 0, 3)])
+    expect(resto).toEqual({ vagas: [], enfeites: [] })
+  })
+})
+
+describe('enfeitesSemLivroEmCima', () => {
+  it('tira o enfeite de todo lugar onde há livro', () => {
+    const e = (ordem: number): EnfeiteGravado => ({
+      prateleira: 0,
+      ordem,
+      cor: '#1B2A6B',
+      estilo: 'solido',
+      larguraLombada: null,
+      comprimentoLombada: null,
+      dourado: false,
+      detalheEscuro: true,
+    })
+    expect(enfeitesSemLivroEmCima([e(1), e(2), e(3)], [l('a', 0, 2)]).map((x) => x.ordem)).toEqual([
+      1, 3,
+    ])
   })
 })

@@ -2,6 +2,8 @@ import type {
   Anexo,
   ArquivoDoAnexo,
   Conexao,
+  DadosDoEnfeite,
+  EnfeiteGravado,
   Id,
   Livro,
   Neuronio,
@@ -42,10 +44,24 @@ export interface PalacioRepo {
   moverLivro(id: Id, prateleira: number, lugar: number): Promise<void>
   /** Os lugares deixados abertos, sem livro e sem enfeite. */
   listVagas(): Promise<Vaga[]>
-  /** Tira o enfeite do lugar. Recusa um lugar que tem livro. */
+  /** Tira o enfeite do lugar (e o gravado dele, se houver). Recusa um lugar que tem livro. */
   abrirVaga(v: Vaga): Promise<void>
   /** Devolve o enfeite ao lugar. Sem vaga ali, não faz nada. */
   fecharVaga(v: Vaga): Promise<void>
+  /** Os enfeites que a pessoa definiu ou moveu; o resto é sorteado pelo lugar. */
+  listEnfeites(): Promise<EnfeiteGravado[]>
+  /**
+   * Grava o enfeite do lugar e fecha a vaga que houvesse ali. Recusa um lugar
+   * que tem livro — enfeite e livro não dividem lugar.
+   */
+  salvarEnfeite(e: EnfeiteGravado): Promise<void>
+  /**
+   * Põe o enfeite do lugar `origem` no lugar `destino` com `moverEnfeiteNaEstante`:
+   * sem livro no destino, só ele se move; com livro, a fila empurra até o buraco
+   * mais perto. O lugar de onde saiu vira vaga. Recusa (erro) numa prateleira
+   * cheia de livros.
+   */
+  moverEnfeite(origem: Vaga, destino: Vaga, dados: DadosDoEnfeite): Promise<void>
   /** Quantas prateleiras a estante tem hoje. Default 4 se nunca foi definida. */
   getQuantidadeDePrateleiras(): Promise<number>
   /**

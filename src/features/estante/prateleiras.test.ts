@@ -1,9 +1,12 @@
 import { describe, expect, it } from 'vitest'
 
-import { LUGARES_POR_PRATELEIRA, type Livro, type Vaga } from '@/core'
+import { LUGARES_POR_PRATELEIRA, type EnfeiteGravado, type Livro, type Vaga } from '@/core'
 
 import {
   cabeNaPrateleira,
+  COR_DO_ENFEITE,
+  dadosDoEnfeite,
+  enfeiteDoLugar,
   LARGURA_MINIMA_DO_ENFEITE,
   larguraDosLivros,
   larguraDosLivrosDaPrateleira,
@@ -345,5 +348,100 @@ describe('cabeNaPrateleira', () => {
     expect(cabeNaPrateleira(400, 400, 372)).toBe(true)
     expect(cabeNaPrateleira(400, 390, 372)).toBe(true)
     expect(cabeNaPrateleira(400, 410, 372)).toBe(false)
+  })
+})
+
+describe('enfeites que a pessoa definiu ou moveu', () => {
+  const gravado: EnfeiteGravado = {
+    prateleira: 0,
+    ordem: 4,
+    cor: '#4A2540',
+    estilo: 'contorno',
+    larguraLombada: 52,
+    comprimentoLombada: 90,
+    dourado: false,
+    detalheEscuro: false,
+  }
+  const doLugar = (p: Prateleira, indice: number) =>
+    p.lugares.find((l) => l.indice === indice && l.tipo === 'enfeite') as
+      Extract<Lugar, { tipo: 'enfeite' }> | undefined
+
+  it('o registro vence o sorteio do lugar: cor, forma e medidas são as dele', () => {
+    const [p] = montarPrateleiras([], [], 1, undefined, [gravado])
+    const e = doLugar(p!, 4)!
+
+    expect(e).toMatchObject({
+      gravado: true,
+      cor: '#4A2540',
+      estilo: 'contorno',
+      largura: 52,
+      altura: 90,
+      dourado: false,
+      detalheEscuro: false,
+    })
+  })
+
+  it('o que a pessoa não escolheu (null) cai no sorteio do lugar', () => {
+    const solto = { ...gravado, larguraLombada: null, comprimentoLombada: null }
+    const [sem] = montarPrateleiras([], [], 1)
+    const [com] = montarPrateleiras([], [], 1, undefined, [solto])
+
+    expect(doLugar(com!, 4)!.largura).toBe(doLugar(sem!, 4)!.largura)
+    expect(doLugar(com!, 4)!.altura).toBe(doLugar(sem!, 4)!.altura)
+  })
+
+  it('o enfeite sorteado é o de antes: cor azul base, detalhe escuro, não gravado', () => {
+    const [p] = montarPrateleiras([], [], 1)
+    expect(doLugar(p!, 0)).toMatchObject({
+      gravado: false,
+      cor: COR_DO_ENFEITE,
+      detalheEscuro: true,
+    })
+  })
+
+  it('o gravado não ganha o dourado de grupo: leva só o que a pessoa deixou', () => {
+    const [p] = montarPrateleiras([], [], 1, undefined, [{ ...gravado, dourado: false }])
+    expect(doLugar(p!, 4)!.dourado).toBe(false)
+  })
+
+  it('um livro no lugar vence o enfeite gravado, e a vaga também', () => {
+    const [comLivro] = montarPrateleiras([livro('a', 0, 4)], [], 1, undefined, [gravado])
+    expect(comLivro!.lugares.find((l) => l.indice === 4)?.tipo).toBe('livro')
+
+    const [comVaga] = montarPrateleiras([], [{ prateleira: 0, ordem: 4 }], 1, undefined, [gravado])
+    expect(comVaga!.lugares.find((l) => l.indice === 4)?.tipo).toBe('vazio')
+  })
+
+  it('o enfeite gravado também cede à lateral: nada passa da largura útil', () => {
+    const [p] = montarPrateleiras([], [], 1, 300, [{ ...gravado, larguraLombada: 120 }])
+    const total = p!.lugares.reduce((soma, l) => soma + l.largura, 0) + p!.lugares.length - 1
+    expect(total).toBeLessThanOrEqual(300.01)
+  })
+
+  it('dadosDoEnfeite leva a cara mostrada, com as medidas explícitas', () => {
+    const [p] = montarPrateleiras([], [], 1)
+    const e = doLugar(p!, 2)!
+    expect(dadosDoEnfeite(e)).toEqual({
+      cor: e.cor,
+      estilo: e.estilo,
+      larguraLombada: e.larguraNatural,
+      comprimentoLombada: e.altura,
+      dourado: e.dourado,
+      detalheEscuro: e.detalheEscuro,
+    })
+  })
+
+  it('enfeiteDoLugar dá o mesmo enfeite que a estante montada, dourado de grupo incluso', () => {
+    const livros = [livro('a', 0, 3)]
+    const vagas = [{ prateleira: 0, ordem: 8 }]
+    const [p] = montarPrateleiras(livros, vagas, 1, undefined, [gravado])
+    const ocupados = new Set(['0:3'])
+
+    for (let i = 0; i < 12; i += 1) {
+      const montado = p!.lugares.find((l) => l.indice === i)
+      const direto = enfeiteDoLugar(0, i, ocupados, vagas, [gravado])
+      if (montado?.tipo === 'enfeite') expect(direto).toEqual(montado)
+      else expect(direto).toBeNull()
+    }
   })
 })

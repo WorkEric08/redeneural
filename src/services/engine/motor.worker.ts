@@ -108,6 +108,7 @@ async function estadoAtual(): Promise<EstadoDoPalacio> {
   const [
     livros,
     vagas,
+    enfeites,
     neuronios,
     conexoes,
     quantidadeDePrateleiras,
@@ -120,6 +121,7 @@ async function estadoAtual(): Promise<EstadoDoPalacio> {
   ] = await Promise.all([
     repo.listLivros(),
     repo.listVagas(),
+    repo.listEnfeites(),
     repo.listNeuronios(),
     repo.listConexoes(),
     repo.getQuantidadeDePrateleiras(),
@@ -134,6 +136,7 @@ async function estadoAtual(): Promise<EstadoDoPalacio> {
   return {
     livros,
     vagas,
+    enfeites,
     neuronios: neuronios.map(paraTela),
     conexoes,
     quantidadeDePrateleiras,
@@ -597,8 +600,12 @@ async function apagarNeuronio(id: Id): Promise<EstadoDoPalacio> {
 }
 
 async function estante(): Promise<EstanteGravada> {
-  const [livros, vagas] = await Promise.all([repo.listLivros(), repo.listVagas()])
-  return { livros, vagas }
+  const [livros, vagas, enfeites] = await Promise.all([
+    repo.listLivros(),
+    repo.listVagas(),
+    repo.listEnfeites(),
+  ])
+  return { livros, vagas, enfeites }
 }
 
 async function criarLivro(input: CriarLivroInput): Promise<EstanteGravada> {
@@ -832,11 +839,19 @@ async function responder(msg: ParaMotor): Promise<DoMotor> {
 
       case 'tirarEnfeite':
         await repo.abrirVaga({ prateleira: msg.prateleira, ordem: msg.lugar })
-        return { req: msg.req, ok: true, dados: await repo.listVagas() }
+        return { req: msg.req, ok: true, dados: await estante() }
 
       case 'porEnfeite':
         await repo.fecharVaga({ prateleira: msg.prateleira, ordem: msg.lugar })
-        return { req: msg.req, ok: true, dados: await repo.listVagas() }
+        return { req: msg.req, ok: true, dados: await estante() }
+
+      case 'salvarEnfeite':
+        await repo.salvarEnfeite(msg.enfeite)
+        return { req: msg.req, ok: true, dados: await estante() }
+
+      case 'moverEnfeite':
+        await repo.moverEnfeite(msg.origem, msg.destino, msg.dados)
+        return { req: msg.req, ok: true, dados: await estante() }
 
       case 'definirQuantidadeDePrateleiras':
         await repo.definirQuantidadeDePrateleiras(msg.quantidade)

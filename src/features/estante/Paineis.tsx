@@ -433,6 +433,18 @@ function MenuDoLugar({
             Criar um livro aqui
           </Link>
         </li>
+        {!aberto && (
+          <li className="linha-de-lista p-0">
+            <Link
+              to={`/enfeite/${String(prateleira)}/${String(lugar)}/editar`}
+              replace
+              className="flex min-h-14 w-full items-center gap-3.5 px-4"
+            >
+              <PencilLine size={19} aria-hidden className="text-poeira" />
+              Editar o enfeite
+            </Link>
+          </li>
+        )}
         <li className="linha-de-lista p-0">
           <button
             type="button"

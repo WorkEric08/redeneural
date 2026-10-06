@@ -18,6 +18,7 @@ import {
  * | Segurar, arrastar e soltar         | Põe no lugar embaixo do dedo — empurra se tiver livro |
  * | Tocar um lugar sem livro           | Cria um livro exatamente ali                        |
  * | Segurar um lugar sem livro         | Menu do lugar: pôr ou tirar o enfeite               |
+ * | Segurar um enfeite e arrastar      | Põe no lugar embaixo do dedo, com as regras do livro |
  *
  * Tocar é o `click` nativo, e não o `pointerup`: é o que Enter e Espaço também
  * disparam, então o teclado ganha o mesmo gesto sem código a mais. Quando o
@@ -47,6 +48,11 @@ export interface LugarDaEstante {
 export interface Gesto {
   fase: FaseDoGesto
   livroId: string | null
+  /**
+   * O lugar do enfeite na mão — no lugar de `livroId`: ou é um livro ou é um
+   * enfeite que está sendo levado, nunca os dois.
+   */
+  enfeite: LugarDaEstante | null
   /**
    * O lugar embaixo do dedo — é para lá que o livro na mão vai. `null` fora de
    * qualquer prateleira: soltar ali devolve o livro para onde estava.
@@ -82,9 +88,11 @@ interface Opcoes {
   onMover: (livroId: string, alvo: LugarDaEstante) => void
   onTocarLugar: (alvo: LugarDaEstante) => void
   onAcoesDoLugar: (alvo: LugarDaEstante) => void
+  /** Soltou um enfeite arrastando sobre outro lugar: `origem` é onde ele estava. */
+  onMoverEnfeite: (origem: LugarDaEstante, alvo: LugarDaEstante) => void
 }
 
-const PARADO: Gesto = { fase: 'parado', livroId: null, alvo: null, origem: null }
+const PARADO: Gesto = { fase: 'parado', livroId: null, enfeite: null, alvo: null, origem: null }
 
 /**
  * O lugar na coluna do dedo, dentro da prateleira em que ele está.
@@ -128,6 +136,7 @@ export function useManipularLivros({
   onMover,
   onTocarLugar,
   onAcoesDoLugar,
+  onMoverEnfeite,
 }: Opcoes) {
   const [gesto, setGesto] = useState<Gesto>(PARADO)
   /** O lugar sem livro que o dedo segurou o bastante: soltar abre o menu dele. */
@@ -193,7 +202,7 @@ export function useManipularLivros({
         relogio.current = window.setTimeout(() => {
           relogio.current = null
           engoleOClique.current = true
-          mudar({ fase: 'erguido', livroId, alvo: null, origem: caixa })
+          mudar({ fase: 'erguido', livroId, enfeite: null, alvo: null, origem: caixa })
         }, ESPERA)
       },
 
@@ -270,12 +279,14 @@ export function useManipularLivros({
   }
 
   /**
-   * Um lugar sem livro — enfeite ou vaga. Não sai do lugar, então o gesto é só
-   * tocar ou segurar: o mesmo "segurar e soltar parado" do livro abre o menu,
-   * na soltura e não no meio do segurar, para o dedo não soltar em cima da
-   * folha que acabou de abrir.
+   * Um lugar sem livro — enfeite ou vaga. Tocar cria um livro ali; segurar e soltar
+   * parado abre o menu (na soltura e não no meio do segurar, para o dedo não soltar
+   * em cima da folha que acabou de abrir).
+   *
+   * O enfeite (`arrastavel`) também sai do lugar, como o livro: segurar o ergue, e
+   * arrastar o leva — a vaga é só um buraco, não há o que levar.
    */
-  function manipularLugar(alvo: LugarDaEstante): ManipulacaoDaLombada {
+  function manipularLugar(alvo: LugarDaEstante, arrastavel = false): ManipulacaoDaLombada {
     const soltar = (): void => {
       pararORelogio()
       noLugar.current = null
@@ -288,8 +299,10 @@ export function useManipularLivros({
 
         // Sem a captura, um dedo que escorrega para o lugar vizinho deixaria
         // este segurando para sempre — o `pointerup` cairia em outro elemento.
-        evento.currentTarget.setPointerCapture(evento.pointerId)
+        const botao = evento.currentTarget
+        botao.setPointerCapture(evento.pointerId)
         engoleOClique.current = false
+        deslocamento.current = { dx: 0, dy: 0 }
         noLugar.current = {
           pointerId: evento.pointerId,
           x0: evento.clientX,
@@ -303,30 +316,65 @@ export function useManipularLivros({
           if (!noLugar.current) return
           noLugar.current.pronto = true
           engoleOClique.current = true
-          setLugarSegurado(alvo)
+          if (!arrastavel) {
+            setLugarSegurado(alvo)
+            return
+          }
+          // A coluna do lugar tem a altura da fileira; o fantasma parte só do enfeite.
+          const caixa = (botao.querySelector('.lombada') ?? botao).getBoundingClientRect()
+          mudar({ fase: 'erguido', livroId: null, enfeite: alvo, alvo: null, origem: caixa })
         }, ESPERA)
       },
 
       onPointerMove(evento) {
         const s = noLugar.current
         if (!s || evento.pointerId !== s.pointerId) return
-        if (Math.hypot(evento.clientX - s.x0, evento.clientY - s.y0) <= TOLERANCIA) return
 
-        engoleOClique.current = true
-        soltar()
+        const dx = evento.clientX - s.x0
+        const dy = evento.clientY - s.y0
+        const longe = Math.hypot(dx, dy) > TOLERANCIA
+
+        if (agora.current.enfeite === null) {
+          if (!longe) return
+          engoleOClique.current = true
+          soltar()
+          return
+        }
+
+        // O enfeite está na mão: anda como o livro.
+        deslocamento.current = { dx, dy }
+        if (fantasma.current) {
+          fantasma.current.style.transform = `translate(${String(dx)}px, ${String(dy)}px)`
+        }
+        if (agora.current.fase === 'erguido' && !longe) return
+
+        const destino = alvoNaEstante(evento.clientX, evento.clientY)
+        if (agora.current.fase !== 'arrastando' || !mesmoLugar(destino, agora.current.alvo)) {
+          mudar({ ...agora.current, fase: 'arrastando', alvo: destino })
+        }
       },
 
       onPointerUp(evento) {
         const s = noLugar.current
         if (!s || evento.pointerId !== s.pointerId) return
 
+        const { fase, alvo: destino, enfeite } = agora.current
         soltar()
+        if (enfeite !== null) {
+          mudar(PARADO)
+          if (fase === 'erguido') onAcoesDoLugar(alvo)
+          else if (fase === 'arrastando' && destino !== null && !mesmoLugar(destino, alvo)) {
+            onMoverEnfeite(alvo, destino)
+          }
+          return
+        }
         if (s.pronto) onAcoesDoLugar(alvo)
       },
 
       onPointerCancel() {
         engoleOClique.current = false
         soltar()
+        if (agora.current.enfeite !== null) mudar(PARADO)
       },
 
       onClick(evento) {

@@ -1,16 +1,22 @@
 import { useMemo, useRef, type CSSProperties } from 'react'
 
-import { moverLivroNaEstante, type Id, type Vaga } from '@/core'
+import {
+  moverEnfeiteNaEstante,
+  moverLivroNaEstante,
+  type DadosDoEnfeite,
+  type EnfeiteGravado,
+  type Id,
+  type Vaga,
+} from '@/core'
 
+import { Enfeite, FantasmaDoEnfeite } from './Enfeite'
 import { Fantasma, Lombada, type EstadoDaLombada } from './Lombada'
-import { geometriaDaLombada } from './lombadaNoite'
 import {
   cabeNaPrateleira,
-  COR_DO_ENFEITE,
+  dadosDoEnfeite,
   LARGURA_MINIMA_DO_LIVRO,
   larguraDosLivrosDaPrateleira,
   montarPrateleiras,
-  TOM_DO_DETALHE_DO_ENFEITE,
   type Lugar,
 } from './prateleiras'
 import type { LivroNaEstante } from './resumo'
@@ -25,6 +31,8 @@ interface Props {
   estante: readonly LivroNaEstante[]
   /** Os lugares deixados abertos — sem livro e sem enfeite. */
   vagas: readonly Vaga[]
+  /** Os enfeites que a pessoa definiu ou moveu — vencem o sorteio do lugar. */
+  enfeites: readonly EnfeiteGravado[]
   /** `pontesEntreLivros`: quantos fios de ponte ligam cada par de livros. */
   pontes: ReadonlyMap<Id, ReadonlyMap<Id, number>>
   /** O livro do painel aberto — espiando, no menu, sendo editado ou apagado. */
@@ -46,6 +54,12 @@ interface Props {
   /** O livro não cabe inteiro entre as laterais daquela prateleira: nada foi feito. */
   onSemEspaco: (prateleira: number) => void
   onAcoesDoLugar: (prateleira: number, lugar: number) => void
+  /** Põe o enfeite de `origem` em `destino` — mesma assinatura da store. */
+  onMoverEnfeite: (
+    origem: { prateleira: number; ordem: number },
+    destino: { prateleira: number; ordem: number },
+    dados: DadosDoEnfeite,
+  ) => void
 }
 
 function mesmoLugar(a: LugarDaEstante | null, prateleira: number, lugar: number): boolean {
@@ -66,6 +80,7 @@ function mesmoLugar(a: LugarDaEstante | null, prateleira: number, lugar: number)
 export function Movel({
   estante,
   vagas,
+  enfeites,
   pontes,
   selecionadoId,
   lugarEscolhido,
@@ -79,13 +94,26 @@ export function Movel({
   onNovo,
   onSemEspaco,
   onAcoesDoLugar,
+  onMoverEnfeite,
 }: Props) {
   const movel = useRef<HTMLDivElement>(null)
   const { altura: alturaDaFileira, largura: larguraUtil } = useMedidasDaFileira(movel)
   const prateleiras = useMemo(
-    () => montarPrateleiras(estante, vagas, quantidadeDePrateleiras, larguraUtil ?? undefined),
-    [estante, vagas, quantidadeDePrateleiras, larguraUtil],
+    () =>
+      montarPrateleiras(
+        estante,
+        vagas,
+        quantidadeDePrateleiras,
+        larguraUtil ?? undefined,
+        enfeites,
+      ),
+    [estante, vagas, quantidadeDePrateleiras, larguraUtil, enfeites],
   )
+
+  function enfeiteEm(prateleira: number, lugar: number) {
+    const achado = prateleiras[prateleira]?.lugares.find((l) => l.indice === lugar)
+    return achado?.tipo === 'enfeite' ? achado : undefined
+  }
 
   // As laterais são sólidas: um livro só vai (ou nasce) numa prateleira onde os
   // livros dela continuam cabendo inteiros. Os enfeites cedem espaço até a
@@ -98,6 +126,28 @@ export function Movel({
     return cabeNaPrateleira(
       larguraDosLivrosDaPrateleira(livros, prateleira),
       larguraDosLivrosDaPrateleira(depois, prateleira),
+      larguraUtil,
+    )
+  }
+
+  // O enfeite que empurra livros também só entra onde os livros continuam cabendo.
+  function podeMoverEnfeite(
+    origem: { prateleira: number; lugar: number },
+    destino: { prateleira: number; lugar: number },
+    dados: DadosDoEnfeite,
+  ): boolean {
+    if (larguraUtil === null) return true
+    const livros = estante.map((e) => e.livro)
+    const depois = moverEnfeiteNaEstante(
+      { livros, vagas: [], enfeites: [] },
+      { prateleira: origem.prateleira, ordem: origem.lugar },
+      { prateleira: destino.prateleira, ordem: destino.lugar },
+      dados,
+    )
+    if (!depois) return true // sem lugar livre: quem recusa é a store, com o aviso dela
+    return cabeNaPrateleira(
+      larguraDosLivrosDaPrateleira(livros, destino.prateleira),
+      larguraDosLivrosDaPrateleira(depois.livros, destino.prateleira),
       larguraUtil,
     )
   }
@@ -129,6 +179,20 @@ export function Movel({
       onAcoesDoLugar: ({ prateleira, lugar }) => {
         onAcoesDoLugar(prateleira, lugar)
       },
+      onMoverEnfeite: (origem, alvo) => {
+        const enfeite = enfeiteEm(origem.prateleira, origem.lugar)
+        if (!enfeite) return
+        const dados = dadosDoEnfeite(enfeite)
+        if (!podeMoverEnfeite(origem, alvo, dados)) {
+          onSemEspaco(alvo.prateleira)
+          return
+        }
+        onMoverEnfeite(
+          { prateleira: origem.prateleira, ordem: origem.lugar },
+          { prateleira: alvo.prateleira, ordem: alvo.lugar },
+          dados,
+        )
+      },
     },
   )
 
@@ -139,6 +203,10 @@ export function Movel({
   const naMao =
     gesto.fase === 'arrastando' ? estante.find((e) => e.livro.id === gesto.livroId) : undefined
   const alvo = gesto.fase === 'arrastando' ? gesto.alvo : null
+  const enfeiteNaMao =
+    gesto.fase === 'arrastando' && gesto.enfeite
+      ? enfeiteEm(gesto.enfeite.prateleira, gesto.enfeite.lugar)
+      : undefined
 
   function estadoDe(livroId: string): EstadoDaLombada {
     if (abrindoId === livroId) return 'vazio'
@@ -188,9 +256,17 @@ export function Movel({
                     alvo={mesmoLugar(alvo, prateleira, lugar.indice)}
                     realce={
                       mesmoLugar(lugarSegurado, prateleira, lugar.indice) ||
-                      mesmoLugar(lugarEscolhido, prateleira, lugar.indice)
+                      mesmoLugar(lugarEscolhido, prateleira, lugar.indice) ||
+                      mesmoLugar(gesto.enfeite, prateleira, lugar.indice)
                     }
-                    manipular={manipularLugar({ prateleira, lugar: lugar.indice })}
+                    naMao={
+                      gesto.fase === 'arrastando' &&
+                      mesmoLugar(gesto.enfeite, prateleira, lugar.indice)
+                    }
+                    manipular={manipularLugar(
+                      { prateleira, lugar: lugar.indice },
+                      lugar.tipo === 'enfeite',
+                    )}
                   />
                 ),
               )}
@@ -211,6 +287,13 @@ export function Movel({
       {naMao && gesto.origem && (
         <Fantasma item={naMao} caixa={gesto.origem} registrar={registrarFantasma} />
       )}
+      {enfeiteNaMao && gesto.origem && (
+        <FantasmaDoEnfeite
+          lugar={enfeiteNaMao}
+          caixa={gesto.origem}
+          registrar={registrarFantasma}
+        />
+      )}
     </div>
   )
 }
@@ -228,6 +311,7 @@ function LugarSemLivro({
   alturaDaFileira,
   alvo,
   realce,
+  naMao,
   manipular,
 }: {
   lugar: Exclude<Lugar, { tipo: 'livro' }>
@@ -238,6 +322,8 @@ function LugarSemLivro({
   alvo: boolean
   /** Segurado agora, ou com o menu aberto. */
   realce: boolean
+  /** O enfeite deste lugar está na mão de quem arrasta: fica só o vão. */
+  naMao: boolean
   manipular: ManipulacaoDaLombada
 }) {
   const nome = `Prateleira ${String(prateleira + 1)}, lugar ${String(lugar.indice + 1)}`
@@ -254,46 +340,9 @@ function LugarSemLivro({
       aria-label={`${nome}, ${oQueTem}: criar um livro aqui`}
       {...manipular}
     >
-      {lugar.tipo === 'enfeite' && <Enfeite lugar={lugar} alturaDaFileira={alturaDaFileira} />}
+      {lugar.tipo === 'enfeite' && (
+        <Enfeite lugar={lugar} alturaDaFileira={alturaDaFileira} naMao={naMao} />
+      )}
     </button>
-  )
-}
-
-/**
- * O enfeite: uma lombada azul sem título, no desenho das de verdade. Sem lavagem
- * de luz — a luz da sala chega nos livros da pessoa, e é isso que os faz
- * saltar no meio dos enfeites.
- */
-function Enfeite({
-  lugar,
-  alturaDaFileira,
-}: {
-  lugar: Extract<Lugar, { tipo: 'enfeite' }>
-  alturaDaFileira: number
-}) {
-  const geo = geometriaDaLombada({
-    estilo: lugar.estilo,
-    cor: COR_DO_ENFEITE,
-    titulo: '',
-    largura: lugar.largura,
-    altura: (lugar.altura * alturaDaFileira) / 100,
-    intensidadeDaLuz: 0,
-  })
-
-  return (
-    <span
-      aria-hidden
-      className="lombada lombada--enfeite"
-      data-estilo={geo.estilo}
-      style={
-        {
-          ...geo.style,
-          '--fg': TOM_DO_DETALHE_DO_ENFEITE,
-          height: `${String(lugar.altura)}%`,
-        } as CSSProperties
-      }
-    >
-      {lugar.dourado && <span className="lombada-filetes" />}
-    </span>
   )
 }

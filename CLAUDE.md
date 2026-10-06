@@ -360,6 +360,7 @@ neuronios:  { id, livroId: string | null, titulo, conteudo, embedding: Float32Ar
               estado: 'para_fazer' | 'fazendo' | 'feita' | null, ultimoToque, resultadoLink, createdAt, updatedAt }
 conexoes:   { id, aId, bId, score, emb, rr, cross, mantidaPorA, mantidaPorB, updatedAt }
 vagas:      { prateleira, ordem }
+enfeites:   { prateleira, ordem, cor, estilo, larguraLombada, comprimentoLombada, dourado, detalheEscuro }
 anexos:     { id, livroId, legenda, midia, embedding: Float32Array | null, createdAt, updatedAt }
 arquivos:   { anexoId, imagem: Uint8Array, miniatura: Uint8Array }
 vinculos:   { id: 'anexoId::conceitoId', anexoId, conceitoId, score, updatedAt }
@@ -368,6 +369,9 @@ vinculos:   { id: 'anexoId::conceitoId', anexoId, conceitoId, score, updatedAt }
 - As três últimas são das pastas de acervo (24/09/2026) — ver "Pastas de
   acervo". Um anexo nunca entra no grafo de conceitos; os `vinculos` são a
   escolha dele, só num sentido.
+
+- `enfeites` (Dexie v13, 07/10/2026) guarda só os enfeites que a pessoa **definiu ou
+  moveu**; o resto continua sorteado pelo lugar. Ver "Enfeites que se definem e se movem".
 
 - `neuronios.livroId` `null` é o **porto** (01/10/2026): um neurônio que o
   motor não soube onde guardar, esperando a pessoa escolher. Ver "O Porto".
@@ -5031,6 +5035,47 @@ lint limpos. **Não verificado num aparelho de verdade** (toque real, teclado ab
 - No papel feito, a contagem e o disco se sobrepõem um pouco.
 - O tom `#7FA8FF` da ponte na estante difere do `--ponte` da Rede e do Mapa.
 
+## Enfeites que se definem e se movem (07/10/2026)
+
+Pedido do usuário: definir as características de um enfeite como as de um livro e movê-lo
+para onde quiser. Duas escolhas dele, antes de implementar: o enfeite tem **cor, forma,
+largura e comprimento** (sem nome, sem emblema — continua só visual, sem neurônio e fora do
+grafo), e ao largar sobre um livro valem **as mesmas regras do livro**.
+
+- **O dado.** Tabela `enfeites` (Dexie v13, chave `[prateleira+ordem]`), sem migração: sem
+  registro o lugar mostra o enfeite sorteado, como sempre. Um registro **vence o sorteio** do
+  lugar; `larguraLombada`/`comprimentoLombada` `null` caem no sorteio. A cor é um dos 10 tons da
+  paleta (o repositório recusa o resto; o backup mapeia hex livre). Nunca embaixo de um livro,
+  como a vaga: `upsertLivro`, `moverLivro` e o import tiram o enfeite do lugar onde um livro
+  chega; tirar o enfeite apaga o registro; diminuir as prateleiras apaga os das que somem. Vai
+  no backup (`enfeites`, opcional — backup antigo importa sem eles).
+- **Mover** (`moverEnfeiteNaEstante`, `core/domain/ordem.ts`, pura, a mesma conta na store e no
+  repositório): destino sem livro (outro enfeite ou vaga) — só o enfeite anda e o que estava ali
+  dá lugar a ele; destino com livro — a fila empurra até o buraco mais perto (o código de
+  empurrar é o mesmo do livro, `empurrarParaAbrir`); prateleira cheia de livros — recusa. O
+  lugar de onde saiu **vira vaga** (nada anda sozinho), a não ser que um livro empurrado
+  chegue a ele. A recusa por falta de largura (`cabeNaPrateleira`) vale igual.
+- **O que viaja.** `dadosDoEnfeite` leva a cara que a tela mostra, com as medidas explícitas
+  (`null` seria "a do sorteio do lugar", e no lugar novo o sorteio é outro). Mover um enfeite
+  **sorteado** o grava no destino com a mesma forma, altura e filetes dourados.
+- **`detalheEscuro`.** O enfeite sorteado leva os detalhes da forma em azul escuro (ver "O
+  enfeite nunca tem luz branca"); o **gravado** é desenhado como um livro — a forma e a cor que a
+  pessoa escolheu —, a não ser que ela tenha só movido, ou só mexido nas medidas, de um sorteado:
+  `detalheEscuro` fica ligado até ela mudar a cor ou a forma.
+- **Gestos.** Segurar um enfeite o ergue (como o livro) e soltar parado abre o menu do lugar;
+  arrastar o leva, com um fantasma (`FantasmaDoEnfeite`) e o vão que ele deixa a 20%. A vaga
+  não se arrasta (é só um buraco); tocar um lugar ainda cria um livro ali. O `Gesto` ganhou
+  `enfeite` (o lugar do que está na mão) no lugar de `livroId`: é um ou outro.
+- **Editar.** O menu do lugar ganhou "Editar o enfeite", que leva a `/enfeite/:prateleira/:lugar/editar`
+  — a tela cheia do livro (`FormularioDeLivro` com `enfeite`: sem nome, tipo, emblema nem
+  executável). O enfeite sorteado também se edita; salvar o grava, e o que não foi mexido fica.
+- **Fora daqui:** os filetes dourados não se escolhem (vêm do sorteio ou do que o enfeite já
+  tinha); "voltar ao sorteado" é tirar o enfeite e pôr outro.
+- **Verificado** no Chrome (build de produção, mouse): editar pelo menu, gravar, arrastar para
+  outro enfeite, para outra prateleira e sobre um livro (que é empurrado), tirar o enfeite e
+  recarregar. 532 testes (31 novos: núcleo, estante, repositório e backup), tipos e lint limpos.
+  **Não verificado em toque real** nem no APK.
+
 ## Mostrar tudo sem deslize vertical: as folhas e o andamento (06/10/2026)
 
 Pedido do usuário, sobre os livros executáveis: melhorar de forma geral, e em especial a
@@ -5117,3 +5162,5 @@ adormecida nem há quantos dias — sugestão, não implementada.
     vierem dele
 26. ✅ A estante no estilo Noite — paleta de 10 tons, 10 formas de lombada,
     estados do livro executável, enfeites e móvel (06/10/2026)
+27. ✅ Enfeites que se definem e se movem — cor, forma e medidas como as de um livro, e
+    arrastar com as regras do livro (07/10/2026)

@@ -3,12 +3,14 @@ import { create } from 'zustand'
 import {
   chaveDoLugar,
   clampDiasParaAdormecer,
+  enfeitesSemLivroEmCima,
   estadoAoGuardar,
   INTENSIDADE_DA_LUZ_PADRAO,
   MINIMO_DE_PRATELEIRAS,
   MAPA_VAZIO,
   MODO_DA_BUSCA_PADRAO,
   MODO_DA_REDE_PADRAO,
+  moverEnfeiteNaEstante,
   moverLivroNaEstante,
   novoLivro,
   primeiroLugarLivre,
@@ -16,6 +18,8 @@ import {
   type AnexoNaTela,
   type Conexao,
   type CriarAnexoInput,
+  type DadosDoEnfeite,
+  type EnfeiteGravado,
   type EstadoDaIdeia,
   type EstiloDaLombada,
   type Livro,
@@ -83,6 +87,8 @@ interface PalacioStore {
   vinculos: Vinculo[]
   /** Os lugares deixados abertos — sem livro e sem enfeite. */
   vagas: Vaga[]
+  /** Os enfeites que a pessoa definiu ou moveu; o resto é sorteado pelo lugar. */
+  enfeites: EnfeiteGravado[]
   /** Onde a Rede organizou cada neurônio da última vez, por significado. */
   posicoesDaRede: Record<string, Ponto>
   /** O Mapa: ilhas por livro, gravadas. */
@@ -146,6 +152,17 @@ interface PalacioStore {
   tirarEnfeite: (prateleira: number, lugar: number) => Promise<void>
   /** Devolve um enfeite a um lugar aberto. */
   porEnfeite: (prateleira: number, lugar: number) => Promise<void>
+  /** Grava o enfeite que a pessoa definiu. Otimista. `false` se o motor não conseguiu. */
+  salvarEnfeite: (enfeite: EnfeiteGravado) => Promise<boolean>
+  /**
+   * Põe o enfeite de `origem` em `destino`, com as regras do livro. `dados` é a cara
+   * que a tela mostrava nele — sorteada ou gravada. Otimista.
+   */
+  moverEnfeite: (
+    origem: { prateleira: number; ordem: number },
+    destino: { prateleira: number; ordem: number },
+    dados: DadosDoEnfeite,
+  ) => Promise<void>
   /** Recusa diminuir se sobrar livro numa prateleira que deixaria de existir. */
   definirQuantidadeDePrateleiras: (quantidade: number) => Promise<void>
   /** Otimista, como o resto das preferências — a estante já lava na hora. */
@@ -205,6 +222,7 @@ export const usePalacio = create<PalacioStore>()((set, get) => {
     anexos: [],
     vinculos: [],
     vagas: [],
+    enfeites: [],
     posicoesDaRede: {},
     mapa: MAPA_VAZIO,
     quantidadeDePrateleiras: MINIMO_DE_PRATELEIRAS,
@@ -409,7 +427,7 @@ export const usePalacio = create<PalacioStore>()((set, get) => {
     },
 
     async criarLivro(novo, prateleira, lugar, tipo = 'conceitos'): Promise<string | null> {
-      const { livros: antes, vagas: vagasAntes } = get()
+      const { livros: antes, vagas: vagasAntes, enfeites: enfeitesAntes } = get()
       const input = { id: newId(), ...novo, prateleira, lugar, tipo }
       // A mesma regra do motor: o lugar tocado, ou o buraco mais perto dele se
       // outro livro já chegou ali — nascer nunca empurra ninguém.
@@ -428,6 +446,7 @@ export const usePalacio = create<PalacioStore>()((set, get) => {
       set({
         livros: [...antes, provisorio],
         vagas: vagasAntes.filter((v) => chaveDoLugar(v) !== chaveDoLugar(provisorio)),
+        enfeites: enfeitesSemLivroEmCima(enfeitesAntes, [provisorio]),
         erro: null,
       })
 
@@ -435,7 +454,7 @@ export const usePalacio = create<PalacioStore>()((set, get) => {
         set(await engine.criarLivro(input))
         return input.id
       } catch (e) {
-        set({ livros: antes, vagas: vagasAntes, erro: mensagem(e) })
+        set({ livros: antes, vagas: vagasAntes, enfeites: enfeitesAntes, erro: mensagem(e) })
         return null
       }
     },
@@ -487,7 +506,7 @@ export const usePalacio = create<PalacioStore>()((set, get) => {
     },
 
     async moverLivro(id, prateleira, lugar) {
-      const { livros: antes, vagas: vagasAntes } = get()
+      const { livros: antes, vagas: vagasAntes, enfeites: enfeitesAntes } = get()
       const depois = moverLivroNaEstante(antes, id, prateleira, lugar)
       if (!depois) {
         set({
@@ -502,24 +521,31 @@ export const usePalacio = create<PalacioStore>()((set, get) => {
       set({
         livros: depois,
         vagas: vagasDepoisDeMover(vagasAntes, antes, depois, id),
+        enfeites: enfeitesSemLivroEmCima(enfeitesAntes, depois),
         erro: null,
       })
 
       try {
         set(await engine.moverLivro(id, prateleira, lugar))
       } catch (e) {
-        set({ livros: antes, vagas: vagasAntes, erro: mensagem(e) })
+        set({ livros: antes, vagas: vagasAntes, enfeites: enfeitesAntes, erro: mensagem(e) })
       }
     },
 
     async tirarEnfeite(prateleira, lugar) {
-      const antes = get().vagas
-      set({ vagas: [...antes, { prateleira, ordem: lugar }], erro: null })
+      const { vagas: antes, enfeites: enfeitesAntes } = get()
+      const chave = chaveDoLugar({ prateleira, ordem: lugar })
+      set({
+        vagas: [...antes, { prateleira, ordem: lugar }],
+        enfeites: enfeitesAntes.filter((e) => chaveDoLugar(e) !== chave),
+        erro: null,
+      })
 
       try {
-        set({ vagas: await engine.tirarEnfeite(prateleira, lugar) })
+        const { vagas, enfeites } = await engine.tirarEnfeite(prateleira, lugar)
+        set({ vagas, enfeites })
       } catch (e) {
-        set({ vagas: antes, erro: mensagem(e) })
+        set({ vagas: antes, enfeites: enfeitesAntes, erro: mensagem(e) })
       }
     },
 
@@ -529,9 +555,59 @@ export const usePalacio = create<PalacioStore>()((set, get) => {
       set({ vagas: antes.filter((v) => chaveDoLugar(v) !== chave), erro: null })
 
       try {
-        set({ vagas: await engine.porEnfeite(prateleira, lugar) })
+        set({ vagas: (await engine.porEnfeite(prateleira, lugar)).vagas })
       } catch (e) {
         set({ vagas: antes, erro: mensagem(e) })
+      }
+    },
+
+    async salvarEnfeite(enfeite): Promise<boolean> {
+      const { vagas: vagasAntes, enfeites: enfeitesAntes } = get()
+      const chave = chaveDoLugar(enfeite)
+      set({
+        vagas: vagasAntes.filter((v) => chaveDoLugar(v) !== chave),
+        enfeites: [...enfeitesAntes.filter((e) => chaveDoLugar(e) !== chave), enfeite],
+        erro: null,
+      })
+
+      try {
+        const { vagas, enfeites } = await engine.salvarEnfeite(enfeite)
+        set({ vagas, enfeites })
+        return true
+      } catch (e) {
+        set({ vagas: vagasAntes, enfeites: enfeitesAntes, erro: mensagem(e) })
+        return false
+      }
+    },
+
+    async moverEnfeite(origem, destino, dados) {
+      const { livros: livrosAntes, vagas: vagasAntes, enfeites: enfeitesAntes } = get()
+      const depois = moverEnfeiteNaEstante(
+        { livros: livrosAntes, vagas: vagasAntes, enfeites: enfeitesAntes },
+        origem,
+        destino,
+        dados,
+      )
+      if (!depois) {
+        set({
+          acaoDoAviso: null,
+          aviso: `A prateleira ${String(destino.prateleira + 1)} não tem lugar sem livro.`,
+        })
+        return
+      }
+
+      // Otimista, como o livro: quem solta o enfeite o vê já no lugar novo.
+      set({ ...depois, erro: null })
+
+      try {
+        set(await engine.moverEnfeite(origem, destino, dados))
+      } catch (e) {
+        set({
+          livros: livrosAntes,
+          vagas: vagasAntes,
+          enfeites: enfeitesAntes,
+          erro: mensagem(e),
+        })
       }
     },
 
@@ -545,6 +621,7 @@ export const usePalacio = create<PalacioStore>()((set, get) => {
         set({
           quantidadeDePrateleiras: gravada,
           vagas: get().vagas.filter((v) => v.prateleira < gravada),
+          enfeites: get().enfeites.filter((e) => e.prateleira < gravada),
         })
       } catch (e) {
         set({ quantidadeDePrateleiras: antes, erro: mensagem(e) })

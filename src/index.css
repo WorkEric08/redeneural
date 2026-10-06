@@ -914,7 +914,8 @@ img {
 }
 
 /* Vem depois do adormecido de propósito: o vão do arrasto é mais apagado. */
-.lombada--livro[data-estado='vazio'] {
+.lombada--livro[data-estado='vazio'],
+.lombada--enfeite[data-estado='vazio'] {
   opacity: 0.2;
 }
 

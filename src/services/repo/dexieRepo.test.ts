@@ -15,6 +15,7 @@ import {
   ehCorDaPaleta,
   LUGARES_POR_PRATELEIRA,
   type Conexao,
+  type EnfeiteGravado,
   type Livro,
   type Neuronio,
   type PalacioRepo,
@@ -1132,5 +1133,149 @@ describe('cor e forma da lombada', () => {
     await expect(
       repo.upsertLivro({ ...livro('l1', 'Psicologia'), estilo: 'espiral' as never }),
     ).rejects.toThrow()
+  })
+})
+
+describe('enfeites gravados', () => {
+  const enfeite = (ordem: number, prateleira = 0): EnfeiteGravado => ({
+    prateleira,
+    ordem,
+    cor: '#4A2540',
+    estilo: 'contorno',
+    larguraLombada: 52,
+    comprimentoLombada: 90,
+    dourado: true,
+    detalheEscuro: false,
+  })
+
+  const dadosDe = (e: EnfeiteGravado) => ({
+    cor: e.cor,
+    estilo: e.estilo,
+    larguraLombada: e.larguraLombada,
+    comprimentoLombada: e.comprimentoLombada,
+    dourado: e.dourado,
+    detalheEscuro: e.detalheEscuro,
+  })
+
+  it('grava o enfeite, regravar o mesmo lugar não duplica, e fecha a vaga dele', async () => {
+    await repo.abrirVaga({ prateleira: 0, ordem: 5 })
+    await repo.salvarEnfeite(enfeite(5))
+    await repo.salvarEnfeite({ ...enfeite(5), cor: '#17505A' })
+
+    expect(await repo.listEnfeites()).toEqual([{ ...enfeite(5), cor: '#17505A' }])
+    expect(await repo.listVagas()).toEqual([])
+  })
+
+  it('recusa uma cor fora da paleta, uma medida absurda e um lugar com livro', async () => {
+    await expect(repo.salvarEnfeite({ ...enfeite(5), cor: '#ff0000' })).rejects.toThrow()
+    await expect(repo.salvarEnfeite({ ...enfeite(5), larguraLombada: 400 })).rejects.toThrow()
+    await repo.upsertLivro(livro('a', 'a', 2, 0))
+    await expect(repo.salvarEnfeite(enfeite(2))).rejects.toThrow(/livro/)
+    expect(await repo.listEnfeites()).toEqual([])
+  })
+
+  it('um livro gravado no lugar tira o enfeite que estava ali', async () => {
+    await repo.salvarEnfeite(enfeite(2))
+    await repo.upsertLivro(livro('a', 'a', 2, 0))
+    expect(await repo.listEnfeites()).toEqual([])
+  })
+
+  it('tirar o enfeite apaga o gravado e deixa a vaga', async () => {
+    await repo.salvarEnfeite(enfeite(4))
+    await repo.abrirVaga({ prateleira: 0, ordem: 4 })
+    expect(await repo.listEnfeites()).toEqual([])
+    expect(await repo.listVagas()).toEqual([{ prateleira: 0, ordem: 4 }])
+  })
+
+  it('mover um livro para cima de um enfeite gravado o apaga', async () => {
+    await repo.upsertLivro(livro('a', 'a', 0, 0))
+    await repo.salvarEnfeite(enfeite(7))
+    await repo.moverLivro('a', 0, 7)
+    expect(await repo.listEnfeites()).toEqual([])
+  })
+
+  it('mover o enfeite: ele chega com a mesma cara e o lugar de origem vira vaga', async () => {
+    await repo.salvarEnfeite(enfeite(5))
+    const { prateleira, ordem, ...dados } = enfeite(5)
+    expect([prateleira, ordem]).toEqual([0, 5])
+
+    await repo.moverEnfeite({ prateleira: 0, ordem: 5 }, { prateleira: 1, ordem: 2 }, dados)
+
+    expect(await repo.listEnfeites()).toEqual([enfeite(2, 1)])
+    expect(await repo.listVagas()).toEqual([{ prateleira: 0, ordem: 5 }])
+  })
+
+  it('mover o enfeite sorteado (sem registro) o grava no destino', async () => {
+    const dados = dadosDe(enfeite(0))
+    await repo.moverEnfeite({ prateleira: 0, ordem: 3 }, { prateleira: 0, ordem: 8 }, dados)
+
+    expect(await repo.listEnfeites()).toEqual([enfeite(8)])
+    expect(await repo.listVagas()).toEqual([{ prateleira: 0, ordem: 3 }])
+  })
+
+  it('mover o enfeite sobre um livro empurra a fila, como entre livros', async () => {
+    await repo.upsertLivro(livro('a', 'a', 3, 0))
+    await repo.upsertLivro(livro('b', 'b', 4, 0))
+    const dados = dadosDe(enfeite(0))
+
+    await repo.moverEnfeite({ prateleira: 0, ordem: 9 }, { prateleira: 0, ordem: 3 }, dados)
+
+    expect((await repo.getLivro('a'))?.ordem).toBe(4)
+    expect((await repo.getLivro('b'))?.ordem).toBe(5)
+    expect(await repo.listEnfeites()).toEqual([enfeite(3)])
+  })
+
+  it('numa prateleira cheia de livros recusa, e nada muda', async () => {
+    for (let i = 0; i < LUGARES_POR_PRATELEIRA; i += 1) {
+      await repo.upsertLivro(livro(`x${String(i)}`, 'x', i, 1))
+    }
+    const dados = dadosDe(enfeite(0))
+
+    await expect(
+      repo.moverEnfeite({ prateleira: 0, ordem: 3 }, { prateleira: 1, ordem: 4 }, dados),
+    ).rejects.toThrow(/lugar sem livro/)
+    expect(await repo.listEnfeites()).toEqual([])
+    expect(await repo.listVagas()).toEqual([])
+  })
+
+  it('diminuir as prateleiras apaga os enfeites das que deixaram de existir', async () => {
+    await repo.definirQuantidadeDePrateleiras(6)
+    await repo.salvarEnfeite(enfeite(0, 1))
+    await repo.salvarEnfeite(enfeite(0, 5))
+
+    await repo.definirQuantidadeDePrateleiras(4)
+
+    expect(await repo.listEnfeites()).toEqual([enfeite(0, 1)])
+  })
+
+  it('o backup leva os enfeites e a cor livre do arquivo vai ao tom mais perto', async () => {
+    await repo.salvarEnfeite(enfeite(5))
+    const snapshot = await repo.exportAll()
+    expect(snapshot.enfeites).toEqual([enfeite(5)])
+
+    await repo.clear()
+    await repo.importAll({
+      ...snapshot,
+      enfeites: [{ ...enfeite(6), cor: '#4b2641' }],
+    })
+    expect(await repo.listEnfeites()).toEqual([enfeite(6)])
+  })
+
+  it('importar não deixa enfeite embaixo de um livro, e backup de antes não traz enfeites', async () => {
+    await repo.upsertLivro(livro('a', 'a', 2, 0))
+    const snapshot = await repo.exportAll()
+    const semEnfeites = { ...snapshot, enfeites: undefined }
+
+    await repo.importAll({ ...semEnfeites, enfeites: [enfeite(2)] })
+    expect(await repo.listEnfeites()).toEqual([])
+
+    await repo.importAll(semEnfeites)
+    expect(await repo.listEnfeites()).toEqual([])
+  })
+
+  it('limpar leva os enfeites junto', async () => {
+    await repo.salvarEnfeite(enfeite(0))
+    await repo.clear()
+    expect(await repo.listEnfeites()).toEqual([])
   })
 })

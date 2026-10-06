@@ -18,6 +18,7 @@ import {
   type Neuronio,
   type Ponto,
   type Vaga,
+  type EnfeiteGravado,
   type Vinculo,
 } from '@/core'
 
@@ -93,6 +94,8 @@ export type PalacioDB = Dexie & {
   etiquetas: EntityTable<EtiquetaDePrateleira, 'prateleira'>
   /** Chave composta `[prateleira+ordem]`: um lugar só tem uma vaga. */
   vagas: Table<Vaga, [number, number]>
+  /** Chave composta `[prateleira+ordem]`: um lugar só tem um enfeite gravado. */
+  enfeites: Table<EnfeiteGravado, [number, number]>
   anexos: EntityTable<Anexo, 'id'>
   arquivos: EntityTable<ArquivoGravado, 'anexoId'>
   vinculos: EntityTable<Vinculo, 'id'>
@@ -285,6 +288,12 @@ export function createDb(name: string = DB_NAME): PalacioDB {
         })),
       )
     })
+
+  // v13 (07/10/2026): enfeites editáveis. Tabela nova, sem migração de dado: sem
+  // registro, o lugar continua mostrando o enfeite sorteado (mesmo padrão da v9).
+  db.version(13).stores({
+    enfeites: '[prateleira+ordem], prateleira',
+  })
 
   return db
 }

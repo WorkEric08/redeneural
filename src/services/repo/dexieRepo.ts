@@ -1,6 +1,8 @@
 import type {
   Anexo,
   Conexao,
+  DadosDoEnfeite,
+  EnfeiteGravado,
   Id,
   Livro,
   Neuronio,
@@ -21,6 +23,9 @@ import {
   livroToSnapshot,
   LUGARES_POR_PRATELEIRA,
   moverLivroNaEstante,
+  moverEnfeiteNaEstante,
+  enfeitesSemLivroEmCima,
+  corMaisProxima,
   MAXIMO_DE_PRATELEIRAS,
   MINIMO_DE_PRATELEIRAS,
   modoDaBuscaOuPadrao,
@@ -47,6 +52,7 @@ import {
   anexoSchema,
   arquivoSchema,
   conexaoSchema,
+  enfeiteSchema,
   livroSchema,
   neuronioSchema,
   snapshotSchema,
@@ -95,6 +101,10 @@ function chaveDaVaga(v: Vaga): [number, number] {
   return [v.prateleira, v.ordem]
 }
 
+function chaveDoEnfeite(e: Pick<EnfeiteGravado, 'prateleira' | 'ordem'>): [number, number] {
+  return [e.prateleira, e.ordem]
+}
+
 /**
  * Implementação IndexedDB da porta `PalacioRepo`.
  *
@@ -141,9 +151,10 @@ export function createDexieRepo(db: PalacioDB = defaultDb): PalacioRepo {
 
     async upsertLivro(l: Livro) {
       const livro = livroSchema.parse(l)
-      await db.transaction('rw', db.livros, db.vagas, async () => {
+      await db.transaction('rw', db.livros, db.vagas, db.enfeites, async () => {
         await db.livros.put(livro)
         await db.vagas.delete(chaveDaVaga(livro))
+        await db.enfeites.delete(chaveDoEnfeite(livro))
       })
     },
 
@@ -172,7 +183,7 @@ export function createDexieRepo(db: PalacioDB = defaultDb): PalacioRepo {
     },
 
     async moverLivro(id, prateleira, lugar) {
-      await db.transaction('rw', db.livros, db.vagas, async () => {
+      await db.transaction('rw', db.livros, db.vagas, db.enfeites, async () => {
         const todos = await db.livros.toArray()
         const movido = todos.find((l) => l.id === id)
         if (!movido) throw new Error(`moverLivro: livro ${id} não existe`)
@@ -195,6 +206,12 @@ export function createDexieRepo(db: PalacioDB = defaultDb): PalacioRepo {
         const vagas = vagasDepoisDeMover(await db.vagas.toArray(), todos, depois, id)
         await db.vagas.clear()
         await db.vagas.bulkPut(vagas)
+
+        // Um livro que chega a um lugar tira o enfeite gravado que estava nele.
+        const soterrados = (await db.enfeites.toArray()).filter(
+          (e) => enfeitesSemLivroEmCima([e], depois).length === 0,
+        )
+        await db.enfeites.bulkDelete(soterrados.map(chaveDoEnfeite))
       })
     },
 
@@ -202,9 +219,71 @@ export function createDexieRepo(db: PalacioDB = defaultDb): PalacioRepo {
       return db.vagas.toArray()
     },
 
+    async listEnfeites() {
+      return db.enfeites.toArray()
+    },
+
+    async salvarEnfeite(e) {
+      const enfeite = enfeiteSchema.parse(e)
+      await db.transaction('rw', db.livros, db.vagas, db.enfeites, async () => {
+        const temLivro = await db.livros
+          .where('prateleira')
+          .equals(enfeite.prateleira)
+          .filter((l) => l.ordem === enfeite.ordem)
+          .count()
+        if (temLivro > 0) throw new Error('esse lugar tem um livro — não cabe um enfeite')
+        await db.vagas.delete(chaveDaVaga(enfeite))
+        await db.enfeites.put(enfeite)
+      })
+    },
+
+    async moverEnfeite(origem, destino, dados: DadosDoEnfeite) {
+      const lugarDeOrigem = vagaSchema.parse(origem)
+      const lugarDeDestino = vagaSchema.parse(destino)
+      // Valida o que viaja com o enfeite (cor da paleta, medidas) como um enfeite inteiro.
+      const validado = enfeiteSchema.parse({ ...dados, ...lugarDeDestino })
+      await db.transaction('rw', db.livros, db.vagas, db.enfeites, async () => {
+        const todos = await db.livros.toArray()
+        const depois = moverEnfeiteNaEstante(
+          {
+            livros: todos,
+            vagas: await db.vagas.toArray(),
+            enfeites: await db.enfeites.toArray(),
+          },
+          lugarDeOrigem,
+          lugarDeDestino,
+          {
+            cor: validado.cor,
+            estilo: validado.estilo,
+            larguraLombada: validado.larguraLombada,
+            comprimentoLombada: validado.comprimentoLombada,
+            dourado: validado.dourado,
+            detalheEscuro: validado.detalheEscuro,
+          },
+        )
+        if (!depois) {
+          throw new Error(`a prateleira ${String(destino.prateleira + 1)} não tem lugar sem livro`)
+        }
+
+        const mudou = depois.livros.filter((l, i) => {
+          const antes = todos[i]
+          return antes && (antes.prateleira !== l.prateleira || antes.ordem !== l.ordem)
+        })
+        await Promise.all(
+          mudou.map((l) => db.livros.update(l.id, { prateleira: l.prateleira, ordem: l.ordem })),
+        )
+
+        // Vagas e enfeites são poucos: regravar a tabela inteira é mais simples que um diff.
+        await db.vagas.clear()
+        await db.vagas.bulkPut(depois.vagas)
+        await db.enfeites.clear()
+        await db.enfeites.bulkPut(depois.enfeites)
+      })
+    },
+
     async abrirVaga(v) {
       const vaga = vagaSchema.parse(v)
-      await db.transaction('rw', db.livros, db.vagas, async () => {
+      await db.transaction('rw', db.livros, db.vagas, db.enfeites, async () => {
         const temLivro = await db.livros
           .where('prateleira')
           .equals(vaga.prateleira)
@@ -212,6 +291,7 @@ export function createDexieRepo(db: PalacioDB = defaultDb): PalacioRepo {
           .count()
         if (temLivro > 0) throw new Error('esse lugar tem um livro — não há enfeite para tirar')
         await db.vagas.put(vaga)
+        await db.enfeites.delete(chaveDoEnfeite(vaga))
       })
     },
 
@@ -228,7 +308,7 @@ export function createDexieRepo(db: PalacioDB = defaultDb): PalacioRepo {
       if (quantidade > MAXIMO_DE_PRATELEIRAS) {
         throw new Error(`a estante tem no máximo ${String(MAXIMO_DE_PRATELEIRAS)} prateleiras`)
       }
-      await db.transaction('rw', db.livros, db.meta, db.vagas, async () => {
+      await db.transaction('rw', db.livros, db.meta, db.vagas, db.enfeites, async () => {
         const ocupada = await db.livros.where('prateleira').aboveOrEqual(quantidade).count()
         if (ocupada > 0) {
           throw new Error(
@@ -238,6 +318,7 @@ export function createDexieRepo(db: PalacioDB = defaultDb): PalacioRepo {
         // Prateleira que deixa de existir não guarda buraco: se voltar a existir,
         // volta cheia de enfeite, como qualquer prateleira nova.
         await db.vagas.where('prateleira').aboveOrEqual(quantidade).delete()
+        await db.enfeites.where('prateleira').aboveOrEqual(quantidade).delete()
         await db.meta.put(await preferenciasCom({ quantidadeDePrateleiras: quantidade }))
       })
     },
@@ -466,10 +547,19 @@ export function createDexieRepo(db: PalacioDB = defaultDb): PalacioRepo {
     },
 
     async exportAll(): Promise<PalacioSnapshot> {
-      const [livros, neuronios, conexoes, etiquetas, vagas, anexos, arquivos] =
+      const [livros, neuronios, conexoes, etiquetas, vagas, enfeites, anexos, arquivos] =
         await db.transaction(
           'r',
-          [db.livros, db.neuronios, db.conexoes, db.etiquetas, db.vagas, db.anexos, db.arquivos],
+          [
+            db.livros,
+            db.neuronios,
+            db.conexoes,
+            db.etiquetas,
+            db.vagas,
+            db.enfeites,
+            db.anexos,
+            db.arquivos,
+          ],
           async () =>
             Promise.all([
               db.livros.toArray(),
@@ -477,6 +567,7 @@ export function createDexieRepo(db: PalacioDB = defaultDb): PalacioRepo {
               db.conexoes.toArray(),
               db.etiquetas.toArray(),
               db.vagas.toArray(),
+              db.enfeites.toArray(),
               db.anexos.toArray(),
               db.arquivos.toArray(),
             ]),
@@ -492,6 +583,7 @@ export function createDexieRepo(db: PalacioDB = defaultDb): PalacioRepo {
         conexoes: conexoes.map(conexaoToSnapshot),
         etiquetas,
         vagas,
+        enfeites,
         anexos: anexos.map((a) => anexoToSnapshot(a, arquivoDe.get(a.id))),
         ...(mapa ? { mapa: { ilhas: mapa.ilhas } } : {}),
       }
@@ -546,6 +638,11 @@ export function createDexieRepo(db: PalacioDB = defaultDb): PalacioRepo {
         )
       }
 
+      // A cor do arquivo vai ao tom mais próximo da paleta, como a do livro.
+      const enfeites = parsed.enfeites.map((e) =>
+        enfeiteSchema.parse({ ...e, cor: corMaisProxima(e.cor) }),
+      )
+
       const acervo = parsed.anexos.map(anexoFromSnapshot)
       const anexos = acervo.map(({ anexo }) => anexoSchema.parse(anexo))
       const arquivos = acervo.flatMap(({ anexo, arquivo }) =>
@@ -568,6 +665,7 @@ export function createDexieRepo(db: PalacioDB = defaultDb): PalacioRepo {
           db.meta,
           db.etiquetas,
           db.vagas,
+          db.enfeites,
           db.anexos,
           db.arquivos,
         ],
@@ -594,6 +692,14 @@ export function createDexieRepo(db: PalacioDB = defaultDb): PalacioRepo {
           await db.vagas.bulkPut(parsed.vagas)
           const soterradas = (await db.vagas.toArray()).filter((v) => ocupados.has(chaveDoLugar(v)))
           await db.vagas.bulkDelete(soterradas.map(chaveDaVaga))
+
+          // Os enfeites gravados fundem igual: o do arquivo vence o daqui no mesmo
+          // lugar, e nenhum sobrevive embaixo de um livro.
+          await db.enfeites.bulkPut(enfeites)
+          const soterrados = (await db.enfeites.toArray()).filter((e) =>
+            ocupados.has(chaveDoLugar(e)),
+          )
+          await db.enfeites.bulkDelete(soterrados.map(chaveDoEnfeite))
 
           // Um backup de um palácio com mais prateleiras não pode esconder livro
           // numa prateleira que este aparelho ainda não tem.
@@ -622,6 +728,7 @@ export function createDexieRepo(db: PalacioDB = defaultDb): PalacioRepo {
         db.meta,
         db.etiquetas,
         db.vagas,
+        db.enfeites,
         db.anexos,
         db.arquivos,
         db.vinculos,

@@ -54,6 +54,18 @@ export const vagaSchema = z.object({
   ordem,
 })
 
+/** Um enfeite definido ou movido pela pessoa (07/10/2026): cor da paleta, como o livro. */
+export const enfeiteSchema = z.object({
+  prateleira: ordem,
+  ordem,
+  cor: corDaPaleta,
+  estilo: estiloDaLombada,
+  larguraLombada,
+  comprimentoLombada,
+  dourado: z.boolean(),
+  detalheEscuro: z.boolean(),
+})
+
 export const etiquetaSchema = z.object({
   prateleira: ordem,
   texto: z.string().trim().min(1).max(60),
@@ -200,6 +212,23 @@ export const snapshotSchema = z.object({
   etiquetas: z.array(etiquetaSchema).optional().default([]),
   // Ausente em backup de antes dos lugares fixos (14/09/2026) — nenhuma vaga aberta.
   vagas: z.array(vagaSchema).optional().default([]),
+  // Ausente em backup de antes dos enfeites editáveis (07/10/2026) — todos sorteados.
+  // A cor vem em hex livre: o import a leva ao tom mais próximo da paleta.
+  enfeites: z
+    .array(
+      z.object({
+        prateleira: ordem,
+        ordem,
+        cor: hexColor,
+        estilo: estiloDaLombada,
+        larguraLombada,
+        comprimentoLombada,
+        dourado: z.boolean(),
+        detalheEscuro: z.boolean(),
+      }),
+    )
+    .optional()
+    .default([]),
   // Ausente em backup de antes das pastas de acervo (24/09/2026) — nenhum anexo.
   anexos: z
     .array(

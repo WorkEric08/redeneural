@@ -1,6 +1,8 @@
 import {
   chaveDoLugar,
   LUGARES_POR_PRATELEIRA,
+  type DadosDoEnfeite,
+  type EnfeiteGravado,
   type EstiloDaLombada,
   type Livro,
   type Vaga,
@@ -25,7 +27,8 @@ import type { LivroNaEstante } from './resumo'
  * - uma **vaga**, se a pessoa deixou o lugar aberto (`Vaga`);
  * - senão, um **enfeite**: a parte da biblioteca que ainda não foi escrita.
  *   Lombada azul sem título, que só existe para o móvel ter a densidade de
- *   uma estante de verdade.
+ *   uma estante de verdade. A pessoa pode defini-lo ou movê-lo (07/10/2026):
+ *   aí ele é um `EnfeiteGravado`, que vence o sorteio daquele lugar.
  */
 
 /** Em % da fileira, como a lombada de verdade — ver .movel-fila. */
@@ -55,6 +58,9 @@ const LARGURAS_DO_ENFEITE = [24, 38, 52] as const
 /** Os filetes dourados saem num em cada 5 enfeites isolados — e em todo grupo. */
 const CHANCE_DO_DOURADO = 0.2
 
+/** O lugar com enfeite, com tudo o que a tela precisa para desenhá-lo. */
+export type EnfeiteNoLugar = Extract<Lugar, { tipo: 'enfeite' }>
+
 export type Lugar =
   | { tipo: 'livro'; indice: number; item: LivroNaEstante; largura: number }
   | {
@@ -64,8 +70,18 @@ export type Lugar =
       /** Em % da fileira, como a lombada de verdade — ver .movel-fila. */
       altura: number
       estilo: EstiloDaLombada
+      cor: string
       /** Os filetes dourados de acabamento — de grupo ou sorteados. */
       dourado: boolean
+      /** Os detalhes da forma em azul escuro — o acabamento do enfeite sorteado. */
+      detalheEscuro: boolean
+      /** Tem registro: a pessoa o definiu ou o moveu. */
+      gravado: boolean
+      /**
+       * A largura de antes de a fileira apertar (`ajustarALargura`): é a que viaja com
+       * o enfeite quando ele muda de lugar.
+       */
+      larguraNatural: number
     }
   | { tipo: 'vazio'; indice: number; largura: number }
 
@@ -142,19 +158,90 @@ function larguraDoLugar(prateleira: number, indice: number): number {
  * um livro ao lado não troca a forma, a altura nem a largura. Só o dourado olha
  * os vizinhos (ver `montarPrateleiras`).
  */
-function enfeite(prateleira: number, indice: number): Lugar {
+function alturaDoLugar(prateleira: number, indice: number): number {
+  return (
+    ALTURA_MINIMA_DA_LOMBADA +
+    sorteio(chaveDoEnfeite(prateleira, indice), 5) *
+      (ALTURA_MAXIMA_DA_LOMBADA - ALTURA_MINIMA_DA_LOMBADA)
+  )
+}
+
+function enfeite(prateleira: number, indice: number): EnfeiteNoLugar {
   const chave = chaveDoEnfeite(prateleira, indice)
+  const largura = larguraDoLugar(prateleira, indice)
   return {
     tipo: 'enfeite',
     indice,
-    largura: larguraDoLugar(prateleira, indice),
-    altura:
-      ALTURA_MINIMA_DA_LOMBADA +
-      sorteio(chave, 5) * (ALTURA_MAXIMA_DA_LOMBADA - ALTURA_MINIMA_DA_LOMBADA),
+    largura,
+    larguraNatural: largura,
+    altura: alturaDoLugar(prateleira, indice),
     estilo:
       ESTILOS_DO_ENFEITE[Math.floor(sorteio(chave, 11) * ESTILOS_DO_ENFEITE.length)] ?? 'solido',
+    cor: COR_DO_ENFEITE,
     dourado: sorteio(chave, 17) < CHANCE_DO_DOURADO,
+    detalheEscuro: true,
+    gravado: false,
   }
+}
+
+/** O enfeite que a pessoa definiu ou moveu: o que ela não escolheu cai no sorteio do lugar. */
+function enfeiteGravado(e: EnfeiteGravado): EnfeiteNoLugar {
+  const largura = e.larguraLombada ?? larguraDoLugar(e.prateleira, e.ordem)
+  return {
+    tipo: 'enfeite',
+    indice: e.ordem,
+    largura,
+    larguraNatural: largura,
+    altura: e.comprimentoLombada ?? alturaDoLugar(e.prateleira, e.ordem),
+    estilo: e.estilo,
+    cor: e.cor,
+    dourado: e.dourado,
+    detalheEscuro: e.detalheEscuro,
+    gravado: true,
+  }
+}
+
+/**
+ * O que viaja com um enfeite quando ele muda de lugar: a cara que a tela mostra
+ * nele, com as medidas já explícitas — `null` seria "a do sorteio do lugar", e no
+ * lugar novo o sorteio é outro.
+ */
+export function dadosDoEnfeite(l: EnfeiteNoLugar): DadosDoEnfeite {
+  return {
+    cor: l.cor,
+    estilo: l.estilo,
+    larguraLombada: l.larguraNatural,
+    comprimentoLombada: l.altura,
+    dourado: l.dourado,
+    detalheEscuro: l.detalheEscuro,
+  }
+}
+
+/**
+ * O enfeite que o lugar mostra hoje — o gravado, ou o sorteado com o dourado de
+ * grupo que `montarPrateleiras` daria —, ou `null` se o lugar tem livro ou está
+ * aberto. É o que a tela de editar enfeite mostra de partida, sem montar a
+ * estante inteira. `ocupados` são as chaves (`chaveDoLugar`) dos lugares com livro.
+ */
+export function enfeiteDoLugar(
+  prateleira: number,
+  indice: number,
+  ocupados: ReadonlySet<string>,
+  vagas: readonly Vaga[],
+  enfeites: readonly EnfeiteGravado[],
+): EnfeiteNoLugar | null {
+  const abertas = new Set(vagas.map(chaveDoLugar))
+  const livre = (i: number): boolean => {
+    const chave = chaveDoLugar({ prateleira, ordem: i })
+    return i >= 0 && i < LUGARES_POR_PRATELEIRA && !ocupados.has(chave) && !abertas.has(chave)
+  }
+  if (!livre(indice)) return null
+
+  const gravado = enfeites.find((e) => e.prateleira === prateleira && e.ordem === indice)
+  if (gravado) return enfeiteGravado(gravado)
+
+  const sorteado = enfeite(prateleira, indice)
+  return { ...sorteado, dourado: sorteado.dourado || livre(indice - 1) || livre(indice + 1) }
 }
 
 function larguraComEscala(natural: number, escala: number): number {
@@ -283,9 +370,12 @@ export function montarPrateleiras(
    * não medido, ou nos testes), a fileira fica do tamanho de sempre.
    */
   larguraUtil?: number,
+  /** Os enfeites que a pessoa definiu ou moveu — vencem o sorteio do lugar. */
+  enfeites: readonly EnfeiteGravado[] = [],
 ): Prateleira[] {
   const livroNoLugar = new Map(estante.map((item) => [chaveDoLugar(item.livro), item]))
   const abertas = new Set(vagas.map(chaveDoLugar))
+  const gravados = new Map(enfeites.map((e) => [chaveDoLugar(e), e]))
 
   return Array.from({ length: quantidadeDePrateleiras }, (_, prateleira) => {
     const lugares = Array.from({ length: LUGARES_POR_PRATELEIRA }, (_, indice): Lugar => {
@@ -294,14 +384,15 @@ export function montarPrateleiras(
       if (item) return { tipo: 'livro', indice, item, largura: larguraDoLivro(item) }
       if (abertas.has(chave))
         return { tipo: 'vazio', indice, largura: larguraDoLugar(prateleira, indice) }
-      return enfeite(prateleira, indice)
+      const gravado = gravados.get(chave)
+      return gravado ? enfeiteGravado(gravado) : enfeite(prateleira, indice)
     })
 
-    // O enfeite que tem outro enfeite ao lado forma um grupo, e o grupo leva os
-    // filetes dourados — o que sobra de enfeite isolado só os leva se o sorteio
-    // pedir.
+    // O enfeite sorteado que tem outro enfeite ao lado forma um grupo, e o grupo leva
+    // os filetes dourados — o que sobra de enfeite isolado só os leva se o sorteio
+    // pedir. O gravado leva só o que a pessoa deixou.
     const lugaresComGrupo = lugares.map((l, i): Lugar =>
-      l.tipo === 'enfeite'
+      l.tipo === 'enfeite' && !l.gravado
         ? {
             ...l,
             dourado:

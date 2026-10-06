@@ -111,6 +111,41 @@ export interface Vaga {
 }
 
 /**
+ * Um enfeite que a pessoa definiu ou moveu (07/10/2026). Antes dele o enfeite
+ * não existia no banco: todo lugar sem livro e sem vaga mostrava um, sorteado
+ * pelo lugar. Um registro aqui vence o sorteio daquele lugar — o enfeite
+ * continua sendo só visual (sem título, sem neurônio, fora do grafo), mas tem
+ * cor, forma e medidas como um livro.
+ *
+ * Nunca embaixo de um livro, como a vaga: nasce quando a pessoa edita ou move
+ * um enfeite, e some quando um livro chega ao lugar ou ela tira o enfeite.
+ */
+export interface EnfeiteGravado {
+  prateleira: number
+  /** O mesmo espaço de `Livro.ordem`: o lugar na prateleira. */
+  ordem: number
+  /** Um dos 10 tons de `PALETA_NOITE`, como o livro. */
+  cor: string
+  estilo: EstiloDaLombada
+  /** Em px. `null` é "a do sorteio deste lugar". */
+  larguraLombada: number | null
+  /** Em % da fileira. `null` é "a do sorteio deste lugar". */
+  comprimentoLombada: number | null
+  /** Os filetes dourados de acabamento. */
+  dourado: boolean
+  /**
+   * Os detalhes da forma (faixa, fio) em azul mais escuro que o fundo, em vez
+   * do tom claro de um livro: é o acabamento do enfeite sorteado, que um enfeite
+   * movido sem mudança de cor ou forma mantém. Escolher cor ou forma de novo o
+   * desliga — aí ele é desenhado como um livro.
+   */
+  detalheEscuro: boolean
+}
+
+/** O que viaja com o enfeite quando ele muda de lugar. */
+export type DadosDoEnfeite = Omit<EnfeiteGravado, 'prateleira' | 'ordem'>
+
+/**
  * O nome de uma prateleira — puramente visual. Não é um livro: não tem
  * neurônio, não entra no grafo, não participa da ordem dos livros. Uma
  * prateleira sem etiqueta simplesmente não tem registro aqui.
@@ -245,6 +280,12 @@ export interface PalacioSnapshot {
    * aqui fica, e nenhuma sobrevive embaixo de um livro.
    */
   vagas?: Vaga[] | undefined
+  /**
+   * Ausente em backups de antes de 07/10/2026 (enfeites editáveis) — o import
+   * trata como `[]`. Funde como as vagas: o enfeite do arquivo entra, o que só
+   * existe aqui fica, e nenhum sobrevive embaixo de um livro.
+   */
+  enfeites?: EnfeiteGravado[] | undefined
   /**
    * Ausente em backups de antes das pastas de acervo (24/09/2026) — o import
    * trata como `[]`. Os vínculos não vêm: são recalculados na chegada, como o

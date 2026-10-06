@@ -1,4 +1,4 @@
-import type { Id, Vaga } from './types'
+import type { DadosDoEnfeite, EnfeiteGravado, Id, Vaga } from './types'
 
 /**
  * Os lugares de uma prateleira.
@@ -108,6 +108,35 @@ function vagaMaisProxima(ocupados: ReadonlyMap<number, Id>, alvo: number): numbe
  * O lugar que o livro deixou **fica aberto**. Quem grava é que decide se ele
  * vira vaga à mostra (ver `DexieRepo.moverLivro`); aqui ninguém volta sozinho.
  */
+/**
+ * Quem anda para o lugar `alvo` ficar livre: a fila inteira até o buraco mais
+ * perto, um lugar para o lado. Mapa vazio se o lugar já estava livre; `null` se
+ * a prateleira não tem buraco nenhum.
+ */
+function empurrarParaAbrir(
+  ocupados: ReadonlyMap<number, Id>,
+  alvo: number,
+): Map<Id, number> | null {
+  const novoLugar = new Map<Id, number>()
+  if (!ocupados.has(alvo)) return novoLugar
+
+  const livre = vagaMaisProxima(ocupados, alvo)
+  if (livre === null) return null
+
+  if (livre > alvo) {
+    for (let k = livre - 1; k >= alvo; k -= 1) {
+      const empurrado = ocupados.get(k)
+      if (empurrado !== undefined) novoLugar.set(empurrado, k + 1)
+    }
+  } else {
+    for (let k = livre + 1; k <= alvo; k += 1) {
+      const empurrado = ocupados.get(k)
+      if (empurrado !== undefined) novoLugar.set(empurrado, k - 1)
+    }
+  }
+  return novoLugar
+}
+
 export function moverLivroNaEstante<T extends NoLugar>(
   livros: readonly T[],
   id: Id,
@@ -117,25 +146,8 @@ export function moverLivroNaEstante<T extends NoLugar>(
   if (!livros.some((l) => l.id === id)) return [...livros]
 
   const alvo = dentro(lugar)
-  const ocupados = ocupacao(livros, prateleiraDestino, id)
-  const novoLugar = new Map<Id, number>()
-
-  if (ocupados.has(alvo)) {
-    const livre = vagaMaisProxima(ocupados, alvo)
-    if (livre === null) return null
-
-    if (livre > alvo) {
-      for (let k = livre - 1; k >= alvo; k -= 1) {
-        const empurrado = ocupados.get(k)
-        if (empurrado !== undefined) novoLugar.set(empurrado, k + 1)
-      }
-    } else {
-      for (let k = livre + 1; k <= alvo; k += 1) {
-        const empurrado = ocupados.get(k)
-        if (empurrado !== undefined) novoLugar.set(empurrado, k - 1)
-      }
-    }
-  }
+  const novoLugar = empurrarParaAbrir(ocupacao(livros, prateleiraDestino, id), alvo)
+  if (novoLugar === null) return null
 
   novoLugar.set(id, alvo)
 
@@ -167,4 +179,83 @@ export function vagasDepoisDeMover(
   }
 
   return resultado
+}
+
+/** O que a estante grava além dos livros: os lugares abertos e os enfeites definidos. */
+export interface LugaresDaEstante<T extends NoLugar> {
+  livros: T[]
+  vagas: Vaga[]
+  enfeites: EnfeiteGravado[]
+}
+
+/**
+ * Os enfeites gravados depois de livros chegarem a lugares: nenhum sobrevive
+ * embaixo de um livro — a mesma regra das vagas (`vagasDepoisDeMover`).
+ */
+export function enfeitesSemLivroEmCima(
+  enfeites: readonly EnfeiteGravado[],
+  livros: readonly NoLugar[],
+): EnfeiteGravado[] {
+  const ocupados = new Set(livros.map(chaveDoLugar))
+  return enfeites.filter((e) => !ocupados.has(chaveDoLugar(e)))
+}
+
+/**
+ * Põe o enfeite do lugar `origem` no lugar `destino`, com as mesmas regras do
+ * livro (escolha do usuário, 07/10/2026):
+ *
+ * - Destino sem livro (outro enfeite, ou vaga): só o enfeite se move, e o que
+ *   estava ali — o enfeite de lá, ou a vaga — dá lugar a ele.
+ * - Destino com livro: a fila empurra até o buraco mais perto, como entre livros.
+ *   Prateleira sem buraco: `null`, e nada muda.
+ *
+ * O lugar de onde o enfeite saiu **fica aberto** (vaga) — nada anda sozinho —, a
+ * não ser que um livro empurrado tenha chegado a ele. `dados` é o que a tela
+ * mostrava no enfeite: sorteado ou gravado, ele vai com a mesma cara.
+ */
+export function moverEnfeiteNaEstante<T extends NoLugar>(
+  estado: {
+    livros: readonly T[]
+    vagas: readonly Vaga[]
+    enfeites: readonly EnfeiteGravado[]
+  },
+  origem: Vaga,
+  destino: Vaga,
+  dados: DadosDoEnfeite,
+): LugaresDaEstante<T> | null {
+  const alvo = dentro(destino.ordem)
+  if (origem.prateleira === destino.prateleira && origem.ordem === alvo) {
+    return {
+      livros: [...estado.livros],
+      vagas: [...estado.vagas],
+      enfeites: [...estado.enfeites],
+    }
+  }
+
+  const novoLugar = empurrarParaAbrir(ocupacao(estado.livros, destino.prateleira), alvo)
+  if (novoLugar === null) return null
+
+  const livros = estado.livros.map((l) => {
+    const lugar = novoLugar.get(l.id)
+    return lugar === undefined ? l : { ...l, prateleira: destino.prateleira, ordem: lugar }
+  })
+  const ocupados = new Set(livros.map(chaveDoLugar))
+  const chaveDaOrigem = chaveDoLugar(origem)
+  const chaveDoAlvo = chaveDoLugar({ prateleira: destino.prateleira, ordem: alvo })
+
+  const enfeites = estado.enfeites.filter((e) => {
+    const chave = chaveDoLugar(e)
+    return chave !== chaveDaOrigem && chave !== chaveDoAlvo && !ocupados.has(chave)
+  })
+  enfeites.push({ ...dados, prateleira: destino.prateleira, ordem: alvo })
+
+  const vagas = estado.vagas.filter((v) => {
+    const chave = chaveDoLugar(v)
+    return chave !== chaveDoAlvo && !ocupados.has(chave)
+  })
+  if (!ocupados.has(chaveDaOrigem) && !vagas.some((v) => chaveDoLugar(v) === chaveDaOrigem)) {
+    vagas.push({ prateleira: origem.prateleira, ordem: origem.ordem })
+  }
+
+  return { livros, vagas, enfeites }
 }

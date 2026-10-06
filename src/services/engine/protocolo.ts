@@ -1,5 +1,7 @@
 import type {
   CriarAnexoInput,
+  DadosDoEnfeite,
+  EnfeiteGravado,
   CriarLivroInput,
   CriarNeuronioInput,
   EditarAnexoInput,
@@ -39,8 +41,10 @@ export interface RespostasDoMotor {
   editarLivro: Livro[]
   apagarLivro: EstadoDoPalacio
   moverLivro: EstanteGravada
-  tirarEnfeite: Vaga[]
-  porEnfeite: Vaga[]
+  tirarEnfeite: EstanteGravada
+  porEnfeite: EstanteGravada
+  salvarEnfeite: EstanteGravada
+  moverEnfeite: EstanteGravada
   definirQuantidadeDePrateleiras: number
   definirIntensidadeDaLuz: number
   definirModoDaBusca: ModoDaBusca
@@ -79,6 +83,8 @@ export type ParaMotor =
   | { req: number; tipo: 'moverLivro'; id: Id; prateleira: number; lugar: number }
   | { req: number; tipo: 'tirarEnfeite'; prateleira: number; lugar: number }
   | { req: number; tipo: 'porEnfeite'; prateleira: number; lugar: number }
+  | { req: number; tipo: 'salvarEnfeite'; enfeite: EnfeiteGravado }
+  | { req: number; tipo: 'moverEnfeite'; origem: Vaga; destino: Vaga; dados: DadosDoEnfeite }
   | { req: number; tipo: 'definirQuantidadeDePrateleiras'; quantidade: number }
   | { req: number; tipo: 'definirIntensidadeDaLuz'; valor: number }
   | { req: number; tipo: 'definirModoDaBusca'; modo: ModoDaBusca }

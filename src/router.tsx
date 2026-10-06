@@ -6,6 +6,7 @@ import Anexo from '@/pages/Anexo'
 import Busca from '@/pages/Busca'
 import Editar from '@/pages/Editar'
 import EditarAnexo from '@/pages/EditarAnexo'
+import EditarEnfeite from '@/pages/EditarEnfeite'
 import EditarLivro from '@/pages/EditarLivro'
 import Estante from '@/pages/Estante'
 import Livro from '@/pages/Livro'
@@ -31,6 +32,7 @@ export const router = createBrowserRouter([
       { index: true, element: <Estante /> },
       { path: 'livro/:livroId', element: <Livro /> },
       { path: 'livro/:livroId/editar', element: <EditarLivro /> },
+      { path: 'enfeite/:prateleira/:lugar/editar', element: <EditarEnfeite /> },
       { path: 'rede', element: <Rede /> },
       { path: 'novo', element: <Novo /> },
       { path: 'novo-livro', element: <NovoLivro /> },

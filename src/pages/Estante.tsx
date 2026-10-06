@@ -30,6 +30,7 @@ export default function Estante() {
   const {
     livros,
     vagas,
+    enfeites,
     neuronios,
     conexoes,
     anexos,
@@ -38,6 +39,7 @@ export default function Estante() {
     quantidadeDePrateleiras,
     intensidadeDaLuz,
     moverLivro,
+    moverEnfeite,
     apagarLivro,
     tirarEnfeite,
     porEnfeite,
@@ -124,6 +126,7 @@ export default function Estante() {
         <Movel
           estante={estante}
           vagas={vagas}
+          enfeites={enfeites}
           pontes={pontes}
           selecionadoId={selecionadoId}
           lugarEscolhido={lugarEscolhido}
@@ -151,6 +154,9 @@ export default function Estante() {
           }}
           onAcoesDoLugar={(prateleira, lugar) => {
             abrir({ tipo: 'lugar', prateleira, lugar })
+          }}
+          onMoverEnfeite={(origem, destino, dados) => {
+            void moverEnfeite(origem, destino, dados)
           }}
         />
 
