@@ -4768,6 +4768,22 @@ Mapa de longe e de perto nos dois temas; as 13 conferências de arrastar ilha e
 neurônio continuam passando. 422 testes (2 novos: o hexágono e os vértices),
 typecheck e lint limpos.
 
+## Enquadrar no Mapa anima a volta (05/10/2026)
+
+Pedido do usuário: tocar numa ilha de longe aproxima com animação, mas voltar à
+visão do arquipélago inteiro (o botão "Enquadrar") pulava de uma vez. Agora, no
+Mapa, esse botão leva a câmera de volta com a mesma animação e a mesma duração
+(450 ms) da aproximação, e `prefers-reduced-motion` continua indo direto.
+
+`TelaDoMapa` expõe `voltarAoInicio` (animado) como o `enquadrar` do
+`ControleDaTela`. O `enquadrar` instantâneo continua existindo por dentro, só
+para a abertura e para quando o arquipélago muda de forma — ali pular é o
+certo, não há câmera de onde sair. A Rede não mudou: o botão dela segue
+instantâneo.
+
+**Não verificado num navegador de verdade nesta sessão.** Typecheck e lint
+limpos.
+
 ## Fases
 
 0. ✅ Esqueleto (Vite/React/TS/Tailwind/PWA/Capacitor)

@@ -454,6 +454,12 @@ export function TelaDoMapa({
     if (alvo) levarAte(alvo, DURACAO_DA_APROXIMACAO)
   }
 
+  /** "Enquadrar": volta à visão do arquipélago inteiro com a mesma animação de aproximar. */
+  const voltarAoInicio = useCallback(() => {
+    const alvo = enquadramento(bordasDoMapa(cenaRef.current.mapa), ESCALA_MINIMA)
+    if (alvo) levarAte(alvo, DURACAO_DA_APROXIMACAO)
+  }, [enquadramento, levarAte])
+
   /** O neurônio que acabou de nascer: a câmera vai até ele, e ele fica tocado. */
   const revelar = useCallback(
     (id: Id) => {
@@ -466,7 +472,12 @@ export function TelaDoMapa({
     [cameraEm, levarAte, onSelecionar],
   )
 
-  useImperativeHandle(controle, () => ({ enquadrar, focar, revelar }), [enquadrar, focar, revelar])
+  // O botão de enquadrar anima; o `enquadrar` instantâneo é só da abertura.
+  useImperativeHandle(controle, () => ({ enquadrar: voltarAoInicio, focar, revelar }), [
+    voltarAoInicio,
+    focar,
+    revelar,
+  ])
 
   // Enquadra ao abrir e quando o arquipélago muda de forma (ilha nova, ilha
   // que sumiu); o resto só repinta — o mapa não pode pular sozinho.
