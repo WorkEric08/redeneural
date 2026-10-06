@@ -4607,7 +4607,7 @@ Pedido do usuário: rever o app inteiro atrás de itens fora do padrão mobile e
 padrão do projeto, e, nas folhas (bottom sheets), fazer a lista rolar em vez de a
 folha crescer até o topo.
 
-- **A folha para na metade da tela** (`.folha`, abaixo de 768 px):
+- **A folha para na metade da tela** (`.folha`, abaixo de 768 px; **substituído em 05/10/2026** pelas paradas de altura — ver "Folhas que se esticam"):
   `max-height: min(max(50dvh, 300px), 88dvh)`, e o `.folha-corpo` rola por dentro,
   com a alça fixa em cima. Antes era 88dvh — uma lista de livros chegava quase
   ao topo. O piso de 300 px é para tela baixa e para o teclado aberto, que
@@ -4674,6 +4674,68 @@ reorganizar — todas cabem sem rolar. Em 320×568 (folha de 300 px) o espiar, o
 andamento e as listas de livros ainda rolam, como esperado nessa altura.
 Nenhuma rolagem lateral; nenhum erro no console. 420 testes, typecheck e lint
 limpos.
+
+## Folhas que se esticam, como os sheets do Spotify (05/10/2026)
+
+Pedido do usuário: as folhas passam a crescer conforme o conteúdo, com duas
+paradas de altura e o efeito de esticar. **Isto substitui o teto fixo de metade
+da tela** da auditoria de 02/10/2026 (`max-height: min(max(50dvh, 300px), 88dvh)`):
+a metade virou a altura em que a folha **abre**, e não o máximo dela. A
+compactação das folhas (duas colunas, espiar com 3 neurônios, etc.) fica, porque
+faz mais folhas caberem na parada de baixo sem precisar esticar.
+
+### Como se comporta (só abaixo de 768 px)
+
+- **Abre pela metade** da tela (piso de 300 px) — ou no tamanho do conteúdo, se
+  ele for menor. Folha curta não estica e não rola (apagar, reorganizar, ações).
+- **Passando da metade, a folha se estica**: puxar para cima, na alça ou no
+  corpo, leva até 92% da tela (ou ao tamanho do conteúdo, se for menor). Pela
+  metade a lista **não rola** — o dedo que sobe estica. Só na parada de cima a
+  lista rola por dentro.
+- **Elástico:** passou de 92%, a folha segue o dedo a 35% e no máximo 36 px; ao
+  soltar volta macia para a parada (a transição de altura passa um fio e volta).
+- **Fechar é em etapas:** com a lista no topo, descer recolhe para a metade;
+  descer de novo (ou da metade, descer pelo corpo) escorrega e fecha. Rápido o
+  bastante, o gesto pula a parada para onde o dedo apontou (0,35 px/ms) ou fecha
+  (0,6 px/ms). A alça, o toque no fundo escurecido, o Esc e o voltar do Android
+  continuam fechando direto.
+- **Com a lista rolada**, descer só rola de volta: o gesto de recolher exige a
+  lista no topo **no começo do toque**.
+- Do tablet em diante é diálogo centralizado, sem paradas, como antes.
+
+### Onde mora
+
+`components/Folha.tsx`. A altura e o `transform` vão direto no elemento (sem
+passar pelo React), e só na soltura entra a transição (`.folha--solta`). Um
+`ResizeObserver` no `.folha-conteudo` refaz as paradas quando o conteúdo muda de
+tamanho (a lista carrega, um campo some) e `resize` refaz quando a tela gira ou
+o teclado abre. O `<dialog>` fechado não tem tamanho, então a medida acontece
+depois do `showModal`, num `useLayoutEffect` — antes de pintar. O CSS lê dois
+atributos que o componente escreve (`data-expansivel`, `data-altura`):
+pela metade e com mais por ver, `overflow: hidden` e `touch-action: none`.
+
+O gesto do corpo usa `touchmove` **sem passividade**: depois que a rolagem
+nativa começa, o navegador não deixa cancelá-la. A direção do dedo no começo
+(mais de 6 px, mais vertical que horizontal) decide: sobe com a folha pela
+metade → estica; desce com a lista no topo → recolhe; o resto é rolagem comum.
+Uma fileira que rola de lado (as pontes do espiar) continua sua, porque o gesto
+horizontal nunca vira do sheet. Mouse só arrasta pela alça.
+
+### Verificado
+
+No navegador de verdade (build de produção, toque por CDP, 412×892, com 40
+livros a mais para a lista passar de uma tela): abre pela metade e a lista não
+rola; subir estica até 821 px (92%) e aí a lista rola (scrollTop 298); descer
+com a lista rolada só rola de volta; com ela no topo, recolhe para 446 px;
+arrastar muito além do topo estica só até 857 px e volta a 821 ao soltar; a alça
+recolhe e depois fecha; reabrir volta pela metade sem herdar o arrasto; do meio,
+descer pelo corpo fecha; folha curta não muda ao subir e fecha ao descer; tocar
+numa opção ainda escolhe; em 1440×900 continua diálogo. 420 testes, typecheck e
+lint limpos.
+
+**Não verificado num aparelho de verdade:** o teclado aberto numa folha com
+campo (o único é "Criar livro executável", dentro da escolha do porto) e o
+ritmo do elástico sob um dedo real.
 
 ## Fases
 

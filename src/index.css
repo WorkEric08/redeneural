@@ -1752,10 +1752,10 @@ img {
   inset: auto 0 0 0;
   width: 100%;
   max-width: 100%;
-  /* Metade da tela, e daí em diante o corpo rola (`.folha-corpo`): uma lista
-     comprida não deixa a folha crescer até o topo. O piso de 300px é para
-     tela baixa e para o teclado aberto, que encolhe o `dvh`. */
-  max-height: min(max(50dvh, 300px), 88dvh);
+  /* A altura de verdade vem de Folha.tsx, que a põe direto no elemento: abre
+     pela metade da tela (ou no tamanho do conteúdo, se menor) e estica até 92% —
+     os 40px a mais deste teto são a folga do efeito elástico. */
+  max-height: calc(92dvh + 40px);
   margin: 0;
   padding: 0;
   border: 0;
@@ -1782,7 +1782,10 @@ img {
    abrir: `transform` de animação vence `transform` de transição na mesma
    propriedade, e as duas nunca tocam o dedo na mesma janela de tempo. */
 .folha--solta {
-  transition: transform 220ms cubic-bezier(0.2, 0.8, 0.2, 1);
+  /* A altura passa um fio da parada e volta: é o "esticar" ao soltar. */
+  transition:
+    transform 220ms cubic-bezier(0.2, 0.8, 0.2, 1),
+    height 320ms cubic-bezier(0.2, 0.9, 0.25, 1.08);
 }
 
 .folha::backdrop {
@@ -1818,9 +1821,24 @@ img {
 }
 
 .folha-corpo {
+  flex: 1 1 auto;
+  min-height: 0;
   overflow-y: auto;
   overscroll-behavior: contain;
   padding: 0 20px calc(20px + env(safe-area-inset-bottom));
+}
+
+/* Quem mede o conteúdo (Folha.tsx): `flow-root` segura as margens dos filhos
+   dentro dele, senão a altura medida sairia menor que a real. */
+.folha-conteudo {
+  display: flow-root;
+}
+
+/* Pela metade e com mais por ver, o dedo que sobe estica a folha em vez de
+   rolar a lista — então a lista não rola e o navegador não disputa o gesto. */
+.folha[data-expansivel='true'][data-altura='meio'] .folha-corpo {
+  overflow-y: hidden;
+  touch-action: none;
 }
 
 @keyframes folha-subir {

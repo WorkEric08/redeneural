@@ -1,6 +1,7 @@
 import {
   useCallback,
   useEffect,
+  useLayoutEffect,
   useRef,
   type PointerEvent as EventoDePonteiro,
   type ReactNode,
@@ -14,12 +15,51 @@ interface Props {
   children: ReactNode
 }
 
+/** Só o celular tem paradas de altura; do tablet em diante é diálogo centralizado. */
+const CONSULTA_DO_CELULAR = '(max-width: 767.98px)'
+/** Altura em que a folha abre: metade da tela, com um piso para tela baixa e teclado aberto. */
+const FRACAO_DO_MEIO = 0.5
+const PISO_DO_MEIO_PX = 300
+/** Altura máxima, depois de esticada: perto do topo, sem encostar nele. */
+const FRACAO_DA_CHEIA = 0.92
+/** Entre as duas paradas só há o que esticar se a diferença for visível. */
+const DIFERENCA_MINIMA_PX = 8
+/** Passou da parada de cima, o dedo continua mandando, mas a folha só segue uma fração. */
+const RESISTENCIA_DO_ESTICAR = 0.35
+const ESTICAR_MAXIMO_PX = 36
 /** Arrastou mais que isto (ou até a metade da folha, se ela for baixa) — fecha. */
-const LIMIAR_PADRAO = 96
+const LIMIAR_PARA_FECHAR_PX = 96
 /** Ou soltou rápido, mesmo sem chegar lá — é o gesto de "jogar fora", não de medir. */
 const VELOCIDADE_PARA_FECHAR = 0.6 // px/ms
+/** Soltou rápido entre as duas paradas: vai para a que o dedo apontou. */
+const VELOCIDADE_PARA_TROCAR = 0.35 // px/ms
+/** Quanto o dedo anda no corpo antes de o gesto virar do sheet (e não um toque). */
+const LIMIAR_DO_GESTO_PX = 6
 /** Tempo do arremate: a folha termina de sair antes de a store desmontar o diálogo. */
 const DURACAO_DO_ARREMATE_MS = 190
+
+type Parada = 'meio' | 'cheio'
+
+interface Paradas {
+  meio: number
+  cheio: number
+  /** Há duas alturas de verdade: a folha abre pela metade e se estica. */
+  expansivel: boolean
+}
+
+interface Arrasto {
+  pointerId: number | null
+  y0: number
+  /** A altura da folha quando o dedo desceu. */
+  h0: number
+  /** Onde a folha está agora: altura, e quanto já escorregou para fora da tela. */
+  h: number
+  ty: number
+  yAnterior: number
+  tAnterior: number
+  /** px/ms, suavizada; positiva é para baixo. */
+  velocidade: number
+}
 
 /**
  * Painel que sobe de baixo no celular e vira diálogo a partir do tablet
@@ -31,33 +71,86 @@ const DURACAO_DO_ARREMATE_MS = 190
  * sem dependência. Quem decide se está aberto é quem chama, pela URL; esta
  * folha só obedece.
  *
- * A alça arrasta o `<dialog>` de verdade: `transform` vai direto no elemento a
- * cada quadro (sem passar pelo React, como o fantasma da estante), e só na
- * soltura entra uma transição — puxar tem que ser instantâneo, e soltar,
- * macio. Ela fica **fora** de `.folha-corpo` (que rola), fixa acima do
- * conteúdo: se o painel tiver uma lista comprida, a alça continua ali.
+ * **Duas paradas de altura** (02/10/2026, no molde dos sheets do Spotify): a
+ * folha abre pela metade da tela — ou no tamanho do conteúdo, se ele for menor —
+ * e, se o conteúdo passa disso, **estica** até perto do topo ao ser puxada para
+ * cima. Só na parada de cima a lista rola por dentro; antes disso o dedo que sobe
+ * estica a folha, e o que desce a recolhe, e depois de recolhida, fecha. O
+ * efeito elástico: passou da parada de cima, a folha segue o dedo a uma fração e
+ * volta macia ao soltar.
+ *
+ * O gesto vale na alça e no corpo. A altura e o `transform` vão direto no
+ * elemento a cada quadro (sem passar pelo React, como o fantasma da estante), e
+ * só na soltura entra uma transição — puxar tem que ser instantâneo, e soltar,
+ * macio. A alça fica **fora** de `.folha-corpo` (que rola): se o painel tiver uma
+ * lista comprida, ela continua ali.
  */
 export function Folha({ aberta, rotulo, onFechar, children }: Props) {
   const dialogo = useRef<HTMLDialogElement>(null)
+  const alca = useRef<HTMLDivElement>(null)
   const corpo = useRef<HTMLDivElement>(null)
-  const arrasto = useRef<{
-    pointerId: number
-    y0: number
-    t0: number
-    dy: number
-    limiar: number
-  } | null>(null)
-
-  const posicionar = useCallback(
-    (d: HTMLDialogElement | null, dy: number, comTransicao: boolean) => {
-      if (!d) return
-      d.classList.toggle('folha--solta', comTransicao)
-      d.style.transform = dy > 0 ? `translateY(${String(dy)}px)` : ''
-    },
-    [],
-  )
+  const conteudo = useRef<HTMLDivElement>(null)
+  const paradas = useRef<Paradas>({ meio: 0, cheio: 0, expansivel: false })
+  const parada = useRef<Parada>('meio')
+  const arrasto = useRef<Arrasto | null>(null)
+  const fechar = useRef(onFechar)
 
   useEffect(() => {
+    fechar.current = onFechar
+  })
+
+  /** Altura e deslocamento da folha. Com `comTransicao`, o movimento é macio. */
+  const aplicar = useCallback((altura: number | null, ty: number, comTransicao: boolean) => {
+    const d = dialogo.current
+    if (!d) return
+    d.classList.toggle('folha--solta', comTransicao)
+    if (altura !== null) d.style.height = `${String(altura)}px`
+    d.style.transform = ty > 0 ? `translateY(${String(ty)}px)` : ''
+  }, [])
+
+  /**
+   * Mede o conteúdo e posiciona a folha na parada em que está. Roda quando abre,
+   * quando o conteúdo muda de tamanho e quando a tela gira ou o teclado abre.
+   * Fechado o `<dialog>` não tem tamanho nenhum, então só mede aberto.
+   */
+  const medir = useCallback(() => {
+    const d = dialogo.current
+    const a = alca.current
+    const c = corpo.current
+    const cont = conteudo.current
+    if (!d || !a || !c || !cont || !d.open || arrasto.current) return
+
+    if (!window.matchMedia(CONSULTA_DO_CELULAR).matches) {
+      d.style.height = ''
+      d.dataset.expansivel = 'false'
+      return
+    }
+
+    const estilo = getComputedStyle(c)
+    const natural =
+      a.offsetHeight +
+      parseFloat(estilo.paddingTop) +
+      parseFloat(estilo.paddingBottom) +
+      cont.offsetHeight
+    const tela = window.innerHeight
+    const tetoDoMeio = Math.min(
+      Math.max(tela * FRACAO_DO_MEIO, PISO_DO_MEIO_PX),
+      tela * FRACAO_DA_CHEIA,
+    )
+    const meio = Math.min(natural, tetoDoMeio)
+    const cheio = Math.min(natural, tela * FRACAO_DA_CHEIA)
+    const expansivel = cheio - meio > DIFERENCA_MINIMA_PX
+
+    paradas.current = { meio, cheio: expansivel ? cheio : meio, expansivel }
+    if (!expansivel) parada.current = 'meio'
+    d.dataset.expansivel = String(expansivel)
+    d.dataset.altura = parada.current
+    d.style.height = `${String(paradas.current[parada.current])}px`
+  }, [])
+
+  // Abre antes de pintar: o <dialog> fechado não tem tamanho, e medir depois do
+  // primeiro quadro mostraria a folha com a altura do conteúdo por um instante.
+  useLayoutEffect(() => {
     const d = dialogo.current
     if (!d) return
 
@@ -73,53 +166,193 @@ export function Folha({ aberta, rotulo, onFechar, children }: Props) {
       // Fechar arrastando deixa a folha empurrada para fora da tela. Sem
       // zerar aqui, uma folha de rótulo fixo (os filtros da Rede) reabria só
       // com o fundo desfocado, e o painel preso lá embaixo.
-      posicionar(d, 0, false)
+      parada.current = 'meio'
+      aplicar(null, 0, false)
       d.showModal()
+      medir()
     }
     if (!aberta && d.open) d.close()
-  }, [aberta, posicionar])
+  }, [aberta, aplicar, medir])
 
   // Some quando o painel troca (do menu para "renomear", por exemplo): a folha
-  // de baixo não pode herdar o arrasto da de cima.
+  // de baixo não pode herdar o arrasto, nem a altura, da de cima.
   useEffect(() => {
-    posicionar(dialogo.current, 0, false)
-  }, [rotulo, posicionar])
+    parada.current = 'meio'
+    aplicar(null, 0, false)
+    medir()
+  }, [rotulo, aplicar, medir])
+
+  // O conteúdo muda de tamanho sozinho (a lista carrega, um campo some), e a tela
+  // também (gira, teclado): as paradas se refazem.
+  useEffect(() => {
+    const cont = conteudo.current
+    if (!cont) return
+    const observador = new ResizeObserver(medir)
+    observador.observe(cont)
+    window.addEventListener('resize', medir)
+    return () => {
+      observador.disconnect()
+      window.removeEventListener('resize', medir)
+    }
+  }, [medir])
+
+  const iniciar = useCallback((y: number, pointerId: number | null) => {
+    const d = dialogo.current
+    if (!d) return
+    const h0 = d.offsetHeight
+    arrasto.current = {
+      pointerId,
+      y0: y,
+      h0,
+      h: h0,
+      ty: 0,
+      yAnterior: y,
+      tAnterior: performance.now(),
+      velocidade: 0,
+    }
+  }, [])
+
+  const mover = useCallback(
+    (y: number) => {
+      const a = arrasto.current
+      if (!a) return
+      const agora = performance.now()
+      const instantanea = (y - a.yAnterior) / Math.max(1, agora - a.tAnterior)
+      a.velocidade = a.velocidade * 0.6 + instantanea * 0.4
+      a.yAnterior = y
+      a.tAnterior = agora
+
+      const p = paradas.current
+      let h = a.h0 - (y - a.y0)
+      let ty = 0
+      if (h < p.meio) {
+        // Passou da parada de baixo: a folha deixa de encolher e começa a sair.
+        ty = p.meio - h
+        h = p.meio
+      } else if (h > p.cheio) {
+        h = p.expansivel
+          ? p.cheio + Math.min((h - p.cheio) * RESISTENCIA_DO_ESTICAR, ESTICAR_MAXIMO_PX)
+          : p.cheio
+      }
+      a.h = h
+      a.ty = ty
+      aplicar(h, ty, false)
+    },
+    [aplicar],
+  )
+
+  const soltar = useCallback(() => {
+    const a = arrasto.current
+    const d = dialogo.current
+    if (!a || !d) return
+    arrasto.current = null
+    const p = paradas.current
+
+    if (a.ty > 0) {
+      const limiar = Math.min(LIMIAR_PARA_FECHAR_PX, p.meio / 2)
+      if (a.ty > limiar || a.velocidade > VELOCIDADE_PARA_FECHAR) {
+        // Termina de sair sozinha antes de pedir o fechamento de verdade —
+        // soltar não pode parecer que o painel travou no meio do caminho.
+        aplicar(null, d.offsetHeight, true)
+        window.setTimeout(() => {
+          fechar.current()
+        }, DURACAO_DO_ARREMATE_MS)
+      } else {
+        aplicar(p.meio, 0, true)
+      }
+      return
+    }
+
+    let alvo: Parada = 'meio'
+    if (p.expansivel) {
+      if (a.velocidade < -VELOCIDADE_PARA_TROCAR) alvo = 'cheio'
+      else if (a.velocidade > VELOCIDADE_PARA_TROCAR) alvo = 'meio'
+      else alvo = a.h - p.meio > p.cheio - a.h ? 'cheio' : 'meio'
+    }
+    parada.current = alvo
+    d.dataset.altura = alvo
+    aplicar(p[alvo], 0, true)
+  }, [aplicar])
+
+  // O corpo também puxa a folha, com toque. Tem que ser `touchmove` sem
+  // passividade: depois que a rolagem nativa começa o navegador não deixa
+  // cancelá-la, e quem decide aqui é a direção do dedo no começo do gesto —
+  //  - sobe com a folha pela metade: estica, em vez de rolar;
+  //  - desce com a lista no topo: recolhe (e, recolhida, fecha);
+  //  - o resto é rolagem comum da lista.
+  useEffect(() => {
+    const c = corpo.current
+    if (!c) return
+    let gesto: {
+      x0: number
+      y0: number
+      noTopo: boolean
+      modo: 'arrasto' | 'nativo' | null
+    } | null = null
+
+    const aoTocar = (evento: TouchEvent): void => {
+      const dedo = evento.touches[0]
+      if (evento.touches.length !== 1 || !dedo || !window.matchMedia(CONSULTA_DO_CELULAR).matches) {
+        gesto = null
+        return
+      }
+      gesto = { x0: dedo.clientX, y0: dedo.clientY, noTopo: c.scrollTop <= 0, modo: null }
+    }
+
+    const aoMover = (evento: TouchEvent): void => {
+      const dedo = evento.touches[0]
+      if (!gesto || !dedo) return
+      if (gesto.modo === null) {
+        const dx = dedo.clientX - gesto.x0
+        const dy = dedo.clientY - gesto.y0
+        if (Math.hypot(dx, dy) < LIMIAR_DO_GESTO_PX) return
+        const sobe = dy < 0
+        const puxa =
+          Math.abs(dy) > Math.abs(dx) &&
+          (sobe ? paradas.current.expansivel && parada.current === 'meio' : gesto.noTopo)
+        if (!puxa) {
+          gesto.modo = 'nativo'
+          return
+        }
+        gesto.modo = 'arrasto'
+        iniciar(dedo.clientY, null)
+      }
+      if (gesto.modo === 'arrasto') {
+        if (evento.cancelable) evento.preventDefault()
+        mover(dedo.clientY)
+      }
+    }
+
+    const aoSoltar = (): void => {
+      if (gesto?.modo === 'arrasto') soltar()
+      gesto = null
+    }
+
+    c.addEventListener('touchstart', aoTocar, { passive: true })
+    c.addEventListener('touchmove', aoMover, { passive: false })
+    c.addEventListener('touchend', aoSoltar)
+    c.addEventListener('touchcancel', aoSoltar)
+    return () => {
+      c.removeEventListener('touchstart', aoTocar)
+      c.removeEventListener('touchmove', aoMover)
+      c.removeEventListener('touchend', aoSoltar)
+      c.removeEventListener('touchcancel', aoSoltar)
+    }
+  }, [iniciar, mover, soltar])
 
   function aoSegurarAAlca(evento: EventoDePonteiro<HTMLDivElement>): void {
     evento.currentTarget.setPointerCapture(evento.pointerId)
-    const altura = dialogo.current?.offsetHeight ?? 0
-    arrasto.current = {
-      pointerId: evento.pointerId,
-      y0: evento.clientY,
-      t0: performance.now(),
-      dy: 0,
-      limiar: Math.min(LIMIAR_PADRAO, altura / 2),
-    }
+    iniciar(evento.clientY, evento.pointerId)
   }
 
   function aoArrastarAAlca(evento: EventoDePonteiro<HTMLDivElement>): void {
-    const a = arrasto.current
-    if (!a || evento.pointerId !== a.pointerId) return
-
-    a.dy = Math.max(0, evento.clientY - a.y0)
-    posicionar(dialogo.current, a.dy, false)
+    if (arrasto.current?.pointerId !== evento.pointerId) return
+    mover(evento.clientY)
   }
 
   function aoSoltarAAlca(evento: EventoDePonteiro<HTMLDivElement>): void {
-    const a = arrasto.current
-    if (!a || evento.pointerId !== a.pointerId) return
-    arrasto.current = null
-
-    const velocidade = a.dy / Math.max(1, performance.now() - a.t0)
-
-    if (a.dy > a.limiar || velocidade > VELOCIDADE_PARA_FECHAR) {
-      // Termina de sair sozinha antes de pedir o fechamento de verdade — soltar
-      // não pode parecer que o painel travou no meio do caminho.
-      posicionar(dialogo.current, dialogo.current?.offsetHeight ?? 400, true)
-      window.setTimeout(onFechar, DURACAO_DO_ARREMATE_MS)
-    } else {
-      posicionar(dialogo.current, 0, true)
-    }
+    if (arrasto.current?.pointerId !== evento.pointerId) return
+    soltar()
   }
 
   return (
@@ -139,6 +372,7 @@ export function Folha({ aberta, rotulo, onFechar, children }: Props) {
       }}
     >
       <div
+        ref={alca}
         className="folha-alca"
         aria-hidden
         onPointerDown={aoSegurarAAlca}
@@ -150,7 +384,9 @@ export function Folha({ aberta, rotulo, onFechar, children }: Props) {
       </div>
 
       <div ref={corpo} className="folha-corpo" tabIndex={-1}>
-        {children}
+        <div ref={conteudo} className="folha-conteudo">
+          {children}
+        </div>
       </div>
     </dialog>
   )
