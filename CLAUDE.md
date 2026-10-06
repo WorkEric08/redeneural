@@ -4957,9 +4957,13 @@ verticais, `2.jpg`) e o **estilo da base** (o pé de um armário de livros preto
 Revisa "O móvel" acima: o que dizia das pilastras (24 px à esquerda, 14 px à direita), do
 assoalho e do "estante em CSS, sem imagem" não vale mais.
 
-- **Laterais iguais:** as duas têm 18 px (`--mv-lateral`), o mesmo corte da madeira e a aresta
-  clara sempre do lado de dentro; a fileira vai de uma à outra (`margin-inline`), então a
+- **Laterais iguais:** as duas têm 18 px (`--mv-lateral`), o mesmo corte da madeira e a mesma
+  aresta de sombra (1 px, preta); a fileira vai de uma à outra (`margin-inline`), então a
   folga é a mesma dos dois lados — medido: 18/18 px, folga 0/0, em 320, 412, 768 e 1440.
+  **Sem linha de cor sólida:** a primeira versão tinha um fio azul (`#26357f`) na aresta de
+  dentro das laterais, que o usuário viu como "parte azul sólida"; saiu, e o friso de luz no
+  topo das tábuas também deixou de ser azul opaco (agora `rgb(150 180 255 / 0.3)`, com a
+  madeira aparecendo por baixo). Nenhum elemento da estrutura usa cor sólida: é madeira.
 - **Textura só na estrutura, nunca atrás dos livros** (pedido explícito): laterais, trilho
   de cima, tábuas e base. O fundo atrás dos livros segue liso (`#0B1230`). Dois arquivos em
   `src/assets`, ambos WebP derivados do mesmo original: `madeira-azul-v` (como veio, para as

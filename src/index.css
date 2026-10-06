@@ -227,10 +227,10 @@
   /* O móvel Noite. A madeira (as duas texturas de `src/assets`) veste a
      estrutura — laterais, trilho, tábuas e base —, nunca o fundo atrás dos livros. */
   --mv-parede: #0b1230;
-  --mv-tabua-linha: #3446a6;
+  /* O friso de luz no topo da tábua: translúcido, para a madeira aparecer por baixo. */
+  --mv-tabua-linha: rgb(150 180 255 / 0.3);
   --mv-ouro: #e8c471;
-  /* A aresta clara de uma peça de madeira, onde a luz pega. */
-  --mv-aresta: #26357f;
+  /* A aresta de uma peça de madeira: só sombra, nunca uma linha de cor sólida. */
   --mv-sombra: #03060f;
 }
 
@@ -680,7 +680,7 @@ img {
 }
 
 /* As duas laterais: madeira de veio na vertical, iguais — a mesma largura, o mesmo
-   corte da madeira, a aresta clara sempre do lado de dentro. */
+   corte da madeira e a mesma aresta de sombra. Sem linha azul sólida: é só madeira. */
 .movel-pilastra {
   position: absolute;
   top: 0;
@@ -689,19 +689,16 @@ img {
   background:
     linear-gradient(90deg, rgb(0 0 0 / 0.42), transparent 28%, transparent 72%, rgb(0 0 0 / 0.42)),
     url('./assets/madeira-azul-v.webp') 30% 0 / 330px auto;
+  border-inline: 1px solid var(--mv-sombra);
   box-shadow: 0 0 18px rgb(0 0 0 / 0.6);
 }
 
 .movel-pilastra--esq {
   left: 0;
-  border-right: 1px solid var(--mv-aresta);
-  border-left: 1px solid var(--mv-sombra);
 }
 
 .movel-pilastra--dir {
   right: 0;
-  border-right: 1px solid var(--mv-sombra);
-  border-left: 1px solid var(--mv-aresta);
 }
 
 /* A luz da sala cai de cima, por igual, e as bordas afundam na penumbra.
