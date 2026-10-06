@@ -5254,10 +5254,13 @@ miniatura de 320 px, sem os metadados da câmera), o mesmo desenho (`ImagemDoRes
   oferecer "Tornar executável"), de volta a um executável (recomeça em "para fazer") e depois
   por "Automático". 582 testes (9 novos de repositório, backup e migração, 4 da folha).
   Não verificado em toque real.
-- **A caixa do andamento e a do "Resultado" são iguais** (07/10/2026, pedido do usuário): o botão
-  do estado ("Feita") e o link "Resultado" têm a mesma largura (144 px), a mesma altura (44 px) e o
-  mesmo desenho de caixa (`CAIXA_DO_ANDAMENTO`, em `Neuronio.tsx`); o "Resultado" deixou de ser só
-  texto. Ficam lado a lado, e um sob o outro em 320 px; "Deixar de ser executável" vai por último.
+- **A caixa do andamento e a do "Resultado" são iguais e fixas** (07/10/2026, pedido do usuário):
+  o botão do estado ("Para fazer", "Fazendo", "Feita") e o "Resultado" têm **128 × 44 px** (`w-32`,
+  `CAIXA_DO_ANDAMENTO` em `Neuronio.tsx`), a mesma borda e o mesmo fundo, e o tamanho **não muda com o
+  status** (o texto mais longo, "Para fazer" com o ícone, cabe sem cortar). Numa grade de duas
+  colunas: o "Resultado" **sob** o andamento, e o "Deixar de ser executável" **à direita** do
+  andamento, como era — em 320 px o texto dele quebra em duas linhas. Medido em 320, 412 e 768 px,
+  nos três estados.
 - **Fora daqui:** mais de uma imagem por ideia, e imagem em ideia que não é executável (o
   resultado só existe em "feita").
 

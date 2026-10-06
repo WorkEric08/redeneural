@@ -21,11 +21,12 @@ import { ROTULO_DO_PORTO } from '@/features/porto/porto'
 import { usePalacio } from '@/store/palacio'
 
 /**
- * A caixa do andamento ("Feita") e a do "Resultado" são a mesma: a mesma largura, a mesma
- * altura e o mesmo desenho (07/10/2026, pedido do usuário) — uma ao lado da outra, ou uma
- * sob a outra quando a tela é estreita.
+ * A caixa do andamento ("Para fazer", "Fazendo", "Feita") e a do "Resultado" são a mesma:
+ * a mesma largura, a mesma altura e o mesmo desenho (07/10/2026, pedido do usuário), e
+ * **fixa** — o tamanho não muda com o status. 128 px cabem o mais longo ("Para fazer", com
+ * o ícone). O "Resultado" fica sob o andamento, e "Deixar de ser executável" ao lado.
  */
-const CAIXA_DO_ANDAMENTO = 'w-36 max-w-full'
+const CAIXA_DO_ANDAMENTO = 'w-32'
 
 /** O que a confirmação guarda no histórico para saber como sair depois de apagar. */
 interface EstadoDaConfirmacao {
@@ -281,14 +282,16 @@ export default function Neuronio() {
               </Link>
             )}
             {estado ? (
-              <>
+              // Duas colunas: o andamento e, sob ele, o resultado (a mesma caixa); ao lado do
+              // andamento, o "Deixar de ser executável".
+              <div className="grid w-full grid-cols-[max-content_minmax(0,1fr)] items-center gap-2">
                 <button
                   type="button"
                   onClick={() => {
                     abrir('estado')
                   }}
                   aria-label={`Andamento: ${ROTULO_DO_ESTADO[estado]}`}
-                  className={`${botao({ tipo: 'secundario', tamanho: 'pequeno' })} ${CAIXA_DO_ANDAMENTO}`}
+                  className={`${botao({ tipo: 'secundario', tamanho: 'pequeno' })} ${CAIXA_DO_ANDAMENTO} col-start-1 row-start-1`}
                 >
                   <IconeDoEstado estado={estado} tamanho={16} />
                   {ROTULO_DO_ESTADO[estado]}
@@ -298,7 +301,7 @@ export default function Neuronio() {
                     href={neuronio.resultadoLink}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className={`${botao({ tipo: 'secundario', tamanho: 'pequeno' })} ${CAIXA_DO_ANDAMENTO}`}
+                    className={`${botao({ tipo: 'secundario', tamanho: 'pequeno' })} ${CAIXA_DO_ANDAMENTO} col-start-1 row-start-2`}
                   >
                     <ExternalLink size={15} aria-hidden />
                     Resultado
@@ -310,12 +313,13 @@ export default function Neuronio() {
                     abrir('desfazer')
                   }}
                   disabled={ocupado || comuns.length === 0}
-                  className={botao({ tipo: 'fantasma', tamanho: 'pequeno' })}
+                  // Numa tela estreita o texto quebra em duas linhas, e o botão cresce.
+                  className={`${botao({ tipo: 'fantasma', tamanho: 'pequeno' })} col-start-2 row-start-1 h-auto! min-h-11 justify-self-start py-1 text-left`}
                 >
-                  <Undo2 size={15} aria-hidden />
-                  Deixar de ser executável
+                  <Undo2 size={15} aria-hidden className="shrink-0" />
+                  <span className="leading-tight">Deixar de ser executável</span>
                 </button>
-              </>
+              </div>
             ) : (
               <button
                 type="button"
