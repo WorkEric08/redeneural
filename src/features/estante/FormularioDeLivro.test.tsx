@@ -118,21 +118,22 @@ describe('FormularioDeLivro: enfeite', () => {
     return onEnviar
   }
 
-  it('mostra a largura e o comprimento que o enfeite tem, e nunca "automático"', () => {
-    montarEnfeite({ ...INICIAL, larguraLombada: 38, comprimentoLombada: 84.9652 })
+  it('mostra uma das quatro larguras e um dos quatro comprimentos, e nunca "automático"', () => {
+    montarEnfeite({ ...INICIAL, larguraLombada: 38, comprimentoLombada: 88 })
 
     expect(screen.getByRole('radio', { name: 'Normal', checked: true })).toBeInTheDocument()
-    expect(screen.getByRole('radio', { name: '85%' })).toBeChecked()
+    expect(screen.getByRole('radio', { name: 'Alto' })).toBeChecked()
     expect(screen.queryByText('Automática')).not.toBeInTheDocument()
     expect(screen.queryByText('Automático')).not.toBeInTheDocument()
   })
 
-  it('uma medida que é uma das opções fixas marca essa opção, sem opção extra', () => {
-    montarEnfeite({ ...INICIAL, larguraLombada: 52, comprimentoLombada: 88 })
+  it('não oferece opção em porcentagem nem em px: só as oito de sempre', () => {
+    montarEnfeite({ ...INICIAL, larguraLombada: 52, comprimentoLombada: 72 })
 
-    expect(screen.getAllByRole('radio', { name: 'Grossa', checked: true })).toHaveLength(1)
-    expect(screen.getByRole('radio', { name: 'Alto' })).toBeChecked()
+    expect(screen.queryByText(/%/)).not.toBeInTheDocument()
     expect(screen.queryByText(/\d+ px/)).not.toBeInTheDocument()
+    expect(document.querySelectorAll('input[name="largura"]')).toHaveLength(4)
+    expect(document.querySelectorAll('input[name="comprimento"]')).toHaveLength(4)
   })
 
   it('não pede nome, e salva sem ele', async () => {

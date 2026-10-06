@@ -3,7 +3,10 @@ import { useNavigate, useParams } from 'react-router-dom'
 
 import { BarraDeTopo } from '@/components/BarraDeTopo'
 import { chaveDoLugar, LUGARES_POR_PRATELEIRA } from '@/core'
+import { COMPRIMENTOS } from '@/features/estante/comprimentos'
 import { FormularioDeLivro } from '@/features/estante/FormularioDeLivro'
+import { LARGURAS } from '@/features/estante/larguras'
+import { opcaoMaisProxima } from '@/features/estante/opcaoMaisProxima'
 import { enfeiteDoLugar } from '@/features/estante/prateleiras'
 import { usePalacio } from '@/store/palacio'
 
@@ -54,10 +57,17 @@ export default function EditarEnfeite() {
             cor: atual.cor,
             estilo: atual.estilo,
             emblema: null,
-            // As medidas que o enfeite tem agora, sorteadas ou gravadas: a tela mostra
-            // qual é a largura e o comprimento dele, e não um "automático".
-            larguraLombada: atual.larguraNatural,
-            comprimentoLombada: atual.altura,
+            // As medidas que o enfeite tem agora, na opção de sempre mais perto delas
+            // (Fina a Grande, Curto a Enorme): a tela nunca mostra "automático" nem
+            // uma porcentagem solta.
+            larguraLombada: opcaoMaisProxima(
+              atual.larguraNatural,
+              LARGURAS.map((l) => l.px),
+            ),
+            comprimentoLombada: opcaoMaisProxima(
+              atual.altura,
+              COMPRIMENTOS.map((c) => c.percentual),
+            ),
             executavel: false,
             diasParaAdormecer: 30,
           }}

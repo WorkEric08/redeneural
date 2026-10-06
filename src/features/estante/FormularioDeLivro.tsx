@@ -323,7 +323,7 @@ export function FormularioDeLivro({
       <fieldset className="flex flex-col">
         <legend className="rotulo-de-secao">Largura</legend>
         <div className="flex flex-wrap items-end gap-2">
-          {/* O enfeite sempre mostra a largura que tem: "automática" não diria qual é. */}
+          {/* O enfeite sempre mostra uma das quatro larguras: "automática" não diria qual é. */}
           {!enfeite && (
             <label className="pano-opcao">
               <input
@@ -360,20 +360,6 @@ export function FormularioDeLivro({
               <span className="text-poeira text-xs leading-tight">{l.rotulo}</span>
             </label>
           ))}
-          {/* Uma medida que nenhuma opção fixa tem (a do sorteio) aparece como ela é. */}
-          {larguraLombada !== null && !LARGURAS.some((l) => l.px === larguraLombada) && (
-            <label className="pano-opcao">
-              <input type="radio" name="largura" checked readOnly className="sr-only" />
-              <span
-                className="pano-amostra largura-amostra"
-                aria-hidden
-                style={{ width: `${String(larguraLombada)}px`, backgroundColor: cor }}
-              />
-              <span className="text-poeira text-xs leading-tight">
-                {String(Math.round(larguraLombada))} px
-              </span>
-            </label>
-          )}
         </div>
       </fieldset>
 
@@ -422,23 +408,6 @@ export function FormularioDeLivro({
               <span className="text-poeira text-xs leading-tight">{c.rotulo}</span>
             </label>
           ))}
-          {comprimentoLombada !== null &&
-            !COMPRIMENTOS.some((c) => c.percentual === comprimentoLombada) && (
-              <label className="pano-opcao">
-                <input type="radio" name="comprimento" checked readOnly className="sr-only" />
-                <span
-                  className="pano-amostra comprimento-amostra"
-                  aria-hidden
-                  style={{
-                    height: `${String(Math.round((comprimentoLombada / 100) * REFERENCIA_DAS_OPCOES_PX))}px`,
-                    backgroundColor: cor,
-                  }}
-                />
-                <span className="text-poeira text-xs leading-tight">
-                  {String(Math.round(comprimentoLombada))}%
-                </span>
-              </label>
-            )}
         </div>
       </fieldset>
 
