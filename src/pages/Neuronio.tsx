@@ -20,6 +20,13 @@ import { TextoComLinks } from '@/features/neuronio/TextoComLinks'
 import { ROTULO_DO_PORTO } from '@/features/porto/porto'
 import { usePalacio } from '@/store/palacio'
 
+/**
+ * A caixa do andamento ("Feita") e a do "Resultado" são a mesma: a mesma largura, a mesma
+ * altura e o mesmo desenho (07/10/2026, pedido do usuário) — uma ao lado da outra, ou uma
+ * sob a outra quando a tela é estreita.
+ */
+const CAIXA_DO_ANDAMENTO = 'w-36 max-w-full'
+
 /** O que a confirmação guarda no histórico para saber como sair depois de apagar. */
 interface EstadoDaConfirmacao {
   /** A tela do neurônio tem uma tela antes dela dentro do app. */
@@ -281,11 +288,22 @@ export default function Neuronio() {
                     abrir('estado')
                   }}
                   aria-label={`Andamento: ${ROTULO_DO_ESTADO[estado]}`}
-                  className={botao({ tipo: 'secundario', tamanho: 'pequeno' })}
+                  className={`${botao({ tipo: 'secundario', tamanho: 'pequeno' })} ${CAIXA_DO_ANDAMENTO}`}
                 >
                   <IconeDoEstado estado={estado} tamanho={16} />
                   {ROTULO_DO_ESTADO[estado]}
                 </button>
+                {estado === 'feita' && neuronio.resultadoLink && (
+                  <a
+                    href={neuronio.resultadoLink}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className={`${botao({ tipo: 'secundario', tamanho: 'pequeno' })} ${CAIXA_DO_ANDAMENTO}`}
+                  >
+                    <ExternalLink size={15} aria-hidden />
+                    Resultado
+                  </a>
+                )}
                 <button
                   type="button"
                   onClick={() => {
@@ -297,17 +315,6 @@ export default function Neuronio() {
                   <Undo2 size={15} aria-hidden />
                   Deixar de ser executável
                 </button>
-                {estado === 'feita' && neuronio.resultadoLink && (
-                  <a
-                    href={neuronio.resultadoLink}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className={botao({ tipo: 'fantasma', tamanho: 'pequeno' })}
-                  >
-                    <ExternalLink size={15} aria-hidden />
-                    Resultado
-                  </a>
-                )}
               </>
             ) : (
               <button
