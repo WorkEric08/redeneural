@@ -86,6 +86,9 @@ export type MetaGravada =
 /** Os bytes de uma imagem do acervo, numa tabela à parte da do anexo. */
 export type ArquivoGravado = ArquivoDoAnexo & { anexoId: Id }
 
+/** Os bytes da imagem do resultado de uma ideia (07/10/2026), à parte do neurônio pelo mesmo motivo. */
+export type ResultadoGravado = ArquivoDoAnexo & { neuronioId: Id }
+
 export type PalacioDB = Dexie & {
   livros: EntityTable<Livro, 'id'>
   neuronios: EntityTable<Neuronio, 'id'>
@@ -98,6 +101,7 @@ export type PalacioDB = Dexie & {
   enfeites: Table<EnfeiteGravado, [number, number]>
   anexos: EntityTable<Anexo, 'id'>
   arquivos: EntityTable<ArquivoGravado, 'anexoId'>
+  resultados: EntityTable<ResultadoGravado, 'neuronioId'>
   vinculos: EntityTable<Vinculo, 'id'>
 }
 
@@ -294,6 +298,22 @@ export function createDb(name: string = DB_NAME): PalacioDB {
   db.version(13).stores({
     enfeites: '[prateleira+ordem], prateleira',
   })
+
+  // v14 (07/10/2026): a imagem do resultado de uma ideia feita. Os bytes numa tabela
+  // à parte (listar neurônios nunca arrasta imagem); todo neurônio que já existia
+  // fica sem imagem.
+  db.version(14)
+    .stores({ resultados: 'neuronioId' })
+    .upgrade(async (tx) => {
+      const neuronios = tx.table<
+        Omit<Neuronio, 'resultadoImagem'> & Partial<Pick<Neuronio, 'resultadoImagem'>>,
+        string
+      >('neuronios')
+      const todos = await neuronios.toArray()
+      await neuronios.bulkPut(
+        todos.map((n) => ({ ...n, resultadoImagem: n.resultadoImagem ?? null })),
+      )
+    })
 
   return db
 }

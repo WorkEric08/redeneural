@@ -1,5 +1,6 @@
 import type {
   Anexo,
+  ArquivoDoAnexo,
   Conexao,
   DadosDoEnfeite,
   EnfeiteGravado,
@@ -34,6 +35,7 @@ import {
   MAPA_VAZIO,
   neuronioFromSnapshot,
   neuronioToSnapshot,
+  resultadoFromSnapshot,
   posicoesAntigas,
   primeiroLugarLivre,
   vagasDepoisDeMover,
@@ -55,6 +57,7 @@ import {
   enfeiteSchema,
   livroSchema,
   neuronioSchema,
+  resultadoSchema,
   snapshotSchema,
   vagaSchema,
   vinculoSchema,
@@ -161,13 +164,23 @@ export function createDexieRepo(db: PalacioDB = defaultDb): PalacioRepo {
     async deleteLivro(id) {
       await db.transaction(
         'rw',
-        [db.livros, db.neuronios, db.conexoes, db.vagas, db.anexos, db.arquivos, db.vinculos],
+        [
+          db.livros,
+          db.neuronios,
+          db.conexoes,
+          db.vagas,
+          db.anexos,
+          db.arquivos,
+          db.vinculos,
+          db.resultados,
+        ],
         async () => {
           const livro = await db.livros.get(id)
           const neuronioIds = await db.neuronios.where('livroId').equals(id).primaryKeys()
           if (neuronioIds.length > 0) {
             await db.conexoes.bulkDelete(await idsDeConexoesQueTocam(neuronioIds))
             await db.vinculos.where('conceitoId').anyOf(neuronioIds).delete()
+            await db.resultados.bulkDelete(neuronioIds)
             await db.neuronios.bulkDelete(neuronioIds)
           }
           const anexoIds = await db.anexos.where('livroId').equals(id).primaryKeys()
@@ -369,16 +382,34 @@ export function createDexieRepo(db: PalacioDB = defaultDb): PalacioRepo {
       return db.neuronios.get(id)
     },
 
-    async upsertNeuronio(n: Neuronio) {
-      await db.neuronios.put(neuronioSchema.parse(n))
+    async upsertNeuronio(n: Neuronio, resultado?: ArquivoDoAnexo) {
+      const neuronio = neuronioSchema.parse(n)
+      await db.transaction('rw', db.neuronios, db.resultados, async () => {
+        await db.neuronios.put(neuronio)
+        if (resultado) {
+          await db.resultados.put(resultadoSchema.parse({ neuronioId: neuronio.id, ...resultado }))
+        } else if (neuronio.resultadoImagem === null) {
+          await db.resultados.delete(neuronio.id)
+        }
+      })
+    },
+
+    async getResultado(neuronioId) {
+      const gravado = await db.resultados.get(neuronioId)
+      return gravado && { imagem: gravado.imagem, miniatura: gravado.miniatura }
     },
 
     async deleteNeuronio(id) {
-      await db.transaction('rw', db.neuronios, db.conexoes, db.vinculos, async () => {
-        await db.conexoes.bulkDelete(await idsDeConexoesQueTocam([id]))
-        await db.vinculos.where('conceitoId').equals(id).delete()
-        await db.neuronios.delete(id)
-      })
+      await db.transaction(
+        'rw',
+        [db.neuronios, db.conexoes, db.vinculos, db.resultados],
+        async () => {
+          await db.conexoes.bulkDelete(await idsDeConexoesQueTocam([id]))
+          await db.vinculos.where('conceitoId').equals(id).delete()
+          await db.resultados.delete(id)
+          await db.neuronios.delete(id)
+        },
+      )
     },
 
     async listAnexos(livroId) {
@@ -547,39 +578,51 @@ export function createDexieRepo(db: PalacioDB = defaultDb): PalacioRepo {
     },
 
     async exportAll(): Promise<PalacioSnapshot> {
-      const [livros, neuronios, conexoes, etiquetas, vagas, enfeites, anexos, arquivos] =
-        await db.transaction(
-          'r',
-          [
-            db.livros,
-            db.neuronios,
-            db.conexoes,
-            db.etiquetas,
-            db.vagas,
-            db.enfeites,
-            db.anexos,
-            db.arquivos,
-          ],
-          async () =>
-            Promise.all([
-              db.livros.toArray(),
-              db.neuronios.toArray(),
-              db.conexoes.toArray(),
-              db.etiquetas.toArray(),
-              db.vagas.toArray(),
-              db.enfeites.toArray(),
-              db.anexos.toArray(),
-              db.arquivos.toArray(),
-            ]),
-        )
+      const [
+        livros,
+        neuronios,
+        conexoes,
+        etiquetas,
+        vagas,
+        enfeites,
+        anexos,
+        arquivos,
+        resultados,
+      ] = await db.transaction(
+        'r',
+        [
+          db.livros,
+          db.neuronios,
+          db.conexoes,
+          db.etiquetas,
+          db.vagas,
+          db.enfeites,
+          db.anexos,
+          db.arquivos,
+          db.resultados,
+        ],
+        async () =>
+          Promise.all([
+            db.livros.toArray(),
+            db.neuronios.toArray(),
+            db.conexoes.toArray(),
+            db.etiquetas.toArray(),
+            db.vagas.toArray(),
+            db.enfeites.toArray(),
+            db.anexos.toArray(),
+            db.arquivos.toArray(),
+            db.resultados.toArray(),
+          ]),
+      )
       const arquivoDe = new Map(arquivos.map((a) => [a.anexoId, a]))
+      const resultadoDe = new Map(resultados.map((r) => [r.neuronioId, r]))
       const mapa = (await db.meta.get('mapa')) as MapaGravado | undefined
 
       return {
         version: SNAPSHOT_VERSION,
         exportedAt: new Date().toISOString(),
         livros: livros.map(livroToSnapshot),
-        neuronios: neuronios.map(neuronioToSnapshot),
+        neuronios: neuronios.map((n) => neuronioToSnapshot(n, resultadoDe.get(n.id))),
         conexoes: conexoes.map(conexaoToSnapshot),
         etiquetas,
         vagas,
@@ -619,6 +662,10 @@ export function createDexieRepo(db: PalacioDB = defaultDb): PalacioRepo {
         )
       })
       const neuronios = parsed.neuronios.map(neuronioFromSnapshot)
+      const resultados = parsed.neuronios.flatMap((n) => {
+        const arquivo = resultadoFromSnapshot(n)
+        return arquivo ? [resultadoSchema.parse({ neuronioId: n.id, ...arquivo })] : []
+      })
       const conexoes = parsed.conexoes.map(conexaoFromSnapshot)
 
       const livroIds = new Set(livros.map((l) => l.id))
@@ -668,6 +715,7 @@ export function createDexieRepo(db: PalacioDB = defaultDb): PalacioRepo {
           db.enfeites,
           db.anexos,
           db.arquivos,
+          db.resultados,
         ],
         async () => {
           // O livro do arquivo fica no lugar dele; o que só existe aqui fica no
@@ -677,6 +725,7 @@ export function createDexieRepo(db: PalacioDB = defaultDb): PalacioRepo {
 
           await db.livros.bulkPut(unidos)
           await db.neuronios.bulkPut(neuronios)
+          await db.resultados.bulkPut(resultados)
           await db.conexoes.bulkPut(conexoes)
           // Os vínculos não vêm no arquivo: quem importa reprocessa, e a
           // reancoragem refaz todos com o perfil do palácio que ficou.
@@ -732,6 +781,7 @@ export function createDexieRepo(db: PalacioDB = defaultDb): PalacioRepo {
         db.anexos,
         db.arquivos,
         db.vinculos,
+        db.resultados,
       ]
       await db.transaction('rw', tabelas, async () => {
         await Promise.all(tabelas.map((t) => t.clear()))

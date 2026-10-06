@@ -357,10 +357,12 @@ revisão. Não adiantar fases.
 ```
 livros:     { id, tipo: 'conceitos' | 'acervo', titulo, cor, estilo, prateleira, ordem, executavel, diasParaAdormecer, createdAt }
 neuronios:  { id, livroId: string | null, titulo, conteudo, embedding: Float32Array | null,
-              estado: 'para_fazer' | 'fazendo' | 'feita' | null, ultimoToque, resultadoLink, createdAt, updatedAt }
+              estado: 'para_fazer' | 'fazendo' | 'feita' | null, ultimoToque, resultadoLink,
+              resultadoImagem: { mime, largura, altura } | null, createdAt, updatedAt }
 conexoes:   { id, aId, bId, score, emb, rr, cross, mantidaPorA, mantidaPorB, updatedAt }
 vagas:      { prateleira, ordem }
 enfeites:   { prateleira, ordem, cor, estilo, larguraLombada, comprimentoLombada, dourado, detalheEscuro }
+resultados: { neuronioId, imagem: Uint8Array, miniatura: Uint8Array }
 anexos:     { id, livroId, legenda, midia, embedding: Float32Array | null, createdAt, updatedAt }
 arquivos:   { anexoId, imagem: Uint8Array, miniatura: Uint8Array }
 vinculos:   { id: 'anexoId::conceitoId', anexoId, conceitoId, score, updatedAt }
@@ -372,6 +374,10 @@ vinculos:   { id: 'anexoId::conceitoId', anexoId, conceitoId, score, updatedAt }
 
 - `enfeites` (Dexie v13, 07/10/2026) guarda só os enfeites que a pessoa **definiu ou
   moveu**; o resto continua sorteado pelo lugar. Ver "Enfeites que se definem e se movem".
+
+- `neuronios.resultadoImagem` e `resultados` (Dexie v14, 07/10/2026) são a imagem do que saiu
+  de uma ideia feita; os bytes ficam à parte, como os do anexo. Ver "Executáveis: desfazer e a
+  imagem do resultado".
 
 - `neuronios.livroId` `null` é o **porto** (01/10/2026): um neurônio que o
   motor não soube onde guardar, esperando a pessoa escolher. Ver "O Porto".
@@ -5198,6 +5204,58 @@ grafo), e ao largar sobre um livro valem **as mesmas regras do livro**.
   outro enfeite, para outra prateleira e sobre um livro (que é empurrado), tirar o enfeite e
   recarregar. 532 testes (31 novos: núcleo, estante, repositório e backup), tipos e lint limpos.
   **Não verificado em toque real** nem no APK.
+
+## Executáveis: desfazer e a imagem do resultado (07/10/2026)
+
+Dois pedidos do usuário sobre a tela do neurônio num livro executável.
+
+### Deixar de ser executável
+
+"Tornar executável" não tinha volta. Agora, numa ideia que está num livro executável, o botão
+**"Deixar de ser executável"** abre uma folha (`?desfazer=1`, `FolhaDeixarDeSerExecutavel`) com
+**"Automático"** e os livros de conceitos que não são executáveis.
+
+- **Para onde:** o livro escolhido, ou, com "Automático", o que o palácio achar pelo texto
+  (`livroAutomatico`, o mesmo do "Automático" ao escrever — ver "O automático sempre escolhe
+  um livro"). `guardarNeuronio(id, null)` é "Automático"; sem livro comum para receber, o motor
+  recusa, e o botão fica desabilitado quando não há nenhum.
+- **O andamento** fica guardado na ideia, sem aparecer. Entrar de novo num livro executável
+  recomeça em "para fazer" (a regra de sempre para quem entra) — só o livro que deixa de ser
+  executável devolve os estados como estavam.
+- O aviso diz onde ficou ("Agora em X."). Não escolhi "voltar ao livro de onde veio": a ideia
+  não guarda o livro anterior, e a escolha explícita evita adivinhar.
+
+### A imagem do resultado
+
+Ao concluir uma ideia ("Feita"), além do link, dá para anexar **uma imagem**, no padrão das
+imagens do sistema: o mesmo seletor (`escolherImagem`), a mesma redução no Worker (WebP, 1600 px e
+miniatura de 320 px, sem os metadados da câmera), o mesmo desenho (`ImagemDoResultado`: caixa
+`bg-realce`, cantos redondos, glifo enquanto os bytes não chegam, proporção reservada).
+
+- **O dado.** `Neuronio.resultadoImagem` ({ mime, largura, altura } ou `null`) e a tabela
+  `resultados` (Dexie v14, chave `neuronioId`) com os bytes: listar neurônios nunca arrasta
+  imagem. `upsertNeuronio(n, resultado?)` grava as duas na mesma transação; sem `resultado` a
+  imagem que já estava fica, e `resultadoImagem: null` a apaga. Apagar a ideia ou o livro leva a
+  imagem junto. **Vai no backup** (`resultadoImagem` + `resultadoArquivo` em base64); backup
+  antigo importa sem imagem, e um arquivo sem os bytes não deixa a ideia apontando para nada.
+- **Igual ao link:** só vale junto de "feita", e mudar de estado depois não a apaga. No
+  `definirEstado`, `undefined` mantém a imagem, uma nova a troca e `null` a tira. Sem otimismo para
+  a imagem (ela ainda vai ser reduzida no Worker); o estado e o link continuam otimistas.
+- **A folha de concluir** ganhou o botão da imagem **na mesma linha do link** (a folha não
+  cresce: segue cabendo sem rolar em 412×892 e 320×568). Com imagem, o botão mostra a prévia
+  (tocar troca) e ganha um "tirar" ao lado. O placeholder do link encurtou para "Link (opcional)",
+  para caber ao lado dos botões em 320 px.
+- **A tela da ideia feita** mostra uma seção "Resultado" com a imagem inteira, na proporção
+  dela (`max-h-96`). O cache da tela (`useImagemDoResultado`) tem o `ultimoToque` na chave: trocar
+  a imagem mantém o id da ideia.
+- **Verificado** no Chrome (build de produção): concluir com link e uma imagem 60×30 gravou
+  estado, link, metadados e bytes; a tela mostra a imagem; reabrir mostra a prévia; tirar apaga
+  imagem e bytes e deixa o link; "Deixar de ser executável" para Psicologia (a ideia volta a
+  oferecer "Tornar executável"), de volta a um executável (recomeça em "para fazer") e depois
+  por "Automático". 582 testes (9 novos de repositório, backup e migração, 4 da folha).
+  Não verificado em toque real.
+- **Fora daqui:** mais de uma imagem por ideia, e imagem em ideia que não é executável (o
+  resultado só existe em "feita").
 
 ## Mostrar tudo sem deslize vertical: as folhas e o andamento (06/10/2026)
 

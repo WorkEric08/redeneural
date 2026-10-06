@@ -128,6 +128,12 @@ export interface EstanteGravada {
   enfeites: EnfeiteGravado[]
 }
 
+/** Uma imagem escolhida na galeria ou na câmera, ainda sem redução: os bytes e o tipo. */
+export interface ImagemParaGuardar {
+  bytes: Uint8Array
+  mime: string
+}
+
 export interface EstadoDoPalacio {
   livros: Livro[]
   vagas: Vaga[]
@@ -205,17 +211,25 @@ export interface ConnectionEngine {
    * e o "Mudar" depois de o Porto escolher. Não relê o texto: o vetor e as
    * conexões continuam os mesmos, só a ponte é refeita, porque ela depende do
    * livro dos dois lados.
+   *
+   * `livroId` `null` é "Automático": o motor escolhe pelo texto, entre os livros de
+   * conceitos que não são executáveis (`livroAutomatico`) — é como se deixa de ser
+   * executável sem dizer para onde ir. Sem livro que possa recebê-lo, recusa.
    */
-  guardarNeuronio(id: Id, livroId: Id): Promise<NeuronioGuardado>
+  guardarNeuronio(id: Id, livroId: Id | null): Promise<NeuronioGuardado>
   /**
    * Muda o andamento de uma ideia num livro executável — e é um toque. O link
    * do resultado vale quando ela está feita; mudar de estado depois não o
    * apaga. Não mexe em texto, vetor nem conexão.
+   *
+   * `resultadoImagem` (07/10/2026), junto de "feita", como o link: `undefined` mantém a
+   * que já estava, uma imagem nova a reduz e grava no lugar, e `null` a tira.
    */
   definirEstado(
     id: Id,
     estado: EstadoDaIdeia,
     resultadoLink: string | null,
+    resultadoImagem?: ImagemParaGuardar | null,
   ): Promise<NeuronioNaTela[]>
   /**
    * Um toque numa ideia de livro executável — abrir a tela dela, ou o
@@ -300,6 +314,8 @@ export interface ConnectionEngine {
    * nunca viajam junto do estado. `null` se o anexo não tem imagem.
    */
   lerImagem(anexoId: Id, tamanho: 'miniatura' | 'inteira'): Promise<Uint8Array | null>
+  /** O mesmo para a imagem do resultado de uma ideia — `null` se ela não tem. */
+  lerImagemDoResultado(neuronioId: Id, tamanho: 'miniatura' | 'inteira'): Promise<Uint8Array | null>
   /**
    * Os neurônios mais parecidos com a consulta, do mais para o menos parecido
    * (ver `buscarPorSentido`). Só ids: a tela já tem o resto.

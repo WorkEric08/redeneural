@@ -184,8 +184,20 @@ export interface Neuronio {
   ultimoToque: Date
   /** O link do que saiu dela, quando está feita. Só http e https. */
   resultadoLink: string | null
+  /**
+   * A imagem do que saiu dela, quando está feita (07/10/2026): só o que a tela precisa
+   * saber; os bytes moram à parte, como os do anexo (ver `ArquivoDoAnexo`).
+   */
+  resultadoImagem: ImagemDoResultado | null
   createdAt: Date
   updatedAt: Date
+}
+
+/** A imagem do resultado de uma ideia executável: tipo e medida — os bytes ficam na tabela `resultados`. */
+export interface ImagemDoResultado {
+  mime: string
+  largura: number
+  altura: number
 }
 
 /**
@@ -373,6 +385,9 @@ export interface NeuronioSnapshot {
   estado?: EstadoDaIdeia | null | undefined
   ultimoToque?: string | undefined
   resultadoLink?: string | null | undefined
+  /** Ausentes em backups de antes da imagem do resultado (07/10/2026). */
+  resultadoImagem?: ImagemDoResultado | null | undefined
+  resultadoArquivo?: { imagem: string; miniatura: string } | undefined
   createdAt: string
   updatedAt: string
 }

@@ -83,6 +83,7 @@ const NEURONIOS: Neuronio[] = PALACIO.map((n) => ({
   estado: null,
   ultimoToque: T0,
   resultadoLink: null,
+  resultadoImagem: null,
   createdAt: T0,
   updatedAt: T0,
 }))
@@ -235,6 +236,7 @@ describe('exportar num navegador e importar noutro', () => {
       estado: null,
       ultimoToque: T0,
       resultadoLink: null,
+      resultadoImagem: null,
       createdAt: T0,
       updatedAt: T0,
     })
@@ -537,6 +539,7 @@ describe('livros executáveis no backup', () => {
       estado: 'feita',
       ultimoToque: toque,
       resultadoLink: 'https://exemplo.com/video',
+      resultadoImagem: null,
     })
     const snapshot = await origem.exportAll()
 
@@ -551,6 +554,7 @@ describe('livros executáveis no backup', () => {
       estado: 'feita',
       ultimoToque: toque,
       resultadoLink: 'https://exemplo.com/video',
+      resultadoImagem: null,
     })
   })
 

@@ -1,4 +1,4 @@
-import { ExternalLink, Hammer, PencilLine, Search, Trash2 } from 'lucide-react'
+import { ExternalLink, Hammer, PencilLine, Search, Trash2, Undo2 } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 
@@ -12,7 +12,9 @@ import { vizinhosPorNeuronio } from '@/features/estante/resumo'
 import { ROTULO_DO_ESTADO } from '@/features/executaveis/estados'
 import { FolhaDeEstado } from '@/features/executaveis/FolhaDeEstado'
 import { FolhaDeExecutaveis } from '@/features/executaveis/FolhaDeExecutaveis'
+import { FolhaDeixarDeSerExecutavel } from '@/features/executaveis/FolhaDeixarDeSerExecutavel'
 import { IconeDoEstado } from '@/features/executaveis/IconeDoEstado'
+import { ImagemDoResultado } from '@/features/executaveis/ImagemDoResultado'
 import { useCriarLivroExecutavel } from '@/features/executaveis/useCriarLivroExecutavel'
 import { TextoComLinks } from '@/features/neuronio/TextoComLinks'
 import { ROTULO_DO_PORTO } from '@/features/porto/porto'
@@ -37,7 +39,11 @@ interface EstadoDaConfirmacao {
  * Num livro executável (01/10/2026) a ideia mostra o andamento, que muda numa
  * folha (`?estado=1`), e o link do resultado quando está feita. Fora dele, o
  * "Tornar executável" leva a ideia para um livro executável — com um só, direto;
- * com vários ou nenhum, numa folha (`?executar=1`) que escolhe ou cria.
+ * com vários ou nenhum, numa folha (`?executar=1`) que escolhe ou cria. E o contrário
+ * (07/10/2026): "Deixar de ser executável" a leva de volta a um livro comum, à escolha
+ * ou pelo texto (`?desfazer=1`) — o andamento fica guardado, sem aparecer.
+ *
+ * Feita, a ideia mostra o link e a imagem do resultado, se tiver.
  */
 export default function Neuronio() {
   const { neuronioId } = useParams()
@@ -109,8 +115,10 @@ export default function Neuronio() {
   const perguntando = busca.get('apagar') === '1'
   const mudandoEstado = busca.get('estado') === '1'
   const escolhendoExecutavel = busca.get('executar') === '1'
+  const desfazendo = busca.get('desfazer') === '1'
   const estado = estadoVisivel(neuronio, livro)
   const executaveis = livros.filter((l) => l.tipo === 'conceitos' && l.executavel)
+  const comuns = livros.filter((l) => l.tipo === 'conceitos' && !l.executavel)
   const saida = livro ? `/livro/${livro.id}` : neuronio.livroId === null ? '/porto' : '/'
 
   function perguntar(): void {
@@ -133,7 +141,7 @@ export default function Neuronio() {
     }
   }
 
-  function abrir(painel: 'estado' | 'executar'): void {
+  function abrir(painel: 'estado' | 'executar' | 'desfazer'): void {
     void navegar({ search: `?${painel}=1` })
   }
 
@@ -150,6 +158,17 @@ export default function Neuronio() {
       if (!ok) return
       if (deUmaFolha) fecharPainel()
       avisar(`Agora em ${destino?.titulo ?? 'um livro executável'}, para fazer.`)
+    })
+  }
+
+  /** Volta a um livro comum — o escolhido, ou, com `null`, o que o palácio achar pelo texto. */
+  function tirarDeExecutavel(livroId: string | null): void {
+    if (!neuronio) return
+    void guardarNeuronio(neuronio.id, livroId).then((ok) => {
+      if (!ok) return
+      fecharPainel()
+      const destino = livros.find((l) => l.id === livroId)
+      avisar(destino ? `Agora em ${destino.titulo}.` : 'Saiu dos executáveis.')
     })
   }
 
@@ -267,6 +286,17 @@ export default function Neuronio() {
                   <IconeDoEstado estado={estado} tamanho={16} />
                   {ROTULO_DO_ESTADO[estado]}
                 </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    abrir('desfazer')
+                  }}
+                  disabled={ocupado || comuns.length === 0}
+                  className={botao({ tipo: 'fantasma', tamanho: 'pequeno' })}
+                >
+                  <Undo2 size={15} aria-hidden />
+                  Deixar de ser executável
+                </button>
                 {estado === 'feita' && neuronio.resultadoLink && (
                   <a
                     href={neuronio.resultadoLink}
@@ -299,13 +329,27 @@ export default function Neuronio() {
             className="texto-do-usuario px-1 text-[1.03rem] leading-[1.7] whitespace-pre-wrap"
           />
         )}
+
+        {/* O que saiu da ideia, quando ela está feita: a imagem inteira, na proporção dela. */}
+        {estado === 'feita' && neuronio.resultadoImagem && (
+          <section aria-labelledby="resultado-imagem" className="flex flex-col">
+            <h2 id="resultado-imagem" className="rotulo-de-secao">
+              Resultado
+            </h2>
+            <ImagemDoResultado
+              neuronio={neuronio}
+              tamanho="inteira"
+              className="max-h-96 w-full rounded-2xl"
+            />
+          </section>
+        )}
       </article>
 
       <FolhaDeEstado
         aberta={mudandoEstado && estado !== null}
         neuronio={neuronio}
         estadoAtual={estado}
-        onDefinir={(novo, link) => definirEstado(neuronio.id, novo, link)}
+        onDefinir={(novo, link, imagem) => definirEstado(neuronio.id, novo, link, imagem)}
         onFechar={fecharPainel}
       />
 
@@ -317,6 +361,13 @@ export default function Neuronio() {
           levarPara(livroId, true)
         }}
         onCriar={criarLivroExecutavel}
+        onFechar={fecharPainel}
+      />
+
+      <FolhaDeixarDeSerExecutavel
+        aberta={desfazendo && estado !== null}
+        livros={comuns}
+        onEscolher={tirarDeExecutavel}
         onFechar={fecharPainel}
       />
 

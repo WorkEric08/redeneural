@@ -301,9 +301,9 @@ export default function Livro() {
           aberta={escolhidoParaEstado !== undefined}
           neuronio={escolhidoParaEstado}
           estadoAtual={escolhidoParaEstado ? estadoVisivel(escolhidoParaEstado, livro) : null}
-          onDefinir={(estado, link) =>
+          onDefinir={(estado, link, imagem) =>
             escolhidoParaEstado
-              ? definirEstado(escolhidoParaEstado.id, estado, link)
+              ? definirEstado(escolhidoParaEstado.id, estado, link, imagem)
               : Promise.resolve(false)
           }
           onFechar={fecharEstado}

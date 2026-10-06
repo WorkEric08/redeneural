@@ -67,6 +67,7 @@ function neuronio(
     estado: null,
     ultimoToque: T0,
     resultadoLink: null,
+    resultadoImagem: null,
     createdAt: T0,
     updatedAt: T0,
   }
@@ -1022,6 +1023,7 @@ describe('migração para a v11', () => {
       estado: null,
       ultimoToque: editadoEm,
       resultadoLink: null,
+      resultadoImagem: null,
     })
   })
 })
@@ -1040,6 +1042,7 @@ describe('livros executáveis', () => {
         ...neuronio('n1', 'l1'),
         estado: 'feita',
         resultadoLink: 'javascript:alert(1)',
+        resultadoImagem: null,
       }),
     ).rejects.toThrow()
 
@@ -1047,10 +1050,12 @@ describe('livros executáveis', () => {
       ...neuronio('n1', 'l1'),
       estado: 'feita',
       resultadoLink: 'https://exemplo.com/texto',
+      resultadoImagem: null,
     })
     expect(await repo.getNeuronio('n1')).toMatchObject({
       estado: 'feita',
       resultadoLink: 'https://exemplo.com/texto',
+      resultadoImagem: null,
     })
   })
 })
@@ -1277,5 +1282,174 @@ describe('enfeites gravados', () => {
     await repo.salvarEnfeite(enfeite(0))
     await repo.clear()
     expect(await repo.listEnfeites()).toEqual([])
+  })
+})
+
+describe('a imagem do resultado de uma ideia', () => {
+  const imagem = { mime: 'image/webp', largura: 40, altura: 20 }
+  const bytes = { imagem: new Uint8Array([1, 2, 3]), miniatura: new Uint8Array([4, 5]) }
+  const feita = (id = 'n1', livroId = 'l1'): Neuronio => ({
+    ...neuronio(id, livroId),
+    estado: 'feita',
+    resultadoImagem: imagem,
+  })
+
+  beforeEach(async () => {
+    await repo.upsertLivro({ ...livro('l1', 'Ideias'), executavel: true })
+  })
+
+  it('grava a imagem com o neurônio, e os bytes saem à parte da lista de neurônios', async () => {
+    await repo.upsertNeuronio(feita(), bytes)
+
+    expect((await repo.getNeuronio('n1'))?.resultadoImagem).toEqual(imagem)
+    expect(await repo.getResultado('n1')).toEqual(bytes)
+    // Listar neurônios nunca arrasta os bytes.
+    expect(JSON.stringify(Object.keys((await repo.listNeuronios())[0] ?? {}))).not.toMatch(
+      /miniatura/,
+    )
+  })
+
+  it('regravar o neurônio sem os bytes mantém a imagem; com bytes novos, troca', async () => {
+    await repo.upsertNeuronio(feita(), bytes)
+    await repo.upsertNeuronio({ ...feita(), titulo: 'outro título' })
+    expect(await repo.getResultado('n1')).toEqual(bytes)
+
+    const nova = { imagem: new Uint8Array([9, 9]), miniatura: new Uint8Array([8]) }
+    await repo.upsertNeuronio({ ...feita(), resultadoImagem: { ...imagem, largura: 20 } }, nova)
+    expect(await repo.getResultado('n1')).toEqual(nova)
+    expect((await repo.getNeuronio('n1'))?.resultadoImagem?.largura).toBe(20)
+  })
+
+  it('gravar com resultadoImagem null apaga os bytes', async () => {
+    await repo.upsertNeuronio(feita(), bytes)
+    await repo.upsertNeuronio({ ...feita(), resultadoImagem: null })
+
+    expect(await repo.getResultado('n1')).toBeUndefined()
+    expect((await repo.getNeuronio('n1'))?.resultadoImagem).toBeNull()
+  })
+
+  it('recusa um tipo de arquivo que não é imagem e bytes vazios', async () => {
+    await expect(
+      repo.upsertNeuronio({ ...feita(), resultadoImagem: { ...imagem, mime: 'text/html' } }, bytes),
+    ).rejects.toThrow()
+    await expect(
+      repo.upsertNeuronio(feita(), { imagem: new Uint8Array(), miniatura: new Uint8Array([1]) }),
+    ).rejects.toThrow()
+    expect(await repo.getResultado('n1')).toBeUndefined()
+  })
+
+  it('apagar o neurônio apaga a imagem, e apagar o livro apaga a de todas as ideias dele', async () => {
+    await repo.upsertNeuronio(feita('n1'), bytes)
+    await repo.deleteNeuronio('n1')
+    expect(await repo.getResultado('n1')).toBeUndefined()
+
+    await repo.upsertNeuronio(feita('n2'), bytes)
+    await repo.upsertNeuronio(feita('n3'), bytes)
+    await repo.deleteLivro('l1')
+    expect(await repo.getResultado('n2')).toBeUndefined()
+    expect(await repo.getResultado('n3')).toBeUndefined()
+  })
+
+  it('o backup leva a imagem, e restaurar a devolve com os mesmos bytes', async () => {
+    await repo.upsertNeuronio(feita(), bytes)
+    const snapshot = await repo.exportAll()
+    expect(snapshot.neuronios[0]?.resultadoImagem).toEqual(imagem)
+    expect(snapshot.neuronios[0]?.resultadoArquivo).toBeDefined()
+
+    await repo.clear()
+    expect(await repo.getResultado('n1')).toBeUndefined()
+    await repo.importAll(snapshot)
+
+    expect((await repo.getNeuronio('n1'))?.resultadoImagem).toEqual(imagem)
+    expect(await repo.getResultado('n1')).toEqual(bytes)
+  })
+
+  it('backup sem os bytes não deixa a ideia apontando para uma imagem que não existe', async () => {
+    await repo.upsertNeuronio(feita(), bytes)
+    const snapshot = await repo.exportAll()
+    const semBytes = {
+      ...snapshot,
+      neuronios: snapshot.neuronios.map((n) => ({ ...n, resultadoArquivo: undefined })),
+    }
+
+    await repo.clear()
+    await repo.importAll(semBytes)
+    expect((await repo.getNeuronio('n1'))?.resultadoImagem).toBeNull()
+    expect(await repo.getResultado('n1')).toBeUndefined()
+  })
+
+  it('backup de antes da imagem importa igual, sem imagem', async () => {
+    await repo.upsertNeuronio(neuronio('n9', 'l1'))
+    const snapshot = await repo.exportAll()
+    const antigo = {
+      ...snapshot,
+      neuronios: snapshot.neuronios.map((n) => ({
+        ...n,
+        resultadoImagem: undefined,
+        resultadoArquivo: undefined,
+      })),
+    }
+
+    await repo.clear()
+    await repo.importAll(antigo)
+    expect((await repo.getNeuronio('n9'))?.resultadoImagem).toBeNull()
+  })
+
+  it('limpar leva as imagens junto', async () => {
+    await repo.upsertNeuronio(feita(), bytes)
+    await repo.clear()
+    expect(await repo.getResultado('n1')).toBeUndefined()
+  })
+})
+
+describe('migração para a v14', () => {
+  // Antes de 07/10/2026 uma ideia feita não guardava imagem.
+  it('toda ideia que já existia fica sem imagem, e o resto não muda', async () => {
+    const nome = `palacio-migracao-v14-${String(nth)}`
+
+    const antigo = new Dexie(nome)
+    antigo.version(1).stores({
+      livros: 'id, createdAt',
+      neuronios: 'id, livroId, updatedAt',
+      conexoes: 'id, aId, bId, updatedAt',
+    })
+    antigo.version(2).stores({ meta: 'chave' })
+    antigo.version(3).stores({ livros: 'id, createdAt, ordem' })
+    antigo.version(4).stores({ livros: 'id, createdAt, ordem, prateleira' })
+    antigo.version(5).stores({ etiquetas: 'prateleira' })
+    antigo.version(6).stores({})
+    antigo.version(7).stores({})
+    antigo.version(8).stores({})
+    antigo.version(9).stores({ vagas: '[prateleira+ordem], prateleira' })
+    antigo.version(10).stores({
+      anexos: 'id, livroId, updatedAt',
+      arquivos: 'anexoId',
+      vinculos: 'id, anexoId, conceitoId',
+    })
+    antigo.version(11).stores({})
+    antigo.version(12).stores({})
+    antigo.version(13).stores({ enfeites: '[prateleira+ordem], prateleira' })
+    await antigo.table('neuronios').bulkPut([
+      {
+        id: 'n1',
+        livroId: 'l1',
+        titulo: 'Uma ideia feita',
+        conteudo: 'texto',
+        embedding: null,
+        estado: 'feita',
+        ultimoToque: T0,
+        resultadoLink: 'https://exemplo.com/r',
+        createdAt: T0,
+        updatedAt: T0,
+      },
+    ])
+    antigo.close()
+
+    const migrado = createDexieRepo(createDb(nome))
+    const n = await migrado.getNeuronio('n1')
+
+    expect(n?.resultadoImagem).toBeNull()
+    expect(n).toMatchObject({ estado: 'feita', resultadoLink: 'https://exemplo.com/r' })
+    expect(await migrado.getResultado('n1')).toBeUndefined()
   })
 })

@@ -1,4 +1,4 @@
-import type { Anexo, EstadoDaIdeia, Id, MidiaDoAnexo, Neuronio } from './types'
+import type { Anexo, EstadoDaIdeia, Id, ImagemDoResultado, MidiaDoAnexo, Neuronio } from './types'
 
 /**
  * Um neurônio como a tela o vê.
@@ -19,6 +19,8 @@ export interface NeuronioNaTela {
   estado: EstadoDaIdeia | null
   ultimoToque: Date
   resultadoLink: string | null
+  /** A imagem do resultado, quando tem — os bytes são pedidos à parte, por quem vai desenhá-la. */
+  resultadoImagem: ImagemDoResultado | null
   createdAt: Date
   updatedAt: Date
 }
@@ -33,6 +35,7 @@ export function paraTela(n: Neuronio): NeuronioNaTela {
     estado: n.estado,
     ultimoToque: n.ultimoToque,
     resultadoLink: n.resultadoLink,
+    resultadoImagem: n.resultadoImagem,
     createdAt: n.createdAt,
     updatedAt: n.updatedAt,
   }

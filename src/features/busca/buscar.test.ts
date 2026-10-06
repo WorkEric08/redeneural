@@ -49,6 +49,7 @@ function neuronio(id: string, livroId: string, titulo: string, conteudo: string)
     estado: null,
     ultimoToque: T0,
     resultadoLink: null,
+    resultadoImagem: null,
     createdAt: T0,
     updatedAt: T0,
   }

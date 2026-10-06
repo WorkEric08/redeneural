@@ -28,6 +28,7 @@ export type {
   EditarNeuronioInput,
   EstadoDoPalacio,
   EstanteGravada,
+  ImagemParaGuardar,
   NeuronioGuardado,
   ProgressoDoMotor,
   ResultadoDeEscrita,

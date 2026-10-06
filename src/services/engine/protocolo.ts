@@ -11,6 +11,7 @@ import type {
   EstadoDoPalacio,
   EstanteGravada,
   Id,
+  ImagemParaGuardar,
   Livro,
   MapaDoPalacio,
   ModoDaBusca,
@@ -58,6 +59,7 @@ export interface RespostasDoMotor {
   apagarAnexo: EstadoDoPalacio
   /** Os bytes vêm só aqui, a pedido — nunca junto do estado. */
   lerImagem: Uint8Array | null
+  lerImagemDoResultado: Uint8Array | null
   buscarPorSentido: Id[]
 }
 
@@ -68,13 +70,14 @@ export type ParaMotor =
   | { req: number; tipo: 'criarNeuronio'; input: CriarNeuronioInput }
   | { req: number; tipo: 'editarNeuronio'; input: EditarNeuronioInput }
   | { req: number; tipo: 'apagarNeuronio'; neuronioId: Id }
-  | { req: number; tipo: 'guardarNeuronio'; id: Id; livroId: Id }
+  | { req: number; tipo: 'guardarNeuronio'; id: Id; livroId: Id | null }
   | {
       req: number
       tipo: 'definirEstado'
       id: Id
       estado: EstadoDaIdeia
       resultadoLink: string | null
+      resultadoImagem: ImagemParaGuardar | null | undefined
     }
   | { req: number; tipo: 'tocar'; id: Id }
   | { req: number; tipo: 'criarLivro'; input: CriarLivroInput }
@@ -97,6 +100,7 @@ export type ParaMotor =
   | { req: number; tipo: 'editarAnexo'; input: EditarAnexoInput }
   | { req: number; tipo: 'apagarAnexo'; anexoId: Id }
   | { req: number; tipo: 'lerImagem'; anexoId: Id; tamanho: 'miniatura' | 'inteira' }
+  | { req: number; tipo: 'lerImagemDoResultado'; neuronioId: Id; tamanho: 'miniatura' | 'inteira' }
   | { req: number; tipo: 'buscarPorSentido'; consulta: string }
 
 export type DoMotor =

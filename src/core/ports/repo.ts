@@ -82,7 +82,14 @@ export interface PalacioRepo {
 
   listNeuronios(livroId?: Id): Promise<Neuronio[]>
   getNeuronio(id: Id): Promise<Neuronio | undefined>
-  upsertNeuronio(n: Neuronio): Promise<void>
+  /**
+   * Grava o neurônio — e, se vier, a imagem do resultado dele, na mesma transação. Sem
+   * `resultado`, a imagem que já estava gravada fica; um neurônio com
+   * `resultadoImagem: null` não guarda imagem nenhuma (a de antes é apagada).
+   */
+  upsertNeuronio(n: Neuronio, resultado?: ArquivoDoAnexo): Promise<void>
+  /** Os bytes da imagem do resultado de uma ideia, ou `undefined` se ela não tem. */
+  getResultado(neuronioId: Id): Promise<ArquivoDoAnexo | undefined>
   /** Apaga o neurônio, toda aresta que o tocava e todo vínculo de anexo preso a ele. */
   deleteNeuronio(id: Id): Promise<void>
 

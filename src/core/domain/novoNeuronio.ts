@@ -22,6 +22,7 @@ export function novoNeuronio(input: CriarNeuronioInput, agora: Date): Neuronio {
     estado: null,
     ultimoToque: agora,
     resultadoLink: null,
+    resultadoImagem: null,
     createdAt: agora,
     updatedAt: agora,
   }

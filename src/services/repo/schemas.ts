@@ -71,6 +71,19 @@ export const etiquetaSchema = z.object({
   texto: z.string().trim().min(1).max(60),
 })
 
+const imagemDoResultado = z.object({
+  mime: z.string().regex(/^image\/[a-z0-9.+-]+$/, 'mime de imagem inválido'),
+  largura: z.number().int().positive(),
+  altura: z.number().int().positive(),
+})
+
+/** Os bytes da imagem do resultado de uma ideia, na tabela à parte. */
+export const resultadoSchema = z.object({
+  neuronioId: id,
+  imagem: z.instanceof(Uint8Array).refine((b) => b.byteLength > 0, 'imagem vazia'),
+  miniatura: z.instanceof(Uint8Array).refine((b) => b.byteLength > 0, 'miniatura vazia'),
+})
+
 export const neuronioSchema = z.object({
   id,
   // `null` é o porto: o neurônio esperando a pessoa escolher o livro.
@@ -81,6 +94,7 @@ export const neuronioSchema = z.object({
   estado: estadoDaIdeia.nullable(),
   ultimoToque: z.date(),
   resultadoLink: urlDeLink.nullable(),
+  resultadoImagem: imagemDoResultado.nullable(),
   createdAt: z.date(),
   updatedAt: z.date(),
 })
@@ -190,6 +204,9 @@ export const snapshotSchema = z.object({
       estado: estadoDaIdeia.nullable().optional(),
       ultimoToque: isoDate.optional(),
       resultadoLink: urlDeLink.nullable().optional(),
+      // Opcionais: backup de antes da imagem do resultado (07/10/2026).
+      resultadoImagem: imagemDoResultado.nullable().optional(),
+      resultadoArquivo: z.object({ imagem: base64, miniatura: base64 }).optional(),
       createdAt: isoDate,
       updatedAt: isoDate,
     }),

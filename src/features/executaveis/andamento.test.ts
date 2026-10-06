@@ -35,6 +35,7 @@ function ideia(id: string, livroId: string | null, estado: NeuronioNaTela['estad
     estado,
     ultimoToque: HA(dias),
     resultadoLink: null,
+    resultadoImagem: null,
     createdAt: AGORA,
     updatedAt: AGORA,
   }

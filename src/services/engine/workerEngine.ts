@@ -12,6 +12,7 @@ import type {
   EstadoDoPalacio,
   EstanteGravada,
   Id,
+  ImagemParaGuardar,
   Livro,
   MapaDoPalacio,
   ModoDaBusca,
@@ -94,15 +95,16 @@ export function criarWorkerEngine(): ConnectionEngine {
     apagarNeuronio: (neuronioId: Id): Promise<EstadoDoPalacio> =>
       pedir<'apagarNeuronio'>({ tipo: 'apagarNeuronio', neuronioId }),
 
-    guardarNeuronio: (id: Id, livroId: Id): Promise<NeuronioGuardado> =>
+    guardarNeuronio: (id: Id, livroId: Id | null): Promise<NeuronioGuardado> =>
       pedir<'guardarNeuronio'>({ tipo: 'guardarNeuronio', id, livroId }),
 
     definirEstado: (
       id: Id,
       estado: EstadoDaIdeia,
       resultadoLink: string | null,
+      resultadoImagem?: ImagemParaGuardar | null,
     ): Promise<NeuronioNaTela[]> =>
-      pedir<'definirEstado'>({ tipo: 'definirEstado', id, estado, resultadoLink }),
+      pedir<'definirEstado'>({ tipo: 'definirEstado', id, estado, resultadoLink, resultadoImagem }),
 
     tocar: (id: Id): Promise<NeuronioNaTela | null> => pedir<'tocar'>({ tipo: 'tocar', id }),
 
@@ -168,6 +170,12 @@ export function criarWorkerEngine(): ConnectionEngine {
 
     lerImagem: (anexoId: Id, tamanho: 'miniatura' | 'inteira'): Promise<Uint8Array | null> =>
       pedir<'lerImagem'>({ tipo: 'lerImagem', anexoId, tamanho }),
+
+    lerImagemDoResultado: (
+      neuronioId: Id,
+      tamanho: 'miniatura' | 'inteira',
+    ): Promise<Uint8Array | null> =>
+      pedir<'lerImagemDoResultado'>({ tipo: 'lerImagemDoResultado', neuronioId, tamanho }),
 
     buscarPorSentido: (consulta: string): Promise<Id[]> =>
       pedir<'buscarPorSentido'>({ tipo: 'buscarPorSentido', consulta }),

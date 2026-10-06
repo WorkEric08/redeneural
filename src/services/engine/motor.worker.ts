@@ -36,6 +36,7 @@ import {
   type AcervoGravado,
   type Anexo,
   type ArquivoDoAnexo,
+  type ImagemParaGuardar,
   type CriarAnexoInput,
   type CriarLivroInput,
   type CriarNeuronioInput,
@@ -491,14 +492,14 @@ async function despertar(novoId: Id): Promise<{ id: Id; titulo: string }[]> {
  * recebê-lo — e aí a tela pergunta. Roda depois das conexões, com o perfil já
  * assentado — a mesma régua delas.
  */
-async function guardarAutomaticamente(id: Id): Promise<void> {
+async function guardarAutomaticamente(id: Id): Promise<Id | null> {
   const [perfil, neuronios, livros] = await Promise.all([
     repo.getPerfil(),
     repo.listNeuronios(),
     repo.listLivros(),
   ])
   const alvo = neuronios.find((n) => n.id === id)
-  if (!alvo) return
+  if (!alvo) return null
 
   // Um livro executável nunca recebe ideia sozinho: só por escolha. A lista vem na
   // ordem da estante, que é o desempate e o destino de quem não tem com quem comparar.
@@ -514,6 +515,7 @@ async function guardarAutomaticamente(id: Id): Promise<void> {
         )
       : (disponiveis[0] ?? null)
   if (livroId !== null) await guardar(id, livroId)
+  return livroId
 }
 
 /**
@@ -548,8 +550,15 @@ async function guardar(id: Id, livroId: Id): Promise<void> {
   )
 }
 
-async function guardarNeuronio(id: Id, livroId: Id): Promise<NeuronioGuardado> {
-  await guardar(id, livroId)
+async function guardarNeuronio(id: Id, livroId: Id | null): Promise<NeuronioGuardado> {
+  if (livroId === null) {
+    // "Automático": é como uma ideia deixa de ser executável sem dizer para onde vai.
+    if ((await guardarAutomaticamente(id)) === null) {
+      throw new Error('não há um livro de conceitos, fora dos executáveis, para guardar')
+    }
+  } else {
+    await guardar(id, livroId)
+  }
   await encaixarNoMapa()
   const [neuronios, conexoes, mapa] = await Promise.all([
     repo.listNeuronios(),
@@ -568,18 +577,37 @@ async function definirEstado(
   id: Id,
   estado: EstadoDaIdeia,
   resultadoLink: string | null,
+  resultadoImagem: ImagemParaGuardar | null | undefined,
 ): Promise<NeuronioNaTela[]> {
   const neuronio = await repo.getNeuronio(id)
   if (!neuronio) throw new Error(`neurônio ${id} não existe`)
   const livro = neuronio.livroId === null ? undefined : await repo.getLivro(neuronio.livroId)
   if (!livro?.executavel) throw new Error('o andamento só existe num livro executável')
 
-  await repo.upsertNeuronio({
-    ...neuronio,
-    estado,
-    resultadoLink: estado === 'feita' ? resultadoLink : neuronio.resultadoLink,
-    ultimoToque: new Date(),
-  })
+  // A imagem do resultado vai e vem com o link: só junto de "feita", e mudar de estado
+  // depois não a apaga. `undefined` mantém, `null` tira, uma imagem nova a reduz e grava.
+  let imagem = neuronio.resultadoImagem
+  let arquivo: ArquivoDoAnexo | undefined
+  if (estado === 'feita' && resultadoImagem !== undefined) {
+    if (resultadoImagem === null) {
+      imagem = null
+    } else {
+      const r = await reduzirImagem(resultadoImagem.bytes, resultadoImagem.mime)
+      imagem = { mime: r.mime, largura: r.largura, altura: r.altura }
+      arquivo = { imagem: r.imagem, miniatura: r.miniatura }
+    }
+  }
+
+  await repo.upsertNeuronio(
+    {
+      ...neuronio,
+      estado,
+      resultadoLink: estado === 'feita' ? resultadoLink : neuronio.resultadoLink,
+      resultadoImagem: imagem,
+      ultimoToque: new Date(),
+    },
+    arquivo,
+  )
   return (await repo.listNeuronios()).map(paraTela)
 }
 
@@ -780,6 +808,15 @@ async function editarAnexo(input: EditarAnexoInput): Promise<EstadoDoPalacio> {
   return estadoAtual()
 }
 
+async function lerImagemDoResultado(
+  neuronioId: Id,
+  tamanho: 'miniatura' | 'inteira',
+): Promise<Uint8Array | null> {
+  const arquivo = await repo.getResultado(neuronioId)
+  if (!arquivo) return null
+  return tamanho === 'miniatura' ? arquivo.miniatura : arquivo.imagem
+}
+
 async function lerImagem(
   anexoId: Id,
   tamanho: 'miniatura' | 'inteira',
@@ -832,7 +869,7 @@ async function responder(msg: ParaMotor): Promise<DoMotor> {
         return {
           req: msg.req,
           ok: true,
-          dados: await definirEstado(msg.id, msg.estado, msg.resultadoLink),
+          dados: await definirEstado(msg.id, msg.estado, msg.resultadoLink, msg.resultadoImagem),
         }
 
       case 'tocar':
@@ -911,6 +948,13 @@ async function responder(msg: ParaMotor): Promise<DoMotor> {
         // Nenhum conceito perde vizinho por causa de um anexo: sem reprocessar.
         await repo.deleteAnexo(msg.anexoId)
         return { req: msg.req, ok: true, dados: await estadoAtual() }
+
+      case 'lerImagemDoResultado':
+        return {
+          req: msg.req,
+          ok: true,
+          dados: await lerImagemDoResultado(msg.neuronioId, msg.tamanho),
+        }
 
       case 'lerImagem':
         return { req: msg.req, ok: true, dados: await lerImagem(msg.anexoId, msg.tamanho) }

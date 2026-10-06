@@ -68,7 +68,7 @@ export function livroFromSnapshot(s: LivroSnapshot, prateleira: number, ordem: n
   }
 }
 
-export function neuronioToSnapshot(n: Neuronio): NeuronioSnapshot {
+export function neuronioToSnapshot(n: Neuronio, resultado?: ArquivoDoAnexo): NeuronioSnapshot {
   return {
     id: n.id,
     livroId: n.livroId,
@@ -78,9 +78,26 @@ export function neuronioToSnapshot(n: Neuronio): NeuronioSnapshot {
     estado: n.estado,
     ultimoToque: toIso(n.ultimoToque),
     resultadoLink: n.resultadoLink,
+    resultadoImagem: n.resultadoImagem,
+    ...(resultado && {
+      resultadoArquivo: {
+        imagem: bytesToBase64(resultado.imagem),
+        miniatura: bytesToBase64(resultado.miniatura),
+      },
+    }),
     createdAt: toIso(n.createdAt),
     updatedAt: toIso(n.updatedAt),
   }
+}
+
+/** Os bytes da imagem do resultado que vieram no arquivo, se vieram. */
+export function resultadoFromSnapshot(s: NeuronioSnapshot): ArquivoDoAnexo | undefined {
+  return (
+    s.resultadoArquivo && {
+      imagem: base64ToBytes(s.resultadoArquivo.imagem),
+      miniatura: base64ToBytes(s.resultadoArquivo.miniatura),
+    }
+  )
 }
 
 export function neuronioFromSnapshot(s: NeuronioSnapshot): Neuronio {
@@ -99,6 +116,8 @@ export function neuronioFromSnapshot(s: NeuronioSnapshot): Neuronio {
         ? updatedAt
         : fromIso(s.ultimoToque, `neuronio ${s.id}.ultimoToque`),
     resultadoLink: s.resultadoLink ?? null,
+    // Sem os bytes no arquivo não há imagem para mostrar: fica sem.
+    resultadoImagem: s.resultadoArquivo ? (s.resultadoImagem ?? null) : null,
     createdAt: fromIso(s.createdAt, `neuronio ${s.id}.createdAt`),
     updatedAt,
   }

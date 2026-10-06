@@ -22,6 +22,7 @@ import {
   type EnfeiteGravado,
   type EstadoDaIdeia,
   type EstiloDaLombada,
+  type ImagemParaGuardar,
   type Livro,
   type MapaDoPalacio,
   type ModoDaBusca,
@@ -118,8 +119,11 @@ interface PalacioStore {
   editarNeuronio: (id: string, mudancas: NovoNeuronio) => Promise<boolean>
   /** `false` se o motor não conseguiu — quem confirmou fica onde está e lê o erro. */
   apagarNeuronio: (id: string) => Promise<boolean>
-  /** Põe o neurônio num livro de conceitos, sem reler o texto. `false` se o motor não conseguiu. */
-  guardarNeuronio: (id: string, livroId: string) => Promise<boolean>
+  /**
+   * Põe o neurônio num livro de conceitos, sem reler o texto. `livroId` `null` é "Automático":
+   * o motor escolhe pelo texto, fora dos executáveis. `false` se o motor não conseguiu.
+   */
+  guardarNeuronio: (id: string, livroId: string | null) => Promise<boolean>
   /**
    * O andamento de uma ideia num livro executável, e o link do resultado
    * quando ela está feita. Otimista. `false` se o motor não conseguiu.
@@ -128,6 +132,7 @@ interface PalacioStore {
     id: string,
     estado: EstadoDaIdeia,
     resultadoLink: string | null,
+    resultadoImagem?: ImagemParaGuardar | null,
   ) => Promise<boolean>
   /**
    * Um toque numa ideia de livro executável: abrir a tela dela, ou o
@@ -203,6 +208,11 @@ interface PalacioStore {
   apagarAnexo: (id: string) => Promise<boolean>
   /** Os bytes de uma imagem do acervo, para quem vai desenhá-la. Não é estado. */
   lerImagem: (anexoId: string, tamanho: 'miniatura' | 'inteira') => Promise<Uint8Array | null>
+  /** Os bytes da imagem do resultado de uma ideia, para quem vai desenhá-la. Não é estado. */
+  lerImagemDoResultado: (
+    neuronioId: string,
+    tamanho: 'miniatura' | 'inteira',
+  ) => Promise<Uint8Array | null>
   /**
    * Os ids dos neurônios mais parecidos com a consulta, em ordem. Não é estado,
    * como `lerImagem`: quem pergunta guarda a resposta. Falhar é com quem chamou
@@ -276,6 +286,7 @@ export const usePalacio = create<PalacioStore>()((set, get) => {
         estado: estadoAoGuardar(undefined, livro),
         ultimoToque: agora,
         resultadoLink: null,
+        resultadoImagem: null,
         createdAt: agora,
         updatedAt: agora,
       }
@@ -369,10 +380,14 @@ export const usePalacio = create<PalacioStore>()((set, get) => {
       // Otimista: o neurônio já aparece no livro; a ponte chega com o motor.
       const anterior = get().neuronios.find((n) => n.id === id)
       const livro = get().livros.find((l) => l.id === livroId)
+      // "Automático" (`null`) não sabe o destino até o motor ler o texto.
       set((s) => ({
-        neuronios: s.neuronios.map((n) =>
-          n.id === id ? { ...n, livroId, estado: estadoAoGuardar(n, livro) } : n,
-        ),
+        neuronios:
+          livroId === null
+            ? s.neuronios
+            : s.neuronios.map((n) =>
+                n.id === id ? { ...n, livroId, estado: estadoAoGuardar(n, livro) } : n,
+              ),
         erro: null,
       }))
 
@@ -407,7 +422,7 @@ export const usePalacio = create<PalacioStore>()((set, get) => {
       }
     },
 
-    async definirEstado(id, estado, resultadoLink): Promise<boolean> {
+    async definirEstado(id, estado, resultadoLink, resultadoImagem): Promise<boolean> {
       const anterior = get().neuronios.find((n) => n.id === id)
       set((s) => ({
         neuronios: s.neuronios.map((n) =>
@@ -424,7 +439,11 @@ export const usePalacio = create<PalacioStore>()((set, get) => {
       }))
 
       try {
-        set({ neuronios: await engine.definirEstado(id, estado, resultadoLink) })
+        // A imagem não tem otimismo: ela ainda vai ser reduzida no Worker, e as medidas
+        // só se sabem depois. O estado e o link já estão na tela.
+        set({
+          neuronios: await engine.definirEstado(id, estado, resultadoLink, resultadoImagem),
+        })
         return true
       } catch (e) {
         set((s) => ({
@@ -749,6 +768,10 @@ export const usePalacio = create<PalacioStore>()((set, get) => {
 
     lerImagem(anexoId, tamanho) {
       return engine.lerImagem(anexoId, tamanho)
+    },
+
+    lerImagemDoResultado(neuronioId, tamanho) {
+      return engine.lerImagemDoResultado(neuronioId, tamanho)
     },
 
     async buscarPorSentido(consulta) {
