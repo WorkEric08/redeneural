@@ -4971,9 +4971,13 @@ assoalho e do "estante em CSS, sem imagem" não vale mais.
   no trilho e na base). Levantei o brilho em ×2,1 — o original é mais escuro que o fundo e
   a estrutura sumiria — e ficou com ~40 KB cada. `webp` entrou no precache do PWA
   (`vite.config.ts`), senão a estante perderia a madeira offline.
-- **A base** (`.movel-base`) imita o pé da referência: um friso fino, a canaleta redonda e
-  um degrau, sobre a tábua lisa do pé. **É mais larga que o corpo**, 4 px de cada lado
-  (`--mv-projecao`), como no móvel da foto. A moldura são gradientes sobre a madeira.
+- **A base** (`.movel-base`) imita o pé da referência e tem duas partes. A **moldura** (metade
+  de cima, o `::before`: friso, canaleta redonda e degrau) é **escura** — só a luz nas curvas
+  a desenha, sob um véu de sombra. O **soco** (metade de baixo, o `::after`) é um painel de
+  móvel de verdade: o quadro de madeira de veio na horizontal, com o chanfro de luz em cima, e
+  dentro dele um **painel rebaixado de veio na vertical** (`.movel-base-painel`, a fresa escura
+  em cima e à esquerda e a luz fina embaixo). Um véu leve de verniz tira o jeito de madeira
+  crua. **É mais larga que o corpo**, 4 px de cada lado (`--mv-projecao`), como no móvel da foto.
 - **Uma versão para cada quantidade de prateleiras (1 a 6):** `--mv-base` vale 52, 46, 42, 38,
   34 e 30 px (`.movel[data-prateleiras='N']`, escrito por `Movel.tsx`). Com poucas prateleiras
   a fileira é alta (até 132 px) e há altura de sobra, então a base cresce; com seis ela

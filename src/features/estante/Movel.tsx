@@ -203,7 +203,9 @@ export function Movel({
         <span className="movel-pilastra movel-pilastra--dir" aria-hidden />
       </div>
 
-      <span className="movel-base" aria-hidden />
+      <span className="movel-base" aria-hidden>
+        <span className="movel-base-painel" />
+      </span>
       <span className="movel-luar" aria-hidden />
 
       {naMao && gesto.origem && (

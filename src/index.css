@@ -650,33 +650,73 @@ img {
   box-shadow: inset 0 0 0 1px rgb(0 0 0 / 0.4);
 }
 
-/* A moldura: metade de cima da base, um pouco recuada em relação à tábua do pé. */
+/* A moldura: metade de cima da base, um pouco recuada em relação ao soco. Escura:
+   o friso, a canaleta redonda e o degrau só aparecem pela luz que pega nas
+   curvas, e um véu de sombra por cima de tudo assenta a peça. */
 .movel-base::before {
   content: '';
   position: absolute;
   inset: 0 2px auto;
   height: 48%;
   background:
+    linear-gradient(rgb(0 0 0 / 0.22), rgb(0 0 0 / 0.22)),
     linear-gradient(
       180deg,
-      rgb(170 195 255 / 0.3) 0 12%,
-      rgb(0 0 0 / 0.55) 12% 18%,
-      rgb(150 180 255 / 0.42) 18% 34%,
-      rgb(255 255 255 / 0.26) 34% 52%,
-      rgb(0 0 0 / 0.5) 52% 74%,
-      rgb(120 150 255 / 0.2) 74% 86%,
-      rgb(0 0 0 / 0.65) 86% 100%
+      rgb(150 175 240 / 0.2) 0 12%,
+      rgb(0 0 0 / 0.62) 12% 18%,
+      rgb(120 150 230 / 0.3) 18% 34%,
+      rgb(255 255 255 / 0.14) 34% 52%,
+      rgb(0 0 0 / 0.58) 52% 74%,
+      rgb(100 130 220 / 0.12) 74% 86%,
+      rgb(0 0 0 / 0.72) 86% 100%
     ),
     url('./assets/madeira-azul-h.webp') 70% 20% / 760px auto;
   box-shadow: 0 1px 0 rgb(0 0 0 / 0.6);
 }
 
-/* A tábua lisa do pé, com o fio de luz onde a moldura acaba. */
+/* O soco: a metade de baixo. Um painel de móvel de verdade — o quadro (a
+   moldura chata das bordas, com o veio na horizontal e o chanfro de luz em cima)
+   e, dentro dele, o painel rebaixado de veio na vertical (`.movel-base-painel`).
+   O véu escuro tira o jeito de madeira crua: é verniz sobre a madeira. */
 .movel-base::after {
   content: '';
   position: absolute;
   inset: 52% 0 0;
-  background: linear-gradient(180deg, rgb(120 150 255 / 0.16) 0 1px, transparent 1px);
+  background:
+    linear-gradient(
+      180deg,
+      rgb(140 170 255 / 0.26) 0 1px,
+      rgb(255 255 255 / 0.07) 1px 28%,
+      transparent 60%,
+      rgb(0 0 0 / 0.38)
+    ),
+    linear-gradient(rgb(4 9 28 / 0.14), rgb(4 9 28 / 0.14)),
+    url('./assets/madeira-azul-h.webp') 20% 60% / 900px auto;
+  box-shadow:
+    inset 0 -1px 0 rgb(0 0 0 / 0.75),
+    inset 1px 0 0 rgb(140 170 255 / 0.1),
+    inset -1px 0 0 rgb(0 0 0 / 0.5);
+}
+
+/* O painel rebaixado do soco, dentro do quadro: a borda interna escura em cima e
+   à esquerda (a fresa) e a luz fina embaixo — o relevo de um painel de verdade. */
+.movel-base-painel {
+  position: absolute;
+  top: calc(52% + 3px);
+  right: 10px;
+  bottom: 3px;
+  left: 10px;
+  border-radius: 1px;
+  background:
+    linear-gradient(180deg, rgb(0 0 0 / 0.4), rgb(0 0 0 / 0.06) 45%, rgb(0 0 0 / 0.22)),
+    linear-gradient(rgb(4 9 28 / 0.1), rgb(4 9 28 / 0.1)),
+    url('./assets/madeira-azul-v.webp') 45% 15% / 300px auto;
+  box-shadow:
+    inset 0 1px 2px rgb(0 0 0 / 0.85),
+    inset 1px 0 2px rgb(0 0 0 / 0.55),
+    0 1px 0 rgb(140 170 255 / 0.14),
+    0 0 0 1px rgb(0 0 0 / 0.5);
+  z-index: 1;
 }
 
 /* As duas laterais: madeira de veio na vertical, iguais — a mesma largura, o mesmo
