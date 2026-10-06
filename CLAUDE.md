@@ -5264,6 +5264,49 @@ miniatura de 320 px, sem os metadados da câmera), o mesmo desenho (`ImagemDoRes
 - **Fora daqui:** mais de uma imagem por ideia, e imagem em ideia que não é executável (o
   resultado só existe em "feita").
 
+## O visor de imagens (07/10/2026)
+
+Pedido do usuário: tocar numa imagem de um neurônio a põe **no meio da tela, com o fundo
+desfocado**; com mais de uma imagem (as da pasta, até 8) troca-se **arrastando para o lado ou por
+uma seta**. Leitura minha, avisada: "imagem de um neurônio" é a **imagem do resultado** de uma
+ideia feita (uma só), e "até 8 imagens" são as da **pasta de acervo**.
+
+- **Onde abre.** Na tela da ideia feita, a imagem do "Resultado" (uma imagem: sem contador nem
+  setas). Na tela de um item de imagem da pasta, a imagem inteira: o visor percorre **todas as
+  imagens da pasta**, na ordem da grade, começando na tocada. Na grade da pasta, tocar num cartão
+  continua abrindo a tela do item — o visor é um toque a mais, dali.
+- **O componente** (`components/VisorDeImagens.tsx`): `<dialog>` nativo com `showModal`, como a
+  `Folha` (camada do topo, foco preso, tela de baixo inerte). No meio da tela, `object-contain`
+  (nada é cortado, retrato ou paisagem), cantos redondos e sombra. O fundo é uma camada
+  (`.visor-vidro`) com `backdrop-filter: blur(18px)` e um véu escuro.
+- **Trocar de imagem:** arrastar para o lado (a pista acompanha o dedo; passando de 56 px, ou
+  soltando rápido — 0,45 px/ms —, troca; menos que isso volta; nas pontas ela só segue 30% do
+  dedo, como a folha elástica), as setas ‹ › (a da ponta fica desabilitada), as teclas ← →, e o
+  contador "2 / 3" no alto. A conta do gesto é pura e testada (`lib/visor.ts`).
+- **Fechar:** o ×, tocar fora da imagem (tocar na imagem não fecha), o Esc e o **voltar do
+  Android**: o visor mora na URL (`?ver=<id da imagem>`, `hooks/useVisorNaUrl.ts`). Abrir empilha;
+  trocar de imagem **substitui** a entrada (voltar fecha o visor, em vez de passar foto a foto).
+  Um `?ver=` que não é de nenhuma imagem (apagada) é visor fechado.
+- **Memória:** só a imagem à mostra e as duas vizinhas são desenhadas (a vizinha já está pronta
+  quando o dedo chega); as outras não carregam. As imagens vêm do motor pela imagem inteira
+  (`lerImagem` / `lerImagemDoResultado`), como as telas de item e de ideia.
+- **Armadilha achada: o desfoque não aparecia no build.** O otimizador de CSS (lightningcss)
+  **descartava `backdrop-filter`** quando o bloco também tinha `-webkit-backdrop-filter`, e o Chrome só
+  entende a propriedade padrão. O mesmo valia para as folhas (`.folha::backdrop`) e o dial: o desfoque
+  deles **nunca apareceu** num build de produção. Agora o CSS declara só `backdrop-filter` (o build
+  acrescenta o prefixo sozinho), e o visor, as folhas e o dial desfocam de verdade — as folhas
+  ficam visivelmente mais desfocadas atrás do que antes. Se um desfoque sumir de novo, olhar o
+  CSS gerado (`dist/assets/*.css`), não o fonte.
+- **Verificado** no Chrome (build de produção) em 320×568, 412×892 e 1440×900, com uma pasta de 3
+  imagens (paisagem e retrato) e uma ideia com imagem de resultado: abre no meio da tela e dentro
+  dela; fundo com `blur(18px)`; seta, tecla e arrasto trocam (também além da ponta, sem passar);
+  arrasto curto volta; voltar fecha e fica na tela; tocar fora e Esc e × fecham; tocar na imagem não
+  fecha; a ideia abre com uma imagem só, sem contador nem setas. Um bug visto no caminho: a
+  segunda arrastada era cancelada pelo navegador (`pointercancel`, um arrasto nativo de seleção) —
+  resolvido com `user-select: none` no visor. 608 testes. **Não verificado em toque real.**
+- **Fora daqui:** zoom por pinça (o zoom da página está travado no app inteiro), e abrir o
+  visor direto de um cartão da grade da pasta.
+
 ## Mostrar tudo sem deslize vertical: as folhas e o andamento (06/10/2026)
 
 Pedido do usuário, sobre os livros executáveis: melhorar de forma geral, e em especial a

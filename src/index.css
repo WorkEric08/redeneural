@@ -2035,10 +2035,10 @@ img {
 .folha::backdrop {
   background: rgb(4 8 20 / 0.55);
   /* O mesmo desfoque atrás do dial (Dial.tsx) — aqui um pouco mais forte, por
-     ser modal cheio e não um véu de anel. `-webkit-` porque `::backdrop` é
-     onde o Safari mais atrasa o suporte sem prefixo. */
+     ser modal cheio e não um véu de anel. Só a propriedade padrão, de propósito: o build
+     acrescenta o `-webkit-` sozinho, e escrever os dois no mesmo bloco fazia o otimizador
+     descartar a padrão — e o Chrome só entende essa (visto em 07/10/2026). */
   backdrop-filter: blur(6px);
-  -webkit-backdrop-filter: blur(6px);
   animation: folha-escurecer 220ms ease-out;
 }
 
@@ -2095,6 +2095,151 @@ img {
   from {
     opacity: 0;
   }
+}
+
+/* ---------------------------------------------------------------------------
+ * O visor de imagens (07/10/2026): a imagem no meio da tela, com o fundo desfocado.
+ * `<dialog>` de tela inteira e transparente — quem escurece e desfoca a tela de baixo é o
+ * `::backdrop`. É claro sobre escuro nos dois temas: o fundo é a imagem, e não a sala.
+ * ------------------------------------------------------------------------ */
+
+.visor {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  max-width: none;
+  max-height: none;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #fff;
+  /* Sem seleção: arrastar para trocar de imagem não pode virar um arrasto nativo de texto ou
+     imagem, que o navegador responde cancelando o gesto (`pointercancel`). */
+  user-select: none;
+}
+
+.visor[open] {
+  display: flex;
+  flex-direction: column;
+  animation: folha-escurecer 200ms ease-out;
+}
+
+.visor::backdrop {
+  background: rgb(4 8 20 / 0.6);
+  backdrop-filter: blur(18px);
+  animation: folha-escurecer 220ms ease-out;
+}
+
+/* A camada que desfoca a tela de baixo: cobre o visor inteiro, atrás de tudo. */
+.visor-vidro {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background: rgb(4 8 20 / 0.35);
+  backdrop-filter: blur(18px);
+}
+
+.visor-topo {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: calc(env(safe-area-inset-top) + 56px);
+  padding: calc(env(safe-area-inset-top) + 6px) 12px 0;
+}
+
+/* O contador fica no meio de verdade: a margem à esquerda é a largura do × da direita. */
+.visor-contador {
+  flex: 1;
+  margin-left: 44px;
+  font-size: 0.875rem;
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+  color: rgb(255 255 255 / 0.85);
+}
+
+.visor-botao {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 44px;
+  height: 44px;
+  border: 1px solid rgb(255 255 255 / 0.18);
+  border-radius: 999px;
+  background: rgb(0 0 0 / 0.45);
+  color: #fff;
+  cursor: pointer;
+  transition: opacity 150ms;
+}
+
+.visor-botao:active {
+  background: rgb(0 0 0 / 0.65);
+}
+
+.visor-botao:disabled {
+  opacity: 0.3;
+  pointer-events: none;
+}
+
+/* A área do gesto: o arrasto horizontal é do app. */
+.visor-pista {
+  position: relative;
+  z-index: 1;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: hidden;
+  touch-action: pan-y;
+}
+
+.visor-trilho {
+  display: flex;
+  height: 100%;
+  transition: transform 260ms cubic-bezier(0.2, 0.8, 0.2, 1);
+  will-change: transform;
+}
+
+/* Arrastando, a pista segue o dedo quadro a quadro, sem atraso. */
+.visor-trilho[data-arrastando] {
+  transition: none;
+}
+
+.visor-slide {
+  display: grid;
+  flex: 0 0 100%;
+  grid-template: minmax(0, 1fr) / minmax(0, 1fr);
+  min-width: 0;
+  height: 100%;
+  place-items: center;
+  padding: 8px 16px calc(24px + env(safe-area-inset-bottom));
+}
+
+.visor-imagem {
+  max-width: 100%;
+  max-height: 100%;
+  border-radius: 12px;
+  box-shadow: 0 18px 50px rgb(0 0 0 / 0.5);
+  object-fit: contain;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+
+.visor-seta {
+  position: absolute;
+  top: 50%;
+  z-index: 2;
+  transform: translateY(-50%);
+}
+
+.visor-seta--esq {
+  left: 8px;
+}
+
+.visor-seta--dir {
+  right: 8px;
 }
 
 @media (min-width: 768px) {
@@ -2512,7 +2657,6 @@ img {
       )
       0 fill / 0 / 0 100vmax;
     backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
   }
 
   .barra-de-topo-titulo {

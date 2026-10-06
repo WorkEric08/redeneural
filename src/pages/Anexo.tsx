@@ -1,5 +1,5 @@
 import { ExternalLink, PencilLine, Trash2 } from 'lucide-react'
-import { useMemo, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import { Link, useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 
 import { BarraDeTopo } from '@/components/BarraDeTopo'
@@ -9,7 +9,9 @@ import { EtiquetaProcessando } from '@/components/EtiquetaProcessando'
 import { Folha } from '@/components/Folha'
 import type { AnexoNaTela } from '@/core'
 import { dominioDe, miniaturaDoLink } from '@/features/acervo/links'
+import { VisorDeImagens } from '@/components/VisorDeImagens'
 import { Miniatura } from '@/features/acervo/Miniatura'
+import { useVisorNaUrl } from '@/hooks/useVisorNaUrl'
 import { conceitosPorAnexo, situacaoDoAnexo } from '@/features/acervo/resumo'
 import { TextoComLinks } from '@/features/neuronio/TextoComLinks'
 import { ROTULO_DO_PORTO } from '@/features/porto/porto'
@@ -40,7 +42,22 @@ export default function Anexo() {
   const localizacao = useLocation()
   const { key } = localizacao
   const navegar = useNavigate()
-  const { livros, anexos, vinculos, neuronios, carregado, ocupado, apagarAnexo } = usePalacio()
+  const { livros, anexos, vinculos, neuronios, carregado, ocupado, apagarAnexo, lerImagem } =
+    usePalacio()
+
+  // As imagens da pasta, na ordem da grade: o visor as percorre arrastando ou pelas setas
+  // (até 8 — ver `MAXIMO_DE_IMAGENS_NA_PASTA`). Mora na URL (`?ver=`): voltar fecha.
+  const imagensDaPasta = useMemo(
+    () =>
+      anexos.filter(
+        (a) =>
+          a.livroId === anexos.find((x) => x.id === anexoId)?.livroId && a.midia.tipo === 'imagem',
+      ),
+    [anexos, anexoId],
+  )
+  const idsDoVisor = useMemo(() => imagensDaPasta.map((a) => a.id), [imagensDaPasta])
+  const visor = useVisorNaUrl(idsDoVisor)
+  const carregarDoVisor = useCallback((id: string) => lerImagem(id, 'inteira'), [lerImagem])
 
   // O apagado continua desenhado o instante entre o motor responder e a
   // navegação sair daqui, como na tela do neurônio.
@@ -149,7 +166,20 @@ export default function Anexo() {
 
       <article className="animar-entrada flex flex-col gap-6 pt-5">
         {anexo.midia.tipo === 'imagem' ? (
-          <Miniatura anexo={anexo} tamanho="inteira" className="max-h-[70dvh] w-full rounded-2xl" />
+          <button
+            type="button"
+            aria-label="Ampliar a imagem"
+            onClick={() => {
+              visor.abrir(anexo.id)
+            }}
+            className="block w-full cursor-zoom-in"
+          >
+            <Miniatura
+              anexo={anexo}
+              tamanho="inteira"
+              className="max-h-[70dvh] w-full rounded-2xl"
+            />
+          </button>
         ) : (
           <div className="cartao flex flex-col">
             {/* Sem miniatura (link que não é vídeo), a caixa só repetiria o
@@ -225,6 +255,21 @@ export default function Anexo() {
           )}
         </section>
       </article>
+
+      {anexo.midia.tipo === 'imagem' && (
+        <VisorDeImagens
+          aberto={visor.aberto}
+          imagens={imagensDaPasta.flatMap((a) =>
+            a.midia.tipo === 'imagem'
+              ? [{ id: a.id, mime: a.midia.mime, rotulo: a.legenda.trim() || 'Imagem sem legenda' }]
+              : [],
+          )}
+          indice={visor.indice}
+          onIndice={visor.trocar}
+          carregar={carregarDoVisor}
+          onFechar={visor.fechar}
+        />
+      )}
 
       <Folha aberta={perguntando} rotulo="Apagar este item" onFechar={desistir}>
         <Confirmacao

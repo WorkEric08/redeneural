@@ -1,5 +1,5 @@
 import { ExternalLink, Hammer, PencilLine, Search, Trash2, Undo2 } from 'lucide-react'
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link, useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 
 import { BarraDeTopo } from '@/components/BarraDeTopo'
@@ -7,6 +7,7 @@ import { botao } from '@/components/botao'
 import { Confirmacao } from '@/components/Confirmacao'
 import { EtiquetaProcessando } from '@/components/EtiquetaProcessando'
 import { Folha } from '@/components/Folha'
+import { VisorDeImagens } from '@/components/VisorDeImagens'
 import { estadoVisivel, type NeuronioNaTela } from '@/core'
 import { vizinhosPorNeuronio } from '@/features/estante/resumo'
 import { ROTULO_DO_ESTADO } from '@/features/executaveis/estados'
@@ -17,6 +18,7 @@ import { IconeDoEstado } from '@/features/executaveis/IconeDoEstado'
 import { ImagemDoResultado } from '@/features/executaveis/ImagemDoResultado'
 import { useCriarLivroExecutavel } from '@/features/executaveis/useCriarLivroExecutavel'
 import { TextoComLinks } from '@/features/neuronio/TextoComLinks'
+import { useVisorNaUrl } from '@/hooks/useVisorNaUrl'
 import { ROTULO_DO_PORTO } from '@/features/porto/porto'
 import { usePalacio } from '@/store/palacio'
 
@@ -68,10 +70,20 @@ export default function Neuronio() {
     apagarNeuronio,
     guardarNeuronio,
     definirEstado,
+    lerImagemDoResultado,
     avisar,
     tocar,
   } = usePalacio()
   const criarLivroExecutavel = useCriarLivroExecutavel()
+
+  // A imagem do resultado, ampliada: no meio da tela, com o fundo desfocado. Mora na URL
+  // (`?ver=`), para o voltar do Android fechar. Uma imagem só — sem setas.
+  const idsDoVisor = useMemo(() => (neuronioId ? [neuronioId] : []), [neuronioId])
+  const visor = useVisorNaUrl(idsDoVisor)
+  const carregarDoVisor = useCallback(
+    (id: string) => lerImagemDoResultado(id, 'inteira'),
+    [lerImagemDoResultado],
+  )
 
   // O apagado continua desenhado o instante entre o motor responder e a
   // navegação sair daqui — senão piscaria "não existe mais" e a folha sumiria
@@ -347,14 +359,36 @@ export default function Neuronio() {
             <h2 id="resultado-imagem" className="rotulo-de-secao">
               Resultado
             </h2>
-            <ImagemDoResultado
-              neuronio={neuronio}
-              tamanho="inteira"
-              className="max-h-96 w-full rounded-2xl"
-            />
+            <button
+              type="button"
+              aria-label="Ampliar a imagem do resultado"
+              onClick={() => {
+                visor.abrir(neuronio.id)
+              }}
+              className="block w-full cursor-zoom-in"
+            >
+              <ImagemDoResultado
+                neuronio={neuronio}
+                tamanho="inteira"
+                className="max-h-96 w-full rounded-2xl"
+              />
+            </button>
           </section>
         )}
       </article>
+
+      {neuronio.resultadoImagem && (
+        <VisorDeImagens
+          aberto={visor.aberto}
+          imagens={[
+            { id: neuronio.id, mime: neuronio.resultadoImagem.mime, rotulo: neuronio.titulo },
+          ]}
+          indice={0}
+          onIndice={visor.trocar}
+          carregar={carregarDoVisor}
+          onFechar={visor.fechar}
+        />
+      )}
 
       <FolhaDeEstado
         aberta={mudandoEstado && estado !== null}
