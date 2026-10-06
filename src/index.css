@@ -626,9 +626,15 @@ img {
   display: block;
   height: var(--mv-base);
   background:
-    linear-gradient(180deg, rgb(0 0 0 / 0.55), transparent 16%, transparent 78%, rgb(0 0 0 / 0.6)),
+    linear-gradient(
+      180deg,
+      rgb(0 0 0 / 0.65),
+      rgb(0 0 0 / 0.2) 16%,
+      rgb(0 0 0 / 0.2) 78%,
+      rgb(0 0 0 / 0.7)
+    ),
     url('./assets/madeira-azul-h.webp') 35% 80% / 760px auto;
-  box-shadow: inset 0 0 0 1px rgb(0 0 0 / 0.4);
+  box-shadow: inset 0 0 0 1px rgb(0 0 0 / 0.5);
 }
 
 /* A moldura: metade de cima da base, um pouco recuada em relação ao soco. Escura:
@@ -640,16 +646,16 @@ img {
   inset: 0 2px auto;
   height: 48%;
   background:
-    linear-gradient(rgb(0 0 0 / 0.22), rgb(0 0 0 / 0.22)),
+    linear-gradient(rgb(0 0 0 / 0.5), rgb(0 0 0 / 0.5)),
     linear-gradient(
       180deg,
-      rgb(150 175 240 / 0.2) 0 12%,
-      rgb(0 0 0 / 0.62) 12% 18%,
-      rgb(120 150 230 / 0.3) 18% 34%,
-      rgb(255 255 255 / 0.14) 34% 52%,
-      rgb(0 0 0 / 0.58) 52% 74%,
-      rgb(100 130 220 / 0.12) 74% 86%,
-      rgb(0 0 0 / 0.72) 86% 100%
+      rgb(150 175 240 / 0.12) 0 12%,
+      rgb(0 0 0 / 0.66) 12% 18%,
+      rgb(120 150 230 / 0.18) 18% 34%,
+      rgb(255 255 255 / 0.08) 34% 52%,
+      rgb(0 0 0 / 0.64) 52% 74%,
+      rgb(100 130 220 / 0.08) 74% 86%,
+      rgb(0 0 0 / 0.78) 86% 100%
     ),
     url('./assets/madeira-azul-h.webp') 70% 20% / 760px auto;
   box-shadow: 0 1px 0 rgb(0 0 0 / 0.6);
@@ -666,12 +672,12 @@ img {
   background:
     linear-gradient(
       180deg,
-      rgb(140 170 255 / 0.26) 0 1px,
-      rgb(255 255 255 / 0.07) 1px 28%,
+      rgb(140 170 255 / 0.16) 0 1px,
+      rgb(255 255 255 / 0.03) 1px 28%,
       transparent 60%,
-      rgb(0 0 0 / 0.38)
+      rgb(0 0 0 / 0.5)
     ),
-    linear-gradient(rgb(4 9 28 / 0.14), rgb(4 9 28 / 0.14)),
+    linear-gradient(rgb(4 9 28 / 0.42), rgb(4 9 28 / 0.42)),
     url('./assets/madeira-azul-h.webp') 20% 60% / 900px auto;
   box-shadow:
     inset 0 -1px 0 rgb(0 0 0 / 0.75),
@@ -689,14 +695,14 @@ img {
   left: 10px;
   border-radius: 1px;
   background:
-    linear-gradient(180deg, rgb(0 0 0 / 0.4), rgb(0 0 0 / 0.06) 45%, rgb(0 0 0 / 0.22)),
-    linear-gradient(rgb(4 9 28 / 0.1), rgb(4 9 28 / 0.1)),
+    linear-gradient(180deg, rgb(0 0 0 / 0.5), rgb(0 0 0 / 0.16) 45%, rgb(0 0 0 / 0.34)),
+    linear-gradient(rgb(4 9 28 / 0.34), rgb(4 9 28 / 0.34)),
     url('./assets/madeira-azul-v.webp') 45% 15% / 300px auto;
   box-shadow:
     inset 0 1px 2px rgb(0 0 0 / 0.85),
     inset 1px 0 2px rgb(0 0 0 / 0.55),
-    0 1px 0 rgb(140 170 255 / 0.14),
-    0 0 0 1px rgb(0 0 0 / 0.5);
+    0 1px 0 rgb(140 170 255 / 0.1),
+    0 0 0 1px rgb(0 0 0 / 0.55);
   z-index: 1;
 }
 

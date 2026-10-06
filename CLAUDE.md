@@ -5002,6 +5002,10 @@ assoalho e do "estante em CSS, sem imagem" não vale mais.
 - **A tábua das prateleiras** (8 px) é nítida e escura, na cor da madeira: o fio de luz da quina, a
   canaleta escura que a separa dos livros, o fio dourado, a face de madeira (véu leve, veio
   à mostra) e a quina de sombra no pé que a recorta.
+- **A base ficou mais escura** (07/10/2026, pedido do usuário): véus da moldura (0,5), do soco
+  (0,42) e do painel rebaixado (0,34), e as luzes das curvas reduzidas; o veio e o relevo
+  continuam à mostra. Cuidado: com véus bem acima disso o soco
+  vira preto chapado, e o painel perde o aspecto de madeira (já aconteceu na primeira versão).
 - **O tampo** (`.movel-cornija`, o trilho de 10 px em cima) é escuro como a moldura da base
   (07/10/2026, pedido do usuário): véu de sombra (`rgb(4 9 28 / 0.45)`) sobre a madeira e só um
   fio de luz de 1 px na quina.
