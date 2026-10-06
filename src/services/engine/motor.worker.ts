@@ -745,10 +745,17 @@ async function editarAnexo(input: EditarAnexoInput): Promise<EstadoDoPalacio> {
   if (!existente) throw new Error(`anexo ${input.id} não existe`)
 
   const legenda = input.legenda.trim()
-  const midia: MidiaDoAnexo =
-    existente.midia.tipo === 'link' && input.url !== undefined
-      ? { tipo: 'link', url: input.url.trim() }
-      : existente.midia
+  let midia: MidiaDoAnexo = existente.midia
+  let arquivo: ArquivoDoAnexo | undefined
+  if (existente.midia.tipo === 'link' && input.url !== undefined) {
+    midia = { tipo: 'link', url: input.url.trim() }
+  } else if (existente.midia.tipo === 'imagem' && input.imagem) {
+    // A imagem nova ocupa o lugar da antiga: o mesmo item, a mesma legenda, os mesmos
+    // vínculos (eles saem da legenda, não dos pixels).
+    const r = await reduzirImagem(input.imagem.bytes, input.imagem.mime)
+    midia = { tipo: 'imagem', mime: r.mime, largura: r.largura, altura: r.altura }
+    arquivo = { imagem: r.imagem, miniatura: r.miniatura }
+  }
   const mudouALegenda = legenda !== existente.legenda
 
   const base: Anexo = {
@@ -758,7 +765,7 @@ async function editarAnexo(input: EditarAnexoInput): Promise<EstadoDoPalacio> {
     embedding: mudouALegenda ? null : existente.embedding,
     updatedAt: new Date(),
   }
-  await repo.upsertAnexo(base)
+  await repo.upsertAnexo(base, arquivo)
 
   // Trocar só o endereço não muda o que o anexo significa. Uma legenda sem
   // vetor (a inferência de antes falhou) é a chance de tentar de novo.

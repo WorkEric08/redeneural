@@ -84,12 +84,18 @@ export interface CriarAnexoInput {
   conteudo: { tipo: 'link'; url: string } | { tipo: 'imagem'; bytes: Uint8Array; mime: string }
 }
 
-/** A imagem não se troca — apaga-se e cria-se outro. O endereço de um link, sim. */
+/**
+ * O que se troca num item da pasta: a legenda, o endereço de um link e — desde
+ * 07/10/2026 — a imagem. O tipo nunca muda: uma imagem só vira outra imagem, e um
+ * link, outro link.
+ */
 export interface EditarAnexoInput {
   id: Id
   legenda: string
   /** Só vale para anexo de link. */
   url?: string | undefined
+  /** Só vale para anexo de imagem: os bytes da nova, que ficam no lugar da antiga. */
+  imagem?: { bytes: Uint8Array; mime: string } | undefined
 }
 
 /** A parte do estado que é das pastas de acervo. */

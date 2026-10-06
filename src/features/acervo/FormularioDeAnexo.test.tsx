@@ -2,13 +2,13 @@ import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 
-import type { TipoDeItem } from '@/core'
+import type { AnexoNaTela, TipoDeItem } from '@/core'
 
 import { FormularioDeAnexo } from './FormularioDeAnexo'
 
 // O formulário importa a store (via a miniatura), e a store sobe o Worker do motor —
 // que não existe no jsdom. Aqui só se testa o formulário.
-vi.mock('@/store/palacio', () => ({ usePalacio: () => vi.fn() }))
+vi.mock('@/store/palacio', () => ({ usePalacio: () => vi.fn().mockResolvedValue(null) }))
 
 function montar(opcoes: { tipoInicial?: TipoDeItem; cheios?: TipoDeItem[] } = {}) {
   const onCriar = vi.fn()
@@ -52,5 +52,47 @@ describe('FormularioDeAnexo: o tipo vem do "+" da pasta', () => {
       tipo: 'link',
       url: 'https://exemplo.com/a',
     })
+  })
+})
+
+describe('FormularioDeAnexo: trocar um item da pasta', () => {
+  const T0 = new Date('2026-01-01T12:00:00.000Z')
+  const imagem: AnexoNaTela = {
+    id: 'a1',
+    livroId: 'p',
+    legenda: 'Uma foto',
+    midia: { tipo: 'imagem', mime: 'image/webp', largura: 40, altura: 20 },
+    processando: false,
+    createdAt: T0,
+    updatedAt: T0,
+  }
+  const link: AnexoNaTela = {
+    ...imagem,
+    id: 'a2',
+    legenda: 'Um artigo',
+    midia: { tipo: 'link', url: 'https://exemplo.com/a' },
+  }
+
+  it('uma imagem se troca por outra: oferece "Trocar imagem", e salvar sem escolher mantém a atual', async () => {
+    const onSalvar = vi.fn()
+    render(<FormularioDeAnexo modo="editar" anexo={imagem} ocupado={false} onSalvar={onSalvar} />)
+
+    expect(screen.getByRole('button', { name: 'Trocar imagem' })).toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: 'Salvar' }))
+    expect(onSalvar).toHaveBeenCalledWith('Uma foto', undefined, undefined)
+  })
+
+  it('um link se troca pelo endereço: vem preenchido e o tipo não muda', async () => {
+    const onSalvar = vi.fn()
+    render(<FormularioDeAnexo modo="editar" anexo={link} ocupado={false} onSalvar={onSalvar} />)
+
+    const campo = screen.getByPlaceholderText('https://…')
+    expect(campo).toHaveValue('https://exemplo.com/a')
+    expect(screen.queryByRole('group', { name: 'O que guardar' })).not.toBeInTheDocument()
+
+    await userEvent.clear(campo)
+    await userEvent.type(campo, 'https://exemplo.com/b')
+    await userEvent.click(screen.getByRole('button', { name: 'Salvar' }))
+    expect(onSalvar).toHaveBeenCalledWith('Um artigo', 'https://exemplo.com/b', undefined)
   })
 })

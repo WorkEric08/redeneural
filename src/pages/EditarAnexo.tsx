@@ -32,8 +32,8 @@ export default function EditarAnexo() {
           modo="editar"
           anexo={anexo}
           ocupado={ocupado}
-          onSalvar={(legenda, url) => {
-            void editarAnexo(anexo.id, legenda, url).then((deuCerto) => {
+          onSalvar={(legenda, url, imagem) => {
+            void editarAnexo(anexo.id, legenda, url, imagem).then((deuCerto) => {
               if (!deuCerto) return
               // A tela do item já está logo atrás: voltar para ela, e não
               // empilhar outra igual — o mesmo do editar neurônio.

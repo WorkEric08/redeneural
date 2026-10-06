@@ -190,7 +190,16 @@ interface PalacioStore {
    * se sabe depois. Devolve o id criado, ou null se o motor não conseguiu.
    */
   criarAnexo: (novo: NovoAnexo) => Promise<string | null>
-  editarAnexo: (id: string, legenda: string, url?: string) => Promise<boolean>
+  /**
+   * A legenda, o endereço de um link ou a imagem de um item. `false` se o motor
+   * não conseguiu.
+   */
+  editarAnexo: (
+    id: string,
+    legenda: string,
+    url?: string,
+    imagem?: { bytes: Uint8Array; mime: string },
+  ) => Promise<boolean>
   apagarAnexo: (id: string) => Promise<boolean>
   /** Os bytes de uma imagem do acervo, para quem vai desenhá-la. Não é estado. */
   lerImagem: (anexoId: string, tamanho: 'miniatura' | 'inteira') => Promise<Uint8Array | null>
@@ -710,11 +719,11 @@ export const usePalacio = create<PalacioStore>()((set, get) => {
       }
     },
 
-    async editarAnexo(id, legenda, url): Promise<boolean> {
+    async editarAnexo(id, legenda, url, imagem): Promise<boolean> {
       set({ ocupado: true, erro: null })
 
       try {
-        set(await engine.editarAnexo({ id, legenda, url }))
+        set(await engine.editarAnexo({ id, legenda, url, imagem }))
         return true
       } catch (e) {
         set({ erro: mensagem(e) })

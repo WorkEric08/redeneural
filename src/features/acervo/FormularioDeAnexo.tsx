@@ -23,7 +23,11 @@ type Props =
       modo: 'editar'
       anexo: AnexoNaTela
       ocupado: boolean
-      onSalvar: (legenda: string, url: string | undefined) => void
+      onSalvar: (
+        legenda: string,
+        url: string | undefined,
+        imagem: { bytes: Uint8Array; mime: string } | undefined,
+      ) => void
     }
 
 type ImagemComPrevia = ImagemEscolhida & { previa: string }
@@ -31,9 +35,8 @@ type ImagemComPrevia = ImagemEscolhida & { previa: string }
 /**
  * Guardar um link ou uma imagem numa pasta, com a legenda que o motor lê.
  *
- * O mesmo formulário cria e edita, como o do livro. Editando, o tipo não
- * muda, e a imagem também não — apaga-se e guarda-se outra. O endereço de um
- * link, sim.
+ * O mesmo formulário cria e edita, como o do livro. Editando, o tipo não muda; o
+ * endereço de um link e a imagem (desde 07/10/2026, o "Trocar" do menu da pasta) sim.
  *
  * A legenda diz no próprio espaço vazio o que acontece sem ela: é a regra
  * "combina com a rede ou não" (ver CLAUDE.md, "Pastas de acervo"), e sem
@@ -82,7 +85,13 @@ export function FormularioDeAnexo(props: Props) {
     const texto = legenda.trim()
 
     if (props.modo === 'editar') {
-      props.onSalvar(texto, tipo === 'link' ? url.trim() : undefined)
+      props.onSalvar(
+        texto,
+        tipo === 'link' ? url.trim() : undefined,
+        tipo === 'imagem' && escolhida
+          ? { bytes: escolhida.bytes, mime: escolhida.mime }
+          : undefined,
+      )
     } else if (tipo === 'link') {
       props.onCriar(texto, { tipo: 'link', url: url.trim() })
     } else if (escolhida) {
@@ -156,8 +165,20 @@ export function FormularioDeAnexo(props: Props) {
             </span>
           )}
         </label>
-      ) : editando ? (
-        <Miniatura anexo={editando} tamanho="inteira" className="max-h-72 w-full rounded-2xl" />
+      ) : editando && !escolhida ? (
+        <div className="flex flex-col items-start gap-2">
+          <Miniatura anexo={editando} tamanho="inteira" className="max-h-72 w-full rounded-2xl" />
+          <button
+            type="button"
+            onClick={() => {
+              void escolher()
+            }}
+            className={botao({ tipo: 'fantasma', tamanho: 'pequeno' })}
+          >
+            <RefreshCw size={15} aria-hidden />
+            Trocar imagem
+          </button>
+        </div>
       ) : escolhida ? (
         <div className="flex flex-col items-start gap-2">
           <img

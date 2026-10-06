@@ -3862,6 +3862,34 @@ tipo de item da pasta), e o contador é o de **quantos ainda cabem**.
   links, guardar o oitavo fez o "+" sumir; com a pasta cheia o formulário desabilita os dois
   tipos e o motor recusa o nono com "A pasta já tem 8 links.". 549 testes.
 
+### Segurar um item da pasta: trocar ou excluir (07/10/2026)
+
+Pedido do usuário: segurar um link ou uma imagem da pasta deixa trocá-lo por outro no lugar
+dele, ou excluí-lo. Leitura minha: **trocar** é pôr outro do mesmo tipo, no mesmo item
+(imagem por imagem, link por link — as seções de 8 continuam valendo).
+
+- **O gesto.** `hooks/useSegurar.ts`: segurar 380 ms (a mesma medida do dial e do livro) ou o
+  botão direito chama o gesto; andar mais de 8 px ou o `pointercancel` de uma rolagem o
+  cancela, e o clique do fim de um segurar é engolido. Tocar continua abrindo o item.
+- **O menu** (`AcoesDoItem`, uma `Folha` que mora na URL: `?item=<id>`, e `?apagar=<id>` para a
+  pergunta — voltar fecha, e do menu para a pergunta a troca é `replace`): "Trocar a imagem" /
+  "Trocar o link" e "Excluir". Cabe inteiro, sem rolar.
+- **Trocar** leva à tela de editar o item (`replace`: voltar cai na pasta). O link já tinha o
+  endereço editável; a **imagem passou a poder ser trocada** ("Trocar imagem" na edição). O
+  motor (`editarAnexo`, `EditarAnexoInput.imagem`) reduz a nova e grava no lugar da antiga: mesmo
+  id, mesma legenda, mesma data, mesmos vínculos (eles saem da legenda, não dos pixels). O
+  cache da tela (`useImagemDoAnexo`) passou a incluir o `updatedAt` na chave, senão seguiria
+  mostrando a imagem antiga.
+- **Excluir** pergunta ("Excluir este link/esta imagem?"), apaga o item e os bytes, não mexe
+  em conceito nenhum, e o "+" da seção ganha o lugar de volta (7 → 8 no teste).
+- **Verificado** no Chrome (build de produção, mouse): tocar abre o item e segurar abre o menu
+  sem abri-lo; trocar a imagem (40×20 para 20×40) manteve o item e a legenda; trocar o link
+  pelo endereço; botão direito; cancelar não apaga; confirmar exclui link e imagem (e os
+  bytes); o contador do "+" sobe. 564 testes. **Não verificado em toque real:** segurar com o
+  dedo e rolar a lista (o cancelamento por `pointercancel` está coberto só por teste).
+- **Fora daqui:** reordenar os itens de uma seção (não há ordem escolhida: é a mais recente
+  primeiro) e trocar o tipo (de imagem para link).
+
 ### Web agora, nativo depois
 
 | Capacidade                         | Web (PWA)                                                          | Nativo (Capacitor)                                |

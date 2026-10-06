@@ -6,11 +6,14 @@ import { BarraDeTopo } from '@/components/BarraDeTopo'
 import { botao } from '@/components/botao'
 import { EtiquetaProcessando } from '@/components/EtiquetaProcessando'
 import { restantesNaPasta, type AnexoNaTela, type Livro, type TipoDeItem } from '@/core'
+import { useSegurar } from '@/hooks/useSegurar'
 import { contar } from '@/lib/plural'
 import { usePalacio } from '@/store/palacio'
 
+import { AcoesDoItem } from './AcoesDoItem'
 import { dominioDe } from './links'
 import { Miniatura } from './Miniatura'
+import { usePainelDaPasta } from './painelDaPasta'
 import { conceitosPorAnexo, situacaoDoAnexo, type ConceitoDoAnexo } from './resumo'
 
 /**
@@ -27,9 +30,16 @@ import { conceitosPorAnexo, situacaoDoAnexo, type ConceitoDoAnexo } from './resu
  *
  * Cada item diz com que conceitos o anexo combinou, ou que ele fica só na
  * pasta — é o que explica por que ele aparece (ou não) na Rede.
+ *
+ * Tocar abre o item; **segurar** (ou o botão direito) abre as ações dele: trocar por outro
+ * do mesmo tipo, no mesmo lugar, ou excluir — e o "+" da seção ganha o lugar de volta.
  */
 export function Pasta({ livro }: { livro: Livro }) {
-  const { anexos, vinculos, neuronios } = usePalacio()
+  const { anexos, vinculos, neuronios, ocupado, apagarAnexo } = usePalacio()
+  const { painel, abrir, trocar, fechar } = usePainelDaPasta()
+  const segurar = (anexoId: string): void => {
+    abrir({ tipo: 'acoes', anexoId })
+  }
 
   const meus = useMemo(() => anexos.filter((a) => a.livroId === livro.id), [anexos, livro.id])
   const imagens = useMemo(() => meus.filter((a) => a.midia.tipo === 'imagem'), [meus])
@@ -70,7 +80,13 @@ export function Pasta({ livro }: { livro: Livro }) {
           <ul className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-4">
             {imagens.map((a) => (
               <li key={a.id}>
-                <CartaoDaImagem anexo={a} conceitos={conceitos.get(a.id) ?? []} />
+                <CartaoDaImagem
+                  anexo={a}
+                  conceitos={conceitos.get(a.id) ?? []}
+                  aoSegurar={() => {
+                    segurar(a.id)
+                  }}
+                />
               </li>
             ))}
             {restantes.imagem > 0 && (
@@ -88,7 +104,13 @@ export function Pasta({ livro }: { livro: Livro }) {
           <ul className="flex flex-col gap-2">
             {links.map((a) => (
               <li key={a.id}>
-                <LinhaDoLink anexo={a} conceitos={conceitos.get(a.id) ?? []} />
+                <LinhaDoLink
+                  anexo={a}
+                  conceitos={conceitos.get(a.id) ?? []}
+                  aoSegurar={() => {
+                    segurar(a.id)
+                  }}
+                />
               </li>
             ))}
             {restantes.link > 0 && (
@@ -99,6 +121,15 @@ export function Pasta({ livro }: { livro: Livro }) {
           </ul>
         </section>
       </div>
+
+      <AcoesDoItem
+        painel={painel}
+        anexos={anexos}
+        ocupado={ocupado}
+        onFechar={fechar}
+        onTrocarPainel={trocar}
+        onApagar={apagarAnexo}
+      />
     </div>
   )
 }
@@ -144,16 +175,21 @@ function Adicionar({
 function CartaoDaImagem({
   anexo,
   conceitos,
+  aoSegurar,
 }: {
   anexo: AnexoNaTela
   conceitos: readonly ConceitoDoAnexo[]
+  aoSegurar: () => void
 }) {
   const situacao = situacaoDoAnexo(anexo, conceitos)
   const [primeiro] = conceitos
+  const segurar = useSegurar(aoSegurar)
 
   return (
     <Link
       to={`/anexo/${anexo.id}`}
+      draggable={false}
+      {...segurar}
       className="cartao active:bg-realce hover:bg-realce/60 flex h-full flex-col transition-colors"
     >
       <Miniatura anexo={anexo} className="aspect-[4/3] w-full" />
@@ -183,17 +219,22 @@ function CartaoDaImagem({
 function LinhaDoLink({
   anexo,
   conceitos,
+  aoSegurar,
 }: {
   anexo: AnexoNaTela
   conceitos: readonly ConceitoDoAnexo[]
+  aoSegurar: () => void
 }) {
   const situacao = situacaoDoAnexo(anexo, conceitos)
   const [primeiro] = conceitos
+  const segurar = useSegurar(aoSegurar)
   const dominio = anexo.midia.tipo === 'link' ? dominioDe(anexo.midia.url) : ''
 
   return (
     <Link
       to={`/anexo/${anexo.id}`}
+      draggable={false}
+      {...segurar}
       className="cartao active:bg-realce hover:bg-realce/60 flex min-h-16 items-center gap-3 p-2 transition-colors"
     >
       <Miniatura anexo={anexo} compacta className="size-12 shrink-0 rounded-xl" />

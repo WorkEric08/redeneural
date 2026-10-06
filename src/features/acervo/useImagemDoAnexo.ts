@@ -19,7 +19,10 @@ export function useImagemDoAnexo(
 
   const id = anexo?.id
   const mime = anexo?.midia.tipo === 'imagem' ? anexo.midia.mime : null
-  const chave = id && mime ? `${id}:${tamanho}` : null
+  // `updatedAt` na chave: trocar a imagem de um item mantém o id dele, e sem isto a tela
+  // seguiria mostrando a antiga.
+  const quando = anexo?.updatedAt.getTime()
+  const chave = id && mime ? `${id}:${tamanho}:${String(quando)}` : null
 
   useEffect(() => {
     if (!id || !mime || !chave) return
