@@ -54,9 +54,10 @@ function mesmoLugar(a: LugarDaEstante | null, prateleira: number, lugar: number)
 /**
  * O móvel: a estante em que os livros moram.
  *
- * Pilastras caneladas nas laterais, cornija em cima, prateleiras com a penumbra
- * da tábua de cima caindo sobre os livros, e o assoalho no pé. Tudo em CSS — não
- * é imagem, então acompanha o tema e a largura da tela.
+ * Duas laterais iguais de madeira, o trilho em cima, prateleiras com a penumbra
+ * da tábua de cima caindo sobre os livros, e a base que fecha a última prateleira.
+ * A estrutura é CSS sobre duas texturas de madeira (`src/assets`); o fundo atrás dos
+ * livros é liso. Acompanha a largura da tela, e é sempre escura, nos dois temas.
  *
  * Cada prateleira é uma fileira de lugares (ver `prateleiras.ts`): um livro
  * seu, um enfeite — a biblioteca que ainda não foi escrita — ou madeira nua.
@@ -150,6 +151,7 @@ export function Movel({
     <div
       ref={movel}
       className="movel cores-de-antes"
+      data-prateleiras={prateleiras.length}
       style={{ '--mv-prateleiras': prateleiras.length } as CSSProperties}
     >
       <span className="movel-cornija" aria-hidden />
@@ -196,11 +198,12 @@ export function Movel({
             <span className="movel-tabua" aria-hidden />
           </div>
         ))}
+
+        <span className="movel-pilastra movel-pilastra--esq" aria-hidden />
+        <span className="movel-pilastra movel-pilastra--dir" aria-hidden />
       </div>
 
-      <span className="movel-assoalho" aria-hidden />
-      <span className="movel-pilastra movel-pilastra--esq" aria-hidden />
-      <span className="movel-pilastra movel-pilastra--dir" aria-hidden />
+      <span className="movel-base" aria-hidden />
       <span className="movel-luar" aria-hidden />
 
       {naMao && gesto.origem && (

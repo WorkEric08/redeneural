@@ -4950,6 +4950,39 @@ inteiros**.
 no formulário (de Fina para Grande) e o menu "criar aqui" do lugar não passam pela
 recusa — a adaptação visual cobre os dois, mas não os impede.
 
+### A estante: madeira, laterais iguais e base (06/10/2026)
+
+Pedido do usuário, com duas referências: a **textura** (madeira azul-marinho de tábuas
+verticais, `2.jpg`) e o **estilo da base** (o pé de um armário de livros preto, `1.jpg`).
+Revisa "O móvel" acima: o que dizia das pilastras (24 px à esquerda, 14 px à direita), do
+assoalho e do "estante em CSS, sem imagem" não vale mais.
+
+- **Laterais iguais:** as duas têm 18 px (`--mv-lateral`), o mesmo corte da madeira e a aresta
+  clara sempre do lado de dentro; a fileira vai de uma à outra (`margin-inline`), então a
+  folga é a mesma dos dois lados — medido: 18/18 px, folga 0/0, em 320, 412, 768 e 1440.
+- **Textura só na estrutura, nunca atrás dos livros** (pedido explícito): laterais, trilho
+  de cima, tábuas e base. O fundo atrás dos livros segue liso (`#0B1230`). Dois arquivos em
+  `src/assets`, ambos WebP derivados do mesmo original: `madeira-azul-v` (como veio, para as
+  laterais) e `madeira-azul-h` (girado 90°, para o veio correr no comprimento nas tábuas,
+  no trilho e na base). Levantei o brilho em ×2,1 — o original é mais escuro que o fundo e
+  a estrutura sumiria — e ficou com ~40 KB cada. `webp` entrou no precache do PWA
+  (`vite.config.ts`), senão a estante perderia a madeira offline.
+- **A base** (`.movel-base`) imita o pé da referência: um friso fino, a canaleta redonda e
+  um degrau, sobre a tábua lisa do pé. **É mais larga que o corpo**, 4 px de cada lado
+  (`--mv-projecao`), como no móvel da foto. A moldura são gradientes sobre a madeira.
+- **Uma versão para cada quantidade de prateleiras (1 a 6):** `--mv-base` vale 52, 46, 42, 38,
+  34 e 30 px (`.movel[data-prateleiras='N']`, escrito por `Movel.tsx`). Com poucas prateleiras
+  a fileira é alta (até 132 px) e há altura de sobra, então a base cresce; com seis ela
+  encolhe para as prateleiras não perderem espaço. A conta da fileira desconta trilho + base
+  (`--mv-bordas`) e a tábua de 8 px.
+- **Igual nos dois temas:** o interior da estante (excluindo os 4 px de projeção, onde
+  aparece o fundo da página) é idêntico, pixel a pixel, no claro e no escuro.
+
+**O que ficou visível:** em 320×568 a estante com 5 ou 6 prateleiras passa da tela (a fileira
+já está no piso de 92 px) e a página não rola na estante — vale antes desta mudança, mas
+agora o teto é 6 e fica claro. O corte da madeira nas laterais é o mesmo nos dois lados, então
+não há "espelho" do veio: ficou igual, e não espelhado.
+
 ### Verificado
 
 Chrome (Playwright-core, build de produção): as 10 formas nas larguras 24, 38, 52 e 68 em

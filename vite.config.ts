@@ -75,7 +75,7 @@ export default defineConfig({
         ],
       },
       workbox: {
-        globPatterns: ['**/*.{js,css,html,svg,png,ico,woff2}'],
+        globPatterns: ['**/*.{js,css,html,svg,png,webp,ico,woff2}'],
         // O spike não é o app: seu bundle carrega o transformers.js inteiro e não
         // pode entrar no precache do produto.
         globIgnores: ['**/spike*', '**/assets/spike-*'],

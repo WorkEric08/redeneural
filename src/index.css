@@ -224,14 +224,14 @@
   --linha: oklch(0.32 0.045 262);
   --lavagem: oklch(0.16 0.032 262);
 
-  /* O móvel Noite. */
+  /* O móvel Noite. A madeira (as duas texturas de `src/assets`) veste a
+     estrutura — laterais, trilho, tábuas e base —, nunca o fundo atrás dos livros. */
   --mv-parede: #0b1230;
-  --mv-trilho: #121a44;
-  --mv-tabua: #1a2557;
   --mv-tabua-linha: #3446a6;
   --mv-ouro: #e8c471;
-  --mv-pilastra: #12204f;
-  --mv-pilastra-borda: #2a3a8a;
+  /* A aresta clara de uma peça de madeira, onde a luz pega. */
+  --mv-aresta: #26357f;
+  --mv-sombra: #03060f;
 }
 
 @theme inline {
@@ -429,29 +429,68 @@ img {
   /* Quantas prateleiras o móvel tem hoje — Movel.tsx escreve o número. */
   --mv-prateleiras: 4;
   /* O que na tela não é prateleira: o respiro de cima, a linha de contagem
-     embaixo e a folga para o botão de criar não cobrir o assoalho. */
+     embaixo e a folga para o botão de criar não cobrir a base. */
   --mv-fora: 144px;
-  /* O trilho de cima (10px) e o assoalho (26px), que não crescem com a fileira. */
-  --mv-bordas: 36px;
+  /* O trilho de cima não cresce com a fileira. A base tem uma versão para cada
+     quantidade de prateleiras (ver abaixo), e as duas saem da conta da fileira. */
+  --mv-trilho: 10px;
+  --mv-base: 38px;
+  --mv-bordas: calc(var(--mv-trilho) + var(--mv-base));
+  /* As duas laterais são iguais. A base é mais larga que o corpo, como no móvel
+     de referência: sobra `--mv-projecao` de cada lado. */
+  --mv-lateral: 18px;
+  --mv-projecao: 4px;
 
   position: relative;
   overflow: hidden;
   border-radius: 3px;
-  background: var(--mv-parede);
-  box-shadow:
-    0 12px 34px rgb(0 0 0 / 0.32),
-    inset 0 0 0 1px rgb(0 0 0 / 0.45);
+  box-shadow: 0 12px 34px rgb(0 0 0 / 0.32);
 }
 
-/* O trilho de cima: a tampa do móvel. */
+/* A base tem uma versão para cada quantidade de prateleiras: com poucas, cada
+   fileira é alta (até 132px) e o móvel tem altura de sobra, então a base cresce;
+   com seis, a fileira encolhe e a base também, para as prateleiras não perderem
+   espaço. Movel.tsx escreve `data-prateleiras`. */
+.movel[data-prateleiras='1'] {
+  --mv-base: 52px;
+}
+
+.movel[data-prateleiras='2'] {
+  --mv-base: 46px;
+}
+
+.movel[data-prateleiras='3'] {
+  --mv-base: 42px;
+}
+
+.movel[data-prateleiras='4'] {
+  --mv-base: 38px;
+}
+
+.movel[data-prateleiras='5'] {
+  --mv-base: 34px;
+}
+
+.movel[data-prateleiras='6'] {
+  --mv-base: 30px;
+}
+
+/* O trilho de cima: a tampa do móvel, em madeira de veio no comprimento. */
 .movel-cornija {
   display: block;
-  height: 10px;
-  background: var(--mv-trilho);
+  height: var(--mv-trilho);
+  margin-inline: var(--mv-projecao);
+  background:
+    linear-gradient(180deg, rgb(150 180 255 / 0.2) 0 1px, transparent 1px 55%, rgb(0 0 0 / 0.45)),
+    url('./assets/madeira-azul-h.webp') 20% 30% / 520px auto;
   box-shadow: 0 4px 9px rgb(0 0 0 / 0.6);
 }
 
+/* O corpo: o fundo atrás dos livros, liso (a madeira é só da estrutura), e as
+   duas laterais por cima. */
 .movel-corpo {
+  position: relative;
+  margin-inline: var(--mv-projecao);
   background: var(--mv-parede);
 }
 
@@ -463,8 +502,7 @@ img {
   isolation: isolate;
 }
 
-/* Os livros encostam na pilastra da esquerda e somem atrás da direita, como em
-   estante cheia — daí o recorte no vão em vez de respiro dos dois lados. */
+/* Os livros encostam nas duas laterais, que são iguais. */
 .movel-fila {
   display: flex;
   /* A estante se mede pela tela.
@@ -488,11 +526,10 @@ img {
   z-index: 1;
   align-items: flex-end;
   gap: 1px;
-  padding-left: 26px;
-  /* Até a pilastra da direita (14px): a lateral é sólida. O que passa dela é
-     cortado aqui — só enfeite, porque os livros cabem (ver
-     `ajustarALargura` em prateleiras.ts). */
-  margin-right: 14px;
+  /* A fileira vai de uma lateral à outra, e as duas são iguais: a lateral é
+     sólida. O que passa dela é cortado aqui — só enfeite, porque os livros
+     cabem (ver `ajustarALargura` em prateleiras.ts). */
+  margin-inline: var(--mv-lateral);
   overflow: hidden;
   /* A fileira em si não recebe toque; quem recebe são os lugares — o livro
      (.lombada--livro) e o lugar sem livro (.lugar). */
@@ -569,19 +606,23 @@ img {
   background: linear-gradient(180deg, rgb(0 0 0 / 0.62) 0%, rgb(0 0 0 / 0.1) 100%);
 }
 
-/* A tábua: 8px, com a linha clara no topo (1,6px) e, logo abaixo, o fio dourado
-   (1,2px a 50%) — a 6px da base. Embaixo dela cai uma sombra de 10px. */
+/* A tábua: 8px de madeira de veio no comprimento, com a linha clara no topo
+   (1,6px) e, logo abaixo, o fio dourado (1,2px a 50%). Embaixo dela cai uma
+   sombra de 10px. */
 .movel-tabua {
   position: relative;
   display: block;
   height: 8px;
-  background: linear-gradient(
-    180deg,
-    var(--mv-tabua-linha) 0 1.6px,
-    var(--mv-tabua) 1.6px 2px,
-    color-mix(in srgb, var(--mv-ouro) 50%, transparent) 2px 3.2px,
-    var(--mv-tabua) 3.2px 100%
-  );
+  background:
+    linear-gradient(
+      180deg,
+      var(--mv-tabua-linha) 0 1.6px,
+      transparent 1.6px 2px,
+      color-mix(in srgb, var(--mv-ouro) 50%, transparent) 2px 3.2px,
+      transparent 3.2px 100%
+    ),
+    linear-gradient(180deg, transparent 40%, rgb(0 0 0 / 0.4)),
+    url('./assets/madeira-azul-h.webp') 60% 50% / 520px auto;
 }
 
 .movel-tabua::after {
@@ -595,61 +636,72 @@ img {
   background: linear-gradient(180deg, rgb(0 0 0 / 0.5), transparent);
 }
 
-.movel-assoalho {
+/* A base — o que fecha a última prateleira (referência do usuário, 06/10/2026):
+   um rodapé de moldura (um friso, a canaleta redonda e um degrau) sobre a tábua
+   lisa do pé. Mais larga que o corpo, nos dois lados por igual. A altura é
+   `--mv-base`, uma versão para cada quantidade de prateleiras. */
+.movel-base {
+  position: relative;
   display: block;
-  height: 26px;
-  background-color: color-mix(in oklab, var(--mv-parede) 82%, black);
-  background-image:
-    repeating-linear-gradient(90deg, rgb(0 0 0 / 0.2) 0 1px, transparent 1px 74px),
-    linear-gradient(
-      180deg,
-      rgb(0 0 0 / 0.55) 0 2px,
-      color-mix(in oklab, var(--mv-tabua) 70%, transparent) 2px 3px,
-      transparent 3px 46%,
-      rgb(0 0 0 / 0.3) 100%
-    );
+  height: var(--mv-base);
+  background:
+    linear-gradient(180deg, rgb(0 0 0 / 0.55), transparent 16%, transparent 78%, rgb(0 0 0 / 0.6)),
+    url('./assets/madeira-azul-h.webp') 35% 80% / 760px auto;
+  box-shadow: inset 0 0 0 1px rgb(0 0 0 / 0.4);
 }
 
-/* As pilastras: 24px à esquerda e 14px à direita, lisas, com a borda de 1px. */
+/* A moldura: metade de cima da base, um pouco recuada em relação à tábua do pé. */
+.movel-base::before {
+  content: '';
+  position: absolute;
+  inset: 0 2px auto;
+  height: 48%;
+  background:
+    linear-gradient(
+      180deg,
+      rgb(170 195 255 / 0.3) 0 12%,
+      rgb(0 0 0 / 0.55) 12% 18%,
+      rgb(150 180 255 / 0.42) 18% 34%,
+      rgb(255 255 255 / 0.26) 34% 52%,
+      rgb(0 0 0 / 0.5) 52% 74%,
+      rgb(120 150 255 / 0.2) 74% 86%,
+      rgb(0 0 0 / 0.65) 86% 100%
+    ),
+    url('./assets/madeira-azul-h.webp') 70% 20% / 760px auto;
+  box-shadow: 0 1px 0 rgb(0 0 0 / 0.6);
+}
+
+/* A tábua lisa do pé, com o fio de luz onde a moldura acaba. */
+.movel-base::after {
+  content: '';
+  position: absolute;
+  inset: 52% 0 0;
+  background: linear-gradient(180deg, rgb(120 150 255 / 0.16) 0 1px, transparent 1px);
+}
+
+/* As duas laterais: madeira de veio na vertical, iguais — a mesma largura, o mesmo
+   corte da madeira, a aresta clara sempre do lado de dentro. */
 .movel-pilastra {
   position: absolute;
   top: 0;
   bottom: 0;
-  border: 1px solid var(--mv-pilastra-borda);
-  background: var(--mv-pilastra);
+  width: var(--mv-lateral);
+  background:
+    linear-gradient(90deg, rgb(0 0 0 / 0.42), transparent 28%, transparent 72%, rgb(0 0 0 / 0.42)),
+    url('./assets/madeira-azul-v.webp') 30% 0 / 330px auto;
   box-shadow: 0 0 18px rgb(0 0 0 / 0.6);
-}
-
-/* Capitel e base: os blocos que sobram da coluna em cima e embaixo. */
-.movel-pilastra::before,
-.movel-pilastra::after {
-  content: '';
-  position: absolute;
-  right: -3px;
-  left: -3px;
-  border: 1px solid var(--mv-pilastra-borda);
-  background: var(--mv-pilastra);
-  box-shadow: 0 2px 6px rgb(0 0 0 / 0.5);
-}
-
-.movel-pilastra::before {
-  top: -1px;
-  height: 26px;
-}
-
-.movel-pilastra::after {
-  bottom: -1px;
-  height: 20px;
 }
 
 .movel-pilastra--esq {
   left: 0;
-  width: 24px;
+  border-right: 1px solid var(--mv-aresta);
+  border-left: 1px solid var(--mv-sombra);
 }
 
 .movel-pilastra--dir {
   right: 0;
-  width: 14px;
+  border-right: 1px solid var(--mv-sombra);
+  border-left: 1px solid var(--mv-aresta);
 }
 
 /* A luz da sala cai de cima, por igual, e as bordas afundam na penumbra.

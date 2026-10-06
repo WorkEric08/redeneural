@@ -16,7 +16,7 @@ export interface MedidasDaFileira {
  * divergirem sem ninguém notar: se a fórmula mudar lá, isto acompanha.
  *
  * A altura serve ao título da lombada. A largura serve às laterais sólidas: a
- * fileira termina onde a pilastra da direita começa (`margin-right`), então o
+ * fileira vai de uma lateral à outra (`margin-inline`, igual dos dois lados), então o
  * `contentRect` já é o espaço onde um livro cabe inteiro.
  *
  * Todas as fileiras têm o mesmo tamanho, então basta observar a primeira.
