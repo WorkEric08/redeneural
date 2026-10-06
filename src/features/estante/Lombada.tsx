@@ -4,7 +4,7 @@ import { contar } from '@/lib/plural'
 
 import { EmblemaDaLombada } from './EmblemaDaLombada'
 import { geometriaDaLombada } from './lombadaNoite'
-import { ALTURA_MAXIMA_DA_LOMBADA, ALTURA_MINIMA_DA_LOMBADA } from './prateleiras'
+import { alturaDaLombadaEmPercentual } from './prateleiras'
 import type { LivroNaEstante } from './resumo'
 import type { ManipulacaoDaLombada } from './useManipularLivros'
 
@@ -70,9 +70,7 @@ export function Lombada({
   alturaDaFileira,
   manipular,
 }: Props) {
-  const altura =
-    item.livro.comprimentoLombada ??
-    ALTURA_MINIMA_DA_LOMBADA + item.altura * (ALTURA_MAXIMA_DA_LOMBADA - ALTURA_MINIMA_DA_LOMBADA)
+  const altura = alturaDaLombadaEmPercentual(item.livro.comprimentoLombada, item.altura)
   const ehPasta = item.livro.tipo === 'acervo'
   const geo = geometriaDaLombada({
     estilo: item.livro.estilo,

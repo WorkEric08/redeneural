@@ -1,7 +1,10 @@
 import { useNavigate, useParams } from 'react-router-dom'
 
+import { useMemo } from 'react'
+
 import { BarraDeTopo } from '@/components/BarraDeTopo'
 import { FormularioDeLivro } from '@/features/estante/FormularioDeLivro'
+import { montarEstante } from '@/features/estante/resumo'
 import { usePalacio } from '@/store/palacio'
 
 /**
@@ -12,9 +15,24 @@ import { usePalacio } from '@/store/palacio'
 export default function EditarLivro() {
   const { livroId } = useParams()
   const navegar = useNavigate()
-  const { livros, ocupado, intensidadeDaLuz, editarLivro } = usePalacio()
+  const {
+    livros,
+    neuronios,
+    conexoes,
+    anexos,
+    ocupado,
+    intensidadeDaLuz,
+    quantidadeDePrateleiras,
+    editarLivro,
+  } = usePalacio()
 
   const livro = livros.find((l) => l.id === livroId)
+  // O que a estante sabe do livro: a altura automática e a contagem do papel saem
+  // daqui, para a amostra ser a lombada que vai para a prateleira.
+  const naEstante = useMemo(
+    () => montarEstante(livros, neuronios, conexoes, anexos).find((e) => e.livro.id === livroId),
+    [livros, neuronios, conexoes, anexos, livroId],
+  )
 
   if (!livro) {
     return (
@@ -42,6 +60,10 @@ export default function EditarLivro() {
             diasParaAdormecer: livro.diasParaAdormecer,
           }}
           tipoFixo={livro.tipo}
+          livroId={livro.id}
+          alturaAutomatica={naEstante?.altura}
+          contagem={livro.tipo === 'acervo' ? naEstante?.anexos : naEstante?.neuronios}
+          prateleiras={quantidadeDePrateleiras}
           rotuloDeEnvio="Salvar"
           ocupado={ocupado}
           intensidadeDaLuz={intensidadeDaLuz}

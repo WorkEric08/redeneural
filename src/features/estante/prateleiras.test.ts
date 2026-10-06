@@ -3,6 +3,9 @@ import { describe, expect, it } from 'vitest'
 import { LUGARES_POR_PRATELEIRA, type EnfeiteGravado, type Livro, type Vaga } from '@/core'
 
 import {
+  ALTURA_MAXIMA_DA_LOMBADA,
+  ALTURA_MINIMA_DA_LOMBADA,
+  alturaDaLombadaEmPercentual,
   cabeNaPrateleira,
   COR_DO_ENFEITE,
   dadosDoEnfeite,
@@ -443,5 +446,18 @@ describe('enfeites que a pessoa definiu ou moveu', () => {
       if (montado?.tipo === 'enfeite') expect(direto).toEqual(montado)
       else expect(direto).toBeNull()
     }
+  })
+})
+
+describe('alturaDaLombadaEmPercentual (a conta da estante e da amostra do formulário)', () => {
+  it('o comprimento escolhido na mão vale como está, qualquer que seja o que o livro guarda', () => {
+    expect(alturaDaLombadaEmPercentual(88, 0)).toBe(88)
+    expect(alturaDaLombadaEmPercentual(55, 1)).toBe(55)
+  })
+
+  it('automático: de 63% (livro vazio, ou novo) a 93,5% (o mais cheio da estante)', () => {
+    expect(alturaDaLombadaEmPercentual(null, 0)).toBe(ALTURA_MINIMA_DA_LOMBADA)
+    expect(alturaDaLombadaEmPercentual(null, 1)).toBe(ALTURA_MAXIMA_DA_LOMBADA)
+    expect(alturaDaLombadaEmPercentual(null, 0.5)).toBeCloseTo(78.25, 5)
   })
 })

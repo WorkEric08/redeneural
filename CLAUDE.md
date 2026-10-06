@@ -4950,6 +4950,36 @@ Desvios: o prompt dizia "como hoje" para as pilastras, mas hoje as duas tinham 2
 os números); e "6 px da base" da tábua colidiria com a linha do topo, então o fio ficou logo
 abaixo dela.
 
+### A amostra do formulário é a lombada que vai para a estante (07/10/2026)
+
+Pedido do usuário: o preview do livro às vezes não era igual ao que ia para a prateleira, e
+tem que ser fiel. Causa, medida: a amostra media a altura contra uma referência fixa de
+130 px, enquanto a lombada usa a **altura medida da fileira** (92 a 132 px, pela tela) — e o
+tamanho do título e as reticências saem dessa altura. Um título que cabia na amostra era
+cortado na prateleira. Havia mais três divergências: o "automático" da amostra era um chute
+(96 px de altura, 38 px de largura), o papel não mostrava a contagem, e uma pasta sendo
+editada não mostrava o clipe.
+
+- **A mesma conta, uma vez só.** `alturaDaLombadaEmPercentual` (`prateleiras.ts`) é usada pela
+  `Lombada` e pela amostra. A largura automática da amostra é `larguraDoLivroGravado` (a semente
+  do id), e a altura automática e a contagem do papel vêm de `montarEstante` — o editar passa
+  `livroId`, `alturaAutomatica` e `contagem`. Livro novo: 0, e a largura e o comprimento já nascem
+  em "Normal".
+- **A fileira é medida, não calculada.** O formulário esconde um `.movel` com uma `.movel-fila` vazia
+  (a altura sai do mesmo CSS da estante, `useMedidasDaFileira`), então a fórmula não é repetida.
+  A amostra desenha a lombada nos **mesmos px** da prateleira.
+- **O teclado não encolhe a amostra.** A fileira se mede por `dvh`, e o teclado aberto a
+  encolhe; a medida do formulário só cresce (`semEncolher`), e a primeira vale direto. Visto
+  com a tela baixada de 892 para 480 px: a altura da amostra não mudou.
+- **Enfeite.** A amostra de editar enfeite leva os filetes dourados e, enquanto a forma e a cor
+  forem as do sorteado, os detalhes em azul escuro — o acabamento que ele tem na estante.
+- **Verificado** no Chrome, criando livros reais e comparando amostra e lombada da estante em
+  320×568, 412×892 e 768×1024 (4 combinações de forma, largura e comprimento, com título
+  longo): largura, altura, tamanho do título, corte do texto e contagem **idênticos** em todas
+  (12 de 12), e a edição de 3 livros em automático também (um deles em papel, com contagem).
+  Não coberto: os estados do livro executável (Fazendo, Feita, Adormecido) e a ponte, que
+  a amostra nunca mostrou — são da estante, não da escolha de forma e cor.
+
 ### As laterais são sólidas (06/10/2026)
 
 Pedido do usuário, depois do estilo Noite: nenhum livro (que não seja enfeite) passa das

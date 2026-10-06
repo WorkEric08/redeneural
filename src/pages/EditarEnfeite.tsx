@@ -52,6 +52,11 @@ export default function EditarEnfeite() {
       <div className="animar-entrada flex flex-1 flex-col pt-4">
         <FormularioDeLivro
           enfeite
+          acabamentoDoEnfeite={{
+            dourado: atual.dourado,
+            escuroEm: atual.detalheEscuro ? { estilo: atual.estilo, cor: atual.cor } : undefined,
+          }}
+          prateleiras={quantidadeDePrateleiras}
           inicial={{
             titulo: '',
             cor: atual.cor,

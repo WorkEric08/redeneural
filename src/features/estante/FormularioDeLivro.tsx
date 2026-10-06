@@ -1,5 +1,5 @@
 import { BookOpen, Hammer, type LucideIcon, Paperclip, Shuffle } from 'lucide-react'
-import { useState } from 'react'
+import { useRef, useState, type CSSProperties } from 'react'
 
 import { botao } from '@/components/botao'
 import {
@@ -16,12 +16,17 @@ import { FORMAS } from './formas'
 import { LARGURAS } from './larguras'
 import { geometriaDaLombada } from './lombadaNoite'
 import { PANOS } from './panos'
+import {
+  alturaDaLombadaEmPercentual,
+  larguraDoLivroGravado,
+  TOM_DO_DETALHE_DO_ENFEITE,
+} from './prateleiras'
+import { useMedidasDaFileira } from './useMedidasDaFileira'
 
 /**
- * Só para a amostra: o comprimento é gravado em % da fileira (o mesmo mundo
- * da altura automática), mas a amostra não vive dentro de uma fileira — vira
- * px por esta referência, igual em espírito ao 44px fixo da amostra de
- * largura automática.
+ * A altura da caixa que guarda a amostra — o teto do que uma lombada pode medir
+ * (98% de uma fileira de 132 px). Fixa para trocar o comprimento não empurrar o resto
+ * do formulário. A lombada dentro dela tem as medidas **reais** da estante.
  */
 const REFERENCIA_DA_AMOSTRA_PX = 130
 
@@ -65,6 +70,26 @@ interface Props {
    * o livro — mas sem nome, tipo nem emblema. O enfeite é só visual.
    */
   enfeite?: boolean
+  /**
+   * O acabamento do enfeite na estante, para a amostra o ter também: os filetes
+   * dourados e, enquanto a forma e a cor forem as de `escuroEm`, os detalhes em azul
+   * escuro do enfeite sorteado (ver `EnfeiteGravado.detalheEscuro`).
+   */
+  acabamentoDoEnfeite?:
+    | { dourado: boolean; escuroEm?: { estilo: EstiloDaLombada; cor: string } | undefined }
+    | undefined
+  /**
+   * O que a amostra precisa para ser a lombada que vai para a estante, e não uma
+   * parecida: o livro (a largura automática sai do id dele), quanto ele guarda (a
+   * altura automática e a contagem do papel) e quantas prateleiras o móvel tem (a
+   * fileira se mede por elas). Num livro novo, nada disso existe ainda.
+   */
+  livroId?: string | undefined
+  /** 0..1, como `LivroNaEstante.altura`. Livro novo: 0. */
+  alturaAutomatica?: number | undefined
+  /** O que o papel mostra no pé: neurônios, ou itens numa pasta. Livro novo: 0. */
+  contagem?: number | undefined
+  prateleiras?: number | undefined
   onEnviar: (dados: NovoLivro) => void
 }
 
@@ -89,6 +114,11 @@ export function FormularioDeLivro({
   tipo,
   tipoFixo,
   enfeite = false,
+  acabamentoDoEnfeite,
+  livroId,
+  alturaAutomatica = 0,
+  contagem = 0,
+  prateleiras = 4,
   onEnviar,
 }: Props) {
   const [titulo, setTitulo] = useState(inicial.titulo)
@@ -107,14 +137,22 @@ export function FormularioDeLivro({
 
   const podeEnviar = (enfeite || titulo.trim().length > 0) && !ocupado
 
-  // A amostra não vive numa fileira: o comprimento (em % dela) vira px por uma
-  // referência, e o tamanho do título se mede nesses px.
-  const larguraDaAmostra = larguraLombada ?? 38
+  // A amostra é a lombada da estante: a mesma largura, a mesma altura em px (a % da
+  // fileira, medida num móvel escondido) e, por isso, o mesmo tamanho de título e as
+  // mesmas reticências. Sem isto o título cabia na amostra e era cortado na prateleira.
+  const medidor = useRef<HTMLDivElement>(null)
+  const { altura: alturaDaFileira } = useMedidasDaFileira(medidor, 112, true)
+  const larguraDaAmostra =
+    larguraLombada ?? larguraDoLivroGravado({ id: livroId ?? '', larguraLombada: null })
   const alturaDaAmostra =
-    comprimentoLombada === null
-      ? 96
-      : Math.round((comprimentoLombada / 100) * REFERENCIA_DA_AMOSTRA_PX)
+    (alturaDaLombadaEmPercentual(comprimentoLombada, alturaAutomatica) * alturaDaFileira) / 100
   const tituloDaAmostra = enfeite ? '' : titulo.trim() || '…'
+  const ehPasta = (tipo?.valor ?? tipoFixo) === 'acervo'
+  const escuroEm = acabamentoDoEnfeite?.escuroEm
+  const detalheEscuro =
+    escuroEm !== undefined &&
+    estilo === escuroEm.estilo &&
+    cor.toLowerCase() === escuroEm.cor.toLowerCase()
   const geo = geometriaDaLombada({
     estilo,
     cor,
@@ -264,13 +302,20 @@ export function FormularioDeLivro({
             data-estilo={geo.estilo}
             style={{
               ...geo.style,
+              ...(detalheEscuro ? { '--fg': TOM_DO_DETALHE_DO_ENFEITE } : {}),
               width: `${String(larguraDaAmostra)}px`,
               height: `${String(alturaDaAmostra)}px`,
             }}
           >
             <span className="lombada-titulo">{tituloDaAmostra}</span>
+            {acabamentoDoEnfeite?.dourado && <span className="lombada-filetes" />}
+            {estilo === 'papel' && !enfeite && (
+              <span className="lombada-contagem" aria-hidden>
+                {contagem}
+              </span>
+            )}
             {geo.emblemaCabe && !enfeite && (
-              <EmblemaDaLombada chave={tipo?.valor === 'acervo' ? 'pasta' : emblema} />
+              <EmblemaDaLombada chave={ehPasta ? 'pasta' : emblema} />
             )}
           </span>
         </div>
@@ -410,6 +455,28 @@ export function FormularioDeLivro({
           ))}
         </div>
       </fieldset>
+
+      {/* O móvel escondido que mede a fileira: a altura dela sai do mesmo CSS da estante,
+          então a amostra não repete a conta. */}
+      <div
+        ref={medidor}
+        aria-hidden
+        className="movel cores-de-antes"
+        data-prateleiras={prateleiras}
+        style={
+          {
+            '--mv-prateleiras': prateleiras,
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            width: '200px',
+            visibility: 'hidden',
+            pointerEvents: 'none',
+          } as CSSProperties
+        }
+      >
+        <div className="movel-fila" />
+      </div>
 
       <div className="barra-de-acao md:flex md:justify-end">
         <button

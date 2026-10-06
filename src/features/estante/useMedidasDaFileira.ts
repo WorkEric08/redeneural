@@ -24,6 +24,12 @@ export interface MedidasDaFileira {
 export function useMedidasDaFileira(
   movel: RefObject<HTMLElement | null>,
   alturaInicial = 112,
+  /**
+   * Só a altura, e só para cima. A fileira se mede pela tela (`dvh`), e o teclado
+   * aberto a encolhe: num formulário, a amostra tem que mostrar a lombada como ela
+   * vai ficar na estante — sem o teclado —, não a que cabe na tela de digitar.
+   */
+  semEncolher = false,
 ): MedidasDaFileira {
   const [medidas, setMedidas] = useState<MedidasDaFileira>({
     altura: alturaInicial,
@@ -32,19 +38,22 @@ export function useMedidasDaFileira(
 
   useEffect(() => {
     const fila = movel.current?.querySelector('.movel-fila')
-    if (!fila) return
+    if (!fila || typeof ResizeObserver === 'undefined') return
     const observador = new ResizeObserver(([entrada]) => {
       if (!entrada) return
-      const { height, width } = entrada.contentRect
-      setMedidas((m) =>
-        m.altura === height && m.largura === width ? m : { altura: height, largura: width },
-      )
+      const { width } = entrada.contentRect
+      setMedidas((m) => {
+        // A primeira medida vale direto: a altura inicial é só um palpite.
+        const medida = entrada.contentRect.height
+        const height = semEncolher && m.largura !== null ? Math.max(m.altura, medida) : medida
+        return m.altura === height && m.largura === width ? m : { altura: height, largura: width }
+      })
     })
     observador.observe(fila)
     return () => {
       observador.disconnect()
     }
-  }, [movel])
+  }, [movel, semEncolher])
 
   return medidas
 }

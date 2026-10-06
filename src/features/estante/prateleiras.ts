@@ -36,6 +36,24 @@ export const ALTURA_MINIMA_DA_LOMBADA = 63
 export const ALTURA_MAXIMA_DA_LOMBADA = 93.5
 
 /**
+ * A altura de uma lombada de livro, em % da fileira: a escolhida na mão, ou a que
+ * vem do que o livro guarda (`alturaAutomatica`, 0..1 — ver `montarEstante`).
+ *
+ * É a conta da estante e a da amostra do formulário: as duas precisam dar o mesmo
+ * número, ou o que a pessoa vê ao escolher não é o que vai para a prateleira.
+ */
+export function alturaDaLombadaEmPercentual(
+  comprimentoLombada: number | null,
+  alturaAutomatica: number,
+): number {
+  return (
+    comprimentoLombada ??
+    ALTURA_MINIMA_DA_LOMBADA +
+      alturaAutomatica * (ALTURA_MAXIMA_DA_LOMBADA - ALTURA_MINIMA_DA_LOMBADA)
+  )
+}
+
+/**
  * O enfeite é sempre o Azul base da paleta Noite, sem título, sem emblema e
  * sem contagem. O que varia é a forma, a altura e a largura — tudo sorteado
  * pelo lugar (prateleira, ordem), então o mesmo lugar dá sempre o mesmo

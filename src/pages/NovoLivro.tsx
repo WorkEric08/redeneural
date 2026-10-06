@@ -91,6 +91,7 @@ export default function NovoLivro() {
           rotuloDeEnvio={ehPasta ? 'Criar pasta' : 'Criar livro'}
           ocupado={ocupado}
           intensidadeDaLuz={intensidadeDaLuz}
+          prateleiras={quantidadeDePrateleiras}
           {...(guardarId === null ? { tipo: { valor: tipo, onMudar: setTipo } } : {})}
           onEnviar={(dados) => {
             void criarLivro(dados, prateleira, lugar, tipo).then((id) => {
