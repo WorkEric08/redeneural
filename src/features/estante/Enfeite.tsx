@@ -1,13 +1,15 @@
 import type { CSSProperties } from 'react'
 import { createPortal } from 'react-dom'
 
+import { INTENSIDADE_DA_LUZ_PADRAO } from '@/core'
+
 import { geometriaDaLombada } from './lombadaNoite'
 import { TOM_DO_DETALHE_DO_ENFEITE, type EnfeiteNoLugar } from './prateleiras'
 
 /**
  * As variáveis CSS do enfeite. A luz sobre ele é uma preferência à parte da dos livros
- * (`intensidadeDaLuzDoEnfeite`, em Ajustes): o padrão é 0, a cor real, que é o que faz os
- * livros da pessoa saltarem no meio dos enfeites.
+ * (`intensidadeDaLuzDoEnfeite`, em Ajustes): em 50, o padrão, é a cor real; abaixo disso ele
+ * escurece (e o fundo da estante com ele, no `Movel`), acima fica um pouco mais branco.
  *
  * O enfeite sorteado leva os detalhes da forma em azul mais escuro que o fundo
  * (`detalheEscuro`), sem luz branca no alto. O que a pessoa definiu à mão é
@@ -26,6 +28,7 @@ function estiloDoEnfeite(
     largura,
     altura,
     intensidadeDaLuz,
+    peca: 'enfeite',
   })
   return (
     lugar.detalheEscuro ? { ...geo.style, '--fg': TOM_DO_DETALHE_DO_ENFEITE } : geo.style
@@ -90,8 +93,8 @@ export function FantasmaDoEnfeite({
       className="lombada lombada--fantasma cores-de-antes"
       data-estilo={lugar.estilo}
       style={{
-        // Na mão ele vem para perto, como o livro: a cor real, sem lavagem.
-        ...estiloDoEnfeite(lugar, caixa.width, caixa.height, 0),
+        // Na mão ele vem para perto, como o livro: a cor real, sem sombra nem brilho.
+        ...estiloDoEnfeite(lugar, caixa.width, caixa.height, INTENSIDADE_DA_LUZ_PADRAO),
         left: caixa.left,
         top: caixa.top,
         width: caixa.width,

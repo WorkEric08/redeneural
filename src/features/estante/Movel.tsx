@@ -11,6 +11,7 @@ import {
 
 import { Enfeite, FantasmaDoEnfeite } from './Enfeite'
 import { Fantasma, Lombada, type EstadoDaLombada } from './Lombada'
+import { sombraDoFundoEmPercentual } from './lombadaNoite'
 import {
   cabeNaPrateleira,
   dadosDoEnfeite,
@@ -228,7 +229,14 @@ export function Movel({
     >
       <span className="movel-cornija" aria-hidden />
 
-      <div className="movel-corpo">
+      <div
+        className="movel-corpo"
+        style={
+          {
+            '--mv-sombra-do-fundo': `${String(sombraDoFundoEmPercentual(intensidadeDaLuzDoEnfeite))}%`,
+          } as CSSProperties
+        }
+      >
         {prateleiras.map((p, prateleira) => (
           <div className="movel-vao" key={p.chave} data-prateleira={prateleira}>
             <div className="movel-fila">

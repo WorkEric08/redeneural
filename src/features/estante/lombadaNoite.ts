@@ -1,6 +1,6 @@
 import type { CSSProperties } from 'react'
 
-import { INTENSIDADE_DA_LUZ_PADRAO, type EstiloDaLombada } from '@/core'
+import { brilhoDaLuz, sombraDaLuz, type EstiloDaLombada } from '@/core'
 
 /**
  * As contas da lombada no estilo Noite (06/10/2026): cor do texto, tamanho do
@@ -15,11 +15,18 @@ export const TEXTO_CLARO = '#F2F2F5'
 export const TEXTO_ESCURO = '#14141C'
 export const CREME = '#F1EEE6'
 
-/** A luz da sala que lava o pano em repouso (azul-claro frio). */
-const COR_DA_LAVAGEM = '#5565B5'
-/** Com o slider no padrão (42), a lavagem é de 16% — o valor do desenho Noite. */
-const LAVAGEM_NO_PADRAO = 16
-const LAVAGEM_MAXIMA = 38
+/**
+ * A luz sobre a lombada em repouso (07/10/2026). Em 50 é a cor real; abaixo, cada uma ganha uma
+ * sombra por cima da cor (até `SOMBRA_MAXIMA` % de preto, no 0); acima, o livro fica mais
+ * brilhante (uma luz azul-clara por cima, até `BRILHO_DO_LIVRO_MAXIMO` %) e o enfeite, um pouco
+ * mais branco (até `BRILHO_DO_ENFEITE_MAXIMO` % de branco).
+ */
+const SOMBRA_MAXIMA = 60
+const COR_DO_BRILHO_DO_LIVRO = '#8FA6FF'
+const BRILHO_DO_LIVRO_MAXIMO = 32
+const BRILHO_DO_ENFEITE_MAXIMO = 18
+/** A sombra que o fundo da estante recebe, a mesma escala (no 0, 70% de preto). */
+const SOMBRA_MAXIMA_DO_FUNDO = 70
 
 /** O emblema ocupa 11 px a 7 px da base; o título precisa terminar acima disso. */
 const TOPO_DO_EMBLEMA = 18
@@ -52,13 +59,40 @@ export function corDoTexto(hex: string): string {
   return ehCorClara(hex) ? TEXTO_ESCURO : TEXTO_CLARO
 }
 
+export type Peca = 'livro' | 'enfeite'
+
+function percentual(fracao: number, maximo: number): number {
+  return Math.round(fracao * maximo * 10) / 10
+}
+
 /**
- * O slider de luz (0-100) escala a lavagem: 42, o padrão, dá os 16% do desenho
- * Noite; 0 mostra a cor real mesmo em repouso, e 100 chega a 38%.
+ * A cor da lombada em repouso sob a luz de Ajustes (0-100). 50 devolve a cor real, sem mexer.
+ * Abaixo, a sombra; acima, o brilho do livro ou o branco do enfeite — ver as constantes.
  */
-export function lavagemEmPercentual(intensidadeDaLuz: number): number {
-  const bruto = (intensidadeDaLuz * LAVAGEM_NO_PADRAO) / INTENSIDADE_DA_LUZ_PADRAO
-  return Math.round(Math.min(LAVAGEM_MAXIMA, Math.max(0, bruto)) * 10) / 10
+export function corNaLuz(cor: string, intensidadeDaLuz: number, peca: Peca): string {
+  const sombra = sombraDaLuz(intensidadeDaLuz)
+  if (sombra > 0) {
+    const preto = percentual(sombra, SOMBRA_MAXIMA)
+    return `color-mix(in srgb, ${cor} ${String(100 - preto)}%, #000 ${String(preto)}%)`
+  }
+  const brilho = brilhoDaLuz(intensidadeDaLuz)
+  if (brilho > 0) {
+    const luz = percentual(
+      brilho,
+      peca === 'livro' ? BRILHO_DO_LIVRO_MAXIMO : BRILHO_DO_ENFEITE_MAXIMO,
+    )
+    const cinza = peca === 'livro' ? COR_DO_BRILHO_DO_LIVRO : '#fff'
+    return `color-mix(in srgb, ${cor} ${String(100 - luz)}%, ${cinza} ${String(luz)}%)`
+  }
+  return cor
+}
+
+/**
+ * O quanto de preto cobre o fundo da estante (`0%` a `70%`). Só a luz dos enfeites o mexe, e só
+ * para baixo de 50: acima disso o fundo fica como está.
+ */
+export function sombraDoFundoEmPercentual(intensidadeDaLuzDoEnfeite: number): number {
+  return percentual(sombraDaLuz(intensidadeDaLuzDoEnfeite), SOMBRA_MAXIMA_DO_FUNDO)
 }
 
 interface Zona {
@@ -127,8 +161,10 @@ interface Entrada {
   largura: number
   /** Em px. */
   altura: number
-  /** 0-100 — o slider de Ajustes. */
+  /** 0-100 — o slider de Ajustes (o dos livros ou o dos enfeites, conforme a `peca`). */
   intensidadeDaLuz: number
+  /** Livro por padrão: decide o que a luz de cima de 50 faz. */
+  peca?: Peca
 }
 
 export interface GeometriaDaLombada {
@@ -151,7 +187,6 @@ export function geometriaDaLombada(e: Entrada): GeometriaDaLombada {
   const cor = papel ? CREME : e.cor
   const fg = papel ? TEXTO_ESCURO : corDoTexto(cor)
   const clara = ehCorClara(cor)
-  const lavagem = papel ? 0 : lavagemEmPercentual(e.intensidadeDaLuz)
 
   const caracteres = [...e.titulo].length
   const zona = ZONAS[e.estilo]
@@ -160,7 +195,7 @@ export function geometriaDaLombada(e: Entrada): GeometriaDaLombada {
   const style = {
     '--cor': cor,
     '--fg': fg,
-    '--cor-lavada': `color-mix(in srgb, ${cor} ${String(100 - lavagem)}%, ${COR_DA_LAVAGEM} ${String(lavagem)}%)`,
+    '--cor-na-luz': corNaLuz(cor, e.intensidadeDaLuz, e.peca ?? 'livro'),
     // Do lado oposto ao texto: escuro em livro escuro, claro em livro claro.
     '--oposto': clara ? '#fff' : '#000',
     '--degrade-alvo': clara ? '#fff' : '#000',

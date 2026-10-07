@@ -114,7 +114,7 @@ export default function Ajustes() {
             <ControleDeLuz
               icone={<Lightbulb size={18} aria-hidden />}
               titulo="Luz dos livros"
-              descricao="De longe, o quanto a luz da sala lava a cor dos livros."
+              descricao="50% mostra as cores reais. Abaixo, cada livro ganha uma sombra; acima, ele brilha mais."
               valor={intensidadeDaLuz}
               travado={travado}
               onMudar={(valor) => {
@@ -125,7 +125,7 @@ export default function Ajustes() {
             <ControleDeLuz
               icone={<Sparkles size={18} aria-hidden />}
               titulo="Luz dos enfeites"
-              descricao="O mesmo, para os enfeites. Em 0 eles mostram a cor real."
+              descricao="50% mostra as cores reais. Abaixo, enfeites e fundo da estante escurecem; acima, os enfeites ficam mais brancos."
               valor={intensidadeDaLuzDoEnfeite}
               travado={travado}
               onMudar={(valor) => {

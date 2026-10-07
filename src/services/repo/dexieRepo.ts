@@ -19,7 +19,6 @@ import {
   conexaoId,
   conexaoFromSnapshot,
   conexaoToSnapshot,
-  INTENSIDADE_DA_LUZ_DO_ENFEITE_PADRAO,
   INTENSIDADE_DA_LUZ_PADRAO,
   livroFromSnapshot,
   livroToSnapshot,
@@ -339,25 +338,25 @@ export function createDexieRepo(db: PalacioDB = defaultDb): PalacioRepo {
 
     async getIntensidadeDaLuz() {
       const gravado = (await db.meta.get('preferencias')) as PreferenciasGravadas | undefined
-      return gravado?.intensidadeDaLuz ?? INTENSIDADE_DA_LUZ_PADRAO
+      return gravado?.luzDosLivros ?? INTENSIDADE_DA_LUZ_PADRAO
     },
 
     async definirIntensidadeDaLuz(valor) {
       const recortado = clampIntensidadeDaLuz(valor)
       await db.transaction('rw', db.meta, async () => {
-        await db.meta.put(await preferenciasCom({ intensidadeDaLuz: recortado }))
+        await db.meta.put(await preferenciasCom({ luzDosLivros: recortado }))
       })
     },
 
     async getIntensidadeDaLuzDoEnfeite() {
       const gravado = (await db.meta.get('preferencias')) as PreferenciasGravadas | undefined
-      return gravado?.intensidadeDaLuzDoEnfeite ?? INTENSIDADE_DA_LUZ_DO_ENFEITE_PADRAO
+      return gravado?.luzDosEnfeites ?? INTENSIDADE_DA_LUZ_PADRAO
     },
 
     async definirIntensidadeDaLuzDoEnfeite(valor) {
       const recortado = clampIntensidadeDaLuz(valor)
       await db.transaction('rw', db.meta, async () => {
-        await db.meta.put(await preferenciasCom({ intensidadeDaLuzDoEnfeite: recortado }))
+        await db.meta.put(await preferenciasCom({ luzDosEnfeites: recortado }))
       })
     },
 

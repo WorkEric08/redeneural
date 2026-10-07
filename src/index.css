@@ -493,7 +493,9 @@ img {
 .movel-corpo {
   position: relative;
   margin-inline: var(--mv-projecao);
-  background: var(--mv-parede);
+  /* A luz dos enfeites, abaixo de 50, também escurece o fundo (Movel.tsx escreve a
+     porcentagem de preto). Acima de 50 ele fica como está. */
+  background: color-mix(in srgb, var(--mv-parede), #000 var(--mv-sombra-do-fundo, 0%));
 }
 
 /* `isolation`: os z-index de dentro (a fileira) ficam presos ao vão.
@@ -747,15 +749,16 @@ img {
 /* O estilo Noite (06/10/2026). A cor, o texto e as medidas do título chegam como
    variáveis escritas por lombadaNoite.ts; aqui só se desenha:
 
-   - --cor: a cor real do livro. --cor-lavada: ela sob a luz da sala.
-   - --base: a que o fundo usa NESTE estado — lavada em repouso, real quando o
+   - --cor: a cor real do livro. --cor-na-luz: ela sob a luz de Ajustes (com sombra
+     abaixo de 50, mais brilho acima, a cor real em 50).
+   - --base: a que o fundo usa NESTE estado — na luz em repouso, real quando o
      livro está escolhido, erguido ou alvo. Os tons de detalhe saem dela, para
      a forma acompanhar o fundo em vez de ficar com a cor de outro estado.
    - --fg: o texto — claro em cor escura, escuro no Creme.
 
    Só transform e opacity animam: nenhuma troca de cor passa por transição. */
 .lombada {
-  --base: var(--cor-lavada);
+  --base: var(--cor-na-luz);
 
   position: relative;
   display: flex;
@@ -1001,7 +1004,7 @@ img {
   will-change: transform;
 }
 
-/* A lombada de exemplo no formulário do livro: o pano sob a mesma lavagem da
+/* A lombada de exemplo no formulário do livro: o pano sob a mesma luz da
    estante. */
 .lombada--amostra {
   box-shadow: 0 8px 16px rgb(0 0 0 / 0.35);

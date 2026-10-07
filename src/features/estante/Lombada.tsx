@@ -1,5 +1,6 @@
 import { createPortal } from 'react-dom'
 
+import { INTENSIDADE_DA_LUZ_PADRAO } from '@/core'
 import { contar } from '@/lib/plural'
 
 import { EmblemaDaLombada } from './EmblemaDaLombada'
@@ -17,7 +18,7 @@ const LEGENDA_DO_ANDAMENTO = {
 } as const
 
 /**
- * - `repouso`: na prateleira, sob a luz que lava a cor.
+ * - `repouso`: na prateleira, sob a luz de Ajustes.
  * - `escolhido`: puxado para fora pelo painel aberto.
  * - `erguido`: na mão, antes de o dedo andar.
  * - `vazio`: o vão que o livro deixa enquanto viaja na mão.
@@ -160,7 +161,8 @@ export function Fantasma({
     titulo: item.livro.titulo,
     largura: caixa.width,
     altura: caixa.height,
-    intensidadeDaLuz: 0,
+    // O livro na mão vem para perto: a cor real, sem sombra nem brilho.
+    intensidadeDaLuz: INTENSIDADE_DA_LUZ_PADRAO,
   })
 
   return createPortal(

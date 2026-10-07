@@ -14,7 +14,7 @@ import { COMPRIMENTOS } from './comprimentos'
 import { EmblemaDaLombada } from './EmblemaDaLombada'
 import { FORMAS } from './formas'
 import { LARGURAS } from './larguras'
-import { geometriaDaLombada } from './lombadaNoite'
+import { geometriaDaLombada, type Peca } from './lombadaNoite'
 import { PANOS } from './panos'
 import {
   alturaDaLombadaEmPercentual,
@@ -98,9 +98,9 @@ interface Props {
  * do neurônio.
  *
  * A amostra ao lado é a lombada como ela vai ficar na estante (forma, cor,
- * largura, comprimento e emblema; sem estado), com a mesma
- * lavagem de luz. Um quadradinho de cor pura enganaria: na prateleira nenhum
- * pano aparece com a cor que tem.
+ * largura, comprimento e emblema; sem estado), sob a mesma luz de Ajustes.
+ * Um quadradinho de cor pura enganaria: na prateleira o pano pode aparecer
+ * com sombra ou mais brilhante que a cor que tem.
  *
  * Sempre tela cheia (pedido do usuário, 17/09/2026 — antes editar era uma
  * folha, com um "Cancelar" ao lado do enviar): sair é o "fechar" da barra de
@@ -160,6 +160,7 @@ export function FormularioDeLivro({
     largura: larguraDaAmostra,
     altura: alturaDaAmostra,
     intensidadeDaLuz,
+    peca: enfeite ? 'enfeite' : 'livro',
   })
 
   const opcoesDeTipo: OpcaoDeTipo[] = [
@@ -358,7 +359,12 @@ export function FormularioDeLivro({
                 }}
                 className="sr-only"
               />
-              <MiniaturaDaForma estilo={f.chave} cor={cor} intensidadeDaLuz={intensidadeDaLuz} />
+              <MiniaturaDaForma
+                estilo={f.chave}
+                cor={cor}
+                intensidadeDaLuz={intensidadeDaLuz}
+                peca={enfeite ? 'enfeite' : 'livro'}
+              />
               <span className="text-poeira text-sm leading-tight">{f.rotulo}</span>
             </label>
           ))}
@@ -496,10 +502,12 @@ function MiniaturaDaForma({
   estilo,
   cor,
   intensidadeDaLuz,
+  peca,
 }: {
   estilo: EstiloDaLombada
   cor: string
   intensidadeDaLuz: number
+  peca: Peca
 }) {
   const geo = geometriaDaLombada({
     estilo,
@@ -508,6 +516,7 @@ function MiniaturaDaForma({
     largura: LARGURA_DA_MINIATURA_PX,
     altura: ALTURA_DA_MINIATURA_PX,
     intensidadeDaLuz,
+    peca,
   })
   return (
     <span

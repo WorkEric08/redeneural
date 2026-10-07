@@ -50,10 +50,15 @@ export interface PerfilGravado {
 export interface PreferenciasGravadas {
   chave: 'preferencias'
   quantidadeDePrateleiras: number
-  /** 0-100. Ausente em preferências gravadas antes da Fase 17 — o repo trata como `INTENSIDADE_DA_LUZ_PADRAO`. */
-  intensidadeDaLuz?: number
-  /** 0-100, a luz sobre os enfeites. Ausente antes de 07/10/2026 — o repo trata como `INTENSIDADE_DA_LUZ_DO_ENFEITE_PADRAO`. */
-  intensidadeDaLuzDoEnfeite?: number
+  /**
+   * 0-100, a luz sobre os livros — 50 é a cor real. Ausente: `INTENSIDADE_DA_LUZ_PADRAO`.
+   *
+   * Chave nova em 07/10/2026 (antes `intensidadeDaLuz`, em que 0 era a cor real e 42 o padrão):
+   * um valor antigo, lido agora, viraria sombra máxima. Quem tinha o ajuste volta ao padrão.
+   */
+  luzDosLivros?: number
+  /** 0-100, a luz sobre os enfeites e o fundo da estante — 50 é a cor real. Ausente: o padrão. */
+  luzDosEnfeites?: number
   /** Ausente em preferências gravadas antes de 30/09/2026 — o repo trata como `MODO_DA_BUSCA_PADRAO`. */
   modoDaBusca?: ModoDaBusca
   /** Ausente antes do Mapa (01/10/2026) — o repo trata como `MODO_DA_REDE_PADRAO`. */

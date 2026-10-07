@@ -7,9 +7,10 @@ import {
   corDoTexto,
   ehCorClara,
   emblemaCabe,
+  corNaLuz,
   geometriaDaLombada,
-  lavagemEmPercentual,
   luminancia,
+  sombraDoFundoEmPercentual,
   tamanhoDoTitulo,
   TEXTO_CLARO,
   TEXTO_ESCURO,
@@ -32,15 +33,29 @@ describe('cor do texto', () => {
   })
 })
 
-describe('lavagem', () => {
-  it('o slider no padrão dá os 16% do desenho, e 0 mostra a cor real', () => {
-    expect(lavagemEmPercentual(42)).toBe(16)
-    expect(lavagemEmPercentual(0)).toBe(0)
+describe('a cor sob a luz', () => {
+  it('em 50 é a cor real, para o livro e para o enfeite', () => {
+    expect(corNaLuz('#1B2A6B', 50, 'livro')).toBe('#1B2A6B')
+    expect(corNaLuz('#1B2A6B', 50, 'enfeite')).toBe('#1B2A6B')
   })
 
-  it('cresce com o slider e para em 38%', () => {
-    expect(lavagemEmPercentual(21)).toBe(8)
-    expect(lavagemEmPercentual(100)).toBe(38)
+  it('abaixo de 50 vem uma sombra (preto por cima), que cresce até 60% no 0', () => {
+    expect(corNaLuz('#1B2A6B', 25, 'livro')).toContain('#000 30%')
+    expect(corNaLuz('#1B2A6B', 0, 'livro')).toContain('#000 60%')
+    expect(corNaLuz('#1B2A6B', 0, 'enfeite')).toContain('#000 60%')
+  })
+
+  it('acima de 50 o livro ganha uma luz azul-clara e o enfeite fica mais branco', () => {
+    expect(corNaLuz('#1B2A6B', 100, 'livro')).toContain('#8FA6FF 32%')
+    expect(corNaLuz('#1B2A6B', 100, 'enfeite')).toContain('#fff 18%')
+    expect(corNaLuz('#1B2A6B', 75, 'enfeite')).toContain('#fff 9%')
+  })
+
+  it('só a luz dos enfeites escurece o fundo, e só abaixo de 50', () => {
+    expect(sombraDoFundoEmPercentual(50)).toBe(0)
+    expect(sombraDoFundoEmPercentual(100)).toBe(0)
+    expect(sombraDoFundoEmPercentual(25)).toBe(35)
+    expect(sombraDoFundoEmPercentual(0)).toBe(70)
   })
 })
 
@@ -81,7 +96,7 @@ describe('geometriaDaLombada', () => {
     titulo: 'Psicologia',
     largura: 38,
     altura: 100,
-    intensidadeDaLuz: 42,
+    intensidadeDaLuz: 50,
   } as const
 
   it('escreve cor, texto, fonte e zona como variáveis CSS', () => {
@@ -93,13 +108,24 @@ describe('geometriaDaLombada', () => {
       '--zt-altura': '75%',
       '--zt-x': '50%',
     })
-    expect(String((style as Record<string, string>)['--cor-lavada'])).toContain('84%')
+    // Em 50 a cor na luz é a cor real.
+    expect(style).toMatchObject({ '--cor-na-luz': '#1B2A6B' })
   })
 
-  it('o papel é sempre creme, com texto escuro e sem lavagem, qualquer que seja a cor', () => {
+  it('abaixo de 50 a cor na luz ganha sombra, e acima o enfeite fica mais branco', () => {
+    const escuro = geometriaDaLombada({ ...base, intensidadeDaLuz: 0 }).style as Record<
+      string,
+      string
+    >
+    expect(escuro['--cor-na-luz']).toContain('#000 60%')
+    const branco = geometriaDaLombada({ ...base, intensidadeDaLuz: 100, peca: 'enfeite' })
+      .style as Record<string, string>
+    expect(branco['--cor-na-luz']).toContain('#fff 18%')
+  })
+
+  it('o papel é sempre creme, com texto escuro, qualquer que seja a cor', () => {
     const { style } = geometriaDaLombada({ ...base, estilo: 'papel', cor: '#12204F' })
-    expect(style).toMatchObject({ '--cor': CREME, '--fg': TEXTO_ESCURO })
-    expect(String((style as Record<string, string>)['--cor-lavada'])).toContain('100%')
+    expect(style).toMatchObject({ '--cor': CREME, '--fg': TEXTO_ESCURO, '--cor-na-luz': CREME })
   })
 
   it('o degradê e o bloco invertem em livro claro', () => {

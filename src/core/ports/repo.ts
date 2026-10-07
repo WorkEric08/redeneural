@@ -73,7 +73,7 @@ export interface PalacioRepo {
   getIntensidadeDaLuz(): Promise<number>
   /** Grava a intensidade da luz, sempre recortada para 0-100. */
   definirIntensidadeDaLuz(valor: number): Promise<void>
-  /** 0-100, a luz sobre os enfeites. Default `INTENSIDADE_DA_LUZ_DO_ENFEITE_PADRAO` (a cor real). */
+  /** 0-100, a luz sobre os enfeites e o fundo da estante. Default `INTENSIDADE_DA_LUZ_PADRAO` (50, a cor real). */
   getIntensidadeDaLuzDoEnfeite(): Promise<number>
   /** Grava a intensidade da luz dos enfeites, sempre recortada para 0-100. */
   definirIntensidadeDaLuzDoEnfeite(valor: number): Promise<void>

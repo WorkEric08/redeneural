@@ -1551,6 +1551,10 @@ lint limpos (0 erros, 0 avisos).
 
 ## Intensidade da luz ajustável (Fase 17, 13/09/2026)
 
+> **Substituída em 07/10/2026**: a luz agora tem o 50 no meio (cores reais), com sombra abaixo e
+> brilho acima, uma para os livros e outra para os enfeites — ver "Ajustes: sem a seção Mapa…".
+> O que segue é o histórico da "lavagem".
+
 Sétima das 9 melhorias aprovadas depois da Fase 10. Desde a Fase 6 a lombada
 em repouso mostra a cor do pano **lavada** pela luz da sala — de longe não se
 vê a cor real, só de perto (ver "A estante", "distância desbota"). Esse tanto
@@ -5315,21 +5319,36 @@ opções de luz — a dos livros e a dos enfeites.
 
 - **A seção Mapa saiu**, com a folha de confirmação de "Reorganizar mapa". O motor e a store
   continuam com `reorganizarMapa`, sem chamador na tela; o Mapa se arruma sozinho como sempre.
-- **"Luz dos livros"** é a "Intensidade da luz" de sempre (Fase 17), só com o nome novo: o mesmo
-  controle, o mesmo padrão (42) e a mesma conta.
-- **"Luz dos enfeites"** é uma preferência nova, `intensidadeDaLuzDoEnfeite`, no mesmo documento
-  `meta.preferencias` (sem versão nova do Dexie; fora do backup, como as outras). **O padrão é 0,
-  a cor real** — é como os enfeites eram, então nada muda na estante de quem nunca mexer. Vai de
-  0 a 100 e usa a mesma conta da luz dos livros (`lavagemEmPercentual`).
-- **O enfeite na mão não leva a lavagem**: o fantasma do arrasto mostra a cor real, como o do livro
-  ("puxado para perto"). A **amostra de editar enfeite** usa a luz dos enfeites, para continuar
-  igual ao que vai para a prateleira.
-- **Escolha minha, avisada:** "a luz dos livros efetivo" foi lida como os **livros de verdade** (os
-  da pessoa), em oposição aos enfeites — o controle que já existia.
-- **Verificado** no Chrome (build de produção) em 412×892, 320×568 e 1440×900: Ajustes sem a seção
-  e sem "Reorganizar", os dois controles, a luz dos enfeites começando em 0, mexer num não mexer no
-  outro, 100% lavando o enfeite na estante, sobreviver a recarregar e voltar a 0 devolvendo a cor
-  de antes; sem rolagem lateral. 611 testes (3 novos, do repositório), tipos, lint e prettier
+- **A luz agora tem o 50 no meio** (pedido do usuário, 07/10/2026; **substitui a "lavagem" da
+  Fase 17**, em que 42 era o padrão e 0 a cor real). As duas — "Luz dos livros" e "Luz dos
+  enfeites" — começam em **50, que mostra as cores reais**. A conta é pura, em
+  `core/domain/luz.ts` (`sombraDaLuz`, `brilhoDaLuz`, de 0 a 1), e quem desenha é
+  `features/estante/lombadaNoite.ts` (`corNaLuz`):
+  | | Abaixo de 50 | Acima de 50 |
+  | --- | --- | --- |
+  | **Livros** | cada um ganha uma sombra, até 60% de preto no 0 | ficam mais brilhantes, até 32% de uma luz azul-clara no 100 |
+  | **Enfeites** | o mesmo, até 60% de preto — **e o fundo da estante também**, até 70% | ficam um pouco mais brancos, até 18% de branco no 100, **sem mexer no fundo** |
+- **Só a luz dos enfeites mexe no fundo** (`--mv-sombra-do-fundo` em `.movel-corpo`); a luz dos
+  livros nunca. A madeira da estrutura (laterais, tampo, tábuas, base) não muda com nenhuma das duas.
+- **A variável CSS virou `--cor-na-luz`** (era `--cor-lavada`). O livro escolhido, erguido ou alvo
+  continua usando a cor real (`--base: var(--cor)`): abaixo de 50 isso o "puxa para perto" da sombra;
+  acima de 50 ele volta à cor real, um pouco menos brilhante que em repouso. O papel também segue a
+  luz agora (a lavagem azul que o isentava saiu).
+- **Chaves novas no banco** (`luzDosLivros`, `luzDosEnfeites`, em `meta.preferencias`; sem versão
+  nova do Dexie, fora do backup). As antigas (`intensidadeDaLuz`) são **ignoradas**: nelas 0 era a
+  cor real, e lido agora viraria sombra máxima. Quem tinha o ajuste volta ao 50. Os nomes no código
+  (`intensidadeDaLuz`, `intensidadeDaLuzDoEnfeite`) não mudaram.
+- **Na mão** (o fantasma do livro e do enfeite) vale a cor real, sem sombra nem brilho. A **amostra
+  do formulário** e as miniaturas das formas usam a luz da peça (a do enfeite, ao editar um
+  enfeite), para continuar iguais ao que vai para a prateleira.
+- **Escolha minha, avisada:** "a luz dos livros efetivo" foi lida como os **livros de verdade**, em
+  oposição aos enfeites. O tom do brilho do livro (azul-claro) e os máximos acima são meus — ficam
+  nas constantes do topo de `lombadaNoite.ts`. O branco do enfeite começou em 30% e baixei para 18%
+  depois de ver: 30% já deixava o enfeite cinza-claro, mais que "um pouco".
+- **Verificado** no Chrome (build de produção) em 412×892, 320×568 e 1440×900: os dois controles em
+  50; livros a 0 e a 100 mudam só os livros; enfeites a 0 e a 25 escurecem enfeite e fundo (a 25 no
+  meio do caminho) sem tocar nos livros; enfeites a 100 clareiam só o enfeite; sobrevive a recarregar
+  e voltar a 50 devolve as cores reais; sem rolagem lateral. 619 testes, tipos, lint e prettier
   limpos. **Não verificado em toque real.**
 
 ## Mostrar tudo sem deslize vertical: as folhas e o andamento (06/10/2026)

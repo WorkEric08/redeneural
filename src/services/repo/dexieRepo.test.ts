@@ -552,8 +552,21 @@ describe('quantidade de prateleiras', () => {
 })
 
 describe('intensidade da luz', () => {
-  it('42 por padrão, quando nunca foi definida', async () => {
-    expect(await repo.getIntensidadeDaLuz()).toBe(42)
+  it('50 (as cores reais) por padrão, quando nunca foi definida', async () => {
+    expect(await repo.getIntensidadeDaLuz()).toBe(50)
+  })
+
+  it('um valor gravado antes de 07/10/2026 (chave antiga, em que 0 era a cor real) é ignorado', async () => {
+    const db = createDb(`palacio-test-luz-antiga-${String(nth)}`)
+    // Um documento de antes: a chave que existia então já não está no tipo.
+    const gravadoAntes = {
+      chave: 'preferencias' as const,
+      quantidadeDePrateleiras: 4,
+      intensidadeDaLuz: 0,
+    }
+    await db.meta.put(gravadoAntes)
+    const antigo = createDexieRepo(db)
+    expect(await antigo.getIntensidadeDaLuz()).toBe(50)
   })
 
   it('grava e devolve o que foi definido', async () => {
@@ -571,8 +584,8 @@ describe('intensidade da luz', () => {
 })
 
 describe('intensidade da luz dos enfeites', () => {
-  it('0 (a cor real) por padrão, quando nunca foi definida', async () => {
-    expect(await repo.getIntensidadeDaLuzDoEnfeite()).toBe(0)
+  it('50 (as cores reais) por padrão, quando nunca foi definida', async () => {
+    expect(await repo.getIntensidadeDaLuzDoEnfeite()).toBe(50)
   })
 
   it('grava, recorta para 0-100 e devolve', async () => {
