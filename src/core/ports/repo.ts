@@ -73,6 +73,10 @@ export interface PalacioRepo {
   getIntensidadeDaLuz(): Promise<number>
   /** Grava a intensidade da luz, sempre recortada para 0-100. */
   definirIntensidadeDaLuz(valor: number): Promise<void>
+  /** 0-100, a luz sobre os enfeites. Default `INTENSIDADE_DA_LUZ_DO_ENFEITE_PADRAO` (a cor real). */
+  getIntensidadeDaLuzDoEnfeite(): Promise<number>
+  /** Grava a intensidade da luz dos enfeites, sempre recortada para 0-100. */
+  definirIntensidadeDaLuzDoEnfeite(valor: number): Promise<void>
   /** O último modo da busca que a pessoa escolheu. `MODO_DA_BUSCA_PADRAO` se nunca escolheu. */
   getModoDaBusca(): Promise<ModoDaBusca>
   definirModoDaBusca(modo: ModoDaBusca): Promise<void>

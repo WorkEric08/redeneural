@@ -1,19 +1,16 @@
-import { Lightbulb, Map as IconeDoMapa, Minus, Plus, Rows3, Search } from 'lucide-react'
+import { Lightbulb, Minus, Plus, Rows3, Search, Sparkles } from 'lucide-react'
 import type { ReactNode } from 'react'
-import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom'
+import { Link } from 'react-router-dom'
 
 import { botao } from '@/components/botao'
 import { BarraDeTopo } from '@/components/BarraDeTopo'
-import { Confirmacao } from '@/components/Confirmacao'
-import { Folha } from '@/components/Folha'
 import { EtiquetaProcessando } from '@/components/EtiquetaProcessando'
 import { INTENSIDADE_DA_LUZ_MAXIMA, INTENSIDADE_DA_LUZ_MINIMA, MAXIMO_DE_PRATELEIRAS } from '@/core'
 import { usePalacio } from '@/store/palacio'
 
 /**
- * Ajustes do palácio: quantidade de prateleiras, intensidade da luz e
- * "Reorganizar mapa" — a única coisa que refaz o Mapa inteiro, e por isso
- * pergunta antes (01/10/2026).
+ * Ajustes do palácio: quantidade de prateleiras e a intensidade da luz sobre os livros e
+ * sobre os enfeites. A seção "Mapa" (Reorganizar mapa) saiu em 07/10/2026.
  */
 export default function Ajustes() {
   const {
@@ -26,19 +23,9 @@ export default function Ajustes() {
     definirQuantidadeDePrateleiras,
     intensidadeDaLuz,
     definirIntensidadeDaLuz,
-    reorganizarMapa,
-    avisar,
+    intensidadeDaLuzDoEnfeite,
+    definirIntensidadeDaLuzDoEnfeite,
   } = usePalacio()
-
-  // A pergunta mora na URL, como as outras folhas: o voltar do Android fecha.
-  const [busca] = useSearchParams()
-  const navegar = useNavigate()
-  const { key } = useLocation()
-  const perguntando = busca.get('reorganizar') === '1'
-  function fecharPergunta(): void {
-    if (key === 'default') void navegar({ search: '' }, { replace: true })
-    else void navegar(-1)
-  }
 
   const semVetor = neuronios.filter((n) => n.processando).length
   const travado = ocupado || !carregado
@@ -124,76 +111,71 @@ export default function Ajustes() {
               </div>
             </div>
 
-            <div className="linha-de-lista flex-col items-stretch gap-3">
-              <div className="flex items-center gap-3.5">
-                <Icone>
-                  <Lightbulb size={18} aria-hidden />
-                </Icone>
-                <Texto titulo="Intensidade da luz">
-                  De longe, o quanto a luz da sala lava a cor dos livros.
-                </Texto>
-                <span className="font-dado w-9 shrink-0 text-right text-sm tabular-nums">
-                  {intensidadeDaLuz}%
-                </span>
-              </div>
-              <input
-                type="range"
-                min={INTENSIDADE_DA_LUZ_MINIMA}
-                max={INTENSIDADE_DA_LUZ_MAXIMA}
-                value={intensidadeDaLuz}
-                disabled={travado}
-                aria-label="Intensidade da luz"
-                onChange={(e) => {
-                  void definirIntensidadeDaLuz(Number(e.target.value))
-                }}
-                className="accent-realce h-11 w-full"
-              />
-            </div>
+            <ControleDeLuz
+              icone={<Lightbulb size={18} aria-hidden />}
+              titulo="Luz dos livros"
+              descricao="De longe, o quanto a luz da sala lava a cor dos livros."
+              valor={intensidadeDaLuz}
+              travado={travado}
+              onMudar={(valor) => {
+                void definirIntensidadeDaLuz(valor)
+              }}
+            />
+
+            <ControleDeLuz
+              icone={<Sparkles size={18} aria-hidden />}
+              titulo="Luz dos enfeites"
+              descricao="O mesmo, para os enfeites. Em 0 eles mostram a cor real."
+              valor={intensidadeDaLuzDoEnfeite}
+              travado={travado}
+              onMudar={(valor) => {
+                void definirIntensidadeDaLuzDoEnfeite(valor)
+              }}
+            />
           </div>
           <p className="text-poeira px-1 pt-2.5 text-xs leading-relaxed">
             Diminuir prateleiras é recusado se ainda sobrar livro nas removidas — mova-os antes.
           </p>
         </section>
-
-        <section>
-          <h2 className="rotulo-de-secao">Mapa</h2>
-          <div className="cartao">
-            <div className="linha-de-lista">
-              <Icone>
-                <IconeDoMapa size={18} aria-hidden />
-              </Icone>
-              <Texto titulo="Reorganizar mapa">
-                Desenha o mapa de novo, do zero. Ilhas e neurônios mudam de lugar.
-              </Texto>
-              <Link
-                to={{ search: '?reorganizar=1' }}
-                aria-disabled={travado}
-                className={`${botao({ tipo: 'secundario', tamanho: 'pequeno' })} aria-disabled:pointer-events-none aria-disabled:opacity-45`}
-              >
-                Reorganizar
-              </Link>
-            </div>
-          </div>
-        </section>
       </div>
+    </div>
+  )
+}
 
-      <Folha aberta={perguntando} rotulo="Reorganizar o mapa" onFechar={fecharPergunta}>
-        <Confirmacao
-          titulo="Reorganizar o mapa?"
-          explicacao="O mapa é desenhado de novo, do zero: as ilhas e os neurônios mudam de lugar, e onde você se lembrava de encontrar cada coisa deixa de valer. Não dá para desfazer."
-          rotulo="Reorganizar"
-          rotuloOcupado="Reorganizando…"
-          ocupado={ocupado}
-          onCancelar={fecharPergunta}
-          onConfirmar={() => {
-            void reorganizarMapa().then((deuCerto) => {
-              if (!deuCerto) return
-              fecharPergunta()
-              avisar('Mapa reorganizado.')
-            })
-          }}
-        />
-      </Folha>
+function ControleDeLuz({
+  icone,
+  titulo,
+  descricao,
+  valor,
+  travado,
+  onMudar,
+}: {
+  icone: ReactNode
+  titulo: string
+  descricao: string
+  valor: number
+  travado: boolean
+  onMudar: (valor: number) => void
+}) {
+  return (
+    <div className="linha-de-lista flex-col items-stretch gap-3">
+      <div className="flex items-center gap-3.5">
+        <Icone>{icone}</Icone>
+        <Texto titulo={titulo}>{descricao}</Texto>
+        <span className="font-dado w-9 shrink-0 text-right text-sm tabular-nums">{valor}%</span>
+      </div>
+      <input
+        type="range"
+        min={INTENSIDADE_DA_LUZ_MINIMA}
+        max={INTENSIDADE_DA_LUZ_MAXIMA}
+        value={valor}
+        disabled={travado}
+        aria-label={titulo}
+        onChange={(e) => {
+          onMudar(Number(e.target.value))
+        }}
+        className="accent-realce h-11 w-full"
+      />
     </div>
   )
 }

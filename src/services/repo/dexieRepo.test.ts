@@ -570,6 +570,29 @@ describe('intensidade da luz', () => {
   })
 })
 
+describe('intensidade da luz dos enfeites', () => {
+  it('0 (a cor real) por padrão, quando nunca foi definida', async () => {
+    expect(await repo.getIntensidadeDaLuzDoEnfeite()).toBe(0)
+  })
+
+  it('grava, recorta para 0-100 e devolve', async () => {
+    await repo.definirIntensidadeDaLuzDoEnfeite(65)
+    expect(await repo.getIntensidadeDaLuzDoEnfeite()).toBe(65)
+
+    await repo.definirIntensidadeDaLuzDoEnfeite(250)
+    expect(await repo.getIntensidadeDaLuzDoEnfeite()).toBe(100)
+  })
+
+  it('é independente da luz dos livros: mexer numa não apaga nem muda a outra', async () => {
+    await repo.definirIntensidadeDaLuz(70)
+    await repo.definirIntensidadeDaLuzDoEnfeite(20)
+    expect(await repo.getIntensidadeDaLuz()).toBe(70)
+
+    await repo.definirIntensidadeDaLuz(10)
+    expect(await repo.getIntensidadeDaLuzDoEnfeite()).toBe(20)
+  })
+})
+
 describe('modo da busca', () => {
   it('"sentido" por padrão, quando nunca foi escolhido', async () => {
     expect(await repo.getModoDaBusca()).toBe('sentido')

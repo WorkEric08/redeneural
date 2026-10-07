@@ -19,6 +19,7 @@ import {
   conexaoId,
   conexaoFromSnapshot,
   conexaoToSnapshot,
+  INTENSIDADE_DA_LUZ_DO_ENFEITE_PADRAO,
   INTENSIDADE_DA_LUZ_PADRAO,
   livroFromSnapshot,
   livroToSnapshot,
@@ -345,6 +346,18 @@ export function createDexieRepo(db: PalacioDB = defaultDb): PalacioRepo {
       const recortado = clampIntensidadeDaLuz(valor)
       await db.transaction('rw', db.meta, async () => {
         await db.meta.put(await preferenciasCom({ intensidadeDaLuz: recortado }))
+      })
+    },
+
+    async getIntensidadeDaLuzDoEnfeite() {
+      const gravado = (await db.meta.get('preferencias')) as PreferenciasGravadas | undefined
+      return gravado?.intensidadeDaLuzDoEnfeite ?? INTENSIDADE_DA_LUZ_DO_ENFEITE_PADRAO
+    },
+
+    async definirIntensidadeDaLuzDoEnfeite(valor) {
+      const recortado = clampIntensidadeDaLuz(valor)
+      await db.transaction('rw', db.meta, async () => {
+        await db.meta.put(await preferenciasCom({ intensidadeDaLuzDoEnfeite: recortado }))
       })
     },
 

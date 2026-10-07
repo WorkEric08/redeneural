@@ -5,21 +5,27 @@ import { geometriaDaLombada } from './lombadaNoite'
 import { TOM_DO_DETALHE_DO_ENFEITE, type EnfeiteNoLugar } from './prateleiras'
 
 /**
- * As variáveis CSS do enfeite. Sem lavagem de luz — a luz da sala chega nos livros
- * da pessoa, e é isso que os faz saltar no meio dos enfeites.
+ * As variáveis CSS do enfeite. A luz sobre ele é uma preferência à parte da dos livros
+ * (`intensidadeDaLuzDoEnfeite`, em Ajustes): o padrão é 0, a cor real, que é o que faz os
+ * livros da pessoa saltarem no meio dos enfeites.
  *
  * O enfeite sorteado leva os detalhes da forma em azul mais escuro que o fundo
  * (`detalheEscuro`), sem luz branca no alto. O que a pessoa definiu à mão é
  * desenhado como um livro: a forma e a cor que ela escolheu.
  */
-function estiloDoEnfeite(lugar: EnfeiteNoLugar, largura: number, altura: number): CSSProperties {
+function estiloDoEnfeite(
+  lugar: EnfeiteNoLugar,
+  largura: number,
+  altura: number,
+  intensidadeDaLuz: number,
+): CSSProperties {
   const geo = geometriaDaLombada({
     estilo: lugar.estilo,
     cor: lugar.cor,
     titulo: '',
     largura,
     altura,
-    intensidadeDaLuz: 0,
+    intensidadeDaLuz,
   })
   return (
     lugar.detalheEscuro ? { ...geo.style, '--fg': TOM_DO_DETALHE_DO_ENFEITE } : geo.style
@@ -33,10 +39,13 @@ function estiloDoEnfeite(lugar: EnfeiteNoLugar, largura: number, altura: number)
 export function Enfeite({
   lugar,
   alturaDaFileira,
+  intensidadeDaLuz,
   naMao = false,
 }: {
   lugar: EnfeiteNoLugar
   alturaDaFileira: number
+  /** 0-100: o quanto a luz da sala lava a cor do enfeite em repouso. */
+  intensidadeDaLuz: number
   naMao?: boolean
 }) {
   return (
@@ -46,7 +55,12 @@ export function Enfeite({
       data-estilo={lugar.estilo}
       data-estado={naMao ? 'vazio' : undefined}
       style={{
-        ...estiloDoEnfeite(lugar, lugar.largura, (lugar.altura * alturaDaFileira) / 100),
+        ...estiloDoEnfeite(
+          lugar,
+          lugar.largura,
+          (lugar.altura * alturaDaFileira) / 100,
+          intensidadeDaLuz,
+        ),
         height: `${String(lugar.altura)}%`,
       }}
     >
@@ -76,7 +90,8 @@ export function FantasmaDoEnfeite({
       className="lombada lombada--fantasma cores-de-antes"
       data-estilo={lugar.estilo}
       style={{
-        ...estiloDoEnfeite(lugar, caixa.width, caixa.height),
+        // Na mão ele vem para perto, como o livro: a cor real, sem lavagem.
+        ...estiloDoEnfeite(lugar, caixa.width, caixa.height, 0),
         left: caixa.left,
         top: caixa.top,
         width: caixa.width,

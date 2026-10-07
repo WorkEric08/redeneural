@@ -116,6 +116,7 @@ async function estadoAtual(): Promise<EstadoDoPalacio> {
     conexoes,
     quantidadeDePrateleiras,
     intensidadeDaLuz,
+    intensidadeDaLuzDoEnfeite,
     modoDaBusca,
     modoDaRede,
     posicoesDaRede,
@@ -129,6 +130,7 @@ async function estadoAtual(): Promise<EstadoDoPalacio> {
     repo.listConexoes(),
     repo.getQuantidadeDePrateleiras(),
     repo.getIntensidadeDaLuz(),
+    repo.getIntensidadeDaLuzDoEnfeite(),
     repo.getModoDaBusca(),
     repo.getModoDaRede(),
     repo.getPosicoesDaRede(),
@@ -144,6 +146,7 @@ async function estadoAtual(): Promise<EstadoDoPalacio> {
     conexoes,
     quantidadeDePrateleiras,
     intensidadeDaLuz,
+    intensidadeDaLuzDoEnfeite,
     modoDaBusca,
     modoDaRede,
     posicoesDaRede,
@@ -917,6 +920,9 @@ async function responder(msg: ParaMotor): Promise<DoMotor> {
       case 'definirIntensidadeDaLuz':
         await repo.definirIntensidadeDaLuz(msg.valor)
         return { req: msg.req, ok: true, dados: await repo.getIntensidadeDaLuz() }
+      case 'definirIntensidadeDaLuzDoEnfeite':
+        await repo.definirIntensidadeDaLuzDoEnfeite(msg.valor)
+        return { req: msg.req, ok: true, dados: await repo.getIntensidadeDaLuzDoEnfeite() }
 
       case 'definirModoDaRede':
         await repo.definirModoDaRede(msg.modo)

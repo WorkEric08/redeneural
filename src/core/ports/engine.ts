@@ -144,6 +144,8 @@ export interface EstadoDoPalacio {
   quantidadeDePrateleiras: number
   /** 0-100: o quanto a luz da sala lava a cor do pano em repouso. */
   intensidadeDaLuz: number
+  /** 0-100: a mesma luz, sobre os enfeites. */
+  intensidadeDaLuzDoEnfeite: number
   /** O último modo da busca que a pessoa escolheu — a tela abre nele. */
   modoDaBusca: ModoDaBusca
   /** O último modo da tela da Rede — constelação ou Mapa. */
@@ -273,6 +275,8 @@ export interface ConnectionEngine {
   definirQuantidadeDePrateleiras(quantidade: number): Promise<number>
   /** Grava a intensidade da luz (0-100), sempre recortada para essa faixa. */
   definirIntensidadeDaLuz(valor: number): Promise<number>
+  /** Grava a intensidade da luz dos enfeites (0-100), sempre recortada para essa faixa. */
+  definirIntensidadeDaLuzDoEnfeite(valor: number): Promise<number>
   /** Grava o modo da busca que a pessoa acabou de escolher. */
   definirModoDaBusca(modo: ModoDaBusca): Promise<ModoDaBusca>
   /** Grava o modo da tela da Rede que a pessoa acabou de escolher. */

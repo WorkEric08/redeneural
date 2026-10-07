@@ -48,6 +48,7 @@ export interface RespostasDoMotor {
   moverEnfeite: EstanteGravada
   definirQuantidadeDePrateleiras: number
   definirIntensidadeDaLuz: number
+  definirIntensidadeDaLuzDoEnfeite: number
   definirModoDaBusca: ModoDaBusca
   definirModoDaRede: ModoDaRede
   reorganizarMapa: MapaDoPalacio
@@ -90,6 +91,7 @@ export type ParaMotor =
   | { req: number; tipo: 'moverEnfeite'; origem: Vaga; destino: Vaga; dados: DadosDoEnfeite }
   | { req: number; tipo: 'definirQuantidadeDePrateleiras'; quantidade: number }
   | { req: number; tipo: 'definirIntensidadeDaLuz'; valor: number }
+  | { req: number; tipo: 'definirIntensidadeDaLuzDoEnfeite'; valor: number }
   | { req: number; tipo: 'definirModoDaBusca'; modo: ModoDaBusca }
   | { req: number; tipo: 'definirModoDaRede'; modo: ModoDaRede }
   | { req: number; tipo: 'reorganizarMapa' }

@@ -4189,9 +4189,10 @@ disposição reserva **25% de crescimento** em cada raio (`RESERVA_DE_CRESCIMENT
 A ilha só anda quando encosta de verdade, e vai para um lugar onde a reserva
 caiba de novo.
 
-**Só "Reorganizar mapa" redesenha tudo do zero.** Fica em Ajustes, numa seção
-"Mapa", com confirmação, porque desfaz a memória espacial de uma vez. É a saída
-para um palácio que cresceu torto.
+**Só "Reorganizar mapa" redesenha tudo do zero**, porque desfaz a memória espacial de
+uma vez. É a saída para um palácio que cresceu torto. ~~Fica em Ajustes, numa seção
+"Mapa", com confirmação.~~ **A seção saiu de Ajustes em 07/10/2026** (pedido do usuário):
+`reorganizarMapa` continua no motor e na store, só não tem mais tela — como o backup.
 
 #### Onde fica gravado, e por que vai no backup
 
@@ -5306,6 +5307,30 @@ ideia feita (uma só), e "até 8 imagens" são as da **pasta de acervo**.
   resolvido com `user-select: none` no visor. 608 testes. **Não verificado em toque real.**
 - **Fora daqui:** zoom por pinça (o zoom da página está travado no app inteiro), e abrir o
   visor direto de um cartão da grade da pasta.
+
+## Ajustes: sem a seção Mapa, e uma luz para os livros e outra para os enfeites (07/10/2026)
+
+Pedido do usuário: tirar a seção "Mapa" de Ajustes e, na seção "Estante", deixar **duas**
+opções de luz — a dos livros e a dos enfeites.
+
+- **A seção Mapa saiu**, com a folha de confirmação de "Reorganizar mapa". O motor e a store
+  continuam com `reorganizarMapa`, sem chamador na tela; o Mapa se arruma sozinho como sempre.
+- **"Luz dos livros"** é a "Intensidade da luz" de sempre (Fase 17), só com o nome novo: o mesmo
+  controle, o mesmo padrão (42) e a mesma conta.
+- **"Luz dos enfeites"** é uma preferência nova, `intensidadeDaLuzDoEnfeite`, no mesmo documento
+  `meta.preferencias` (sem versão nova do Dexie; fora do backup, como as outras). **O padrão é 0,
+  a cor real** — é como os enfeites eram, então nada muda na estante de quem nunca mexer. Vai de
+  0 a 100 e usa a mesma conta da luz dos livros (`lavagemEmPercentual`).
+- **O enfeite na mão não leva a lavagem**: o fantasma do arrasto mostra a cor real, como o do livro
+  ("puxado para perto"). A **amostra de editar enfeite** usa a luz dos enfeites, para continuar
+  igual ao que vai para a prateleira.
+- **Escolha minha, avisada:** "a luz dos livros efetivo" foi lida como os **livros de verdade** (os
+  da pessoa), em oposição aos enfeites — o controle que já existia.
+- **Verificado** no Chrome (build de produção) em 412×892, 320×568 e 1440×900: Ajustes sem a seção
+  e sem "Reorganizar", os dois controles, a luz dos enfeites começando em 0, mexer num não mexer no
+  outro, 100% lavando o enfeite na estante, sobreviver a recarregar e voltar a 0 devolvendo a cor
+  de antes; sem rolagem lateral. 611 testes (3 novos, do repositório), tipos, lint e prettier
+  limpos. **Não verificado em toque real.**
 
 ## Mostrar tudo sem deslize vertical: as folhas e o andamento (06/10/2026)
 

@@ -5,6 +5,7 @@ import {
   clampDiasParaAdormecer,
   enfeitesSemLivroEmCima,
   estadoAoGuardar,
+  INTENSIDADE_DA_LUZ_DO_ENFEITE_PADRAO,
   INTENSIDADE_DA_LUZ_PADRAO,
   MINIMO_DE_PRATELEIRAS,
   MAPA_VAZIO,
@@ -97,6 +98,8 @@ interface PalacioStore {
   quantidadeDePrateleiras: number
   /** 0-100: o quanto a luz da sala lava a cor do pano em repouso. */
   intensidadeDaLuz: number
+  /** 0-100: a mesma luz, sobre os enfeites. */
+  intensidadeDaLuzDoEnfeite: number
   /** O último modo da busca que a pessoa escolheu. */
   modoDaBusca: ModoDaBusca
   /** O último modo da tela da Rede: a constelação ou o Mapa. */
@@ -172,6 +175,8 @@ interface PalacioStore {
   definirQuantidadeDePrateleiras: (quantidade: number) => Promise<void>
   /** Otimista, como o resto das preferências — a estante já lava na hora. */
   definirIntensidadeDaLuz: (valor: number) => Promise<void>
+  /** O mesmo, para a luz sobre os enfeites. */
+  definirIntensidadeDaLuzDoEnfeite: (valor: number) => Promise<void>
   /** Otimista: a busca troca de modo na hora, e a escolha fica gravada para a próxima vez. */
   definirModoDaBusca: (modo: ModoDaBusca) => Promise<void>
   /** O mesmo, para a tela da Rede (constelação ou Mapa). */
@@ -246,6 +251,7 @@ export const usePalacio = create<PalacioStore>()((set, get) => {
     mapa: MAPA_VAZIO,
     quantidadeDePrateleiras: MINIMO_DE_PRATELEIRAS,
     intensidadeDaLuz: INTENSIDADE_DA_LUZ_PADRAO,
+    intensidadeDaLuzDoEnfeite: INTENSIDADE_DA_LUZ_DO_ENFEITE_PADRAO,
     modoDaBusca: MODO_DA_BUSCA_PADRAO,
     modoDaRede: MODO_DA_REDE_PADRAO,
     carregado: false,
@@ -664,6 +670,17 @@ export const usePalacio = create<PalacioStore>()((set, get) => {
         set({ intensidadeDaLuz: await engine.definirIntensidadeDaLuz(valor) })
       } catch (e) {
         set({ intensidadeDaLuz: antes, erro: mensagem(e) })
+      }
+    },
+
+    async definirIntensidadeDaLuzDoEnfeite(valor) {
+      const antes = get().intensidadeDaLuzDoEnfeite
+      set({ intensidadeDaLuzDoEnfeite: valor, erro: null })
+
+      try {
+        set({ intensidadeDaLuzDoEnfeite: await engine.definirIntensidadeDaLuzDoEnfeite(valor) })
+      } catch (e) {
+        set({ intensidadeDaLuzDoEnfeite: antes, erro: mensagem(e) })
       }
     },
 

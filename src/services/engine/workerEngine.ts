@@ -140,6 +140,11 @@ export function criarWorkerEngine(): ConnectionEngine {
 
     definirIntensidadeDaLuz: (valor: number): Promise<number> =>
       pedir<'definirIntensidadeDaLuz'>({ tipo: 'definirIntensidadeDaLuz', valor }),
+    definirIntensidadeDaLuzDoEnfeite: (valor: number): Promise<number> =>
+      pedir<'definirIntensidadeDaLuzDoEnfeite'>({
+        tipo: 'definirIntensidadeDaLuzDoEnfeite',
+        valor,
+      }),
 
     definirModoDaBusca: (modo: ModoDaBusca): Promise<ModoDaBusca> =>
       pedir<'definirModoDaBusca'>({ tipo: 'definirModoDaBusca', modo }),

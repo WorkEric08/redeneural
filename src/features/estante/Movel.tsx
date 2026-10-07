@@ -46,6 +46,8 @@ interface Props {
   quantidadeDePrateleiras: number
   /** 0-100: o quanto a luz da sala lava a cor do pano em repouso. */
   intensidadeDaLuz: number
+  /** 0-100: a mesma luz, sobre os enfeites. */
+  intensidadeDaLuzDoEnfeite: number
   onEspiar: (livroId: string) => void
   onAcoes: (livroId: string) => void
   /** Põe o livro no lugar `(prateleira, lugar)` — mesma assinatura da store. */
@@ -88,6 +90,7 @@ export function Movel({
   chegandoId,
   quantidadeDePrateleiras,
   intensidadeDaLuz,
+  intensidadeDaLuzDoEnfeite,
   onEspiar,
   onAcoes,
   onMover,
@@ -253,6 +256,7 @@ export function Movel({
                     lugar={lugar}
                     prateleira={prateleira}
                     alturaDaFileira={alturaDaFileira}
+                    intensidadeDaLuz={intensidadeDaLuzDoEnfeite}
                     alvo={mesmoLugar(alvo, prateleira, lugar.indice)}
                     realce={
                       mesmoLugar(lugarSegurado, prateleira, lugar.indice) ||
@@ -302,13 +306,14 @@ export function Movel({
  * Um lugar sem livro. A coluna inteira da fileira, e não só a lombada: tocar
  * acima de um enfeite baixo ainda é tocar no lugar dele.
  *
- * O enfeite continua sem título e sem luz (a cor real, sem lavagem) — mas é da pessoa: tocar
+ * O enfeite continua sem título — mas é da pessoa: tocar
  * escreve um livro exatamente ali, segurar deixa tirá-lo ou devolvê-lo.
  */
 function LugarSemLivro({
   lugar,
   prateleira,
   alturaDaFileira,
+  intensidadeDaLuz,
   alvo,
   realce,
   naMao,
@@ -318,6 +323,8 @@ function LugarSemLivro({
   prateleira: number
   /** A altura da fileira em px, para a forma do enfeite se medir. */
   alturaDaFileira: number
+  /** A luz sobre o enfeite deste lugar. */
+  intensidadeDaLuz: number
   /** O livro na mão vai cair aqui. */
   alvo: boolean
   /** Segurado agora, ou com o menu aberto. */
@@ -341,7 +348,12 @@ function LugarSemLivro({
       {...manipular}
     >
       {lugar.tipo === 'enfeite' && (
-        <Enfeite lugar={lugar} alturaDaFileira={alturaDaFileira} naMao={naMao} />
+        <Enfeite
+          lugar={lugar}
+          alturaDaFileira={alturaDaFileira}
+          intensidadeDaLuz={intensidadeDaLuz}
+          naMao={naMao}
+        />
       )}
     </button>
   )

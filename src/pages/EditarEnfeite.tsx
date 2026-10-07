@@ -25,7 +25,15 @@ function inteiro(texto: string | undefined): number | null {
 export default function EditarEnfeite() {
   const params = useParams()
   const navegar = useNavigate()
-  const { livros, vagas, enfeites, quantidadeDePrateleiras, ocupado, salvarEnfeite } = usePalacio()
+  const {
+    livros,
+    vagas,
+    enfeites,
+    quantidadeDePrateleiras,
+    intensidadeDaLuzDoEnfeite,
+    ocupado,
+    salvarEnfeite,
+  } = usePalacio()
 
   const prateleira = inteiro(params['prateleira'])
   const lugar = inteiro(params['lugar'])
@@ -78,7 +86,7 @@ export default function EditarEnfeite() {
           }}
           rotuloDeEnvio="Salvar"
           ocupado={ocupado}
-          intensidadeDaLuz={0}
+          intensidadeDaLuz={intensidadeDaLuzDoEnfeite}
           onEnviar={(dados) => {
             void salvarEnfeite({
               prateleira,

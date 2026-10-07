@@ -38,6 +38,7 @@ export default function Estante() {
     ocupado,
     quantidadeDePrateleiras,
     intensidadeDaLuz,
+    intensidadeDaLuzDoEnfeite,
     moverLivro,
     moverEnfeite,
     apagarLivro,
@@ -134,6 +135,7 @@ export default function Estante() {
           chegandoId={chegandoId}
           quantidadeDePrateleiras={quantidadeDePrateleiras}
           intensidadeDaLuz={intensidadeDaLuz}
+          intensidadeDaLuzDoEnfeite={intensidadeDaLuzDoEnfeite}
           onEspiar={(livroId) => {
             // Um espiar novo nunca herda a abertura de um anterior que foi
             // desistida no meio — senão ela recomeçaria sozinha.

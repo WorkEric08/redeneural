@@ -52,6 +52,8 @@ export interface PreferenciasGravadas {
   quantidadeDePrateleiras: number
   /** 0-100. Ausente em preferências gravadas antes da Fase 17 — o repo trata como `INTENSIDADE_DA_LUZ_PADRAO`. */
   intensidadeDaLuz?: number
+  /** 0-100, a luz sobre os enfeites. Ausente antes de 07/10/2026 — o repo trata como `INTENSIDADE_DA_LUZ_DO_ENFEITE_PADRAO`. */
+  intensidadeDaLuzDoEnfeite?: number
   /** Ausente em preferências gravadas antes de 30/09/2026 — o repo trata como `MODO_DA_BUSCA_PADRAO`. */
   modoDaBusca?: ModoDaBusca
   /** Ausente antes do Mapa (01/10/2026) — o repo trata como `MODO_DA_REDE_PADRAO`. */
