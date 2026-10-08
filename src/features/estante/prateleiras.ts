@@ -73,9 +73,6 @@ export const TOM_DO_DETALHE_DO_ENFEITE = '#070d2e'
 const ESTILOS_DO_ENFEITE = ['solido', 'faixa', 'fio'] as const
 const LARGURAS_DO_ENFEITE = [24, 38, 52] as const
 
-/** Os filetes dourados saem num em cada 5 enfeites isolados — e em todo grupo. */
-const CHANCE_DO_DOURADO = 0.2
-
 /** O lugar com enfeite, com tudo o que a tela precisa para desenhá-lo. */
 export type EnfeiteNoLugar = Extract<Lugar, { tipo: 'enfeite' }>
 
@@ -89,7 +86,7 @@ export type Lugar =
       altura: number
       estilo: EstiloDaLombada
       cor: string
-      /** Os filetes dourados de acabamento — de grupo ou sorteados. */
+      /** Os filetes dourados de acabamento. O sorteado sempre os leva: não dependem dos vizinhos. */
       dourado: boolean
       /** Os detalhes da forma em azul escuro — o acabamento do enfeite sorteado. */
       detalheEscuro: boolean
@@ -173,8 +170,9 @@ function larguraDoLugar(prateleira: number, indice: number): number {
 
 /**
  * Tudo do enfeite sai do lugar, e não da posição dele numa lista: pôr ou tirar
- * um livro ao lado não troca a forma, a altura nem a largura. Só o dourado olha
- * os vizinhos (ver `montarPrateleiras`).
+ * um livro ao lado não troca a forma, a altura, a largura nem os filetes dourados.
+ * (Até 08/10/2026 o dourado olhava os vizinhos, e um enfeite que ficava entre dois
+ * livros o perdia.)
  */
 function alturaDoLugar(prateleira: number, indice: number): number {
   return (
@@ -196,13 +194,19 @@ function enfeite(prateleira: number, indice: number): EnfeiteNoLugar {
     estilo:
       ESTILOS_DO_ENFEITE[Math.floor(sorteio(chave, 11) * ESTILOS_DO_ENFEITE.length)] ?? 'solido',
     cor: COR_DO_ENFEITE,
-    dourado: sorteio(chave, 17) < CHANCE_DO_DOURADO,
+    dourado: true,
     detalheEscuro: true,
     gravado: false,
   }
 }
 
-/** O enfeite que a pessoa definiu ou moveu: o que ela não escolheu cai no sorteio do lugar. */
+/**
+ * O enfeite que a pessoa definiu ou moveu: o que ela não escolheu cai no sorteio do lugar.
+ *
+ * Os filetes dourados são sempre desenhados, e o `dourado` gravado é ignorado: nenhuma tela
+ * o escolhe, e os `false` que existem foram gravados por um enfeite que se moveu estando
+ * isolado, quando o dourado ainda dependia dos vizinhos (corrigido em 08/10/2026).
+ */
 function enfeiteGravado(e: EnfeiteGravado): EnfeiteNoLugar {
   const largura = e.larguraLombada ?? larguraDoLugar(e.prateleira, e.ordem)
   return {
@@ -213,7 +217,7 @@ function enfeiteGravado(e: EnfeiteGravado): EnfeiteNoLugar {
     altura: e.comprimentoLombada ?? alturaDoLugar(e.prateleira, e.ordem),
     estilo: e.estilo,
     cor: e.cor,
-    dourado: e.dourado,
+    dourado: true,
     detalheEscuro: e.detalheEscuro,
     gravado: true,
   }
@@ -236,10 +240,10 @@ export function dadosDoEnfeite(l: EnfeiteNoLugar): DadosDoEnfeite {
 }
 
 /**
- * O enfeite que o lugar mostra hoje — o gravado, ou o sorteado com o dourado de
- * grupo que `montarPrateleiras` daria —, ou `null` se o lugar tem livro ou está
- * aberto. É o que a tela de editar enfeite mostra de partida, sem montar a
- * estante inteira. `ocupados` são as chaves (`chaveDoLugar`) dos lugares com livro.
+ * O enfeite que o lugar mostra hoje — o gravado, ou o sorteado que `montarPrateleiras`
+ * daria —, ou `null` se o lugar tem livro ou está aberto. É o que a tela de editar
+ * enfeite mostra de partida, sem montar a estante inteira. `ocupados` são as chaves
+ * (`chaveDoLugar`) dos lugares com livro.
  */
 export function enfeiteDoLugar(
   prateleira: number,
@@ -248,18 +252,14 @@ export function enfeiteDoLugar(
   vagas: readonly Vaga[],
   enfeites: readonly EnfeiteGravado[],
 ): EnfeiteNoLugar | null {
-  const abertas = new Set(vagas.map(chaveDoLugar))
-  const livre = (i: number): boolean => {
-    const chave = chaveDoLugar({ prateleira, ordem: i })
-    return i >= 0 && i < LUGARES_POR_PRATELEIRA && !ocupados.has(chave) && !abertas.has(chave)
-  }
-  if (!livre(indice)) return null
+  const chave = chaveDoLugar({ prateleira, ordem: indice })
+  const aberto = vagas.some((v) => chaveDoLugar(v) === chave)
+  if (indice < 0 || indice >= LUGARES_POR_PRATELEIRA || ocupados.has(chave) || aberto) return null
 
   const gravado = enfeites.find((e) => e.prateleira === prateleira && e.ordem === indice)
   if (gravado) return enfeiteGravado(gravado)
 
-  const sorteado = enfeite(prateleira, indice)
-  return { ...sorteado, dourado: sorteado.dourado || livre(indice - 1) || livre(indice + 1) }
+  return enfeite(prateleira, indice)
 }
 
 function larguraComEscala(natural: number, escala: number): number {
@@ -406,19 +406,6 @@ export function montarPrateleiras(
       return gravado ? enfeiteGravado(gravado) : enfeite(prateleira, indice)
     })
 
-    // O enfeite sorteado que tem outro enfeite ao lado forma um grupo, e o grupo leva
-    // os filetes dourados — o que sobra de enfeite isolado só os leva se o sorteio
-    // pedir. O gravado leva só o que a pessoa deixou.
-    const lugaresComGrupo = lugares.map((l, i): Lugar =>
-      l.tipo === 'enfeite' && !l.gravado
-        ? {
-            ...l,
-            dourado:
-              l.dourado || lugares[i - 1]?.tipo === 'enfeite' || lugares[i + 1]?.tipo === 'enfeite',
-          }
-        : l,
-    )
-
     // Livro fora da grade (de antes dos lugares, numa prateleira com mais de
     // 26 livros): continua existindo, depois do último lugar, onde a pilastra
     // da direita já o esconderia de qualquer jeito.
@@ -432,7 +419,7 @@ export function montarPrateleiras(
         largura: larguraDoLivro(item),
       }))
 
-    const todos = [...lugaresComGrupo, ...transbordo]
+    const todos = [...lugares, ...transbordo]
 
     return {
       chave: `p${String(prateleira)}`,

@@ -5351,6 +5351,36 @@ opções de luz — a dos livros e a dos enfeites.
   e voltar a 50 devolve as cores reais; sem rolagem lateral. 619 testes, tipos, lint e prettier
   limpos. **Não verificado em toque real.**
 
+## O enfeite não muda quando a estante muda (08/10/2026)
+
+Pedido do usuário: ao criar ou reordenar um livro, os enfeites (azuis, com uma listra dourada
+embaixo e duas juntas em cima) ficavam só azuis, sem o dourado, ou de um azul diferente.
+
+- **Causa do dourado, reproduzida:** o dourado do enfeite sorteado dependia dos **vizinhos** —
+  todo enfeite ao lado de outro enfeite o levava ("grupo"), e o isolado só em 1 de 5. Pôr um livro
+  de cada lado de um enfeite (criando ou arrastando) o isolava, e ele perdia os filetes na hora.
+  Pior: mover um enfeite que estava isolado **gravava** `dourado: false` no registro dele, e ele
+  ficava sem filete para sempre.
+- **Agora tudo do enfeite sai do lugar**, e nada dos vizinhos: forma, altura, largura (já era) e
+  **os filetes dourados**. Todo enfeite sorteado os leva (`enfeite()` em `prateleiras.ts`); a regra de
+  grupo e o 1 em 5 saíram, e `enfeiteDoLugar` não olha mais os lados. **Isto revoga** o "dourado em
+  grupo e 1 de 5 isolados" de "A estante no estilo Noite": como quase todo enfeite tinha vizinho
+  enfeite, quase todos já o levavam — mudam só os que antes ficavam isolados.
+- **O `dourado` gravado é ignorado** (`enfeiteGravado` desenha sempre os filetes): nenhuma tela o
+  escolhe, então todo `false` no banco veio desse bug. O campo continua no modelo e no backup, sem
+  efeito; tirá-lo de vez é uma limpeza à parte, se quiserem.
+- **O "azul de cor diferente" não reproduzi.** Criar livros, mover livro e mover enfeite, medidos
+  (cor, forma, filetes e altura de cada enfeite, antes e depois, em 320, 412 e 1440 px), só mostravam
+  a perda do dourado. O que pode ter parecido outro azul: um enfeite que **a pessoa editou** (cor
+  ou forma diferentes, detalhes sem o tom escuro) ou a luz dos enfeites fora de 50 em Ajustes. Se
+  persistir, preciso saber o que foi feito antes e em qual lugar.
+- **Verificado** no Chrome (build de produção): todo enfeite com filetes; dois livros novos deixando
+  o enfeite do meio isolado, arrastar um livro e arrastar um enfeite (ele chega com a mesma forma,
+  cor, filetes e altura) sem mudar nenhum outro enfeite; recarregar mantém tudo; um enfeite gravado
+  com `dourado: false` semeado no banco aparece com os filetes. 619 testes (os de grupo e do 1 em 5
+  foram trocados por três que cobrem o enfeite isolado), tipos, lint e prettier limpos. **Não
+  verificado em toque real.**
+
 ## Mostrar tudo sem deslize vertical: as folhas e o andamento (06/10/2026)
 
 Pedido do usuário, sobre os livros executáveis: melhorar de forma geral, e em especial a

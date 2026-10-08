@@ -80,37 +80,29 @@ describe('o enfeite no estilo Noite', () => {
     )
   })
 
-  it('enfeite com outro enfeite ao lado forma um grupo e leva os filetes dourados', () => {
-    const [p] = montarPrateleiras([], [], 1)
-    expect(enfeites(p!).every((e) => e.dourado)).toBe(true)
+  it('todo enfeite sorteado leva os filetes dourados', () => {
+    expect(todos.length).toBeGreaterThan(0)
+    expect(todos.every((e) => e.dourado)).toBe(true)
   })
 
-  it('o enfeite isolado só tem dourado se o sorteio pedir: uma minoria, cerca de 1 em 5', () => {
+  it('o enfeite é o mesmo com ou sem vizinho enfeite: pôr livros ao lado não tira o dourado nem muda a cor', () => {
+    const solto = montarPrateleiras([], [], 1)[0]!
     // Um livro em cada lugar par deixa todo enfeite entre dois livros, isolado.
-    const livros = Array.from({ length: 4 }, (_, prateleira) =>
-      Array.from({ length: LUGARES_POR_PRATELEIRA / 2 }, (_, i) =>
-        livro(`l${String(prateleira)}-${String(i)}`, prateleira, i * 2),
-      ),
-    ).flat()
-    const isolados = montarPrateleiras(livros, [], 4).flatMap(enfeites)
-    const comDourado = isolados.filter((e) => e.dourado).length
+    const livros = Array.from({ length: LUGARES_POR_PRATELEIRA / 2 }, (_, i) =>
+      livro(`l${String(i)}`, 0, i * 2),
+    )
+    const isolados = enfeites(montarPrateleiras(livros, [], 1)[0]!)
 
-    expect(isolados).toHaveLength(4 * (LUGARES_POR_PRATELEIRA / 2))
-    expect(comDourado).toBeGreaterThan(0)
-    expect(comDourado).toBeLessThan(isolados.length / 2)
+    expect(isolados).toHaveLength(LUGARES_POR_PRATELEIRA / 2)
+    for (const e of isolados) {
+      expect(e).toEqual(solto.lugares[e.indice])
+      expect(e.dourado).toBe(true)
+    }
   })
 
-  it('tirar o vizinho enfeite de um enfeite isolado tira o dourado de grupo dele', () => {
-    const cercado = montarPrateleiras([livro('a', 0, 4), livro('b', 0, 6)], [], 1)[0]!
-      .lugares[5] as Extract<Lugar, { tipo: 'enfeite' }>
-    const comGrupo = montarPrateleiras([], [], 1)[0]!.lugares[5] as Extract<
-      Lugar,
-      { tipo: 'enfeite' }
-    >
-    expect(comGrupo.dourado).toBe(true)
-    // Isolado, o dourado é o do sorteio do lugar — o mesmo número, sem o grupo.
-    expect(typeof cercado.dourado).toBe('boolean')
-    expect({ ...cercado, dourado: comGrupo.dourado }).toEqual(comGrupo)
+  it('enfeiteDoLugar, um enfeite isolado entre dois livros, também leva o dourado', () => {
+    const ocupados = new Set(['0:4', '0:6'])
+    expect(enfeiteDoLugar(0, 5, ocupados, [], [])!.dourado).toBe(true)
   })
 })
 
@@ -379,7 +371,6 @@ describe('enfeites que a pessoa definiu ou moveu', () => {
       estilo: 'contorno',
       largura: 52,
       altura: 90,
-      dourado: false,
       detalheEscuro: false,
     })
   })
@@ -402,9 +393,9 @@ describe('enfeites que a pessoa definiu ou moveu', () => {
     })
   })
 
-  it('o gravado não ganha o dourado de grupo: leva só o que a pessoa deixou', () => {
+  it('o gravado leva sempre os filetes dourados: o `dourado: false` de antes da correção é ignorado', () => {
     const [p] = montarPrateleiras([], [], 1, undefined, [{ ...gravado, dourado: false }])
-    expect(doLugar(p!, 4)!.dourado).toBe(false)
+    expect(doLugar(p!, 4)!.dourado).toBe(true)
   })
 
   it('um livro no lugar vence o enfeite gravado, e a vaga também', () => {
@@ -434,7 +425,7 @@ describe('enfeites que a pessoa definiu ou moveu', () => {
     })
   })
 
-  it('enfeiteDoLugar dá o mesmo enfeite que a estante montada, dourado de grupo incluso', () => {
+  it('enfeiteDoLugar dá o mesmo enfeite que a estante montada', () => {
     const livros = [livro('a', 0, 3)]
     const vagas = [{ prateleira: 0, ordem: 8 }]
     const [p] = montarPrateleiras(livros, vagas, 1, undefined, [gravado])
