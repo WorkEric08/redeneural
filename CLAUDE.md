@@ -5434,6 +5434,30 @@ laterais, atrás da foto. Agora aparece só a imagem.
   e o tamanho da imagem (diferença de 0 px); no formulário a prévia sai sem fundo, em pé e deitada.
   625 testes (3 novos), tipos, lint e prettier limpos. **Não verificado em toque real.**
 
+## A Forma vira uma fileira que rola de lado (08/10/2026)
+
+Pedido do usuário: a seção "Forma" da tela de criar/editar livro (e de enfeite) deve se comportar
+como a fileira das pontes no espiar do livro — mostra algumas e o resto se vê rolando para a
+direita. O nome disso é **rolagem horizontal** (ou carrossel); no código é a classe
+`.faixa-rolavel`.
+
+- **Antes:** as 10 Formas numa grade de 2 colunas, 5 linhas de 48 px. **Agora:** uma fileira só,
+  cada opção com a miniatura em cima e o nome embaixo (`.forma-opcao`, 80 px), que se arrasta com o
+  dedo, sem barra. A quinta opção aparece cortada na borda em 320–412 px: é o aviso de que continua.
+  O formulário de livro novo caiu de ~1075 px para ~930 px de altura em 412×892.
+- **Rola em toda largura de tela**, não só no celular: `.faixa-rolavel` solta o `overflow-x` a
+  partir de 768 px (as pontes cabem), mas as 10 Formas não — a fileira usa `md:overflow-x-auto`.
+- **Ao editar, a Forma já escolhida abre no meio da fileira** (um livro de Forma "Bloco" não abre com
+  ela escondida além da borda). A conta é no `scrollLeft` da própria fileira, e não um
+  `scrollIntoView`, que poderia rolar a página junto. Só no primeiro desenho.
+- **Duas armadilhas achadas:** (1) um `<fieldset>` nunca é mais estreito que o conteúdo, e a fileira
+  esticava a página em vez de rolar — `min-w-0` no fieldset; (2) os `<input>` invisíveis (`sr-only`,
+  posição absoluta) escapavam do corte da fileira e alargavam a página — a fileira é `relative`.
+- **Verificado** no Chrome (build de produção) em 412×892, 320×568 e 1440×900: as 10 Formas numa
+  fileira que rola; rolar até o fim mostra a última; escolher uma Forma pelo toque no rótulo muda a
+  amostra; editar um livro de Forma "Bloco" abre com ela à vista; **sem rolagem lateral na página**.
+  625 testes, tipos, lint e prettier limpos. **Não verificado em toque real.**
+
 ## Mostrar tudo sem deslize vertical: as folhas e o andamento (06/10/2026)
 
 Pedido do usuário, sobre os livros executáveis: melhorar de forma geral, e em especial a

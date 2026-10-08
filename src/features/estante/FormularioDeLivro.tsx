@@ -1,5 +1,5 @@
 import { BookOpen, Hammer, type LucideIcon, Paperclip, Shuffle } from 'lucide-react'
-import { useRef, useState, type CSSProperties } from 'react'
+import { useEffect, useRef, useState, type CSSProperties } from 'react'
 
 import { botao } from '@/components/botao'
 import {
@@ -140,6 +140,16 @@ export function FormularioDeLivro({
   const podeSerExecutavel = !enfeite && (tipo?.valor ?? tipoFixo ?? 'conceitos') === 'conceitos'
 
   const podeEnviar = (enfeite || titulo.trim().length > 0) && !ocupado
+
+  // A Forma rola de lado: ao editar, a que já está escolhida pode estar além da borda, e a
+  // faixa abre com ela no meio. Só no primeiro desenho — depois quem manda é o dedo.
+  const faixaDasFormas = useRef<HTMLDivElement>(null)
+  useEffect(() => {
+    const faixa = faixaDasFormas.current
+    const escolhida = faixa?.querySelector('input:checked')?.parentElement
+    if (!faixa || !(escolhida instanceof HTMLElement)) return
+    faixa.scrollLeft = escolhida.offsetLeft - (faixa.clientWidth - escolhida.offsetWidth) / 2
+  }, [])
 
   // A amostra é a lombada da estante: a mesma largura, a mesma altura em px (a % da
   // fileira, medida num móvel escondido) e, por isso, o mesmo tamanho de título e as
@@ -348,9 +358,18 @@ export function FormularioDeLivro({
         </div>
       </fieldset>
 
-      <fieldset className="flex flex-col">
+      {/* `min-w-0`: um fieldset nunca é mais estreito que o conteúdo, e sem isto a fileira de
+          Formas esticava a página em vez de rolar. */}
+      <fieldset className="flex min-w-0 flex-col">
         <legend className="rotulo-de-secao">Forma</legend>
-        <div role="radiogroup" aria-label="Forma" className="grid grid-cols-2 gap-x-2">
+        {/* Uma fileira que rola de lado, como as pontes do livro: o toque arrasta, sem barra, e a
+            borda da tela diz que continua. Em tela larga também rola — as dez não cabem. */}
+        <div
+          ref={faixaDasFormas}
+          role="radiogroup"
+          aria-label="Forma"
+          className="faixa-rolavel relative flex gap-1 px-1 py-2 md:overflow-x-auto"
+        >
           {FORMAS.map((f) => (
             <label key={f.chave} className="forma-opcao">
               <input
