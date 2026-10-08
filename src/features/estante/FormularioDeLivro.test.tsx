@@ -145,4 +145,43 @@ describe('FormularioDeLivro: enfeite', () => {
       expect.objectContaining({ larguraLombada: 38, comprimentoLombada: 72 }),
     )
   })
+
+  it('os filetes dourados da amostra são do enfeite original: outra Forma os troca, e voltar os traz de volta', async () => {
+    const { container } = render(
+      <FormularioDeLivro
+        enfeite
+        inicial={{ ...INICIAL, estilo: 'faixa', larguraLombada: 38, comprimentoLombada: 72 }}
+        acabamentoDoEnfeite={{ douradoEm: 'faixa' }}
+        rotuloDeEnvio="Salvar"
+        intensidadeDaLuz={50}
+        onEnviar={vi.fn()}
+      />,
+    )
+    const filetes = (): Element | null =>
+      container.querySelector('.lombada--amostra .lombada-filetes')
+    const usuario = userEvent.setup()
+
+    expect(filetes()).not.toBeNull()
+    await usuario.click(screen.getByRole('radio', { name: 'Contorno' }))
+    expect(filetes()).toBeNull()
+    await usuario.click(screen.getByRole('radio', { name: 'Faixa' }))
+    expect(filetes()).not.toBeNull()
+  })
+
+  it('um enfeite sem dourado não ganha filetes só por voltar a uma Forma', async () => {
+    const { container } = render(
+      <FormularioDeLivro
+        enfeite
+        inicial={{ ...INICIAL, estilo: 'contorno', larguraLombada: 38, comprimentoLombada: 72 }}
+        acabamentoDoEnfeite={{ douradoEm: null }}
+        rotuloDeEnvio="Salvar"
+        intensidadeDaLuz={50}
+        onEnviar={vi.fn()}
+      />,
+    )
+    const usuario = userEvent.setup()
+
+    await usuario.click(screen.getByRole('radio', { name: 'Faixa' }))
+    expect(container.querySelector('.lombada--amostra .lombada-filetes')).toBeNull()
+  })
 })

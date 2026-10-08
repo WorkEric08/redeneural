@@ -1438,6 +1438,56 @@ describe('a imagem do resultado de uma ideia', () => {
   })
 })
 
+describe('migração para a v15', () => {
+  // Antes de 08/10/2026 o dourado dependia dos vizinhos, e mover um enfeite isolado o gravava
+  // apagado. Nenhuma tela o escolhia, então todo `false` que já existe vem do bug.
+  it('todo enfeite gravado volta a ter os filetes dourados, e o resto dele não muda', async () => {
+    const nome = `palacio-migracao-v15-${String(nth)}`
+
+    const antigo = new Dexie(nome)
+    antigo.version(1).stores({
+      livros: 'id, createdAt',
+      neuronios: 'id, livroId, updatedAt',
+      conexoes: 'id, aId, bId, updatedAt',
+    })
+    antigo.version(2).stores({ meta: 'chave' })
+    antigo.version(3).stores({ livros: 'id, createdAt, ordem' })
+    antigo.version(4).stores({ livros: 'id, createdAt, ordem, prateleira' })
+    antigo.version(5).stores({ etiquetas: 'prateleira' })
+    antigo.version(6).stores({})
+    antigo.version(7).stores({})
+    antigo.version(8).stores({})
+    antigo.version(9).stores({ vagas: '[prateleira+ordem], prateleira' })
+    antigo.version(10).stores({
+      anexos: 'id, livroId, updatedAt',
+      arquivos: 'anexoId',
+      vinculos: 'id, anexoId, conceitoId',
+    })
+    antigo.version(11).stores({})
+    antigo.version(12).stores({})
+    antigo.version(13).stores({ enfeites: '[prateleira+ordem], prateleira' })
+    antigo.version(14).stores({ resultados: 'neuronioId' })
+    await antigo.table('enfeites').bulkPut([
+      {
+        prateleira: 0,
+        ordem: 4,
+        cor: '#1B2A6B',
+        estilo: 'faixa',
+        larguraLombada: 38,
+        comprimentoLombada: 80,
+        dourado: false,
+        detalheEscuro: true,
+      },
+    ])
+    antigo.close()
+
+    const migrado = createDexieRepo(createDb(nome))
+    const [e] = await migrado.listEnfeites()
+
+    expect(e).toMatchObject({ dourado: true, estilo: 'faixa', cor: '#1B2A6B', larguraLombada: 38 })
+  })
+})
+
 describe('migração para a v14', () => {
   // Antes de 07/10/2026 uma ideia feita não guardava imagem.
   it('toda ideia que já existia fica sem imagem, e o resto não muda', async () => {

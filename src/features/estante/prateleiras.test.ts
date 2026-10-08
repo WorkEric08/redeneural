@@ -393,9 +393,11 @@ describe('enfeites que a pessoa definiu ou moveu', () => {
     })
   })
 
-  it('o gravado leva sempre os filetes dourados: o `dourado: false` de antes da correção é ignorado', () => {
-    const [p] = montarPrateleiras([], [], 1, undefined, [{ ...gravado, dourado: false }])
-    expect(doLugar(p!, 4)!.dourado).toBe(true)
+  it('o gravado leva os filetes dourados que o registro diz, com ou sem vizinho enfeite', () => {
+    const sem = montarPrateleiras([], [], 1, undefined, [{ ...gravado, dourado: false }])[0]!
+    const com = montarPrateleiras([], [], 1, undefined, [{ ...gravado, dourado: true }])[0]!
+    expect(doLugar(sem, 4)!.dourado).toBe(false)
+    expect(doLugar(com, 4)!.dourado).toBe(true)
   })
 
   it('um livro no lugar vence o enfeite gravado, e a vaga também', () => {

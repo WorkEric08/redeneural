@@ -72,11 +72,15 @@ interface Props {
   enfeite?: boolean
   /**
    * O acabamento do enfeite na estante, para a amostra o ter também: os filetes
-   * dourados e, enquanto a forma e a cor forem as de `escuroEm`, os detalhes em azul
-   * escuro do enfeite sorteado (ver `EnfeiteGravado.detalheEscuro`).
+   * dourados, enquanto a forma escolhida for `douradoEm` (outra Forma os troca pelos
+   * detalhes dela), e, enquanto a forma e a cor forem as de `escuroEm`, os detalhes em
+   * azul escuro do enfeite sorteado (ver `EnfeiteGravado.detalheEscuro`).
    */
   acabamentoDoEnfeite?:
-    | { dourado: boolean; escuroEm?: { estilo: EstiloDaLombada; cor: string } | undefined }
+    | {
+        douradoEm: EstiloDaLombada | null
+        escuroEm?: { estilo: EstiloDaLombada; cor: string } | undefined
+      }
     | undefined
   /**
    * O que a amostra precisa para ser a lombada que vai para a estante, e não uma
@@ -309,7 +313,7 @@ export function FormularioDeLivro({
             }}
           >
             <span className="lombada-titulo">{tituloDaAmostra}</span>
-            {acabamentoDoEnfeite?.dourado && <span className="lombada-filetes" />}
+            {acabamentoDoEnfeite?.douradoEm === estilo && <span className="lombada-filetes" />}
             {estilo === 'papel' && !enfeite && (
               <span className="lombada-contagem" aria-hidden>
                 {contagem}

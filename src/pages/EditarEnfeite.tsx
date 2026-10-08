@@ -61,7 +61,7 @@ export default function EditarEnfeite() {
         <FormularioDeLivro
           enfeite
           acabamentoDoEnfeite={{
-            dourado: atual.dourado,
+            douradoEm: atual.dourado ? atual.estilo : null,
             escuroEm: atual.detalheEscuro ? { estilo: atual.estilo, cor: atual.cor } : undefined,
           }}
           prateleiras={quantidadeDePrateleiras}
@@ -95,7 +95,9 @@ export default function EditarEnfeite() {
               estilo: dados.estilo,
               larguraLombada: dados.larguraLombada,
               comprimentoLombada: dados.comprimentoLombada,
-              dourado: atual.dourado,
+              // Outra Forma troca os filetes dourados pelos detalhes dela; voltar à
+              // original os traz de volta. Mexer só na cor ou nas medidas não os tira.
+              dourado: atual.dourado && dados.estilo === atual.estilo,
               // Mexer na cor ou na forma desliga o acabamento do sorteio: aí o enfeite
               // é desenhado como um livro, na forma e na cor que a pessoa escolheu.
               detalheEscuro:

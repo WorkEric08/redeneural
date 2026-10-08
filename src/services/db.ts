@@ -322,6 +322,19 @@ export function createDb(name: string = DB_NAME): PalacioDB {
       )
     })
 
+  // v15 (08/10/2026): os filetes dourados do enfeite voltam a ser do enfeite (a Forma escolhida
+  // os troca; ver "Editar enfeite"). Todo `dourado: false` que já existe veio de um bug — o
+  // dourado dependia dos vizinhos, e mover um enfeite isolado o gravava apagado —, porque
+  // nenhuma tela o escolhia. Eles voltam a `true`.
+  db.version(15)
+    .stores({})
+    .upgrade(async (tx) => {
+      await tx
+        .table<EnfeiteGravado, [number, number]>('enfeites')
+        .toCollection()
+        .modify({ dourado: true })
+    })
+
   return db
 }
 

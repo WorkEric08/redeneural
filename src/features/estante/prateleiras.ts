@@ -202,10 +202,8 @@ function enfeite(prateleira: number, indice: number): EnfeiteNoLugar {
 
 /**
  * O enfeite que a pessoa definiu ou moveu: o que ela não escolheu cai no sorteio do lugar.
- *
- * Os filetes dourados são sempre desenhados, e o `dourado` gravado é ignorado: nenhuma tela
- * o escolhe, e os `false` que existem foram gravados por um enfeite que se moveu estando
- * isolado, quando o dourado ainda dependia dos vizinhos (corrigido em 08/10/2026).
+ * Os filetes dourados são os que o registro diz: a Forma escolhida na edição os troca pelos
+ * detalhes dela (ver `EditarEnfeite`).
  */
 function enfeiteGravado(e: EnfeiteGravado): EnfeiteNoLugar {
   const largura = e.larguraLombada ?? larguraDoLugar(e.prateleira, e.ordem)
@@ -217,7 +215,7 @@ function enfeiteGravado(e: EnfeiteGravado): EnfeiteNoLugar {
     altura: e.comprimentoLombada ?? alturaDoLugar(e.prateleira, e.ordem),
     estilo: e.estilo,
     cor: e.cor,
-    dourado: true,
+    dourado: e.dourado,
     detalheEscuro: e.detalheEscuro,
     gravado: true,
   }

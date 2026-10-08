@@ -372,7 +372,7 @@ vinculos:   { id: 'anexoId::conceitoId', anexoId, conceitoId, score, updatedAt }
   acervo". Um anexo nunca entra no grafo de conceitos; os `vinculos` são a
   escolha dele, só num sentido.
 
-- `enfeites` (Dexie v13, 07/10/2026) guarda só os enfeites que a pessoa **definiu ou
+- `enfeites` (Dexie v13, 07/10/2026; v15 em 08/10/2026 corrigiu o `dourado`) guarda só os enfeites que a pessoa **definiu ou
   moveu**; o resto continua sorteado pelo lugar. Ver "Enfeites que se definem e se movem".
 
 - `neuronios.resultadoImagem` e `resultados` (Dexie v14, 07/10/2026) são a imagem do que saiu
@@ -5366,9 +5366,9 @@ embaixo e duas juntas em cima) ficavam só azuis, sem o dourado, ou de um azul d
   grupo e o 1 em 5 saíram, e `enfeiteDoLugar` não olha mais os lados. **Isto revoga** o "dourado em
   grupo e 1 de 5 isolados" de "A estante no estilo Noite": como quase todo enfeite tinha vizinho
   enfeite, quase todos já o levavam — mudam só os que antes ficavam isolados.
-- **O `dourado` gravado é ignorado** (`enfeiteGravado` desenha sempre os filetes): nenhuma tela o
-  escolhe, então todo `false` no banco veio desse bug. O campo continua no modelo e no backup, sem
-  efeito; tirá-lo de vez é uma limpeza à parte, se quiserem.
+- ~~**O `dourado` gravado é ignorado**~~ **Revisto no mesmo dia** (ver "Editar enfeite: a Forma troca
+  os filetes"): o `dourado` gravado voltou a valer, e uma migração (Dexie v15) corrigiu os `false`
+  que o bug deixou.
 - **O "azul de cor diferente" não reproduzi.** Criar livros, mover livro e mover enfeite, medidos
   (cor, forma, filetes e altura de cada enfeite, antes e depois, em 320, 412 e 1440 px), só mostravam
   a perda do dourado. O que pode ter parecido outro azul: um enfeite que **a pessoa editou** (cor
@@ -5380,6 +5380,33 @@ embaixo e duas juntas em cima) ficavam só azuis, sem o dourado, ou de um azul d
   com `dourado: false` semeado no banco aparece com os filetes. 619 testes (os de grupo e do 1 em 5
   foram trocados por três que cobrem o enfeite isolado), tipos, lint e prettier limpos. **Não
   verificado em toque real.**
+
+## Editar enfeite: a Forma troca os filetes dourados (08/10/2026)
+
+Pedido do usuário: ao editar um enfeite, os detalhes das linhas douradas do enfeite original
+devem poder ser trocados pelos presets que ele escolhe — e, respondido por ele, **os presets são
+as próprias opções de "Forma"** (as 10 da tela), só para enfeites (os livros não mudam).
+
+- **Os filetes são da Forma original.** Escolher **outra** Forma tira os filetes dourados e põe os
+  detalhes dela (Contorno desenha o retângulo, Ponto o ponto, e assim por diante); **voltar à
+  original** traz os filetes de volta. A amostra do formulário faz isso ao vivo
+  (`acabamentoDoEnfeite.douradoEm`, a Forma em que os filetes valem), e salvar grava
+  `dourado = dourado de antes && Forma escolhida = Forma de antes` (`EditarEnfeite`).
+- **Só a cor ou as medidas não tiram os filetes**: um enfeite em Vinho, na Forma original, segue
+  dourado. (O azul escuro dos detalhes, `detalheEscuro`, continua indo embora com qualquer troca
+  de cor ou Forma, como antes.)
+- **Quem já trocou de Forma não ganha os filetes de volta** só por escolher a antiga: o "original"
+  é o enfeite como estava ao abrir a edição.
+- **`dourado` voltou a ser um dado de verdade**: `enfeiteGravado` desenha o que o registro diz (a
+  decisão de ignorá-lo, de horas antes, saiu). Como todo `false` que existia vinha do bug dos
+  vizinhos (ver "O enfeite não muda quando a estante muda"), **Dexie v15** põe `dourado: true` em
+  todo enfeite já gravado. Um backup de antes de 08/10/2026 pode trazer esses `false` de volta ao ser
+  importado — não tratei, porque é raro e o enfeite se edita de novo.
+- **Verificado** no Chrome (build de produção) em 412×892, 320×568 e 1440×900: a amostra abre com os
+  filetes; Contorno os tira; voltar à Forma original os traz; salvar com Contorno deixa na estante um
+  enfeite de contorno sem filetes, o vizinho segue dourado, e reabrir a edição mostra o salvo.
+  622 testes (3 novos de amostra e migração, mais o de `montarPrateleiras` reescrito), tipos, lint
+  e prettier limpos. **Não verificado em toque real.**
 
 ## Mostrar tudo sem deslize vertical: as folhas e o andamento (06/10/2026)
 
