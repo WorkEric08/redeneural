@@ -5458,6 +5458,41 @@ direita. O nome disso é **rolagem horizontal** (ou carrossel); no código é a 
   amostra; editar um livro de Forma "Bloco" abre com ela à vista; **sem rolagem lateral na página**.
   625 testes, tipos, lint e prettier limpos. **Não verificado em toque real.**
 
+## Os formulários de livro cabem na tela, e a amostra não move nada (08/10/2026)
+
+Pedido do usuário: as telas de criar livro, editar livro, editar enfeite "etc." devem mostrar todas
+as configurações sem rolagem vertical, e as mudanças de largura e altura da amostra não podem
+mexer na tela. Honra a regra permanente "mostrar tudo sem deslize vertical".
+
+- **Antes** rolavam em **todos** os tamanhos medidos (930 px numa tela de 892; 928 em 568).
+  **Agora** cabem em 412×892, 390×844, 360×640, **320×568**, 1024×768 e 1440×900, em livro novo, pasta,
+  livro executável e editar enfeite (`FormularioDeLivro`).
+- **Cada configuração é uma linha só** (`LinhaDeEscolha`): à esquerda a legenda e **o nome da opção
+  escolhida** ("COR · Vinho"), à direita as opções numa fileira que rola de lado (ver "A Forma vira
+  uma fileira que rola de lado"), cada uma só a figura, com 44 px de toque (a figura tem 34 px). O
+  nome de cada opção segue acessível (`sr-only` e `title`). As quatro — Cor, Forma, Largura,
+  Comprimento — têm 52 px; antes eram ~110 px a mais por seção. Sem `<fieldset>`, que esticava a
+  página (ver a seção acima).
+- **A amostra mora numa caixa de tamanho fixo à direita do Nome** (e dos dias, num executável), em
+  vez de uma linha sua: altura = o maior comprimento (o "Enorme", 98%) sobre a fileira **medida
+  nesta tela**; largura = a da maior (a "Grande", 68 px). A lombada dentro tem as medidas reais da
+  estante e cresce para cima, ancorada embaixo. **Trocar largura, comprimento, cor ou forma não muda
+  a caixa nem nada em volta.**
+- **Em tela muito baixa (`max-height: 600px`) o rótulo "Nome" some**: o placeholder e o `aria-label`
+  já dizem o que o campo é, e o formulário executável (que ganha o campo de dias) só cabe assim em
+  320×568. O botão de criar fica no pé da tela quando sobra altura (`mt-auto`).
+- **A tela de novo item da pasta** (`FormularioDeAnexo`) também estourava em 360×640 e 320×568: a
+  prévia da imagem passou a ter no máximo `min(18rem, 28dvh)`, o botão de escolher `min(10rem, 24dvh)`,
+  e a legenda ocupa o que sobra (`flex-1`, no lugar de uma altura fixa).
+- **Custo assumido:** as opções de cor, forma, largura e comprimento não mostram o nome embaixo; só o
+  da escolhida aparece na legenda. Em tela larga (1440 px) as dez Formas já cabem sem rolar.
+- **Verificado** no Chrome (build de produção): altura da página igual à da tela nos 6 tamanhos e nos
+  4 formulários de livro + os 4 de item; e, para cada um, as **16 combinações de largura × comprimento**
+  (mais cor, forma e automático) **sem nenhum deslocamento** das fileiras, do nome, do botão e da altura
+  da página, e com a amostra sempre dentro da caixa. 625 testes, tipos, lint e prettier limpos.
+  **Não verificado em toque real, nem com o teclado aberto** (o teclado encolhe a tela e aí a
+  rolagem volta; o botão continua preso no pé).
+
 ## Mostrar tudo sem deslize vertical: as folhas e o andamento (06/10/2026)
 
 Pedido do usuário, sobre os livros executáveis: melhorar de forma geral, e em especial a

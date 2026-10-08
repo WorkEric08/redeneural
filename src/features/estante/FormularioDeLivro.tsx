@@ -1,5 +1,5 @@
 import { BookOpen, Hammer, type LucideIcon, Paperclip, Shuffle } from 'lucide-react'
-import { useEffect, useRef, useState, type CSSProperties } from 'react'
+import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react'
 
 import { botao } from '@/components/botao'
 import {
@@ -17,6 +17,7 @@ import { LARGURAS } from './larguras'
 import { geometriaDaLombada, type Peca } from './lombadaNoite'
 import { PANOS } from './panos'
 import {
+  ALTURA_MAXIMA_DA_LOMBADA,
   alturaDaLombadaEmPercentual,
   larguraDoLivroGravado,
   TOM_DO_DETALHE_DO_ENFEITE,
@@ -24,24 +25,27 @@ import {
 import { useMedidasDaFileira } from './useMedidasDaFileira'
 
 /**
- * A altura da caixa que guarda a amostra — o teto do que uma lombada pode medir
- * (98% de uma fileira de 132 px). Fixa para trocar o comprimento não empurrar o resto
- * do formulário. A lombada dentro dela tem as medidas **reais** da estante.
+ * A caixa que guarda a amostra tem tamanho fixo: a altura é o teto do que uma lombada pode
+ * medir **nesta tela** (o maior comprimento sobre a fileira medida), e a largura, a da maior
+ * largura. A lombada dentro dela tem as medidas **reais** da estante, e trocar largura ou
+ * comprimento nunca muda a caixa — então nada em volta se desloca.
  */
-const REFERENCIA_DA_AMOSTRA_PX = 130
+const PERCENTUAL_MAXIMO_DA_AMOSTRA = Math.max(
+  ...COMPRIMENTOS.map((c) => c.percentual),
+  ALTURA_MAXIMA_DA_LOMBADA,
+)
+const LARGURA_DA_CAIXA_DA_AMOSTRA_PX = Math.max(...LARGURAS.map((l) => l.px))
 
 /**
- * Mesma conversão, mas para as opções de comprimento — que são um seletor,
- * não a lombada de verdade. Numa referência de 130px "Enorme" (98%) vira uma
- * caixa de 127px, alta o bastante para empurrar a tela do celular para fora
- * sem rolar (pedido do usuário, 16/09/2026). Uma referência bem menor mantém
- * a proporção entre as opções sem pagar esse custo de altura.
+ * Mesma conversão, mas para as opções de comprimento — que são um seletor, não a lombada de
+ * verdade. Uma referência pequena mantém a proporção entre as opções sem pagar altura: a fileira
+ * de opções cabe em 44 px (08/10/2026).
  */
-const REFERENCIA_DAS_OPCOES_PX = 56
+const REFERENCIA_DAS_OPCOES_PX = 38
 
 /** A miniatura de cada forma: a proporção de uma lombada de largura média. */
 const LARGURA_DA_MINIATURA_PX = 22
-const ALTURA_DA_MINIATURA_PX = 40
+const ALTURA_DA_MINIATURA_PX = 36
 
 type ChaveDeTipo = 'livro' | 'executavel' | 'pasta'
 
@@ -141,14 +145,15 @@ export function FormularioDeLivro({
 
   const podeEnviar = (enfeite || titulo.trim().length > 0) && !ocupado
 
-  // A Forma rola de lado: ao editar, a que já está escolhida pode estar além da borda, e a
-  // faixa abre com ela no meio. Só no primeiro desenho — depois quem manda é o dedo.
-  const faixaDasFormas = useRef<HTMLDivElement>(null)
+  // As opções rolam de lado: ao editar, a que já está escolhida pode estar além da borda, e cada
+  // fileira abre com ela no meio. Só no primeiro desenho — depois quem manda é o dedo.
+  const formulario = useRef<HTMLFormElement>(null)
   useEffect(() => {
-    const faixa = faixaDasFormas.current
-    const escolhida = faixa?.querySelector('input:checked')?.parentElement
-    if (!faixa || !(escolhida instanceof HTMLElement)) return
-    faixa.scrollLeft = escolhida.offsetLeft - (faixa.clientWidth - escolhida.offsetWidth) / 2
+    formulario.current?.querySelectorAll<HTMLElement>('[data-faixa]').forEach((faixa) => {
+      const escolhida = faixa.querySelector('input:checked')?.parentElement
+      if (!(escolhida instanceof HTMLElement)) return
+      faixa.scrollLeft = escolhida.offsetLeft - (faixa.clientWidth - escolhida.offsetWidth) / 2
+    })
   }, [])
 
   // A amostra é a lombada da estante: a mesma largura, a mesma altura em px (a % da
@@ -160,7 +165,18 @@ export function FormularioDeLivro({
     larguraLombada ?? larguraDoLivroGravado({ id: livroId ?? '', larguraLombada: null })
   const alturaDaAmostra =
     (alturaDaLombadaEmPercentual(comprimentoLombada, alturaAutomatica) * alturaDaFileira) / 100
+  const alturaDaCaixa = Math.ceil((PERCENTUAL_MAXIMO_DA_AMOSTRA * alturaDaFileira) / 100)
   const tituloDaAmostra = enfeite ? '' : titulo.trim() || '…'
+  const nomeDaCor = PANOS.find((p) => p.cor.toLowerCase() === cor.toLowerCase())?.nome ?? ''
+  const nomeDaForma = FORMAS.find((f) => f.chave === estilo)?.rotulo ?? ''
+  const nomeDaLargura =
+    larguraLombada === null
+      ? 'Automática'
+      : (LARGURAS.find((l) => l.px === larguraLombada)?.rotulo ?? '')
+  const nomeDoComprimento =
+    comprimentoLombada === null
+      ? 'Automático'
+      : (COMPRIMENTOS.find((c) => c.percentual === comprimentoLombada)?.rotulo ?? '')
   const ehPasta = (tipo?.valor ?? tipoFixo) === 'acervo'
   const escuroEm = acabamentoDoEnfeite?.escuroEm
   const detalheEscuro =
@@ -214,7 +230,8 @@ export function FormularioDeLivro({
 
   return (
     <form
-      className="flex flex-col gap-4"
+      ref={formulario}
+      className="flex flex-1 flex-col gap-3"
       onSubmit={(evento) => {
         evento.preventDefault()
         if (podeEnviar) {
@@ -262,55 +279,65 @@ export function FormularioDeLivro({
         </div>
       )}
 
-      {podeSerExecutavel && executavel && (
-        <label className="text-poeira flex items-center gap-2 text-sm">
-          Adormece com
-          <input
-            value={dias}
-            onChange={(evento) => {
-              setDias(evento.target.value)
-            }}
-            type="number"
-            inputMode="numeric"
-            min={0}
-            max={DIAS_PARA_ADORMECER_MAXIMO}
-            aria-label="Dias parada até adormecer"
-            autoComplete="off"
-            className="campo text-papel h-11 w-16 px-2 text-center"
-          />
-          dias parada
-        </label>
-      )}
-
-      <div className={enfeite ? 'flex justify-center' : 'flex items-end gap-4'}>
+      {/* O nome (e os dias, num livro executável) à esquerda e a amostra à direita, numa caixa de
+          tamanho FIXO: a altura é o teto do que uma lombada pode medir nesta tela (o "Enorme"), e
+          a largura, a da maior (a "Grande"). Trocar a largura ou o comprimento mexe só na amostra
+          dentro dela — nada em volta se desloca (pedido do usuário, 08/10/2026). A amostra fica
+          ancorada embaixo, como um livro em pé numa prateleira: cresce para cima. */}
+      <div className={enfeite ? 'flex justify-center' : 'flex items-start gap-3'}>
         {!enfeite && (
-          <label className="flex min-w-0 flex-1 flex-col">
-            <span className="rotulo-de-secao">Nome</span>
-            <input
-              value={titulo}
-              onChange={(evento) => {
-                setTitulo(evento.target.value)
-              }}
-              maxLength={120}
-              autoComplete="off"
-              enterKeyHint="done"
-              placeholder={
-                tipo?.valor === 'acervo'
-                  ? 'Vídeos, referências, fotos…'
-                  : 'Uma área do que você sabe'
-              }
-              className="campo font-titulo h-13 px-4 text-lg"
-            />
-          </label>
+          <div className="flex min-w-0 flex-1 flex-col gap-1.5">
+            <label className="flex flex-col">
+              {/* Em tela muito baixa (320×568) o rótulo cede o lugar: o placeholder e o
+                  `aria-label` já dizem o que o campo é, e o formulário executável só cabe assim. */}
+              <span className="rotulo-de-secao mb-1 [@media(max-height:600px)]:hidden">Nome</span>
+              <input
+                aria-label="Nome"
+                value={titulo}
+                onChange={(evento) => {
+                  setTitulo(evento.target.value)
+                }}
+                maxLength={120}
+                autoComplete="off"
+                enterKeyHint="done"
+                placeholder={
+                  tipo?.valor === 'acervo'
+                    ? 'Vídeos, referências, fotos…'
+                    : 'Uma área do que você sabe'
+                }
+                className="campo font-titulo h-11 px-4 text-lg"
+              />
+            </label>
+
+            {podeSerExecutavel && executavel && (
+              <label className="text-poeira flex items-center gap-2 text-sm">
+                Adormece com
+                <input
+                  value={dias}
+                  onChange={(evento) => {
+                    setDias(evento.target.value)
+                  }}
+                  type="number"
+                  inputMode="numeric"
+                  min={0}
+                  max={DIAS_PARA_ADORMECER_MAXIMO}
+                  aria-label="Dias parada até adormecer"
+                  autoComplete="off"
+                  className="campo text-papel h-11 w-16 px-2 text-center"
+                />
+                dias
+              </label>
+            )}
+          </div>
         )}
 
-        {/* Altura fixa no teto do que a amostra pode medir (o "Enorme" dos
-            presets, ~127px, cabe dentro de 130): sem isto, trocar o
-            Comprimento mudava a altura da própria linha e empurrava o resto
-            do formulário para baixo — pedido do usuário, 17/09/2026. A
-            amostra fica ancorada embaixo (`items-end`), como um livro em pé
-            numa prateleira: cresce para cima, nunca desloca o que vem depois. */}
-        <div className="flex items-end" style={{ height: `${String(REFERENCIA_DA_AMOSTRA_PX)}px` }}>
+        <div
+          className="flex shrink-0 items-end justify-center"
+          style={{
+            height: `${String(alturaDaCaixa)}px`,
+            width: `${String(LARGURA_DA_CAIXA_DA_AMOSTRA_PX)}px`,
+          }}
+        >
           <span
             aria-hidden
             className="lombada lombada--amostra cores-de-antes"
@@ -336,154 +363,135 @@ export function FormularioDeLivro({
         </div>
       </div>
 
-      <fieldset className="flex flex-col">
-        <legend className="rotulo-de-secao">Cor</legend>
-        <div role="radiogroup" aria-label="Cor" className="grid grid-cols-5 gap-x-2 gap-y-3">
-          {PANOS.map((p) => (
-            <label key={p.cor} className="pano-opcao">
-              <input
-                type="radio"
-                name="cor"
-                value={p.cor}
-                checked={cor.toLowerCase() === p.cor.toLowerCase()}
-                onChange={() => {
-                  setCor(p.cor)
-                }}
-                className="sr-only"
-              />
-              <span className="pano-amostra" style={{ backgroundColor: p.cor }} aria-hidden />
-              <span className="text-poeira text-center text-xs leading-tight">{p.nome}</span>
-            </label>
-          ))}
-        </div>
-      </fieldset>
+      {/* Cada configuração é uma linha só: a legenda e o nome da escolhida à esquerda, as opções
+          numa fileira que rola de lado à direita. Sem rolagem vertical (08/10/2026). */}
+      <LinhaDeEscolha legenda="Cor" escolhida={nomeDaCor}>
+        {PANOS.map((p) => (
+          <label key={p.cor} className="pano-opcao" title={p.nome}>
+            <input
+              type="radio"
+              name="cor"
+              value={p.cor}
+              checked={cor.toLowerCase() === p.cor.toLowerCase()}
+              onChange={() => {
+                setCor(p.cor)
+              }}
+              className="sr-only"
+            />
+            <span className="pano-amostra" style={{ backgroundColor: p.cor }} aria-hidden />
+            <span className="sr-only">{p.nome}</span>
+          </label>
+        ))}
+      </LinhaDeEscolha>
 
-      {/* `min-w-0`: um fieldset nunca é mais estreito que o conteúdo, e sem isto a fileira de
-          Formas esticava a página em vez de rolar. */}
-      <fieldset className="flex min-w-0 flex-col">
-        <legend className="rotulo-de-secao">Forma</legend>
-        {/* Uma fileira que rola de lado, como as pontes do livro: o toque arrasta, sem barra, e a
-            borda da tela diz que continua. Em tela larga também rola — as dez não cabem. */}
-        <div
-          ref={faixaDasFormas}
-          role="radiogroup"
-          aria-label="Forma"
-          className="faixa-rolavel relative flex gap-1 px-1 py-2 md:overflow-x-auto"
-        >
-          {FORMAS.map((f) => (
-            <label key={f.chave} className="forma-opcao">
-              <input
-                type="radio"
-                name="forma"
-                value={f.chave}
-                checked={estilo === f.chave}
-                onChange={() => {
-                  setEstilo(f.chave)
-                }}
-                className="sr-only"
-              />
-              <MiniaturaDaForma
-                estilo={f.chave}
-                cor={cor}
-                intensidadeDaLuz={intensidadeDaLuz}
-                peca={enfeite ? 'enfeite' : 'livro'}
-              />
-              <span className="text-poeira text-sm leading-tight">{f.rotulo}</span>
-            </label>
-          ))}
-        </div>
-      </fieldset>
+      <LinhaDeEscolha legenda="Forma" escolhida={nomeDaForma}>
+        {FORMAS.map((f) => (
+          <label key={f.chave} className="forma-opcao" title={f.rotulo}>
+            <input
+              type="radio"
+              name="forma"
+              value={f.chave}
+              checked={estilo === f.chave}
+              onChange={() => {
+                setEstilo(f.chave)
+              }}
+              className="sr-only"
+            />
+            <MiniaturaDaForma
+              estilo={f.chave}
+              cor={cor}
+              intensidadeDaLuz={intensidadeDaLuz}
+              peca={enfeite ? 'enfeite' : 'livro'}
+            />
+            <span className="sr-only">{f.rotulo}</span>
+          </label>
+        ))}
+      </LinhaDeEscolha>
 
-      <fieldset className="flex flex-col">
-        <legend className="rotulo-de-secao">Largura</legend>
-        <div className="flex flex-wrap items-end gap-2">
-          {/* O enfeite sempre mostra uma das quatro larguras: "automática" não diria qual é. */}
-          {!enfeite && (
-            <label className="pano-opcao">
-              <input
-                type="radio"
-                name="largura"
-                checked={larguraLombada === null}
-                onChange={() => {
-                  setLarguraLombada(null)
-                }}
-                className="sr-only"
-              />
-              <span className="pano-amostra largura-amostra largura-amostra--auto" aria-hidden>
-                <Shuffle size={16} aria-hidden />
-              </span>
-              <span className="text-poeira text-xs leading-tight">Automática</span>
-            </label>
-          )}
-          {LARGURAS.map((l) => (
-            <label key={l.chave} className="pano-opcao">
-              <input
-                type="radio"
-                name="largura"
-                checked={larguraLombada === l.px}
-                onChange={() => {
-                  setLarguraLombada(l.px)
-                }}
-                className="sr-only"
-              />
-              <span
-                className="pano-amostra largura-amostra"
-                aria-hidden
-                style={{ width: `${String(l.px)}px`, backgroundColor: cor }}
-              />
-              <span className="text-poeira text-xs leading-tight">{l.rotulo}</span>
-            </label>
-          ))}
-        </div>
-      </fieldset>
+      <LinhaDeEscolha legenda="Largura" escolhida={nomeDaLargura}>
+        {/* O enfeite sempre mostra uma das quatro larguras: "automática" não diria qual é. */}
+        {!enfeite && (
+          <label className="pano-opcao" title="Automática">
+            <input
+              type="radio"
+              name="largura"
+              checked={larguraLombada === null}
+              onChange={() => {
+                setLarguraLombada(null)
+              }}
+              className="sr-only"
+            />
+            <span className="pano-amostra largura-amostra largura-amostra--auto" aria-hidden>
+              <Shuffle size={16} aria-hidden />
+            </span>
+            <span className="sr-only">Automática</span>
+          </label>
+        )}
+        {LARGURAS.map((l) => (
+          <label key={l.chave} className="pano-opcao" title={l.rotulo}>
+            <input
+              type="radio"
+              name="largura"
+              checked={larguraLombada === l.px}
+              onChange={() => {
+                setLarguraLombada(l.px)
+              }}
+              className="sr-only"
+            />
+            <span
+              className="pano-amostra largura-amostra"
+              aria-hidden
+              style={{ width: `${String(l.px)}px`, backgroundColor: cor }}
+            />
+            <span className="sr-only">{l.rotulo}</span>
+          </label>
+        ))}
+      </LinhaDeEscolha>
 
-      <fieldset className="flex flex-col">
-        <legend className="rotulo-de-secao">Comprimento</legend>
-        <div className="flex flex-wrap items-end gap-2">
-          {!enfeite && (
-            <label className="pano-opcao">
-              <input
-                type="radio"
-                name="comprimento"
-                checked={comprimentoLombada === null}
-                onChange={() => {
-                  setComprimentoLombada(null)
-                }}
-                className="sr-only"
-              />
-              <span
-                className="pano-amostra comprimento-amostra comprimento-amostra--auto"
-                aria-hidden
-              >
-                <Shuffle size={16} aria-hidden />
-              </span>
-              <span className="text-poeira text-xs leading-tight">Automático</span>
-            </label>
-          )}
-          {COMPRIMENTOS.map((c) => (
-            <label key={c.chave} className="pano-opcao">
-              <input
-                type="radio"
-                name="comprimento"
-                checked={comprimentoLombada === c.percentual}
-                onChange={() => {
-                  setComprimentoLombada(c.percentual)
-                }}
-                className="sr-only"
-              />
-              <span
-                className="pano-amostra comprimento-amostra"
-                aria-hidden
-                style={{
-                  height: `${String(Math.round((c.percentual / 100) * REFERENCIA_DAS_OPCOES_PX))}px`,
-                  backgroundColor: cor,
-                }}
-              />
-              <span className="text-poeira text-xs leading-tight">{c.rotulo}</span>
-            </label>
-          ))}
-        </div>
-      </fieldset>
+      <LinhaDeEscolha legenda="Comprimento" escolhida={nomeDoComprimento}>
+        {!enfeite && (
+          <label className="pano-opcao" title="Automático">
+            <input
+              type="radio"
+              name="comprimento"
+              checked={comprimentoLombada === null}
+              onChange={() => {
+                setComprimentoLombada(null)
+              }}
+              className="sr-only"
+            />
+            <span
+              className="pano-amostra comprimento-amostra comprimento-amostra--auto"
+              aria-hidden
+            >
+              <Shuffle size={16} aria-hidden />
+            </span>
+            <span className="sr-only">Automático</span>
+          </label>
+        )}
+        {COMPRIMENTOS.map((c) => (
+          <label key={c.chave} className="pano-opcao" title={c.rotulo}>
+            <input
+              type="radio"
+              name="comprimento"
+              checked={comprimentoLombada === c.percentual}
+              onChange={() => {
+                setComprimentoLombada(c.percentual)
+              }}
+              className="sr-only"
+            />
+            <span
+              className="pano-amostra comprimento-amostra"
+              aria-hidden
+              style={{
+                height: `${String(Math.round((c.percentual / 100) * REFERENCIA_DAS_OPCOES_PX))}px`,
+                backgroundColor: cor,
+              }}
+            />
+            <span className="sr-only">{c.rotulo}</span>
+          </label>
+        ))}
+      </LinhaDeEscolha>
 
       {/* O móvel escondido que mede a fileira: a altura dela sai do mesmo CSS da estante,
           então a amostra não repete a conta. */}
@@ -507,7 +515,7 @@ export function FormularioDeLivro({
         <div className="movel-fila" />
       </div>
 
-      <div className="barra-de-acao md:flex md:justify-end">
+      <div className="barra-de-acao max-md:mt-auto md:flex md:justify-end">
         <button
           type="submit"
           disabled={!podeEnviar}
@@ -517,6 +525,41 @@ export function FormularioDeLivro({
         </button>
       </div>
     </form>
+  )
+}
+
+/**
+ * Uma configuração numa linha só: a legenda e o nome da opção escolhida à esquerda (já que as
+ * opções são só a figura), as opções numa fileira que rola de lado à direita — sem barra, e a
+ * opção cortada na borda avisa que continua. Em tela larga também rola.
+ *
+ * Nada de `<fieldset>`: ele nunca é mais estreito que o conteúdo e esticava a página. A fileira é
+ * `relative` para conter os `<input>` invisíveis (posição absoluta), que senão a alargavam.
+ */
+function LinhaDeEscolha({
+  legenda,
+  escolhida,
+  children,
+}: {
+  legenda: string
+  escolhida: string
+  children: ReactNode
+}) {
+  return (
+    <div className="grid min-w-0 grid-cols-[6.75rem_minmax(0,1fr)] items-center gap-1">
+      <span className="flex min-w-0 flex-col px-1 leading-tight" aria-hidden>
+        <span className="rotulo-de-secao mb-0">{legenda}</span>
+        <span className="text-papel truncate text-xs">{escolhida}</span>
+      </span>
+      <div
+        role="radiogroup"
+        aria-label={legenda}
+        data-faixa
+        className="faixa-rolavel relative flex items-center gap-0.5 px-1 py-1 md:overflow-x-auto"
+      >
+        {children}
+      </div>
+    </div>
   )
 }
 

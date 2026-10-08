@@ -9,6 +9,12 @@ import type { NovoAnexo } from '@/store/palacio'
 import { ehLinkValido } from './links'
 import { Miniatura } from './Miniatura'
 
+/**
+ * Até onde a imagem escolhida cresce na vertical: 18 rem, mas nunca mais que 28% da tela — em
+ * 320×568 ou 360×640 a prévia cede para a legenda e o botão caberem sem rolar (08/10/2026).
+ */
+const ALTURA_DA_PREVIA = 'min(18rem, 28dvh)'
+
 type Props =
   | {
       modo: 'novo'
@@ -101,7 +107,7 @@ export function FormularioDeAnexo(props: Props) {
 
   return (
     <form
-      className="flex flex-1 flex-col gap-5"
+      className="flex flex-1 flex-col gap-4"
       onSubmit={(evento) => {
         evento.preventDefault()
         enviar()
@@ -170,7 +176,7 @@ export function FormularioDeAnexo(props: Props) {
           <Miniatura
             anexo={editando}
             tamanho="inteira"
-            alturaMaxima="18rem"
+            alturaMaxima={ALTURA_DA_PREVIA}
             className="rounded-2xl"
           />
           <button
@@ -189,7 +195,8 @@ export function FormularioDeAnexo(props: Props) {
           <img
             src={escolhida.previa}
             alt="A imagem escolhida"
-            className="h-auto max-h-72 w-auto max-w-full self-center rounded-2xl"
+            style={{ maxHeight: ALTURA_DA_PREVIA }}
+            className="h-auto w-auto max-w-full self-center rounded-2xl"
           />
           <button
             type="button"
@@ -208,14 +215,14 @@ export function FormularioDeAnexo(props: Props) {
           onClick={() => {
             void escolher()
           }}
-          className="border-linha text-poeira active:bg-realce hover:bg-realce/60 flex h-40 w-full flex-col items-center justify-center gap-2 rounded-2xl border border-dashed transition-colors"
+          className="border-linha text-poeira active:bg-realce hover:bg-realce/60 flex h-[min(10rem,24dvh)] w-full flex-col items-center justify-center gap-2 rounded-2xl border border-dashed transition-colors"
         >
           <ImagePlus size={26} aria-hidden />
           <span className="text-sm">Escolher uma imagem</span>
         </button>
       )}
 
-      <label className="flex flex-col">
+      <label className="flex min-h-0 flex-1 flex-col">
         <span className="rotulo-de-secao">Legenda</span>
         <textarea
           value={legenda}
@@ -223,10 +230,9 @@ export function FormularioDeAnexo(props: Props) {
             setLegenda(evento.target.value)
           }}
           maxLength={2000}
-          rows={4}
           autoComplete="off"
           placeholder="Sobre o que é isto? Sem legenda, fica só na pasta."
-          className="campo min-h-28 resize-none p-4 leading-relaxed"
+          className="campo min-h-20 flex-1 resize-none p-4 leading-relaxed"
         />
       </label>
 

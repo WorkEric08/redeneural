@@ -1038,36 +1038,43 @@ img {
     0 0 0 4px var(--papel);
 }
 
-.pano-opcao:has(:checked) > span:last-child {
-  color: var(--papel);
-}
-
 .pano-opcao:has(:focus-visible) .pano-amostra {
   outline: 2px solid color-mix(in oklab, var(--papel) 60%, transparent);
   outline-offset: 6px;
 }
 
-/* A opção de forma: a miniatura da lombada em cima e o nome embaixo, numa fileira que
-   rola de lado (ver FormularioDeLivro.tsx) — o escolhido ganha o anel de papel. */
+/* As opções de uma configuração do livro (cor, forma, largura, comprimento) moram numa fileira
+   que rola de lado (`LinhaDeEscolha`, em FormularioDeLivro.tsx). Cada opção é só a figura — o
+   nome da escolhida fica na legenda, à esquerda —, com 44 px de área de toque. As figuras
+   ficam ancoradas embaixo, como livros numa prateleira; o escolhido ganha o anel de papel. */
+[data-faixa] .pano-opcao,
 .forma-opcao {
   display: flex;
   flex: none;
-  /* 80 px: em 320–412 px cabem quatro e meio — a opção cortada na borda é o aviso de que
-     a fileira continua. */
-  min-width: 80px;
+  min-width: 44px;
+  height: 44px;
   flex-direction: column;
   align-items: center;
-  gap: 8px;
-  padding: 6px 8px;
-  border-radius: 10px;
+  justify-content: flex-end;
+  padding: 0 3px 5px;
   cursor: pointer;
-  text-align: center;
-  white-space: nowrap;
+}
+
+[data-faixa] .pano-amostra {
+  width: 34px;
+  height: 34px;
+  max-width: none;
+  aspect-ratio: auto;
+  border-radius: 9px;
+}
+
+.forma-opcao {
+  border-radius: 10px;
 }
 
 .lombada--miniatura {
   width: 22px;
-  height: 40px;
+  height: 34px;
   transition: transform 140ms ease;
 }
 
@@ -1076,10 +1083,6 @@ img {
   box-shadow:
     0 0 0 2px var(--parede),
     0 0 0 4px var(--papel);
-}
-
-.forma-opcao:has(:checked) > span:last-child {
-  color: var(--papel);
 }
 
 .forma-opcao:has(:focus-visible) .lombada--miniatura {
@@ -1094,7 +1097,7 @@ img {
   aspect-ratio: unset;
   width: auto;
   max-width: none;
-  height: 44px;
+  height: 34px;
 }
 
 .largura-amostra--auto {
@@ -1117,7 +1120,7 @@ img {
 
 .comprimento-amostra--auto {
   display: grid;
-  height: 44px;
+  height: 34px;
   place-items: center;
   background: var(--parede);
   color: var(--poeira);
