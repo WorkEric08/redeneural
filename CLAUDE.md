@@ -5467,12 +5467,16 @@ mexer na tela. Honra a regra permanente "mostrar tudo sem deslize vertical".
 - **Antes** rolavam em **todos** os tamanhos medidos (930 px numa tela de 892; 928 em 568).
   **Agora** cabem em 412×892, 390×844, 360×640, **320×568**, 1024×768 e 1440×900, em livro novo, pasta,
   livro executável e editar enfeite (`FormularioDeLivro`).
-- **Cada configuração é uma linha só** (`LinhaDeEscolha`): à esquerda a legenda e **o nome da opção
-  escolhida** ("COR · Vinho"), à direita as opções numa fileira que rola de lado (ver "A Forma vira
-  uma fileira que rola de lado"), cada uma só a figura, com 44 px de toque (a figura tem 34 px). O
-  nome de cada opção segue acessível (`sr-only` e `title`). As quatro — Cor, Forma, Largura,
-  Comprimento — têm 52 px; antes eram ~110 px a mais por seção. Sem `<fieldset>`, que esticava a
-  página (ver a seção acima).
+- **Cada configuração é uma seção de duas linhas** (`LinhaDeEscolha`): o **título em cima** — Cor,
+  Forma, Largura, Comprimento — com o nome da opção escolhida ao lado ("COR  Vinho"), e as **opções
+  embaixo**, numa fileira que rola de lado (ver "A Forma vira uma fileira que rola de lado"), cada
+  uma só a figura, com 44 px de toque (a figura tem 34 px). O nome de cada opção segue acessível
+  (`sr-only` e `title`). **O tamanho das opções não mudou** (pedido do usuário, mesmo dia: só
+  reordenar). A primeira versão deixava o título à esquerda das opções, numa linha de 52 px por
+  seção; empilhar custa ~16 px por seção, que em telas baixas (`max-height: 700px`) se recuperam só
+  nos espaçamentos (entre seções 12 → 6 px, respiro da fileira 4 → 0 px) — sem tocar em item nenhum.
+  Com 2 px de respiro na fileira, 320×568 estoura (+7 a +10 px), então ficou 0. Sem `<fieldset>`, que
+  esticava a página (ver a seção acima).
 - **A amostra mora numa caixa de tamanho fixo à direita do Nome** (e dos dias, num executável), em
   vez de uma linha sua: altura = o maior comprimento (o "Enorme", 98%) sobre a fileira **medida
   nesta tela**; largura = a da maior (a "Grande", 68 px). A lombada dentro tem as medidas reais da

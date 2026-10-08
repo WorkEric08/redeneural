@@ -231,7 +231,7 @@ export function FormularioDeLivro({
   return (
     <form
       ref={formulario}
-      className="flex flex-1 flex-col gap-3"
+      className="flex flex-1 flex-col gap-3 [@media(max-height:700px)]:gap-1.5"
       onSubmit={(evento) => {
         evento.preventDefault()
         if (podeEnviar) {
@@ -529,9 +529,10 @@ export function FormularioDeLivro({
 }
 
 /**
- * Uma configuração numa linha só: a legenda e o nome da opção escolhida à esquerda (já que as
- * opções são só a figura), as opções numa fileira que rola de lado à direita — sem barra, e a
- * opção cortada na borda avisa que continua. Em tela larga também rola.
+ * Uma configuração: o título em cima (com o nome da opção escolhida ao lado, já que as opções são
+ * só a figura) e, embaixo, as opções numa fileira que rola de lado — sem barra, e a opção cortada
+ * na borda avisa que continua. Em tela larga também rola. (Título em cima e opções embaixo, a
+ * pedido do usuário, 08/10/2026; antes o título ficava à esquerda das opções.)
  *
  * Nada de `<fieldset>`: ele nunca é mais estreito que o conteúdo e esticava a página. A fileira é
  * `relative` para conter os `<input>` invisíveis (posição absoluta), que senão a alargavam.
@@ -546,16 +547,16 @@ function LinhaDeEscolha({
   children: ReactNode
 }) {
   return (
-    <div className="grid min-w-0 grid-cols-[6.75rem_minmax(0,1fr)] items-center gap-1">
-      <span className="flex min-w-0 flex-col px-1 leading-tight" aria-hidden>
+    <div className="flex min-w-0 flex-col">
+      <span className="flex min-w-0 items-baseline gap-2 px-1 leading-tight" aria-hidden>
         <span className="rotulo-de-secao mb-0">{legenda}</span>
-        <span className="text-papel truncate text-xs">{escolhida}</span>
+        <span className="text-papel min-w-0 truncate text-xs">{escolhida}</span>
       </span>
       <div
         role="radiogroup"
         aria-label={legenda}
         data-faixa
-        className="faixa-rolavel relative flex items-center gap-0.5 px-1 py-1 md:overflow-x-auto"
+        className="faixa-rolavel relative flex items-center gap-0.5 px-1 py-1 md:overflow-x-auto [@media(max-height:700px)]:py-0"
       >
         {children}
       </div>
