@@ -167,7 +167,12 @@ export function FormularioDeAnexo(props: Props) {
         </label>
       ) : editando && !escolhida ? (
         <div className="flex flex-col items-start gap-2">
-          <Miniatura anexo={editando} tamanho="inteira" className="max-h-72 w-full rounded-2xl" />
+          <Miniatura
+            anexo={editando}
+            tamanho="inteira"
+            alturaMaxima="18rem"
+            className="rounded-2xl"
+          />
           <button
             type="button"
             onClick={() => {
@@ -184,7 +189,7 @@ export function FormularioDeAnexo(props: Props) {
           <img
             src={escolhida.previa}
             alt="A imagem escolhida"
-            className="bg-realce max-h-72 w-full rounded-2xl object-contain"
+            className="h-auto max-h-72 w-auto max-w-full self-center rounded-2xl"
           />
           <button
             type="button"

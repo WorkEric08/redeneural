@@ -177,7 +177,8 @@ export default function Anexo() {
             <Miniatura
               anexo={anexo}
               tamanho="inteira"
-              className="max-h-[70dvh] w-full rounded-2xl"
+              alturaMaxima="70dvh"
+              className="rounded-2xl"
             />
           </button>
         ) : (

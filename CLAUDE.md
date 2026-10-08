@@ -5408,6 +5408,32 @@ as próprias opções de "Forma"** (as 10 da tela), só para enfeites (os livros
   622 testes (3 novos de amostra e migração, mais o de `montarPrateleiras` reescrito), tipos, lint
   e prettier limpos. **Não verificado em toque real.**
 
+## A imagem inteira não tem fundo nas laterais (08/10/2026)
+
+Pedido do usuário: ao adicionar uma imagem, em pé ou deitada, aparecia um azul mais claro nas
+laterais, atrás da foto. Agora aparece só a imagem.
+
+- **Causa:** a caixa da imagem ocupava a largura toda (`w-full`) e tinha a altura limitada
+  (`max-h-*`). Com a altura capada, a proporção da caixa deixava de ser a da foto, e o fundo
+  `bg-realce` sobrava dos dois lados de toda foto em pé (e do preview do formulário, que punha o
+  fundo no próprio `<img>`).
+- **Agora a caixa tem a forma exata da imagem** (`lib/caixaDaImagem.ts`, pura e testada):
+  `aspect-ratio` da imagem e largura `min(100%, altura máxima × proporção)`. O limite de altura
+  passa a valer pela largura, sem deformar, e a caixa — centralizada — nunca é mais larga que a foto.
+  `Miniatura` e `ImagemDoResultado` ganharam `alturaMaxima` (a tela do item: `70dvh`; a ideia:
+  `24rem`; a edição do item: `18rem`), no lugar do `max-h-*` que os chamadores passavam.
+- **O preview do formulário** (imagem recém-escolhida) é só a `<img>` (`max-h-72 max-w-full`,
+  centralizada, sem fundo): ali ainda não há medida gravada. Imagem pequena aparece no tamanho dela,
+  sem ampliar.
+- **Antes de os bytes chegarem**, a caixa reservada (com o ícone) já tem a forma da foto, então
+  nada pula.
+- **Não mudou:** os cartões da pasta (miniaturas recortadas, `object-cover` em 4:3) e o visor (que
+  já mostrava só a imagem, sobre o desfoque).
+- **Verificado** no Chrome (build de produção) em 412×892, 320×568 e 1440×900, com imagens deitada
+  (800×500), em pé (500×800) e quadrada: na tela do item e na da ideia a caixa tem exatamente a forma
+  e o tamanho da imagem (diferença de 0 px); no formulário a prévia sai sem fundo, em pé e deitada.
+  625 testes (3 novos), tipos, lint e prettier limpos. **Não verificado em toque real.**
+
 ## Mostrar tudo sem deslize vertical: as folhas e o andamento (06/10/2026)
 
 Pedido do usuário, sobre os livros executáveis: melhorar de forma geral, e em especial a

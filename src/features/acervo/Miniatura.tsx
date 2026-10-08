@@ -2,6 +2,7 @@ import { ImageIcon, Link2, Play } from 'lucide-react'
 import { useState, type ReactNode } from 'react'
 
 import type { AnexoNaTela } from '@/core'
+import { caixaDaImagem } from '@/lib/caixaDaImagem'
 
 import { dominioDe, miniaturaDoLink } from './links'
 import { useImagemDoAnexo } from './useImagemDoAnexo'
@@ -13,6 +14,11 @@ interface Props {
   className?: string
   /** Pequena demais para texto: o link mostra só o ícone, sem o domínio embaixo. */
   compacta?: boolean
+  /**
+   * Só com `tamanho="inteira"`: até onde a imagem cresce na vertical (um valor CSS, como
+   * `18rem`). A caixa encolhe na largura junto, para ser sempre só a imagem.
+   */
+  alturaMaxima?: string
 }
 
 /**
@@ -24,18 +30,20 @@ export function Miniatura({
   tamanho = 'miniatura',
   className = '',
   compacta = false,
+  alturaMaxima = '70dvh',
 }: Props) {
-  // Inteira, a caixa já nasce na proporção da imagem: reserva o espaço antes de
-  // os bytes chegarem, e nada pula quando ela aparece.
-  const proporcao =
-    tamanho === 'inteira' && anexo.midia.tipo === 'imagem'
-      ? { aspectRatio: `${String(anexo.midia.largura)} / ${String(anexo.midia.altura)}` }
-      : undefined
+  // Inteira, a caixa já nasce com a forma da imagem: reserva o espaço antes de os bytes
+  // chegarem, nada pula quando ela aparece, e o fundo da caixa nunca sobra nas laterais.
+  const inteira = tamanho === 'inteira' && anexo.midia.tipo === 'imagem'
 
   return (
     <span
-      className={`bg-realce text-poeira relative block overflow-hidden ${className}`}
-      style={proporcao}
+      className={`bg-realce text-poeira relative block overflow-hidden ${inteira ? 'mx-auto' : ''} ${className}`}
+      style={
+        anexo.midia.tipo === 'imagem' && inteira
+          ? caixaDaImagem(anexo.midia.largura, anexo.midia.altura, alturaMaxima)
+          : undefined
+      }
     >
       {anexo.midia.tipo === 'imagem' ? (
         <ImagemGravada anexo={anexo} tamanho={tamanho} />

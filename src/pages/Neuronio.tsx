@@ -370,7 +370,8 @@ export default function Neuronio() {
               <ImagemDoResultado
                 neuronio={neuronio}
                 tamanho="inteira"
-                className="max-h-96 w-full rounded-2xl"
+                alturaMaxima="24rem"
+                className="rounded-2xl"
               />
             </button>
           </section>
