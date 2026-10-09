@@ -16,7 +16,7 @@ import {
   type EstiloDaLombada,
   type TipoDeLivro,
 } from '@/core'
-import { espacoParaMeiaOpcao } from '@/lib/faixa'
+import { espacoParaMeiaOpcao, haMaisADireita } from '@/lib/faixa'
 import type { NovoLivro } from '@/store/palacio'
 
 import { COMPRIMENTOS } from './comprimentos'
@@ -557,6 +557,8 @@ export function FormularioDeLivro({
  * só a figura) e, embaixo, as opções numa fileira que rola de lado, sem barra. O aviso de que ela
  * continua é a última opção visível **cortada ao meio** na borda direita, como nas fileiras da
  * Netflix (08/10/2026; antes eram setas e um esmaecido). Em tela larga também rola, se não couber.
+ * Na borda direita, enquanto há mais para ver, uma sombra preta curta reforça o aviso
+ * (`data-mais`, desenhado pelo CSS em `.faixa-sombra`).
  *
  * O tamanho das opções não muda: quem cede é o espaço entre elas (`espacoParaMeiaOpcao`), medido
  * ao abrir e a cada mudança de largura da fileira.
@@ -574,12 +576,21 @@ function LinhaDeEscolha({
   children: ReactNode
 }) {
   const faixa = useRef<HTMLDivElement>(null)
+  const moldura = useRef<HTMLDivElement>(null)
 
   // Antes de pintar (e antes de o formulário abrir a fileira com a escolhida no meio): o espaço
   // que deixa uma opção cortada ao meio na borda. Direto no elemento, sem passar pelo React.
   useLayoutEffect(() => {
     const el = faixa.current
-    if (!el) return
+    const caixa = moldura.current
+    if (!el || !caixa) return
+    // A sombra da direita só existe enquanto há opções além da borda.
+    const marcar = (): void => {
+      caixa.toggleAttribute(
+        'data-mais',
+        haMaisADireita(el.scrollLeft, el.clientWidth, el.scrollWidth),
+      )
+    }
     const ajustar = (): void => {
       // As opções não mudam de largura com o espaço, então não se zera o espaço antes de medir:
       // isso encolheria a rolagem por um instante e a fileira perderia o ponto onde estava.
@@ -594,13 +605,15 @@ function LinhaDeEscolha({
         ESPACO_MINIMO_DA_FAIXA_PX,
       )
       el.style.columnGap = espaco === null ? '' : `${String(espaco)}px`
+      marcar()
     }
     ajustar()
-    if (typeof ResizeObserver === 'undefined') return
-    const observador = new ResizeObserver(ajustar)
-    observador.observe(el)
+    el.addEventListener('scroll', marcar, { passive: true })
+    const observador = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(ajustar)
+    observador?.observe(el)
     return () => {
-      observador.disconnect()
+      el.removeEventListener('scroll', marcar)
+      observador?.disconnect()
     }
   }, [])
 
@@ -610,7 +623,7 @@ function LinhaDeEscolha({
         <span className="rotulo-de-secao mb-0">{legenda}</span>
         <span className="text-papel min-w-0 truncate text-xs">{escolhida}</span>
       </span>
-      <div className="relative min-w-0">
+      <div ref={moldura} className="faixa-sombra relative min-w-0">
         <div
           ref={faixa}
           role="radiogroup"

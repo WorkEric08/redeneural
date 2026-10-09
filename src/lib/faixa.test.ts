@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { espacoParaMeiaOpcao } from './faixa'
+import { espacoParaMeiaOpcao, haMaisADireita } from './faixa'
 
 /** Onde cai o meio da opção `k`, com o espaço dado. */
 function meioDe(larguras: number[], k: number, recuo: number, espaco: number): number {
@@ -41,5 +41,22 @@ describe('espacoParaMeiaOpcao', () => {
 
   it('devolve null quando nem duas opções cabem com o espaço mínimo', () => {
     expect(espacoParaMeiaOpcao([200, 200, 200], 150, 4, 2, 2)).toBeNull()
+  })
+})
+
+describe('haMaisADireita', () => {
+  it('há mais enquanto a fileira não chegou ao fim', () => {
+    expect(haMaisADireita(0, 300, 700)).toBe(true)
+    expect(haMaisADireita(150, 300, 700)).toBe(true)
+  })
+
+  it('não há mais no fim, nem quando tudo cabe', () => {
+    expect(haMaisADireita(400, 300, 700)).toBe(false)
+    expect(haMaisADireita(0, 300, 300)).toBe(false)
+  })
+
+  it('ignora a folga de arredondamento', () => {
+    expect(haMaisADireita(398.5, 300, 700)).toBe(false)
+    expect(haMaisADireita(1, 300, 301)).toBe(false)
   })
 })

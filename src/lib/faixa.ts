@@ -42,3 +42,11 @@ function espacoCom(larguras: readonly number[], visivel: number, recuo: number, 
   for (let i = 0; i < k; i++) inteiras += larguras[i] ?? 0
   return (visivel - recuo - inteiras - (larguras[k] ?? 0) / 2) / k
 }
+
+/** Quanto de folga conta como "chegou no fim": subpixel e arredondamento não valem. */
+const TOLERANCIA_DO_FIM_PX = 2
+
+/** Ainda há opções escondidas à direita de uma fileira que rola de lado? */
+export function haMaisADireita(scrollLeft: number, visivel: number, total: number): boolean {
+  return scrollLeft + visivel < total - TOLERANCIA_DO_FIM_PX
+}

@@ -1040,6 +1040,24 @@ img {
   cursor: pointer;
 }
 
+/* A sombra da borda direita de uma fileira de opções: preta, curta, e só enquanto há mais opções
+   além da borda (`data-mais`, ligado por `LinhaDeEscolha`). Não pega o toque e não ocupa lugar. */
+.faixa-sombra::after {
+  content: '';
+  position: absolute;
+  inset-block: 0;
+  right: 0;
+  width: 28px;
+  pointer-events: none;
+  background: linear-gradient(to left, rgb(0 0 0 / 0.42), transparent);
+  opacity: 0;
+  transition: opacity 140ms ease;
+}
+
+.faixa-sombra[data-mais]::after {
+  opacity: 1;
+}
+
 [data-faixa] .pano-amostra {
   width: 34px;
   height: 34px;

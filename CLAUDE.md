@@ -5654,6 +5654,24 @@ que continuam": saíram `PontaDaFaixa`, `bordasDaFaixa` e as classes `.ponta-da-
   rolagem lateral nem vertical; editar um livro de forma "Bloco" abre com ela à vista; os formulários
   continuam sem nada se mexer. 643 testes. **Não verificado em toque real.**
 
+### A sombra preta na borda direita (08/10/2026)
+
+Pedido do usuário, em cima da opção cortada ao meio: uma **sombra preta curta**, da direita para a
+esquerda, só para o aviso de que há mais ao lado ficar mais claro.
+
+- **Um gradiente de 28 px** (`rgb(0 0 0 / 0.42)` até transparente) na borda direita da fileira,
+  desenhado por CSS (`.faixa-sombra::after`) por cima das opções. Não pega o toque nem ocupa lugar.
+- **Só enquanto há mais para ver.** `LinhaDeEscolha` liga `data-mais` na moldura da fileira quando
+  `haMaisADireita` (`lib/faixa.ts`, pura e testada) diz que falta rolar; some ao chegar no fim e
+  volta ao voltar. Sem estado do React: o atributo é escrito direto, ao medir e ao rolar, e o CSS
+  faz o resto (com um fade de 140 ms).
+- **Vale nas quatro fileiras** (`LinhaDeEscolha` é uma só), mas na prática só aparece onde a fileira
+  não cabe: Cor em celular, Forma a partir de 390 px, e Largura ou Comprimento nunca nos tamanhos
+  testados. Preta nos dois temas.
+- **Verificado** no Chrome (build de produção) em 412, 390, 320 e 1440 px: ligada só nas fileiras
+  que rolam, desligada no fim e de volta ao começo, tocar numa opção sob a sombra escolhe, sem
+  rolagem lateral nem vertical. 646 testes. **Não verificado em toque real.**
+
 ## O menu do livro diz só "Editar livro" (08/10/2026)
 
 Pedido do usuário: no menu que abre ao segurar um livro, o texto "Renomear e editar livro" vira
