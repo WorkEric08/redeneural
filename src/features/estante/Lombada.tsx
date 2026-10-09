@@ -5,7 +5,7 @@ import { contar } from '@/lib/plural'
 
 import { EmblemaDaLombada } from './EmblemaDaLombada'
 import { geometriaDaLombada } from './lombadaNoite'
-import { alturaDaLombadaEmPercentual } from './prateleiras'
+import { alturaDaLombadaEmPercentual, extensaoDoLivro } from './prateleiras'
 import type { LivroNaEstante } from './resumo'
 import type { ManipulacaoDaLombada } from './useManipularLivros'
 
@@ -29,6 +29,10 @@ interface Props {
   item: LivroNaEstante
   /** Em qual lugar da prateleira — é o que o arrasto lê para saber onde soltar. */
   lugar: number
+  /**
+   * A largura da lombada em px. Num livro deitado é a **espessura**: a altura que ele tem na
+   * pilha, com o livro girado.
+   */
   largura: number
   estado: EstadoDaLombada
   /** O livro embaixo do dedo de quem arrasta outro: soltar ali o empurra para o lado. */
@@ -59,6 +63,11 @@ interface Props {
  * `Livro.larguraLombada`: varia como numa estante de verdade, mas é sempre a
  * mesma para o mesmo livro.
  *
+ * Um livro **deitado** (08/10/2026) é o mesmo livro girado: a lombada se desenha como se estivesse
+ * em pé — mesma forma, título e medidas — dentro de uma moldura que gira -90°, e a moldura tem a
+ * largura que o livro ocupa no lugar (o comprimento dele) e a altura que pesa na pilha (a largura).
+ * Os estados (erguido, escolhido, alvo) erguem o livro para cima de verdade, não para o lado.
+ *
  * Botão, e não link: tocar espia em vez de abrir, e abrir mora no painel.
  */
 export function Lombada({
@@ -75,6 +84,8 @@ export function Lombada({
   manipular,
 }: Props) {
   const altura = alturaDaLombadaEmPercentual(item.livro.comprimentoLombada, item.altura)
+  const deitada = item.livro.orientacao === 'deitado'
+  const extensao = extensaoDoLivro(item, alturaDaFileira)
   const ehPasta = item.livro.tipo === 'acervo'
   // O pé da feita é do disco: o ícone não cabe junto, e a lombada feita fica sem ele.
   const icone = iconesNosLivros && item.andamento !== 'feita'
@@ -83,26 +94,28 @@ export function Lombada({
     cor: item.livro.cor,
     titulo: item.livro.titulo,
     largura,
-    altura: (altura * alturaDaFileira) / 100,
+    altura: deitada ? extensao : (altura * alturaDaFileira) / 100,
     intensidadeDaLuz,
     icone,
   })
 
-  return (
+  const botao = (
     <button
       type="button"
       data-livro-id={item.livro.id}
-      data-lugar={lugar}
+      // Num livro deitado o lugar é o da pilha (`data-lugar` mora nela): o arrasto lê o dela.
+      data-lugar={deitada ? undefined : lugar}
       data-estado={estado}
       data-alvo={alvo || undefined}
       data-ponte={ponte || undefined}
       data-chegando={chegando || undefined}
-      className="lombada lombada--livro"
+      data-orientacao={item.livro.orientacao}
+      className={deitada ? 'lombada lombada--livro lombada--deitada' : 'lombada lombada--livro'}
       data-estilo={geo.estilo}
       data-andamento={item.andamento ?? undefined}
       style={{
         ...geo.style,
-        height: `${String(Math.round(altura * 10) / 10)}%`,
+        height: deitada ? `${String(extensao)}px` : `${String(Math.round(altura * 10) / 10)}%`,
         width: `${String(largura)}px`,
       }}
       aria-label={
@@ -144,6 +157,17 @@ export function Lombada({
       {item.andamento === 'adormecido' && <span className="lombada-nevoa" aria-hidden />}
     </button>
   )
+
+  if (!deitada) return botao
+  // A moldura é o que o livro ocupa deitado: o comprimento dele de largura, a espessura de altura.
+  return (
+    <span
+      className="lombada-giro"
+      style={{ width: `${String(extensao)}px`, height: `${String(largura)}px` }}
+    >
+      {botao}
+    </span>
+  )
 }
 
 /**
@@ -163,16 +187,38 @@ export function Fantasma({
   caixa: DOMRect
   registrar: (elemento: HTMLElement | null) => void
 }) {
-  // Só cor e título: o livro na mão não leva forma nem estado.
+  const deitada = item.livro.orientacao === 'deitado'
+  // Só cor e título: o livro na mão não leva forma nem estado. Deitado, a caixa que o dedo
+  // levou (`caixa`) é a do livro girado: a largura dela é o comprimento, e a altura, a espessura.
   const geo = geometriaDaLombada({
     estilo: 'solido',
     cor: item.livro.cor,
     titulo: item.livro.titulo,
-    largura: caixa.width,
-    altura: caixa.height,
+    largura: deitada ? caixa.height : caixa.width,
+    altura: deitada ? caixa.width : caixa.height,
     // O livro na mão vem para perto: a cor real, sem sombra nem brilho.
     intensidadeDaLuz: INTENSIDADE_DA_LUZ_PADRAO,
   })
+
+  if (deitada) {
+    return createPortal(
+      <span
+        ref={registrar}
+        aria-hidden
+        className="lombada-giro lombada-giro--fantasma"
+        style={{ left: caixa.left, top: caixa.top, width: caixa.width, height: caixa.height }}
+      >
+        <span
+          className="lombada lombada--fantasma lombada--deitada cores-de-antes"
+          data-estilo={geo.estilo}
+          style={{ ...geo.style, width: caixa.height, height: caixa.width }}
+        >
+          <span className="lombada-titulo">{item.livro.titulo}</span>
+        </span>
+      </span>,
+      document.body,
+    )
+  }
 
   return createPortal(
     <span

@@ -1,5 +1,8 @@
 import {
+  ALTURA_MAXIMA_DA_LOMBADA,
+  ALTURA_MINIMA_DA_LOMBADA,
   chaveDoLugar,
+  larguraDoLivroGravado,
   LUGARES_POR_PRATELEIRA,
   type DadosDoEnfeite,
   type EnfeiteGravado,
@@ -7,7 +10,7 @@ import {
   type Livro,
   type Vaga,
 } from '@/core'
-import { semente, sorteio } from '@/lib/semente'
+import { sorteio } from '@/lib/semente'
 
 import type { LivroNaEstante } from './resumo'
 
@@ -31,9 +34,12 @@ import type { LivroNaEstante } from './resumo'
  *   aí ele é um `EnfeiteGravado`, que vence o sorteio daquele lugar.
  */
 
-/** Em % da fileira, como a lombada de verdade — ver .movel-fila. */
-export const ALTURA_MINIMA_DA_LOMBADA = 63
-export const ALTURA_MAXIMA_DA_LOMBADA = 93.5
+// As medidas moraram aqui até o livro deitado (08/10/2026): a pilha tem um limite de altura que
+// o núcleo aplica, e ele sai delas. Continuam exportadas daqui para quem já as lia.
+export { ALTURA_MAXIMA_DA_LOMBADA, ALTURA_MINIMA_DA_LOMBADA, larguraDoLivroGravado }
+
+/** A altura da fileira antes de medida (o mesmo palpite de `useMedidasDaFileira`). */
+const ALTURA_DA_FILEIRA_PADRAO_PX = 112
 
 /**
  * A altura de uma lombada de livro, em % da fileira: a escolhida na mão, ou a que
@@ -78,6 +84,11 @@ export type EnfeiteNoLugar = Extract<Lugar, { tipo: 'enfeite' }>
 
 export type Lugar =
   | { tipo: 'livro'; indice: number; item: LivroNaEstante; largura: number }
+  /**
+   * Uma pilha de livros deitados (08/10/2026), de baixo para cima — ou um livro deitado sozinho,
+   * que é uma pilha de um. A largura do lugar é a do livro mais comprido dela.
+   */
+  | { tipo: 'pilha'; indice: number; itens: LivroNaEstante[]; largura: number }
   | {
       tipo: 'enfeite'
       indice: number
@@ -105,14 +116,26 @@ export interface Prateleira {
   lugares: Lugar[]
 }
 
-/** A largura de um livro na fileira: a escolhida na mão, ou a da semente do id. */
-export function larguraDoLivroGravado(livro: Pick<Livro, 'id' | 'larguraLombada'>): number {
-  const [a] = semente(livro.id)
-  return livro.larguraLombada ?? Math.round(30 + a * 16)
-}
-
 function larguraDoLivro(item: LivroNaEstante): number {
   return larguraDoLivroGravado(item.livro)
+}
+
+/**
+ * O quanto um livro deitado se estende na fileira, em px: o comprimento dele (a altura de um
+ * livro de pé — a escolhida na mão, ou a que vem do que guarda), com a lombada girada. É a
+ * largura que ele ocupa no lugar; a espessura (`larguraDoLivroGravado`) é a altura que ele
+ * pesa na pilha.
+ */
+export function extensaoDoLivro(item: LivroNaEstante, alturaDaFileira: number): number {
+  return Math.round(
+    (alturaDaLombadaEmPercentual(item.livro.comprimentoLombada, item.altura) * alturaDaFileira) /
+      100,
+  )
+}
+
+/** Livro ou pilha: o que a fileira nunca encolhe nem tira para os enfeites caberem. */
+function ehLivro(l: Lugar): l is Extract<Lugar, { tipo: 'livro' | 'pilha' }> {
+  return l.tipo === 'livro' || l.tipo === 'pilha'
 }
 
 /**
@@ -136,14 +159,25 @@ export function larguraDosLivros(larguras: readonly number[]): number {
   return larguras.reduce((total, w) => total + w, 0) + (larguras.length - 1) * FOLGA_ENTRE_LUGARES
 }
 
-/** O que os livros de uma prateleira ocupam, dado o estado da estante. */
-export function larguraDosLivrosDaPrateleira(
-  livros: readonly Pick<Livro, 'id' | 'larguraLombada' | 'prateleira'>[],
+/**
+ * O que os livros de uma prateleira ocupam, dado o estado da estante: um lugar por vez, porque
+ * uma pilha é um lugar só — com a largura do livro deitado mais comprido dela. `extensaoDe` diz
+ * quanto cada livro deitado se estende (ver `extensaoDoLivro`); sem ele, vale a largura gravada.
+ */
+export function larguraDosLivrosDaPrateleira<
+  L extends Pick<Livro, 'id' | 'larguraLombada' | 'prateleira' | 'ordem' | 'orientacao'>,
+>(
+  livros: readonly L[],
   prateleira: number,
+  extensaoDe: (livro: L) => number = larguraDoLivroGravado,
 ): number {
-  return larguraDosLivros(
-    livros.filter((l) => l.prateleira === prateleira).map(larguraDoLivroGravado),
-  )
+  const porLugar = new Map<number, number>()
+  for (const l of livros) {
+    if (l.prateleira !== prateleira) continue
+    const largura = l.orientacao === 'deitado' ? extensaoDe(l) : larguraDoLivroGravado(l)
+    porLugar.set(l.ordem, Math.max(porLugar.get(l.ordem) ?? 0, largura))
+  }
+  return larguraDosLivros([...porLugar.values()])
 }
 
 /**
@@ -267,7 +301,7 @@ function larguraComEscala(natural: number, escala: number): number {
 /** A fileira de `lugares`, na escala dada (1 = enfeites e vagas do tamanho de sempre). */
 function larguraDaFileira(lugares: readonly Lugar[], escala: number): number {
   const larguras = lugares.map((l) =>
-    l.tipo === 'livro' ? l.largura : larguraComEscala(l.largura, escala),
+    ehLivro(l) ? l.largura : larguraComEscala(l.largura, escala),
   )
   return larguras.reduce((total, w) => total + w, 0) + (larguras.length - 1) * FOLGA_ENTRE_LUGARES
 }
@@ -304,7 +338,7 @@ function semCortarNaLateral(lugares: readonly Lugar[], larguraUtil: number): Lug
   let cheia = false
   for (const l of lugares) {
     const largura = usado === 0 ? l.largura : l.largura + FOLGA_ENTRE_LUGARES
-    if (l.tipo === 'livro') {
+    if (ehLivro(l)) {
       mantidos.push(l)
       usado += largura
     } else if (cheia) {
@@ -326,20 +360,20 @@ function semCortarNaLateral(lugares: readonly Lugar[], larguraUtil: number): Lug
 
   let ultimoLivro = -1
   mantidos.forEach((l, i) => {
-    if (l.tipo === 'livro') ultimoLivro = i
+    if (ehLivro(l)) ultimoLivro = i
   })
   const depois = mantidos.length - 1 - ultimoLivro
   const sobra = larguraUtil - usado
   if (depois <= 0 || sobra <= 0) return mantidos
   return mantidos.map((l, i): Lugar =>
-    i > ultimoLivro && l.tipo !== 'livro' ? { ...l, largura: l.largura + sobra / depois } : l,
+    i > ultimoLivro && !ehLivro(l) ? { ...l, largura: l.largura + sobra / depois } : l,
   )
 }
 
 function encolherParaCaber(lugares: readonly Lugar[], larguraUtil: number): Lugar[] {
   let ultimo = -1
   lugares.forEach((l, i) => {
-    if (l.tipo === 'livro') ultimo = i
+    if (ehLivro(l)) ultimo = i
   })
   if (ultimo < 0 || larguraDaFileira(lugares.slice(0, ultimo + 1), 1) <= larguraUtil) {
     return [...lugares]
@@ -356,7 +390,8 @@ function encolherParaCaber(lugares: readonly Lugar[], larguraUtil: number): Luga
     i >= 0 && larguraDaFileira(semEnfeites, 0) > larguraUtil;
     i -= 1
   ) {
-    if (protegidos[i]?.tipo === 'livro') continue
+    const lugar = protegidos[i]
+    if (lugar && ehLivro(lugar)) continue
     removidos.add(i)
     semEnfeites = protegidos.filter((_, j) => !removidos.has(j))
   }
@@ -373,7 +408,7 @@ function encolherParaCaber(lugares: readonly Lugar[], larguraUtil: number): Luga
   const escala = baixo
 
   return [...protegidos, ...tail].map((l): Lugar =>
-    l.tipo === 'livro' ? l : { ...l, largura: larguraComEscala(l.largura, escala) },
+    ehLivro(l) ? l : { ...l, largura: larguraComEscala(l.largura, escala) },
   )
 }
 
@@ -388,16 +423,46 @@ export function montarPrateleiras(
   larguraUtil?: number,
   /** Os enfeites que a pessoa definiu ou moveu — vencem o sorteio do lugar. */
   enfeites: readonly EnfeiteGravado[] = [],
+  /**
+   * A altura da fileira em px, medida: o livro deitado se estende por uma % dela, e é isso que
+   * decide a largura do lugar dele.
+   */
+  alturaDaFileira: number = ALTURA_DA_FILEIRA_PADRAO_PX,
 ): Prateleira[] {
-  const livroNoLugar = new Map(estante.map((item) => [chaveDoLugar(item.livro), item]))
+  // Um lugar pode ter uma pilha: os livros dele, de baixo para cima (o id desempata).
+  const livrosNoLugar = new Map<string, LivroNaEstante[]>()
+  for (const item of estante) {
+    const chave = chaveDoLugar(item.livro)
+    const grupo = livrosNoLugar.get(chave)
+    if (grupo) grupo.push(item)
+    else livrosNoLugar.set(chave, [item])
+  }
+  for (const grupo of livrosNoLugar.values()) {
+    grupo.sort((a, b) => a.livro.nivel - b.livro.nivel || (a.livro.id < b.livro.id ? -1 : 1))
+  }
+  /**
+   * O que um lugar com livros mostra: o livro de pé, ou a pilha de deitados. Um lugar nunca mistura
+   * os dois (as regras de `ordem.ts` garantem); se um dado torto os misturar, o de pé aparece e
+   * os deitados ficam guardados, sem sumir do banco.
+   */
+  const lugarComLivros = (indice: number, itens: LivroNaEstante[]): Lugar => {
+    const dePe = itens.find((i) => i.livro.orientacao !== 'deitado')
+    if (dePe) return { tipo: 'livro', indice, item: dePe, largura: larguraDoLivro(dePe) }
+    return {
+      tipo: 'pilha',
+      indice,
+      itens,
+      largura: Math.max(...itens.map((i) => extensaoDoLivro(i, alturaDaFileira))),
+    }
+  }
   const abertas = new Set(vagas.map(chaveDoLugar))
   const gravados = new Map(enfeites.map((e) => [chaveDoLugar(e), e]))
 
   return Array.from({ length: quantidadeDePrateleiras }, (_, prateleira) => {
     const lugares = Array.from({ length: LUGARES_POR_PRATELEIRA }, (_, indice): Lugar => {
       const chave = chaveDoLugar({ prateleira, ordem: indice })
-      const item = livroNoLugar.get(chave)
-      if (item) return { tipo: 'livro', indice, item, largura: larguraDoLivro(item) }
+      const itens = livrosNoLugar.get(chave)
+      if (itens) return lugarComLivros(indice, itens)
       if (abertas.has(chave))
         return { tipo: 'vazio', indice, largura: larguraDoLugar(prateleira, indice) }
       const gravado = gravados.get(chave)
@@ -410,12 +475,7 @@ export function montarPrateleiras(
     const transbordo = estante
       .filter((e) => e.livro.prateleira === prateleira && e.livro.ordem >= LUGARES_POR_PRATELEIRA)
       .sort((a, b) => a.livro.ordem - b.livro.ordem)
-      .map((item): Lugar => ({
-        tipo: 'livro',
-        indice: item.livro.ordem,
-        item,
-        largura: larguraDoLivro(item),
-      }))
+      .map((item): Lugar => lugarComLivros(item.livro.ordem, [item]))
 
     const todos = [...lugares, ...transbordo]
 

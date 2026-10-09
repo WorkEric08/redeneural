@@ -10,6 +10,7 @@ import type {
   EstadoDaIdeia,
   Id,
   Livro,
+  OrientacaoDoLivro,
   TipoDeLivro,
   Vaga,
   Vinculo,
@@ -65,6 +66,8 @@ export interface CriarLivroInput {
   emblema?: string | null
   larguraLombada?: number | null
   comprimentoLombada?: number | null
+  /** Ausente é `'em-pe'`. */
+  orientacao?: OrientacaoDoLivro
   /** Ausente é `'conceitos'`. Não muda depois — `EditarLivroInput` não tem este campo. */
   tipo?: TipoDeLivro
   /** Ausente é `false`. Pasta de acervo nunca é. */
@@ -110,6 +113,11 @@ export interface EditarLivroInput {
   titulo: string
   cor: string
   estilo: EstiloDaLombada
+  /**
+   * De pé ou deitado. Mudar tira o livro do meio de uma pilha, se estiver em uma: ele vai para o
+   * lugar livre mais perto (`mudarOrientacaoNaEstante`).
+   */
+  orientacao: OrientacaoDoLivro
   emblema: string | null
   larguraLombada: number | null
   comprimentoLombada: number | null
@@ -245,7 +253,7 @@ export interface ConnectionEngine {
   /** Livro não mexe no grafo: devolve só a estante, já com o livro no lugar. */
   criarLivro(input: CriarLivroInput): Promise<EstanteGravada>
   /** Trocar nome ou pano não muda nenhuma conexão — `cross` depende do id, não da cor. */
-  editarLivro(input: EditarLivroInput): Promise<Livro[]>
+  editarLivro(input: EditarLivroInput): Promise<EstanteGravada>
   /**
    * Apaga o livro, os neurônios dele e os fios que os tocavam, e reprocessa:
    * pelo mesmo motivo de apagar um neurônio, alguém pode ter perdido o único

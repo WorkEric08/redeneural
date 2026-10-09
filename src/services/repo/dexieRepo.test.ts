@@ -48,6 +48,8 @@ function livro(id: string, titulo: string, ordem = 0, prateleira = 0): Livro {
     larguraLombada: null,
     comprimentoLombada: null,
     executavel: false,
+    orientacao: 'em-pe',
+    nivel: 0,
     diasParaAdormecer: 30,
     createdAt: T0,
   }
@@ -732,6 +734,8 @@ describe('migração para a v3', () => {
       .table<
         Omit<
           Livro,
+          | 'orientacao'
+          | 'nivel'
           | 'ordem'
           | 'prateleira'
           | 'emblema'
@@ -786,6 +790,8 @@ describe('migração para a v4', () => {
       .table<
         Omit<
           Livro,
+          | 'orientacao'
+          | 'nivel'
           | 'prateleira'
           | 'emblema'
           | 'larguraLombada'
@@ -847,6 +853,8 @@ describe('migração para a v6', () => {
       .table<
         Omit<
           Livro,
+          | 'orientacao'
+          | 'nivel'
           | 'emblema'
           | 'larguraLombada'
           | 'comprimentoLombada'
@@ -898,6 +906,8 @@ describe('migração para a v7', () => {
       .table<
         Omit<
           Livro,
+          | 'orientacao'
+          | 'nivel'
           | 'larguraLombada'
           | 'comprimentoLombada'
           | 'tipo'
@@ -954,7 +964,16 @@ describe('migração para a v8', () => {
     antigo.version(7).stores({})
     await antigo
       .table<
-        Omit<Livro, 'comprimentoLombada' | 'tipo' | 'estilo' | 'executavel' | 'diasParaAdormecer'>,
+        Omit<
+          Livro,
+          | 'orientacao'
+          | 'nivel'
+          | 'comprimentoLombada'
+          | 'tipo'
+          | 'estilo'
+          | 'executavel'
+          | 'diasParaAdormecer'
+        >,
         string
       >('livros')
       .bulkPut([
@@ -1075,7 +1094,12 @@ describe('migração para a v11', () => {
     antigo.close()
 
     const migrado = createDexieRepo(createDb(nome))
-    expect(await migrado.getLivro('l1')).toMatchObject({ executavel: false, diasParaAdormecer: 30 })
+    expect(await migrado.getLivro('l1')).toMatchObject({
+      executavel: false,
+      orientacao: 'em-pe',
+      nivel: 0,
+      diasParaAdormecer: 30,
+    })
     expect(await migrado.getNeuronio('n1')).toMatchObject({
       estado: null,
       ultimoToque: editadoEm,
@@ -1149,6 +1173,8 @@ describe('migração para a v12', () => {
       larguraLombada: 34,
       comprimentoLombada: null,
       executavel: false,
+      orientacao: 'em-pe',
+      nivel: 0,
       diasParaAdormecer: 30,
       createdAt: T0,
     }
@@ -1500,6 +1526,8 @@ describe('migração para a v16', () => {
       larguraLombada: null,
       comprimentoLombada: null,
       executavel: false,
+      orientacao: 'em-pe',
+      nivel: 0,
       diasParaAdormecer: 30,
       createdAt: T0,
     })
@@ -1631,5 +1659,163 @@ describe('migração para a v14', () => {
     expect(n?.resultadoImagem).toBeNull()
     expect(n).toMatchObject({ estado: 'feita', resultadoLink: 'https://exemplo.com/r' })
     expect(await migrado.getResultado('n1')).toBeUndefined()
+  })
+})
+
+/** Um livro deitado, com a espessura (a largura) que enche a pilha. */
+function deitado(id: string, ordem: number, espessura = 24, nivel = 0, prateleira = 0): Livro {
+  return {
+    ...livro(id, id, ordem, prateleira),
+    orientacao: 'deitado',
+    larguraLombada: espessura,
+    nivel,
+  }
+}
+
+describe('pilhas de livros deitados', () => {
+  const lugar = async (id: string): Promise<[number, number, number] | null> => {
+    const l = await repo.getLivro(id)
+    return l ? [l.prateleira, l.ordem, l.nivel] : null
+  }
+
+  it('gravar guarda a orientação e o nível', async () => {
+    await repo.upsertLivro(deitado('a', 3, 24, 2))
+    expect(await repo.getLivro('a')).toMatchObject({ orientacao: 'deitado', nivel: 2 })
+  })
+
+  it('recusa uma orientação que não existe', async () => {
+    const torto = { ...deitado('a', 3), orientacao: 'de-lado' } as unknown as Livro
+    await expect(repo.upsertLivro(torto)).rejects.toThrow()
+  })
+
+  it('um livro deitado solto sobre uma pilha com altura de sobra sobe nela', async () => {
+    await repo.upsertLivro(deitado('a', 3, 24, 0))
+    await repo.upsertLivro(deitado('b', 3, 24, 1))
+    await repo.upsertLivro(deitado('n', 9, 24))
+
+    await repo.moverLivro('n', 0, 3)
+
+    expect(await lugar('a')).toEqual([0, 3, 0])
+    expect(await lugar('b')).toEqual([0, 3, 1])
+    expect(await lugar('n')).toEqual([0, 3, 2])
+    // O lugar de origem de `n` abriu: era só dele.
+    expect(await repo.listVagas()).toEqual([{ prateleira: 0, ordem: 9 }])
+  })
+
+  it('sem altura de sobra, a pilha anda inteira e o novo toma o lugar', async () => {
+    await repo.upsertLivro(deitado('a', 3, 38, 0))
+    await repo.upsertLivro(deitado('b', 3, 38, 1))
+    await repo.upsertLivro(deitado('n', 9, 38))
+
+    await repo.moverLivro('n', 0, 3)
+
+    expect(await lugar('n')).toEqual([0, 3, 0])
+    expect(await lugar('a')).toEqual([0, 4, 0])
+    expect(await lugar('b')).toEqual([0, 4, 1])
+  })
+
+  it('tirar um livro do meio da pilha não abre vaga: o lugar continua ocupado', async () => {
+    await repo.upsertLivro(deitado('a', 3, 24, 0))
+    await repo.upsertLivro(deitado('b', 3, 24, 1))
+    await repo.upsertLivro(deitado('c', 3, 24, 2))
+
+    await repo.moverLivro('b', 0, 8)
+
+    expect(await lugar('b')).toEqual([0, 8, 0])
+    expect(await lugar('a')).toEqual([0, 3, 0])
+    expect(await lugar('c')).toEqual([0, 3, 2])
+    expect(await repo.listVagas()).toEqual([])
+  })
+
+  it('apagar um livro de uma pilha não abre vaga embaixo de quem ficou', async () => {
+    await repo.upsertLivro(deitado('a', 3, 24, 0))
+    await repo.upsertLivro(deitado('b', 3, 24, 1))
+
+    await repo.deleteLivro('a')
+
+    expect(await repo.listVagas()).toEqual([])
+    expect(await lugar('b')).toEqual([0, 3, 1])
+  })
+
+  it('apagar o último livro do lugar abre a vaga, como sempre', async () => {
+    await repo.upsertLivro(deitado('a', 3, 24, 0))
+    await repo.deleteLivro('a')
+    expect(await repo.listVagas()).toEqual([{ prateleira: 0, ordem: 3 }])
+  })
+
+  it('não se grava enfeite embaixo de uma pilha', async () => {
+    await repo.upsertLivro(deitado('a', 3))
+    await repo.upsertLivro(deitado('n', 9))
+    await repo
+      .salvarEnfeite({
+        prateleira: 0,
+        ordem: 3 + 0,
+        cor: '#1B2A6B',
+        estilo: 'solido',
+        larguraLombada: 38,
+        comprimentoLombada: 80,
+        dourado: true,
+        detalheEscuro: true,
+      })
+      .catch(() => undefined) // o lugar 3 tem livro: recusa, como sempre
+    expect(await repo.listEnfeites()).toEqual([])
+  })
+})
+
+describe('migração para a v17', () => {
+  // 08/10/2026: o livro deitado. Todo livro que já existia continua de pé, e fora de pilha.
+  it('todo livro que já existia fica de pé, no nível 0', async () => {
+    const nome = `palacio-migracao-v17-${String(nth)}`
+
+    const antigo = new Dexie(nome)
+    antigo.version(1).stores({
+      livros: 'id, createdAt',
+      neuronios: 'id, livroId, updatedAt',
+      conexoes: 'id, aId, bId, updatedAt',
+    })
+    antigo.version(2).stores({ meta: 'chave' })
+    antigo.version(3).stores({ livros: 'id, createdAt, ordem' })
+    antigo.version(4).stores({ livros: 'id, createdAt, ordem, prateleira' })
+    antigo.version(5).stores({ etiquetas: 'prateleira' })
+    antigo.version(6).stores({})
+    antigo.version(7).stores({})
+    antigo.version(8).stores({})
+    antigo.version(9).stores({ vagas: '[prateleira+ordem], prateleira' })
+    antigo.version(10).stores({
+      anexos: 'id, livroId, updatedAt',
+      arquivos: 'anexoId',
+      vinculos: 'id, anexoId, conceitoId',
+    })
+    antigo.version(11).stores({})
+    antigo.version(12).stores({})
+    antigo.version(13).stores({ enfeites: '[prateleira+ordem], prateleira' })
+    antigo.version(14).stores({ resultados: 'neuronioId' })
+    antigo.version(15).stores({})
+    antigo.version(16).stores({})
+    await antigo.table('livros').bulkPut(
+      ['a', 'b'].map((id, ordem) => ({
+        id,
+        tipo: 'conceitos',
+        titulo: id,
+        cor: '#1B2A6B',
+        estilo: 'solido',
+        prateleira: 0,
+        ordem,
+        emblema: null,
+        larguraLombada: null,
+        comprimentoLombada: null,
+        executavel: false,
+        diasParaAdormecer: 30,
+        createdAt: T0,
+      })),
+    )
+    antigo.close()
+
+    const migrado = createDexieRepo(createDb(nome))
+    const livros = await migrado.listLivros()
+    expect(livros.map((l) => [l.id, l.orientacao, l.nivel, l.ordem])).toEqual([
+      ['a', 'em-pe', 0, 0],
+      ['b', 'em-pe', 0, 1],
+    ])
   })
 })

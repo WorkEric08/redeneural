@@ -13,7 +13,6 @@ import type {
   EstanteGravada,
   Id,
   ImagemParaGuardar,
-  Livro,
   MapaDoPalacio,
   ModoDaBusca,
   ModoDaRede,
@@ -111,7 +110,7 @@ export function criarWorkerEngine(): ConnectionEngine {
     criarLivro: (input: CriarLivroInput): Promise<EstanteGravada> =>
       pedir<'criarLivro'>({ tipo: 'criarLivro', input }),
 
-    editarLivro: (input: EditarLivroInput): Promise<Livro[]> =>
+    editarLivro: (input: EditarLivroInput): Promise<EstanteGravada> =>
       pedir<'editarLivro'>({ tipo: 'editarLivro', input }),
 
     apagarLivro: (livroId: Id): Promise<EstadoDoPalacio> =>

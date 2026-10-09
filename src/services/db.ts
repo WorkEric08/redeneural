@@ -353,6 +353,21 @@ export function createDb(name: string = DB_NAME): PalacioDB {
       })
     })
 
+  // v17 (08/10/2026): o livro deitado e a pilha. Dois campos novos, sem índice (a estante
+  // inteira cabe em memória): todo livro que já existia continua de pé, e fora de pilha.
+  db.version(17)
+    .stores({})
+    .upgrade(async (tx) => {
+      const livros = tx.table<
+        Omit<Livro, 'orientacao' | 'nivel'> & Partial<Pick<Livro, 'orientacao' | 'nivel'>>,
+        string
+      >('livros')
+      await livros.toCollection().modify((l) => {
+        l.orientacao = l.orientacao ?? 'em-pe'
+        l.nivel = l.nivel ?? 0
+      })
+    })
+
   return db
 }
 

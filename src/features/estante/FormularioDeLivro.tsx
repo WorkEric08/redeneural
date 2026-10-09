@@ -1,4 +1,12 @@
-import { BookOpen, Hammer, type LucideIcon, Paperclip, Shuffle } from 'lucide-react'
+import {
+  BookOpen,
+  Hammer,
+  type LucideIcon,
+  Paperclip,
+  RectangleHorizontal,
+  RectangleVertical,
+  Shuffle,
+} from 'lucide-react'
 import {
   useEffect,
   useLayoutEffect,
@@ -155,6 +163,9 @@ export function FormularioDeLivro({
   const [larguraLombada, setLarguraLombada] = useState(inicial.larguraLombada)
   const [comprimentoLombada, setComprimentoLombada] = useState(inicial.comprimentoLombada)
   const [executavel, setExecutavel] = useState(inicial.executavel)
+  // De pé ou deitado (08/10/2026). O enfeite não é um livro: nunca deita.
+  const [orientacao, setOrientacao] = useState(inicial.orientacao)
+  const deitado = !enfeite && orientacao === 'deitado'
   // Texto, e não número: o campo pode ficar vazio enquanto se digita.
   const [dias, setDias] = useState(String(inicial.diasParaAdormecer))
   // Uma pasta de acervo nunca é executável.
@@ -183,6 +194,13 @@ export function FormularioDeLivro({
   const alturaDaAmostra =
     (alturaDaLombadaEmPercentual(comprimentoLombada, alturaAutomatica) * alturaDaFileira) / 100
   const alturaDaCaixa = Math.ceil((PERCENTUAL_MAXIMO_DA_AMOSTRA * alturaDaFileira) / 100)
+  // Deitado, o comprimento vira a largura: a caixa alarga para o "Enorme" caber, e a altura dela
+  // não muda — trocar de posição só mexe na largura do campo de nome, nunca na altura de nada.
+  const larguraDaCaixa = deitado
+    ? Math.max(LARGURA_DA_CAIXA_DA_AMOSTRA_PX, alturaDaCaixa)
+    : LARGURA_DA_CAIXA_DA_AMOSTRA_PX
+  // A mesma conta da estante (`extensaoDoLivro`): arredondada, para título e reticências baterem.
+  const extensaoDaAmostra = Math.round(alturaDaAmostra)
   const tituloDaAmostra = enfeite ? '' : titulo.trim() || '…'
   const nomeDaCor = PANOS.find((p) => p.cor.toLowerCase() === cor.toLowerCase())?.nome ?? ''
   const nomeDaForma = FORMAS.find((f) => f.chave === estilo)?.rotulo ?? ''
@@ -213,11 +231,38 @@ export function FormularioDeLivro({
     cor,
     titulo: tituloDaAmostra,
     largura: larguraDaAmostra,
-    altura: alturaDaAmostra,
+    altura: deitado ? extensaoDaAmostra : alturaDaAmostra,
     intensidadeDaLuz,
     peca: enfeite ? 'enfeite' : 'livro',
     icone,
   })
+
+  const amostra = (
+    <span
+      aria-hidden
+      className={
+        deitado
+          ? 'lombada lombada--amostra cores-de-antes lombada--deitada'
+          : 'lombada lombada--amostra cores-de-antes'
+      }
+      data-estilo={geo.estilo}
+      style={{
+        ...geo.style,
+        ...(detalheEscuro ? { '--fg': TOM_DO_DETALHE_DO_ENFEITE } : {}),
+        width: `${String(larguraDaAmostra)}px`,
+        height: `${String(deitado ? extensaoDaAmostra : alturaDaAmostra)}px`,
+      }}
+    >
+      <span className="lombada-titulo">{tituloDaAmostra}</span>
+      {acabamentoDoEnfeite?.douradoEm === estilo && <span className="lombada-filetes" />}
+      {estilo === 'papel' && !enfeite && (
+        <span className="lombada-contagem" aria-hidden>
+          {contagem}
+        </span>
+      )}
+      {icone && <EmblemaDaLombada chave={ehPasta ? 'pasta' : (emblema ?? especie)} />}
+    </span>
+  )
 
   const opcoesDeTipo: OpcaoDeTipo[] = [
     { chave: 'livro', rotulo: 'Livro', nomeAcessivel: 'Livro', Icone: BookOpen },
@@ -265,6 +310,7 @@ export function FormularioDeLivro({
             titulo: titulo.trim(),
             cor,
             estilo,
+            orientacao: enfeite ? 'em-pe' : orientacao,
             emblema,
             larguraLombada,
             comprimentoLombada,
@@ -285,23 +331,56 @@ export function FormularioDeLivro({
           fazer (01/10/2026) ou, só ao criar, pasta de acervo. O tipo não muda
           depois; o executável muda quando a pessoa quiser — por isso editando
           sobram duas opções. Eram dois blocos de chips, um sobre o outro. */}
-      {opcoesDeTipo.length > 1 && (
-        <div role="group" aria-label="Tipo" className="segmentado">
-          {opcoesDeTipo.map(({ chave, rotulo, nomeAcessivel, Icone }) => (
-            <button
-              key={chave}
-              type="button"
-              aria-pressed={atual === chave}
-              aria-label={nomeAcessivel}
-              onClick={() => {
-                escolherTipo(chave)
-              }}
-              className="segmento"
+      {(opcoesDeTipo.length > 1 || !enfeite) && (
+        <div className="flex items-center gap-2">
+          {opcoesDeTipo.length > 1 && (
+            // Com o botão de posição ao lado, em tela estreita os ícones cedem a largura aos nomes.
+            <div
+              role="group"
+              aria-label="Tipo"
+              className="segmentado min-w-0 flex-1 max-[359px]:[&_svg]:hidden"
             >
-              <Icone size={15} aria-hidden className="shrink-0" />
-              {rotulo}
+              {opcoesDeTipo.map(({ chave, rotulo, nomeAcessivel, Icone }) => (
+                <button
+                  key={chave}
+                  type="button"
+                  aria-pressed={atual === chave}
+                  aria-label={nomeAcessivel}
+                  onClick={() => {
+                    escolherTipo(chave)
+                  }}
+                  className="segmento"
+                >
+                  <Icone size={15} aria-hidden className="shrink-0" />
+                  {rotulo}
+                </button>
+              ))}
+            </div>
+          )}
+
+          {/* De pé ou deitado: um botão só, na linha do tipo — sem altura nova (o formulário cabe
+              em 320×568 sem rolar). O ícone mostra como o livro está agora, e a amostra, ao lado,
+              mostra o resultado. */}
+          {!enfeite && (
+            <button
+              type="button"
+              aria-pressed={deitado}
+              aria-label="Livro deitado"
+              title={deitado ? 'Deitado: tocar para pôr em pé' : 'Em pé: tocar para deitar'}
+              onClick={() => {
+                setOrientacao(deitado ? 'em-pe' : 'deitado')
+              }}
+              className={`border-linha bg-parede text-papel aria-pressed:bg-realce grid size-11 shrink-0 place-items-center rounded-[10px] border ${
+                opcoesDeTipo.length > 1 ? '' : 'ml-auto'
+              }`}
+            >
+              {deitado ? (
+                <RectangleHorizontal size={22} aria-hidden />
+              ) : (
+                <RectangleVertical size={22} aria-hidden />
+              )}
             </button>
-          ))}
+          )}
         </div>
       )}
 
@@ -361,29 +440,25 @@ export function FormularioDeLivro({
           className="flex shrink-0 items-end justify-center"
           style={{
             height: `${String(alturaDaCaixa)}px`,
-            width: `${String(LARGURA_DA_CAIXA_DA_AMOSTRA_PX)}px`,
+            width: `${String(larguraDaCaixa)}px`,
           }}
         >
-          <span
-            aria-hidden
-            className="lombada lombada--amostra cores-de-antes"
-            data-estilo={geo.estilo}
-            style={{
-              ...geo.style,
-              ...(detalheEscuro ? { '--fg': TOM_DO_DETALHE_DO_ENFEITE } : {}),
-              width: `${String(larguraDaAmostra)}px`,
-              height: `${String(alturaDaAmostra)}px`,
-            }}
-          >
-            <span className="lombada-titulo">{tituloDaAmostra}</span>
-            {acabamentoDoEnfeite?.douradoEm === estilo && <span className="lombada-filetes" />}
-            {estilo === 'papel' && !enfeite && (
-              <span className="lombada-contagem" aria-hidden>
-                {contagem}
-              </span>
-            )}
-            {icone && <EmblemaDaLombada chave={ehPasta ? 'pasta' : (emblema ?? especie)} />}
-          </span>
+          {/* Deitado, a lombada gira dentro de uma moldura do tamanho que ela ocupa na estante
+              (o comprimento de largura, a espessura de altura) — o mesmo que `Lombada.tsx` faz.
+              De pé não há moldura: a lombada é filha direta da caixa, como sempre foi. */}
+          {deitado ? (
+            <span
+              className="lombada-giro"
+              style={{
+                width: `${String(extensaoDaAmostra)}px`,
+                height: `${String(larguraDaAmostra)}px`,
+              }}
+            >
+              {amostra}
+            </span>
+          ) : (
+            amostra
+          )}
         </div>
       </div>
 

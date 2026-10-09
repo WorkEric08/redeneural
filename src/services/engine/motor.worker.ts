@@ -27,6 +27,7 @@ import {
   paraTela,
   perfilDoPalacio,
   pastaCheia,
+  mudarOrientacaoNaEstante,
   primeiroLugarLivre,
   restantesNaPasta,
   recalcularVizinhanca,
@@ -46,7 +47,6 @@ import {
   type EstadoDoPalacio,
   type EstanteGravada,
   type Id,
-  type Livro,
   type MapaDoPalacio,
   type MidiaDoAnexo,
   type NoDoMapa,
@@ -665,15 +665,26 @@ async function criarLivro(input: CriarLivroInput): Promise<EstanteGravada> {
   return estante()
 }
 
-async function editarLivro(input: EditarLivroInput): Promise<Livro[]> {
+async function editarLivro(input: EditarLivroInput): Promise<EstanteGravada> {
   const existente = await repo.getLivro(input.id)
   if (!existente) throw new Error(`livro ${input.id} não existe`)
+
+  // Virar o livro (de pé ↔ deitado) o tira do meio de uma pilha, se estiver numa: um lugar
+  // nunca mistura os dois. A mesma conta que a store faz para mostrar antes.
+  const virado = mudarOrientacaoNaEstante(await repo.listLivros(), input.id, input.orientacao)
+  if (!virado) {
+    throw new Error(`a prateleira ${String(existente.prateleira + 1)} não tem lugar sem livro`)
+  }
+  const lugar = virado.find((l) => l.id === input.id) ?? existente
 
   await repo.upsertLivro({
     ...existente,
     titulo: input.titulo.trim(),
     cor: input.cor,
     estilo: input.estilo,
+    orientacao: lugar.orientacao,
+    ordem: lugar.ordem,
+    nivel: lugar.nivel,
     emblema: input.emblema,
     larguraLombada: input.larguraLombada,
     comprimentoLombada: input.comprimentoLombada,
@@ -681,7 +692,7 @@ async function editarLivro(input: EditarLivroInput): Promise<Livro[]> {
     executavel: existente.tipo === 'conceitos' && input.executavel,
     diasParaAdormecer: clampDiasParaAdormecer(input.diasParaAdormecer),
   })
-  return repo.listLivros()
+  return estante()
 }
 
 /**

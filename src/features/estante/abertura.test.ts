@@ -69,4 +69,46 @@ describe('geometriaDaAbertura', () => {
     const g = geometriaDaAbertura(lombada, 412, 892)
     expect(g.deslocamentoAberto).toBe(g.largura / 2)
   })
+
+  it('um livro de pé não gira na partida', () => {
+    expect(geometriaDaAbertura(lombada, 412, 892).giro).toBe(0)
+  })
+
+  it('um livro deitado parte girado -90°, com a lombada exatamente em cima da dele', () => {
+    // Largura e altura trocadas: o livro deitado é o mesmo livro, de lado.
+    for (const caixa of [
+      { left: 30, top: 300, width: 95, height: 38 },
+      { left: 200, top: 500, width: 129, height: 24 },
+      { left: 100, top: 50, width: 66, height: 68 },
+    ]) {
+      const g = geometriaDaAbertura(caixa, 412, 892, true)
+      expect(g.giro).toBe(-90)
+
+      const emPe = {
+        left: caixa.left + caixa.width / 2 - caixa.height / 2,
+        top: caixa.top + caixa.height / 2 - caixa.width / 2,
+        width: caixa.height,
+        height: caixa.width,
+      }
+      const projetada = lombadaProjetada(emPe, 412, 892)
+      // Girar -90° em volta do centro troca a largura pela altura e não mexe no centro.
+      expect(projetada.left + projetada.width / 2).toBeCloseTo(caixa.left + caixa.width / 2, 6)
+      expect(projetada.top + projetada.height / 2).toBeCloseTo(caixa.top + caixa.height / 2, 6)
+      expect(projetada.height).toBeCloseTo(caixa.width, 6)
+      expect(projetada.width).toBeCloseTo(caixa.height, 6)
+    }
+  })
+
+  it('a mesma pose de chegada, de pé ou deitado: só a partida muda', () => {
+    const emPe = geometriaDaAbertura({ left: 40, top: 120, width: 38, height: 95 }, 412, 892)
+    const deitado = geometriaDaAbertura(
+      { left: 40, top: 120, width: 95, height: 38 },
+      412,
+      892,
+      true,
+    )
+    expect(deitado.largura).toBe(emPe.largura)
+    expect(deitado.altura).toBe(emPe.altura)
+    expect(deitado.deslocamentoAberto).toBe(emPe.deslocamentoAberto)
+  })
 })

@@ -69,6 +69,7 @@ export default function EditarEnfeite() {
             titulo: '',
             cor: atual.cor,
             estilo: atual.estilo,
+            orientacao: 'em-pe',
             emblema: null,
             // As medidas que o enfeite tem agora, na opção de sempre mais perto delas
             // (Fina a Grande, Curto a Enorme): a tela nunca mostra "automático" nem

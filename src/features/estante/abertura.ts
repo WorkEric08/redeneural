@@ -44,6 +44,11 @@ export interface Abertura {
    * exato do título da prateleira.
    */
   aumentoDaLombada: number
+  /**
+   * O giro da partida, em graus, em volta do eixo que sai da tela: 0 num livro de pé e -90 num
+   * deitado (08/10/2026), que parte com a lombada na horizontal e se levanta ao virar capa.
+   */
+  giro: number
 }
 
 function entre(valor: number, minimo: number, maximo: number): number {
@@ -51,10 +56,21 @@ function entre(valor: number, minimo: number, maximo: number): number {
 }
 
 export function geometriaDaAbertura(
-  lombada: Caixa,
+  caixaNaTela: Caixa,
   larguraDaTela: number,
   alturaDaTela: number,
+  deitado = false,
 ): Abertura {
+  // Um livro deitado é o mesmo livro girado: a conta é a do livro em pé que cabe no mesmo centro
+  // (largura e altura trocadas), e o giro de -90° é aplicado por cima, na partida.
+  const lombada: Caixa = deitado
+    ? {
+        left: caixaNaTela.left + caixaNaTela.width / 2 - caixaNaTela.height / 2,
+        top: caixaNaTela.top + caixaNaTela.height / 2 - caixaNaTela.width / 2,
+        width: caixaNaTela.height,
+        height: caixaNaTela.width,
+      }
+    : caixaNaTela
   // Aberto, o livro ocupa duas capas de largura, e as duas têm de caber na tela.
   const largura = Math.min(alturaDaTela * 0.56 * PROPORCAO_DA_CAPA, larguraDaTela * 0.44, 300)
   const altura = largura / PROPORCAO_DA_CAPA
@@ -85,5 +101,6 @@ export function geometriaDaAbertura(
     },
     deslocamentoAberto: largura / 2,
     aumentoDaLombada: altura / Math.max(1, lombada.height),
+    giro: deitado ? -90 : 0,
   }
 }

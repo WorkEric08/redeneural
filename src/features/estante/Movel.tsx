@@ -1,4 +1,4 @@
-import { useMemo, useRef, type CSSProperties } from 'react'
+import { useEffect, useMemo, useRef, type CSSProperties } from 'react'
 
 import {
   moverEnfeiteNaEstante,
@@ -12,10 +12,13 @@ import {
 import { Enfeite, FantasmaDoEnfeite } from './Enfeite'
 import { Fantasma, Lombada, type EstadoDaLombada } from './Lombada'
 import { sombraDoFundoEmPercentual } from './lombadaNoite'
+import { lembrarMedidasDaEstante } from './medidasDaEstante'
 import {
   cabeNaPrateleira,
   dadosDoEnfeite,
+  extensaoDoLivro,
   LARGURA_MINIMA_DO_LIVRO,
+  larguraDoLivroGravado,
   larguraDosLivrosDaPrateleira,
   montarPrateleiras,
   type Lugar,
@@ -105,6 +108,10 @@ export function Movel({
 }: Props) {
   const movel = useRef<HTMLDivElement>(null)
   const { altura: alturaDaFileira, largura: larguraUtil } = useMedidasDaFileira(movel)
+  // O recado para criar e editar um livro: quanto a fileira tem, para o livro não estourar as laterais.
+  useEffect(() => {
+    if (larguraUtil !== null) lembrarMedidasDaEstante({ larguraUtil, alturaDaFileira })
+  }, [larguraUtil, alturaDaFileira])
   const prateleiras = useMemo(
     () =>
       montarPrateleiras(
@@ -113,9 +120,18 @@ export function Movel({
         quantidadeDePrateleiras,
         larguraUtil ?? undefined,
         enfeites,
+        alturaDaFileira,
       ),
-    [estante, vagas, quantidadeDePrateleiras, larguraUtil, enfeites],
+    [estante, vagas, quantidadeDePrateleiras, larguraUtil, enfeites, alturaDaFileira],
   )
+
+  // Quanto cada livro deitado se estende na fileira: a largura do lugar dele, que entra na conta
+  // de caber entre as laterais.
+  const porId = useMemo(() => new Map(estante.map((e) => [e.livro.id, e])), [estante])
+  const extensaoDe = (livro: { id: string; larguraLombada: number | null }): number => {
+    const item = porId.get(livro.id)
+    return item ? extensaoDoLivro(item, alturaDaFileira) : larguraDoLivroGravado(livro)
+  }
 
   function enfeiteEm(prateleira: number, lugar: number) {
     const achado = prateleiras[prateleira]?.lugares.find((l) => l.indice === lugar)
@@ -131,8 +147,8 @@ export function Movel({
     const depois = moverLivroNaEstante(livros, livroId, prateleira, lugar)
     if (!depois) return true // sem lugar livre: quem recusa é a store, com o aviso dela
     return cabeNaPrateleira(
-      larguraDosLivrosDaPrateleira(livros, prateleira),
-      larguraDosLivrosDaPrateleira(depois, prateleira),
+      larguraDosLivrosDaPrateleira(livros, prateleira, extensaoDe),
+      larguraDosLivrosDaPrateleira(depois, prateleira, extensaoDe),
       larguraUtil,
     )
   }
@@ -153,8 +169,8 @@ export function Movel({
     )
     if (!depois) return true // sem lugar livre: quem recusa é a store, com o aviso dela
     return cabeNaPrateleira(
-      larguraDosLivrosDaPrateleira(livros, destino.prateleira),
-      larguraDosLivrosDaPrateleira(depois.livros, destino.prateleira),
+      larguraDosLivrosDaPrateleira(livros, destino.prateleira, extensaoDe),
+      larguraDosLivrosDaPrateleira(depois.livros, destino.prateleira, extensaoDe),
       larguraUtil,
     )
   }
@@ -162,7 +178,7 @@ export function Movel({
   function podeCriar(prateleira: number): boolean {
     if (larguraUtil === null) return true
     const livros = estante.map((e) => e.livro)
-    const antes = larguraDosLivrosDaPrateleira(livros, prateleira)
+    const antes = larguraDosLivrosDaPrateleira(livros, prateleira, extensaoDe)
     return cabeNaPrateleira(antes, antes + LARGURA_MINIMA_DO_LIVRO + 1, larguraUtil)
   }
   const { gesto, lugarSegurado, manipular, manipularLugar, registrarFantasma } = useManipularLivros(
@@ -244,7 +260,38 @@ export function Movel({
           <div className="movel-vao" key={p.chave} data-prateleira={prateleira}>
             <div className="movel-fila">
               {p.lugares.map((lugar) =>
-                lugar.tipo === 'livro' ? (
+                lugar.tipo === 'pilha' ? (
+                  // Livros deitados, de baixo para cima. O lugar (`data-lugar`) é da pilha: o arrasto
+                  // lê dela onde o livro na mão vai cair, e as regras de `ordem.ts` decidem se ele sobe.
+                  <div
+                    key={`pilha-${String(lugar.indice)}`}
+                    className="pilha"
+                    data-lugar={lugar.indice}
+                    data-alvo={
+                      (mesmoLugar(alvo, prateleira, lugar.indice) &&
+                        !lugar.itens.some((i) => i.livro.id === gesto.livroId)) ||
+                      undefined
+                    }
+                    style={{ width: `${String(lugar.largura)}px` }}
+                  >
+                    {lugar.itens.map((item) => (
+                      <Lombada
+                        key={item.livro.id}
+                        item={item}
+                        lugar={lugar.indice}
+                        largura={larguraDoLivroGravado(item.livro)}
+                        estado={estadoDe(item.livro.id)}
+                        alvo={false}
+                        ponte={(pontesDoFoco?.get(item.livro.id) ?? 0) > 0}
+                        chegando={chegandoId === item.livro.id}
+                        intensidadeDaLuz={intensidadeDaLuz}
+                        iconesNosLivros={iconesNosLivros}
+                        alturaDaFileira={alturaDaFileira}
+                        manipular={manipular(item.livro.id)}
+                      />
+                    ))}
+                  </div>
+                ) : lugar.tipo === 'livro' ? (
                   <Lombada
                     key={lugar.item.livro.id}
                     item={lugar.item}
@@ -331,7 +378,7 @@ function LugarSemLivro({
   naMao,
   manipular,
 }: {
-  lugar: Exclude<Lugar, { tipo: 'livro' }>
+  lugar: Exclude<Lugar, { tipo: 'livro' | 'pilha' }>
   prateleira: number
   /** A altura da fileira em px, para a forma do enfeite se medir. */
   alturaDaFileira: number

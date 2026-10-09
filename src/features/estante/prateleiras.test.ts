@@ -39,6 +39,8 @@ function livro(
     larguraLombada,
     comprimentoLombada: null,
     executavel: false,
+    orientacao: 'em-pe',
+    nivel: 0,
     diasParaAdormecer: 30,
     createdAt: T0,
   }
@@ -452,5 +454,101 @@ describe('alturaDaLombadaEmPercentual (a conta da estante e da amostra do formul
     expect(alturaDaLombadaEmPercentual(null, 0)).toBe(ALTURA_MINIMA_DA_LOMBADA)
     expect(alturaDaLombadaEmPercentual(null, 1)).toBe(ALTURA_MAXIMA_DA_LOMBADA)
     expect(alturaDaLombadaEmPercentual(null, 0.5)).toBeCloseTo(78.25, 5)
+  })
+})
+
+/** Um livro deitado: a largura é a espessura (a altura que ele pesa na pilha). */
+function deitado(
+  id: string,
+  ordem: number,
+  nivel: number,
+  espessura: number,
+  comprimento: number | null = 72,
+  prateleira = 0,
+): LivroNaEstante {
+  const item = livro(id, prateleira, ordem, espessura)
+  return {
+    ...item,
+    livro: { ...item.livro, orientacao: 'deitado', nivel, comprimentoLombada: comprimento },
+  }
+}
+
+describe('livros deitados e pilhas', () => {
+  const pilhas = (p: Prateleira) =>
+    p.lugares.filter((l): l is Extract<Lugar, { tipo: 'pilha' }> => l.tipo === 'pilha')
+
+  it('um lugar com livros deitados é uma pilha, de baixo para cima', () => {
+    const estante = [deitado('c', 3, 2, 24), deitado('a', 3, 0, 24), deitado('b', 3, 1, 24)]
+    const [p] = pilhas(montarPrateleiras(estante, [], 1)[0]!)
+    expect(p?.itens.map((i) => i.livro.id)).toEqual(['a', 'b', 'c'])
+    expect(p?.indice).toBe(3)
+  })
+
+  it('o id desempata dois livros do mesmo nível, para a ordem nunca variar', () => {
+    const estante = [deitado('b', 3, 0, 24), deitado('a', 3, 0, 24)]
+    const [p] = pilhas(montarPrateleiras(estante, [], 1)[0]!)
+    expect(p?.itens.map((i) => i.livro.id)).toEqual(['a', 'b'])
+  })
+
+  it('um livro deitado sozinho é uma pilha de um', () => {
+    const [p] = pilhas(montarPrateleiras([deitado('a', 5, 0, 38)], [], 1)[0]!)
+    expect(p?.itens).toHaveLength(1)
+  })
+
+  it('a largura do lugar é a do livro deitado mais comprido, medida na fileira', () => {
+    // 98% e 55% de uma fileira de 100 px: 98 e 55 — o lugar tem 98.
+    const estante = [deitado('a', 3, 0, 24, 98), deitado('b', 3, 1, 24, 55)]
+    const [p] = pilhas(montarPrateleiras(estante, [], 1, undefined, [], 100)[0]!)
+    expect(p?.largura).toBe(98)
+  })
+
+  it('a extensão acompanha a altura da fileira: o mesmo livro, outra tela', () => {
+    const estante = [deitado('a', 3, 0, 24, 72)]
+    const na = (altura: number) =>
+      pilhas(montarPrateleiras(estante, [], 1, undefined, [], altura)[0]!)[0]?.largura
+    expect(na(92)).toBe(66)
+    expect(na(132)).toBe(95)
+  })
+
+  it('sem comprimento escolhido, a altura automática (neurônios) decide', () => {
+    const item = deitado('a', 3, 0, 24, null)
+    const [p] = pilhas(montarPrateleiras([item], [], 1, undefined, [], 100)[0]!)
+    // altura automática 0,5 → 63 + 0,5 × 30,5 = 78,25% de 100 px.
+    expect(p?.largura).toBe(78)
+  })
+
+  it('um livro de pé continua sendo um livro, ao lado de uma pilha', () => {
+    const estante = [livro('x', 0, 0), deitado('a', 2, 0, 24)]
+    const lugares = montarPrateleiras(estante, [], 1)[0]!.lugares
+    expect(lugares[0]?.tipo).toBe('livro')
+    expect(lugares[2]?.tipo).toBe('pilha')
+  })
+
+  it('um dado torto que mistura de pé e deitado no mesmo lugar mostra o de pé, sem perder o resto', () => {
+    const estante = [livro('x', 0, 3), deitado('a', 3, 0, 24)]
+    const lugar = montarPrateleiras(estante, [], 1)[0]!.lugares[3]
+    expect(lugar?.tipo).toBe('livro')
+  })
+
+  it('a pilha não encolhe nem some para os enfeites caberem: é livro', () => {
+    // Uma fileira estreita: os enfeites encolhem e somem, a pilha fica inteira.
+    const estante = [deitado('a', 1, 0, 24, 98)]
+    const p = montarPrateleiras(estante, [], 1, 140, [], 100)[0]!
+    expect(pilhas(p)[0]?.largura).toBe(98)
+    const usado = p.lugares.reduce((t, l, i) => t + l.largura + (i > 0 ? 1 : 0), 0)
+    expect(usado).toBeLessThanOrEqual(140.01)
+  })
+
+  it('livros deitados e de pé somam a largura por lugar, e não por livro', () => {
+    const livros = [
+      deitado('a', 3, 0, 24, 98),
+      deitado('b', 3, 1, 24, 55),
+      deitado('c', 3, 2, 24, 72),
+      livro('x', 0, 0, 38),
+    ].map((i) => i.livro)
+    const extensao = (l: { comprimentoLombada: number | null }) =>
+      Math.round(((l.comprimentoLombada ?? 63) * 100) / 100)
+    // Um lugar de pé (38) e um lugar de pilha (o mais comprido, 98), com 1 px de folga entre eles.
+    expect(larguraDosLivrosDaPrateleira(livros, 0, extensao)).toBe(38 + 1 + 98)
   })
 })

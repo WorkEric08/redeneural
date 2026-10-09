@@ -22,6 +22,7 @@ import {
   ICONES_NOS_LIVROS_PADRAO,
   INTENSIDADE_DA_LUZ_PADRAO,
   livroFromSnapshot,
+  lugarParaChegar,
   livroToSnapshot,
   LUGARES_POR_PRATELEIRA,
   moverLivroNaEstante,
@@ -38,7 +39,6 @@ import {
   neuronioToSnapshot,
   resultadoFromSnapshot,
   posicoesAntigas,
-  primeiroLugarLivre,
   vagasDepoisDeMover,
   chaveDoLugar,
 } from '@/core'
@@ -88,14 +88,18 @@ function porMaisRecente(a: Neuronio | Anexo, b: Neuronio | Anexo): number {
  * vai para depois do último lugar, onde a estante não mostra mas o dado fica.
  */
 function juntarPorLugar(primeiro: readonly Livro[], depois: readonly Livro[]): Livro[] {
-  const porLugar = (a: Livro, b: Livro): number => a.prateleira - b.prateleira || a.ordem - b.ordem
+  // Dentro de um lugar, de baixo para cima: o livro deitado que sobe numa pilha chega depois
+  // dos que já estavam nela.
+  const porLugar = (a: Livro, b: Livro): number =>
+    a.prateleira - b.prateleira || a.ordem - b.ordem || a.nivel - b.nivel
   const colocados: Livro[] = []
 
   for (const l of [...[...primeiro].sort(porLugar), ...[...depois].sort(porLugar)]) {
-    const livre = primeiroLugarLivre(colocados, l.prateleira, l.ordem)
+    // O próprio lugar, a pilha que já está nele (se o livro é deitado e cabe) ou o buraco mais perto.
+    const lugar = lugarParaChegar(colocados, l)
     const transbordo =
       LUGARES_POR_PRATELEIRA + colocados.filter((c) => c.prateleira === l.prateleira).length
-    colocados.push({ ...l, ordem: livre ?? transbordo })
+    colocados.push({ ...l, ordem: lugar?.ordem ?? transbordo, nivel: lugar?.nivel ?? 0 })
   }
 
   return colocados
@@ -191,7 +195,16 @@ export function createDexieRepo(db: PalacioDB = defaultDb): PalacioRepo {
             await db.anexos.bulkDelete(anexoIds)
           }
           await db.livros.delete(id)
-          if (livro) await db.vagas.put({ prateleira: livro.prateleira, ordem: livro.ordem })
+          // O lugar só abre se era dele: numa pilha, quem fica continua no lugar.
+          if (livro) {
+            const restam = await db.livros
+              .where('prateleira')
+              .equals(livro.prateleira)
+              .filter((l) => l.ordem === livro.ordem)
+              .count()
+            if (restam === 0)
+              await db.vagas.put({ prateleira: livro.prateleira, ordem: livro.ordem })
+          }
         },
       )
     },
@@ -209,10 +222,17 @@ export function createDexieRepo(db: PalacioDB = defaultDb): PalacioRepo {
 
         const mudou = depois.filter((l, i) => {
           const antes = todos[i]
-          return antes && (antes.prateleira !== l.prateleira || antes.ordem !== l.ordem)
+          return (
+            antes &&
+            (antes.prateleira !== l.prateleira ||
+              antes.ordem !== l.ordem ||
+              antes.nivel !== l.nivel)
+          )
         })
         await Promise.all(
-          mudou.map((l) => db.livros.update(l.id, { prateleira: l.prateleira, ordem: l.ordem })),
+          mudou.map((l) =>
+            db.livros.update(l.id, { prateleira: l.prateleira, ordem: l.ordem, nivel: l.nivel }),
+          ),
         )
 
         // A mesma conta que a store faz para mostrar antes de o banco confirmar.

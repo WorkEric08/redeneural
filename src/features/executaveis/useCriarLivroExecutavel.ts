@@ -27,6 +27,7 @@ export function useCriarLivroExecutavel(): (titulo: string) => Promise<string | 
         titulo: titulo.trim(),
         cor: panoSugerido(livros),
         estilo: ESTILO_PADRAO,
+        orientacao: 'em-pe',
         emblema: null,
         larguraLombada: LARGURA_PADRAO,
         comprimentoLombada: COMPRIMENTO_PADRAO,

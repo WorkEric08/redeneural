@@ -355,7 +355,7 @@ revisão. Não adiantar fases.
 ## Modelo de dados
 
 ```
-livros:     { id, tipo: 'conceitos' | 'acervo', titulo, cor, estilo, prateleira, ordem, executavel, diasParaAdormecer, createdAt }
+livros:     { id, tipo: 'conceitos' | 'acervo', titulo, cor, estilo, prateleira, ordem, orientacao: 'em-pe' | 'deitado', nivel, executavel, diasParaAdormecer, createdAt }
 neuronios:  { id, livroId: string | null, titulo, conteudo, embedding: Float32Array | null,
               estado: 'para_fazer' | 'fazendo' | 'feita' | null, ultimoToque, resultadoLink,
               resultadoImagem: { mime, largura, altura } | null, createdAt, updatedAt }
@@ -5679,6 +5679,142 @@ Pedido do usuário: no menu que abre ao segurar um livro, o texto "Renomear e ed
 livro vira rota própria" e nas Atualizações aprovadas; o destino (`/livro/:id/editar`) e o resto do
 menu não mudaram. O menu do enfeite já dizia "Editar o enfeite". Só texto: sem teste novo.
 
+## O livro deitado e a pilha (08–09/10/2026)
+
+Pedido do usuário: criar livros **na horizontal**, posicioná-los na estante normalmente e
+**empilhá-los pela largura que ocupam**, com o aviso de ter muito cuidado com o **limite de altura
+de uma fileira** (para a pilha não gerar bugs) e de manter as **larguras que já existem** (Fina 24,
+Normal 38, Grossa 52, Grande 68 px) também nesses livros. Feito nas quatro fases do plano, uma
+sobre a outra: dado e regras, desenho, gestos e limites, e os detalhes (abrir o livro).
+
+> **Substitui** "um lugar tem um livro": agora um lugar tem **um livro de pé sozinho, ou uma pilha
+> só de livros deitados** (ver "A estante vira fileira de lugares"). E "a largura de um livro na
+> fileira" passa a ser a do **lugar**, não a do livro.
+
+### A leitura que decidiu tudo: é o mesmo livro girado
+
+As larguras que já existem **são** a espessura do livro deitado: a largura (24–68 px) vira a altura
+que ele pesa na pilha, e o comprimento (a altura de hoje, em % da fileira) vira a extensão
+horizontal. Nada novo para escolher além de "em pé ou deitado" — e a altura automática (a
+quantidade de neurônios, o único sinal que a estante mostra sem abrir nada) continua mandando na
+extensão do deitado, como mandava na altura do de pé.
+
+### O dado
+
+- `Livro.orientacao` (`'em-pe' | 'deitado'`, padrão `'em-pe'`) e `Livro.nivel` (a posição na pilha,
+  0 embaixo). **Dexie v17**, sem índice novo; todo livro que já existia fica de pé, no nível 0.
+  Vão no backup como opcionais (backup antigo importa tudo de pé); o schema recusa uma orientação
+  que não existe.
+- **A pilha é "vários livros com o mesmo `(prateleira, ordem)`".** `nivel` só **ordena** (o `id`
+  desempata): lacunas não importam, e tirar ou apagar um livro do meio não renumera ninguém.
+- `core/domain/medidas.ts` (novo): as medidas que o núcleo precisa conhecer — `ALTURA_*_DA_LOMBADA`
+  e `larguraDoLivroGravado` moraram em `features/estante/prateleiras.ts` e continuam exportadas de
+  lá.
+
+### O limite de altura: 90 px, fixo, e por quê
+
+`ALTURA_UTIL_DA_PILHA_PX` = 98% (o "Enorme", o livro de pé mais alto que se escolhe) × 92 px (a
+fileira **mais baixa** que existe, o piso do `clamp` de `.movel-fila`) = **90 px**. Uma pilha cabe
+se a soma das espessuras não passa disso (`cabeNaPilha`): 3 Finas (72), 2 Normais (76), Fina + Fina
++ Normal (86), Normal + Grossa (90, exatamente), uma Grande sozinha (68; Grande + Fina, 92, não).
+
+- **Fixo, e não medido na tela, de propósito.** Uma pilha que coubesse numa tela alta e passasse do
+  teto numa baixa ficaria cortada pela prateleira de cima ao trocar de aparelho ou girar o celular;
+  e as regras precisam dar o mesmo resultado na store e no repositório, que não medem tela nenhuma.
+  Quem tem a fileira mais alta só ganha folga. **Custo assumido:** numa fileira de 132 px caberia
+  mais, e não cabe.
+
+### As regras (puras, `core/domain/ordem.ts`, as mesmas na store e no repositório)
+
+| Situação                                           | O que acontece                                                          |
+| -------------------------------------------------- | ----------------------------------------------------------------------- |
+| Deitado solto sobre uma pilha de deitados que cabe | Sobe nela (nível = topo + 1); ninguém anda                              |
+| Deitado sobre pilha cheia, ou sobre um livro de pé | Toma o lugar; quem estava nele **anda inteiro** até o buraco mais perto |
+| Livro de pé sobre uma pilha                        | Idem: a pilha inteira anda, mantendo a ordem de dentro                  |
+| Largar no próprio lugar                            | Não muda nada (nem leva o do meio para o topo)                          |
+| Tirar um livro do meio da pilha                    | O lugar continua ocupado pelos outros: **nenhuma vaga abre**            |
+| Apagar o último livro do lugar                     | A vaga abre, como sempre (`deleteLivro` só a grava se ninguém ficou)    |
+| Virar um livro (de pé ↔ deitado) dividindo o lugar | Sai do meio da pilha e vai para o lugar livre mais perto                |
+| Backup importado                                   | `lugarParaChegar`: o próprio lugar, ou subir na pilha, ou o buraco mais perto |
+
+`mudarOrientacaoNaEstante` (virar) e `lugarParaChegar` (importar) são as duas peças novas; o motor,
+a store (otimismo) e o repositório chamam as mesmas funções, como em mover. `engine.editarLivro`
+passou a devolver a **estante inteira** (livros, vagas e enfeites), porque virar um livro pode mudar
+os três.
+
+### O desenho: a mesma lombada, girada
+
+- **Um livro deitado é a lombada de pé, girada -90°** dentro de uma moldura (`.lombada-giro`) que
+  tem o tamanho que o livro ocupa deitado (o comprimento de largura, a espessura de altura). Forma,
+  título, ícone do pé, faixa de andamento e tudo o mais **se reaproveitam**, em vez de oito formas
+  novas: a cabeça do livro fica à esquerda, o pé (o ícone) à direita, e o título lê na horizontal.
+- **`rotate` é a propriedade solta**, e o `transform` continua dos estados (erguido, escolhido,
+  chegando): num livro girado "para cima" é o eixo +x dele (`translateX`), e a sombra que cai para
+  baixo é `-x`. O ícone do pé, a marca da feita e a contagem do papel giram de volta, para ler em
+  pé. Não use `transform` para girar: ele é dos estados.
+- **Uma pilha é um `.pilha`** (coluna de baixo para cima, livros centrados) com o `data-lugar`: o
+  arrasto lê dela onde o livro vai cair, e o anel de "vai cair aqui" acende na pilha inteira.
+- **O fantasma deitado** é uma moldura que anda com o dedo e o livro gira dentro dela, com a mesma
+  inclinação do de pé (-4°) por cima do giro.
+- **Armadilha do formatador:** o plugin do Tailwind no Prettier trata strings dentro de `className`
+  como listas de classes e **apaga o espaço** de `${x ? ' classe' : ''}` (virou `cores-de-antesclasse`
+  e a amostra saiu em pé). Use strings inteiras (`x ? 'a b c' : 'a b'`).
+
+### O formulário (sem altura nova)
+
+- **O botão de posição fica na linha do tipo** (Livro | Executável | Pasta), à direita, 44×44: um
+  ícone (retângulo em pé ou deitado), `aria-pressed`, `aria-label="Livro deitado"`. A linha do tipo
+  já existia, então o formulário **não ganhou altura** — em 320×568 sobravam 12–15 px, e uma seção
+  nova de 60 px estouraria. Em tela estreita (< 360 px) os ícones dos três segmentos cedem a largura
+  aos nomes.
+- **A caixa da amostra** guarda a lombada de tamanho fixo: a altura é a de sempre (o "Enorme" sobre a
+  fileira medida) e a largura **cresce quando deitado** (a do comprimento máximo), então deitar
+  mexe só na largura do campo de nome, nunca na altura de nada. Medido em 320, 360, 412 e 1440 px,
+  com 16 combinações de largura × comprimento deitado: nada se mexe e a amostra cabe sempre.
+- Largura e Comprimento **não mudam de nome nem de opções**; deitado, a largura é a espessura e o
+  comprimento é a extensão. O enfeite nunca deita (sem o botão).
+- **Editar** abre com o botão ligado num livro deitado; salvar um livro virado tira-o da pilha.
+
+### Os limites de largura (criar e editar)
+
+Um livro deitado é largo (90 a 130 px), então "os livros continuam cabendo entre as laterais"
+passou a valer **também ao criar e ao editar**, não só ao arrastar:
+
+- A estante deixa a medida da fileira num recado (`medidasDaEstante.ts`, uma variável de módulo:
+  só é lida na hora de gravar). `cabeNaEstante.ts` (puro) faz a conta, **um lugar por vez** — a
+  pilha vale o livro deitado mais comprido — e `cabeDepoisDeMudar` reaproveita a regra de
+  `cabeNaPrateleira` (quem já passava do limite pode ser mexido, desde que não piore).
+- Criar recusa com "A prateleira N não tem espaço para esse livro." e fica no formulário (outro
+  comprimento ou outra largura cabem); editar recusa com "...para essa mudança". **Sem medida**
+  (link direto para o formulário, sem passar pela estante) não há o que conferir, e a adaptação
+  visual das laterais cobre — o mesmo `null = não sei` de `useMedidasDaFileira`.
+- Isto vale também para livro **de pé**: antes só se conferia que cabia o menor livro (24 px).
+
+### Abrir o livro
+
+`geometriaDaAbertura(..., deitado)` faz a conta do livro em pé que cabe no mesmo centro (largura e
+altura trocadas) e parte com `rotateZ(-90deg)`; as três poses da animação têm as mesmas funções, na
+mesma ordem, e é isso que deixa o navegador interpolar uma a uma — o livro deitado se levanta
+enquanto vira capa. `giro` (0 ou -90) é parte da geometria.
+
+### Verificado
+
+Chrome (build de produção) em 412×892, 320×568 e 1440×900: desenho das 8 formas, ícone e título;
+**pilha mais alta possível (90 px) na fileira mais baixa (92 px)**, com 2 px de folga, e a de 86 e a
+de uma Grande; arrastar para formar pilha, sem altura de sobra (a pilha anda inteira), tirar do topo,
+largar no próprio lugar, livro de pé sobre pilha; criar deitado pela tela e a recusa por largura;
+editar e virar um livro de uma pilha; o fantasma; espiar (o livro sobe, não anda de lado) e abrir.
+**Os livros que sozinhos passam das laterais** (semeados à força: três pilhas de 90 px em 320 px)
+continuam cortados — é o caso que nenhuma regra de largura consegue resolver, igual ao de pé.
+**Não verificado em toque real.**
+
+### Fora daqui (sugestões, não feitas)
+
+- Um "Tirar da pilha" no menu (arrastar já faz isso), mover a pilha inteira de uma vez, e pôr o
+  livro deitado **por cima de livros de pé** (o espaço livre em cima de cada um varia, e as regras
+  ficariam bem mais difíceis).
+- A pilha usa a altura mínima da fileira mesmo em telas altas (ver "O limite de altura").
+
 ## Fases
 
 0. ✅ Esqueleto (Vite/React/TS/Tailwind/PWA/Capacitor)
@@ -5726,3 +5862,5 @@ menu não mudaram. O menu do enfeite já dizia "Editar o enfeite". Só texto: se
     estados do livro executável, enfeites e móvel (06/10/2026)
 27. ✅ Enfeites que se definem e se movem — cor, forma e medidas como as de um livro, e
     arrastar com as regras do livro (07/10/2026)
+28. ✅ O livro deitado e a pilha — o mesmo livro girado, empilhável por altura, nas quatro
+    fases (08–09/10/2026)

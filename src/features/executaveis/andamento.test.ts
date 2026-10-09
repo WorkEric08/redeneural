@@ -20,6 +20,8 @@ function livro(id: string, executavel: boolean): Livro {
     larguraLombada: null,
     comprimentoLombada: null,
     executavel,
+    orientacao: 'em-pe',
+    nivel: 0,
     diasParaAdormecer: 30,
     createdAt: AGORA,
   }

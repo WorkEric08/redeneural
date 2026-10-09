@@ -3,7 +3,10 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { useMemo } from 'react'
 
 import { BarraDeTopo } from '@/components/BarraDeTopo'
+import { mudarOrientacaoNaEstante } from '@/core'
+import { cabeDepoisDeMudar } from '@/features/estante/cabeNaEstante'
 import { FormularioDeLivro } from '@/features/estante/FormularioDeLivro'
+import { medidasDaEstante } from '@/features/estante/medidasDaEstante'
 import { montarEstante } from '@/features/estante/resumo'
 import { usePalacio } from '@/store/palacio'
 
@@ -24,16 +27,18 @@ export default function EditarLivro() {
     intensidadeDaLuz,
     iconesNosLivros,
     quantidadeDePrateleiras,
+    avisar,
     editarLivro,
   } = usePalacio()
 
   const livro = livros.find((l) => l.id === livroId)
   // O que a estante sabe do livro: a altura automática e a contagem do papel saem
   // daqui, para a amostra ser a lombada que vai para a prateleira.
-  const naEstante = useMemo(
-    () => montarEstante(livros, neuronios, conexoes, anexos).find((e) => e.livro.id === livroId),
-    [livros, neuronios, conexoes, anexos, livroId],
+  const estante = useMemo(
+    () => montarEstante(livros, neuronios, conexoes, anexos),
+    [livros, neuronios, conexoes, anexos],
   )
+  const naEstante = estante.find((e) => e.livro.id === livroId)
 
   if (!livro) {
     return (
@@ -54,6 +59,7 @@ export default function EditarLivro() {
             titulo: livro.titulo,
             cor: livro.cor,
             estilo: livro.estilo,
+            orientacao: livro.orientacao,
             emblema: livro.emblema,
             larguraLombada: livro.larguraLombada,
             comprimentoLombada: livro.comprimentoLombada,
@@ -70,6 +76,29 @@ export default function EditarLivro() {
           intensidadeDaLuz={intensidadeDaLuz}
           iconesNosLivros={iconesNosLivros}
           onEnviar={(dados) => {
+            // Virar o livro ou mudar o comprimento dele pode estourar as laterais da prateleira: a
+            // estante diz o quanto a fileira tem, e a mudança só vale onde os livros continuam
+            // cabendo (quem já passava do limite pode ser mexido, desde que não piore).
+            const medidas = medidasDaEstante()
+            if (medidas !== null) {
+              const virado = mudarOrientacaoNaEstante(livros, livro.id, dados.orientacao) ?? livros
+              const depois = virado.map((l) =>
+                l.id === livro.id
+                  ? {
+                      ...l,
+                      larguraLombada: dados.larguraLombada,
+                      comprimentoLombada: dados.comprimentoLombada,
+                    }
+                  : l,
+              )
+              const alturas = new Map(estante.map((e) => [e.livro.id, e.altura]))
+              const prateleira =
+                depois.find((l) => l.id === livro.id)?.prateleira ?? livro.prateleira
+              if (!cabeDepoisDeMudar(livros, depois, prateleira, alturas, medidas)) {
+                avisar(`A prateleira ${String(prateleira + 1)} não tem espaço para essa mudança.`)
+                return
+              }
+            }
             void editarLivro(livro.id, dados).then((ok) => {
               // `replace`: voltar depois de salvar tem que sair do formulário,
               // não trazê-lo de volta com os dados de antes.

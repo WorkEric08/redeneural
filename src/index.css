@@ -990,6 +990,124 @@ img {
   box-shadow: 0 8px 16px rgb(0 0 0 / 0.35);
 }
 
+/* --- o livro deitado e a pilha (08/10/2026) -----------------------------------
+ *
+ * O livro deitado é o mesmo livro girado: a lombada se desenha em pé — forma, título, medidas —
+ * e gira -90° dentro de uma moldura (.lombada-giro) que tem o tamanho do que o livro ocupa deitado
+ * (o comprimento de largura, a espessura de altura). `rotate` é a propriedade solta, e não um
+ * `transform`: o `transform` é dos estados (erguido, escolhido), que erguem o livro para cima de
+ * verdade — no eixo dele isso é para o lado (+x depois do giro). */
+.pilha {
+  position: relative;
+  display: flex;
+  flex: none;
+  /* De baixo para cima: o primeiro livro da pilha fica embaixo, e os outros sobem. */
+  flex-direction: column-reverse;
+  align-items: center;
+  height: 100%;
+  /* Quem recebe o dedo são os livros, não a coluna. */
+  pointer-events: none;
+}
+
+/* Onde o livro na mão vai cair: a pilha inteira acende, como o livro de pé. */
+.pilha[data-alvo]::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 2px;
+  pointer-events: none;
+  box-shadow: inset 0 0 0 2px color-mix(in oklab, var(--papel) 70%, transparent);
+}
+
+.lombada-giro {
+  position: relative;
+  flex: none;
+  pointer-events: none;
+}
+
+.lombada--deitada {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  translate: -50% -50%;
+  rotate: -90deg;
+  transform-origin: center;
+  border-radius: 2px;
+  /* A sombra de sempre, para cima: o "para cima" do livro girado é o +x dele. */
+  box-shadow: 2px 0 4px rgb(0 0 0 / 0.35);
+}
+
+.lombada--deitada.lombada--livro:active {
+  transform: translateX(3px);
+}
+
+.lombada--deitada.lombada--livro[data-estado='escolhido'] {
+  transform: translateX(5px);
+}
+
+.lombada--deitada.lombada--livro[data-estado='erguido'] {
+  transform: translateX(6px) scale(1.05);
+}
+
+.lombada--deitada.lombada--livro[data-estado='escolhido'],
+.lombada--deitada.lombada--livro[data-estado='erguido'] {
+  /* A sombra que cai para baixo, no eixo do livro girado: -x. */
+  box-shadow:
+    2px 0 4px rgb(0 0 0 / 0.35),
+    -12px 0 20px rgb(0 0 0 / 0.55);
+}
+
+.lombada--deitada[data-chegando] {
+  animation-name: lombada-chegar-deitada;
+}
+
+@keyframes lombada-chegar-deitada {
+  0% {
+    opacity: 0;
+    transform: translateX(22px) scale(1.08);
+  }
+  45% {
+    opacity: 1;
+    transform: translateX(6px) scale(1.04);
+  }
+}
+
+/* O que não pode ficar de lado: o ícone do pé, a marca da feita e a contagem do papel giram de
+   volta, para ler em pé. A contagem tem a posição no `transform`, então gira dentro dele. */
+.lombada--deitada .lombada-emblema svg,
+.lombada--deitada .lombada-feita svg {
+  rotate: 90deg;
+}
+
+.lombada--deitada .lombada-contagem {
+  transform: translate(-50%, -50%) rotate(90deg);
+}
+
+/* O livro deitado na mão: a moldura é que anda com o dedo (`transform` escrito pelo arrasto) e o
+   livro gira dentro dela, com a mesma inclinação do livro de pé (-4°) por cima do giro. */
+.lombada-giro--fantasma {
+  position: fixed;
+  z-index: 60;
+  pointer-events: none;
+  will-change: transform;
+}
+
+.lombada--fantasma.lombada--deitada {
+  position: absolute;
+  z-index: auto;
+  rotate: -94deg;
+  scale: 1.08;
+  transform-origin: center;
+  box-shadow:
+    -20px 0 32px rgb(0 0 0 / 0.55),
+    -4px 0 10px rgb(0 0 0 / 0.4);
+}
+
+/* A amostra do formulário, deitada: a sombra de baixo, no eixo do livro girado. */
+.lombada--amostra.lombada--deitada {
+  box-shadow: -8px 0 16px rgb(0 0 0 / 0.35);
+}
+
 .pano-opcao {
   display: flex;
   flex-direction: column;

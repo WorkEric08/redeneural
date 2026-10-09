@@ -19,6 +19,8 @@ export function novoLivro(input: CriarLivroInput, agora: Date, ordem: number): L
     estilo: input.estilo ?? ESTILO_PADRAO,
     prateleira: Math.max(0, Math.trunc(input.prateleira)),
     ordem,
+    orientacao: input.orientacao ?? 'em-pe',
+    nivel: 0,
     emblema: input.emblema ?? null,
     larguraLombada: input.larguraLombada ?? null,
     comprimentoLombada: input.comprimentoLombada ?? null,

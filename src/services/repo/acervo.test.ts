@@ -45,6 +45,8 @@ function livro(id: string, ordem = 0, tipo: Livro['tipo'] = 'conceitos'): Livro 
     larguraLombada: null,
     comprimentoLombada: null,
     executavel: false,
+    orientacao: 'em-pe',
+    nivel: 0,
     diasParaAdormecer: 30,
     createdAt: T0,
   }

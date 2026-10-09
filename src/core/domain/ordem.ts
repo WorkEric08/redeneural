@@ -1,4 +1,5 @@
-import type { DadosDoEnfeite, EnfeiteGravado, Id, Vaga } from './types'
+import { ALTURA_UTIL_DA_PILHA_PX, larguraDoLivroGravado } from './medidas'
+import type { DadosDoEnfeite, EnfeiteGravado, Id, OrientacaoDoLivro, Vaga } from './types'
 
 /**
  * Os lugares de uma prateleira.
@@ -32,6 +33,47 @@ interface NoLugar {
   id: Id
   prateleira: number
   ordem: number
+  /** Ausente é de pé. Só os testes e fixtures mínimos omitem; todo `Livro` tem. */
+  orientacao?: OrientacaoDoLivro
+  /** A posição na pilha do lugar (0 embaixo). Ausente é 0. */
+  nivel?: number
+  larguraLombada?: number | null
+}
+
+/**
+ * **Pilha** (08/10/2026): vários livros deitados no mesmo lugar, um sobre o outro. O lugar
+ * continua sendo um só — com a largura do livro mais largo —, e a regra de ocupação passa a ser:
+ * **um livro de pé sozinho, ou uma pilha só de livros deitados**. Nunca os dois.
+ *
+ * Quanto cabe numa pilha vem da altura: a soma das espessuras (a largura de cada livro, que o
+ * deitado gira para baixo) não passa de `ALTURA_UTIL_DA_PILHA_PX`, a mesma em toda tela.
+ */
+function deitado(l: NoLugar): boolean {
+  return l.orientacao === 'deitado'
+}
+
+function espessuraDe(l: NoLugar): number {
+  return larguraDoLivroGravado({ id: l.id, larguraLombada: l.larguraLombada ?? null })
+}
+
+/** Uma pilha com estas espessuras (px) cabe na altura que a fileira garante? */
+export function cabeNaPilha(espessuras: readonly number[]): boolean {
+  return espessuras.reduce((total, e) => total + e, 0) <= ALTURA_UTIL_DA_PILHA_PX
+}
+
+/** A ordem dentro da pilha: de baixo para cima; o id desempata para a ordem nunca variar. */
+function daPilha(a: NoLugar, b: NoLugar): number {
+  return (a.nivel ?? 0) - (b.nivel ?? 0) || (a.id < b.id ? -1 : 1)
+}
+
+/** O livro deitado `movido` pode subir nesta pilha (só de deitados, e com altura de sobra)? */
+function podeEmpilhar(movido: NoLugar, pilha: readonly NoLugar[]): boolean {
+  return (
+    deitado(movido) &&
+    pilha.length > 0 &&
+    pilha.every(deitado) &&
+    cabeNaPilha([...pilha.map(espessuraDe), espessuraDe(movido)])
+  )
 }
 
 /** Para comparar lugares num `Set` — um par de números não tem igualdade de valor. */
@@ -39,13 +81,23 @@ export function chaveDoLugar(l: { prateleira: number; ordem: number }): string {
   return `${String(l.prateleira)}:${String(l.ordem)}`
 }
 
-/** Lugar → livro, só da prateleira pedida. Enfeite e vaga não ocupam nada aqui. */
-function ocupacao(livros: readonly NoLugar[], prateleira: number, exceto?: Id): Map<number, Id> {
-  const mapa = new Map<number, Id>()
+/**
+ * Lugar → os livros dele (a pilha, de baixo para cima), só da prateleira pedida. Enfeite e vaga
+ * não ocupam nada aqui.
+ */
+function ocupacao<T extends NoLugar>(
+  livros: readonly T[],
+  prateleira: number,
+  exceto?: Id,
+): Map<number, T[]> {
+  const mapa = new Map<number, T[]>()
   for (const l of livros) {
     if (l.prateleira !== prateleira || l.id === exceto) continue
-    mapa.set(l.ordem, l.id)
+    const pilha = mapa.get(l.ordem)
+    if (pilha) pilha.push(l)
+    else mapa.set(l.ordem, [l])
   }
+  for (const pilha of mapa.values()) pilha.sort(daPilha)
   return mapa
 }
 
@@ -89,7 +141,7 @@ export function primeiroLugarDaEstante(
 }
 
 /** O buraco mais perto do alvo: primeiro à direita, senão à esquerda. */
-function vagaMaisProxima(ocupados: ReadonlyMap<number, Id>, alvo: number): number | null {
+function vagaMaisProxima(ocupados: ReadonlyMap<number, unknown>, alvo: number): number | null {
   for (let i = alvo + 1; i < LUGARES_POR_PRATELEIRA; i += 1) if (!ocupados.has(i)) return i
   for (let i = alvo - 1; i >= 0; i -= 1) if (!ocupados.has(i)) return i
   return null
@@ -114,7 +166,7 @@ function vagaMaisProxima(ocupados: ReadonlyMap<number, Id>, alvo: number): numbe
  * a prateleira não tem buraco nenhum.
  */
 function empurrarParaAbrir(
-  ocupados: ReadonlyMap<number, Id>,
+  ocupados: ReadonlyMap<number, readonly NoLugar[]>,
   alvo: number,
 ): Map<Id, number> | null {
   const novoLugar = new Map<Id, number>()
@@ -123,16 +175,14 @@ function empurrarParaAbrir(
   const livre = vagaMaisProxima(ocupados, alvo)
   if (livre === null) return null
 
+  // Uma pilha anda inteira: todos os livros dela vão para o mesmo lugar novo.
+  const empurrar = (k: number, para: number): void => {
+    for (const empurrado of ocupados.get(k) ?? []) novoLugar.set(empurrado.id, para)
+  }
   if (livre > alvo) {
-    for (let k = livre - 1; k >= alvo; k -= 1) {
-      const empurrado = ocupados.get(k)
-      if (empurrado !== undefined) novoLugar.set(empurrado, k + 1)
-    }
+    for (let k = livre - 1; k >= alvo; k -= 1) empurrar(k, k + 1)
   } else {
-    for (let k = livre + 1; k <= alvo; k += 1) {
-      const empurrado = ocupados.get(k)
-      if (empurrado !== undefined) novoLugar.set(empurrado, k - 1)
-    }
+    for (let k = livre + 1; k <= alvo; k += 1) empurrar(k, k - 1)
   }
   return novoLugar
 }
@@ -143,10 +193,27 @@ export function moverLivroNaEstante<T extends NoLugar>(
   prateleiraDestino: number,
   lugar: number,
 ): T[] | null {
-  if (!livros.some((l) => l.id === id)) return [...livros]
+  const movido = livros.find((l) => l.id === id)
+  if (!movido) return [...livros]
 
   const alvo = dentro(lugar)
-  const novoLugar = empurrarParaAbrir(ocupacao(livros, prateleiraDestino, id), alvo)
+  // Largar no próprio lugar não muda nada — nem leva o livro do meio da pilha para o topo.
+  if (movido.prateleira === prateleiraDestino && movido.ordem === alvo) return [...livros]
+
+  const ocupados = ocupacao(livros, prateleiraDestino, id)
+
+  // Um livro deitado sobre uma pilha de deitados com altura de sobra sobe nela: ninguém anda.
+  const pilha = ocupados.get(alvo)
+  if (pilha && podeEmpilhar(movido, pilha)) {
+    const nivel = Math.max(...pilha.map((l) => l.nivel ?? 0)) + 1
+    return livros.map((l) =>
+      l.id === id ? { ...l, prateleira: prateleiraDestino, ordem: alvo, nivel } : l,
+    )
+  }
+
+  // Senão o livro toma o lugar, e quem estava nele (um livro de pé, ou uma pilha cheia ou de
+  // pé) anda inteiro até o buraco mais perto.
+  const novoLugar = empurrarParaAbrir(ocupados, alvo)
   if (novoLugar === null) return null
 
   novoLugar.set(id, alvo)
@@ -154,8 +221,63 @@ export function moverLivroNaEstante<T extends NoLugar>(
   return livros.map((l) => {
     const destino = novoLugar.get(l.id)
     if (destino === undefined) return l
-    return { ...l, prateleira: prateleiraDestino, ordem: destino }
+    return {
+      ...l,
+      prateleira: prateleiraDestino,
+      ordem: destino,
+      nivel: l.id === id ? 0 : (l.nivel ?? 0),
+    }
   })
+}
+
+/**
+ * Onde um livro que **chega de fora** (um backup importado) fica, perto do lugar que traz: o
+ * próprio lugar se ele está livre, ou se o livro é deitado e sobe na pilha que já está lá; senão
+ * o buraco mais perto. `null` numa prateleira sem buraco. Nunca empurra ninguém.
+ */
+export function lugarParaChegar(
+  colocados: readonly NoLugar[],
+  livro: NoLugar,
+): { ordem: number; nivel: number } | null {
+  const pilha = ocupacao(colocados, livro.prateleira).get(livro.ordem)
+  if (pilha && podeEmpilhar(livro, pilha)) {
+    return { ordem: livro.ordem, nivel: Math.max(...pilha.map((l) => l.nivel ?? 0)) + 1 }
+  }
+  const ordem = primeiroLugarLivre(colocados, livro.prateleira, livro.ordem)
+  return ordem === null ? null : { ordem, nivel: 0 }
+}
+
+/**
+ * Vira o livro (de pé ↔ deitado). Sozinho no lugar, só vira. Dividindo o lugar com outros — uma
+ * pilha —, ele sai do meio e vai para o lugar livre mais perto, porque um lugar nunca mistura
+ * livro de pé com deitado. `null` se não há lugar livre na prateleira.
+ *
+ * A mesma conta na store (otimismo) e no motor; as vagas e os enfeites saem de
+ * `vagasDepoisDeMover` e `enfeitesSemLivroEmCima`, como num mover.
+ */
+export function mudarOrientacaoNaEstante<T extends NoLugar>(
+  livros: readonly T[],
+  id: Id,
+  orientacao: OrientacaoDoLivro,
+): T[] | null {
+  const livro = livros.find((l) => l.id === id)
+  if (!livro) return [...livros]
+  if ((livro.orientacao ?? 'em-pe') === orientacao) return [...livros]
+
+  const dividem = livros.some(
+    (l) => l.id !== id && l.prateleira === livro.prateleira && l.ordem === livro.ordem,
+  )
+  let ordem = livro.ordem
+  if (dividem) {
+    const livre = primeiroLugarLivre(
+      livros.filter((l) => l.id !== id),
+      livro.prateleira,
+      livro.ordem,
+    )
+    if (livre === null) return null
+    ordem = livre
+  }
+  return livros.map((l) => (l.id === id ? { ...l, orientacao, ordem, nivel: 0 } : l))
 }
 
 /**

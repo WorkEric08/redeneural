@@ -13,6 +13,7 @@ import {
   MODO_DA_REDE_PADRAO,
   moverEnfeiteNaEstante,
   moverLivroNaEstante,
+  mudarOrientacaoNaEstante,
   novoLivro,
   primeiroLugarLivre,
   vagasDepoisDeMover,
@@ -29,6 +30,7 @@ import {
   type ModoDaBusca,
   type ModoDaRede,
   type NeuronioNaTela,
+  type OrientacaoDoLivro,
   type Ponto,
   type ProgressoDoMotor,
   type TipoDeLivro,
@@ -49,6 +51,8 @@ export interface NovoLivro {
   titulo: string
   cor: string
   estilo: EstiloDaLombada
+  /** De pé ou deitado (08/10/2026). */
+  orientacao: OrientacaoDoLivro
   emblema: string | null
   larguraLombada: number | null
   comprimentoLombada: number | null
@@ -499,9 +503,22 @@ export const usePalacio = create<PalacioStore>()((set, get) => {
     },
 
     async editarLivro(id, mudancas): Promise<boolean> {
-      const antes = get().livros
+      const { livros: antes, vagas: vagasAntes, enfeites: enfeitesAntes } = get()
+      // Virar o livro o tira do meio de uma pilha (ver `mudarOrientacaoNaEstante`): a mesma conta
+      // do motor, para o livro já aparecer no lugar novo.
+      const virado = mudarOrientacaoNaEstante(antes, id, mudancas.orientacao)
+      if (!virado) {
+        const prateleira = antes.find((l) => l.id === id)?.prateleira ?? 0
+        set({
+          acaoDoAviso: null,
+          aviso: `A prateleira ${String(prateleira + 1)} não tem lugar sem livro.`,
+        })
+        return false
+      }
       set({
-        livros: antes.map((l) =>
+        vagas: vagasDepoisDeMover(vagasAntes, antes, virado, id),
+        enfeites: enfeitesSemLivroEmCima(enfeitesAntes, virado),
+        livros: virado.map((l) =>
           l.id === id
             ? {
                 ...l,
@@ -520,10 +537,10 @@ export const usePalacio = create<PalacioStore>()((set, get) => {
       })
 
       try {
-        set({ livros: await engine.editarLivro({ id, ...mudancas }) })
+        set(await engine.editarLivro({ id, ...mudancas }))
         return true
       } catch (e) {
-        set({ livros: antes, erro: mensagem(e) })
+        set({ livros: antes, vagas: vagasAntes, enfeites: enfeitesAntes, erro: mensagem(e) })
         return false
       }
     },

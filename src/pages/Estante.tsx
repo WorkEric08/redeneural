@@ -108,6 +108,7 @@ export default function Estante() {
         lombada.getBoundingClientRect(),
         window.innerWidth,
         window.innerHeight,
+        livro.orientacao === 'deitado',
       ),
     })
   }

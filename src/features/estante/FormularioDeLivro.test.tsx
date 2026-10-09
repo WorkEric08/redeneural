@@ -11,6 +11,7 @@ const INICIAL: NovoLivro = {
   titulo: '',
   cor: COR_PADRAO,
   estilo: ESTILO_PADRAO,
+  orientacao: 'em-pe',
   emblema: null,
   larguraLombada: null,
   comprimentoLombada: null,

@@ -26,6 +26,8 @@ const estiloDoBackup = z.preprocess(
 const unitInterval = z.number().min(0).max(1)
 
 const ordem = z.number().int().min(0)
+const orientacao = z.enum(['em-pe', 'deitado'])
+const nivel = z.number().int().min(0)
 const emblema = z.string().min(1).max(30).nullable()
 const larguraLombada = z.number().min(16).max(120).nullable()
 const comprimentoLombada = z.number().min(20).max(100).nullable()
@@ -51,6 +53,8 @@ export const livroSchema = z
     estilo: estiloDaLombada,
     prateleira: ordem,
     ordem,
+    orientacao,
+    nivel,
     emblema,
     larguraLombada,
     comprimentoLombada,
@@ -195,6 +199,9 @@ export const snapshotSchema = z.object({
       ordem: ordem.optional(),
       // Opcional: backup de antes da Fase 10 (13-14/09/2026) não tinha prateleira.
       prateleira: ordem.optional(),
+      // Opcionais: backup de antes do livro deitado (08/10/2026) — de pé, sem pilha.
+      orientacao: orientacao.optional(),
+      nivel: nivel.optional(),
       // Opcional: backup de antes da Fase 16 não tinha emblema.
       emblema: emblema.optional(),
       // Opcional: backup de antes da Fase 19 não tinha largura própria.

@@ -12,7 +12,6 @@ import type {
   EstanteGravada,
   Id,
   ImagemParaGuardar,
-  Livro,
   MapaDoPalacio,
   ModoDaBusca,
   ModoDaRede,
@@ -39,7 +38,7 @@ export interface RespostasDoMotor {
   definirEstado: NeuronioNaTela[]
   tocar: NeuronioNaTela | null
   criarLivro: EstanteGravada
-  editarLivro: Livro[]
+  editarLivro: EstanteGravada
   apagarLivro: EstadoDoPalacio
   moverLivro: EstanteGravada
   tirarEnfeite: EstanteGravada

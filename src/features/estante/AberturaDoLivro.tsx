@@ -50,9 +50,11 @@ export function AberturaDoLivro({ livro, geometria: g, onAberto }: Props) {
     if (!f || !s || !c || !k) return
 
     const { x, y, escala, escalaX } = g.partida
-    const deLombada = `translate3d(${String(x)}px, ${String(y)}px, 0px) scale3d(${String(escalaX)}, ${String(escala)}, ${String(escala)}) rotateY(90deg)`
-    const deCapa = 'translate3d(0px, 0px, 0px) scale3d(1, 1, 1) rotateY(0deg)'
-    const aberto = `translate3d(${String(g.deslocamentoAberto)}px, 0px, 0px) scale3d(1.04, 1.04, 1.04) rotateY(0deg)`
+    // As três poses têm as mesmas funções, na mesma ordem (o `rotateZ` inclusive): é o que deixa
+    // o navegador interpolar uma a uma, e o livro deitado se levantar enquanto vira capa.
+    const deLombada = `translate3d(${String(x)}px, ${String(y)}px, 0px) scale3d(${String(escalaX)}, ${String(escala)}, ${String(escala)}) rotateZ(${String(g.giro)}deg) rotateY(90deg)`
+    const deCapa = 'translate3d(0px, 0px, 0px) scale3d(1, 1, 1) rotateZ(0deg) rotateY(0deg)'
+    const aberto = `translate3d(${String(g.deslocamentoAberto)}px, 0px, 0px) scale3d(1.04, 1.04, 1.04) rotateZ(0deg) rotateY(0deg)`
     const meiaGrossura = `${String(g.grossura / 2)}px`
     const final = VOO + ABRIR - 80
 

@@ -34,6 +34,8 @@ export function livroToSnapshot(l: Livro): LivroSnapshot {
     estilo: l.estilo,
     prateleira: l.prateleira,
     ordem: l.ordem,
+    orientacao: l.orientacao,
+    nivel: l.nivel,
     emblema: l.emblema,
     larguraLombada: l.larguraLombada,
     comprimentoLombada: l.comprimentoLombada,
@@ -48,7 +50,12 @@ export function livroToSnapshot(l: Livro): LivroSnapshot {
  * faz sentido junto com os livros que já estão na estante de destino, e quem
  * enxerga os dois lados é o import.
  */
-export function livroFromSnapshot(s: LivroSnapshot, prateleira: number, ordem: number): Livro {
+export function livroFromSnapshot(
+  s: LivroSnapshot,
+  prateleira: number,
+  ordem: number,
+  nivel = s.nivel ?? 0,
+): Livro {
   return {
     id: s.id,
     tipo: s.tipo ?? 'conceitos',
@@ -58,6 +65,9 @@ export function livroFromSnapshot(s: LivroSnapshot, prateleira: number, ordem: n
     estilo: s.estilo ?? ESTILO_PADRAO,
     prateleira,
     ordem,
+    // Backup de antes do livro deitado: de pé, como todo livro era.
+    orientacao: s.orientacao ?? 'em-pe',
+    nivel,
     emblema: s.emblema ?? null,
     larguraLombada: s.larguraLombada ?? null,
     comprimentoLombada: s.comprimentoLombada ?? null,

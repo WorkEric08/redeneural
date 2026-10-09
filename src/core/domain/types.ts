@@ -20,6 +20,13 @@ export type Id = string
 export type TipoDeLivro = 'conceitos' | 'acervo'
 
 /**
+ * Como o livro está na prateleira (08/10/2026): de pé, com a lombada para fora, ou deitado, com
+ * o livro girado e empilhável. Uma pilha só tem livros deitados, e um lugar com livro de pé tem
+ * só ele (ver `ordem.ts`).
+ */
+export type OrientacaoDoLivro = 'em-pe' | 'deitado'
+
+/**
  * O andamento de uma ideia num livro executável (01/10/2026). Só tem sentido
  * ali: fora de um livro executável o estado fica guardado, mas nada o mostra.
  */
@@ -54,6 +61,14 @@ export interface Livro {
    * um lugar válido — por isso não houve migração de dado.
    */
   ordem: number
+  /** De pé ou deitado. Um livro deitado troca largura e comprimento de eixo (ver `Lombada.tsx`). */
+  orientacao: OrientacaoDoLivro
+  /**
+   * A posição do livro deitado **dentro da pilha do lugar**: 0 é o de baixo. Só serve para
+   * ordenar (lacunas não importam: apagar ou tirar um livro do meio da pilha não renumera ninguém),
+   * e num livro de pé fica 0.
+   */
+  nivel: number
   /**
    * Ícone opcional na lombada, além da cor — para diferenciar livros parecidos
    * sem depender só do nome. `null` é "nenhum". As chaves reconhecidas vivem
@@ -360,6 +375,9 @@ export interface LivroSnapshot {
    * `estanteAntiga.ts` e `importAll`.
    */
   prateleira?: number | undefined
+  /** Ausentes em backups de antes do livro deitado (08/10/2026) — o import trata como de pé. */
+  orientacao?: OrientacaoDoLivro | undefined
+  nivel?: number | undefined
   /** Ausente em backups anteriores à Fase 16 — o import trata como `null`. */
   emblema?: string | null | undefined
   /** Ausente em backups anteriores à Fase 19 — o import trata como `null`. */

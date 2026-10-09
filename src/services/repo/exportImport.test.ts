@@ -38,6 +38,8 @@ const LIVROS: Livro[] = [
     larguraLombada: null,
     comprimentoLombada: null,
     executavel: false,
+    orientacao: 'em-pe',
+    nivel: 0,
     diasParaAdormecer: 30,
     createdAt: T0,
   },
@@ -53,6 +55,8 @@ const LIVROS: Livro[] = [
     larguraLombada: null,
     comprimentoLombada: null,
     executavel: false,
+    orientacao: 'em-pe',
+    nivel: 0,
     diasParaAdormecer: 30,
     createdAt: T0,
   },
@@ -68,6 +72,8 @@ const LIVROS: Livro[] = [
     larguraLombada: null,
     comprimentoLombada: null,
     executavel: false,
+    orientacao: 'em-pe',
+    nivel: 0,
     diasParaAdormecer: 30,
     createdAt: T0,
   },
@@ -224,6 +230,8 @@ describe('exportar num navegador e importar noutro', () => {
       larguraLombada: null,
       comprimentoLombada: null,
       executavel: false,
+      orientacao: 'em-pe',
+      nivel: 0,
       diasParaAdormecer: 30,
       createdAt: T0,
     })
@@ -327,6 +335,8 @@ describe('a ordem da estante no backup', () => {
       larguraLombada: null,
       comprimentoLombada: null,
       executavel: false,
+      orientacao: 'em-pe',
+      nivel: 0,
       diasParaAdormecer: 30,
       createdAt: T0,
     })
@@ -352,6 +362,8 @@ describe('a ordem da estante no backup', () => {
       larguraLombada: null,
       comprimentoLombada: null,
       executavel: false,
+      orientacao: 'em-pe',
+      nivel: 0,
       diasParaAdormecer: 30,
       createdAt: T0,
     })
@@ -531,7 +543,13 @@ describe('livros executáveis no backup', () => {
   it('exporta e importa o livro executável, o estado, o último toque e o link', async () => {
     const origem = await palacioPovoado()
     const [psi] = await origem.listLivros()
-    await origem.upsertLivro({ ...psi!, executavel: true, diasParaAdormecer: 7 })
+    await origem.upsertLivro({
+      ...psi!,
+      executavel: true,
+      orientacao: 'em-pe',
+      nivel: 0,
+      diasParaAdormecer: 7,
+    })
     const [ideia] = await origem.listNeuronios(psi!.id)
     const toque = new Date('2026-09-30T10:00:00.000Z')
     await origem.upsertNeuronio({
@@ -548,6 +566,8 @@ describe('livros executáveis no backup', () => {
 
     expect(await destino.getLivro(psi!.id)).toMatchObject({
       executavel: true,
+      orientacao: 'em-pe',
+      nivel: 0,
       diasParaAdormecer: 7,
     })
     expect(await destino.getNeuronio(ideia!.id)).toMatchObject({
@@ -709,5 +729,110 @@ describe('cor e forma da lombada no backup', () => {
     }
 
     await expect(repoVazio().importAll(mexido as never)).rejects.toThrow()
+  })
+})
+
+describe('livros deitados e pilhas no backup', () => {
+  const deitado = (id: string, ordem: number, espessura: number, nivel: number): Livro => ({
+    id,
+    titulo: id,
+    cor: '#2D3A4F',
+    estilo: 'solido',
+    prateleira: 0,
+    ordem,
+    tipo: 'conceitos',
+    emblema: null,
+    larguraLombada: espessura,
+    comprimentoLombada: null,
+    executavel: false,
+    orientacao: 'deitado',
+    nivel,
+    diasParaAdormecer: 30,
+    createdAt: T0,
+  })
+  const lugar = async (repo: PalacioRepo, id: string): Promise<[number, number, number] | null> => {
+    const l = await repo.getLivro(id)
+    return l ? [l.prateleira, l.ordem, l.nivel] : null
+  }
+
+  it('a orientação e a pilha viajam e voltam como estavam', async () => {
+    const origem = repoVazio()
+    await origem.upsertLivro(deitado('a', 5, 24, 0))
+    await origem.upsertLivro(deitado('b', 5, 24, 1))
+    const snapshot = await origem.exportAll()
+
+    const destino = repoVazio()
+    await destino.importAll(JSON.parse(JSON.stringify(snapshot)) as typeof snapshot)
+
+    expect(await destino.getLivro('a')).toMatchObject({ orientacao: 'deitado' })
+    expect(await lugar(destino, 'a')).toEqual([0, 5, 0])
+    expect(await lugar(destino, 'b')).toEqual([0, 5, 1])
+  })
+
+  it('backup de antes do livro deitado importa tudo de pé, sem pilha', async () => {
+    const origem = await palacioPovoado()
+    const snapshot = await origem.exportAll()
+    const antigo = {
+      ...snapshot,
+      livros: snapshot.livros.map((l) => ({ ...l, orientacao: undefined, nivel: undefined })),
+    }
+
+    const destino = repoVazio()
+    await destino.importAll(antigo)
+
+    for (const l of await destino.listLivros()) {
+      expect(l.orientacao).toBe('em-pe')
+      expect(l.nivel).toBe(0)
+    }
+  })
+
+  it('recusa uma orientação que não existe', async () => {
+    const origem = repoVazio()
+    await origem.upsertLivro(deitado('a', 5, 24, 0))
+    const snapshot = await origem.exportAll()
+    const torto = {
+      ...snapshot,
+      livros: snapshot.livros.map((l) => ({ ...l, orientacao: 'de-lado' })),
+    }
+    await expect(repoVazio().importAll(torto as unknown as typeof snapshot)).rejects.toThrow()
+  })
+
+  it('funde: um livro deitado daqui sobe na pilha do arquivo, se cabe', async () => {
+    const origem = repoVazio()
+    await origem.upsertLivro(deitado('a', 5, 24, 0))
+    const destino = repoVazio()
+    await destino.upsertLivro(deitado('meu', 5, 24, 0))
+
+    await destino.importAll(await origem.exportAll())
+
+    // O do arquivo fica no lugar dele; o daqui, deitado e com altura de sobra, sobe nele.
+    expect(await lugar(destino, 'a')).toEqual([0, 5, 0])
+    expect(await lugar(destino, 'meu')).toEqual([0, 5, 1])
+  })
+
+  it('funde: sem altura de sobra, o livro daqui vai para o buraco mais perto', async () => {
+    const origem = repoVazio()
+    await origem.upsertLivro(deitado('a', 5, 68, 0))
+    const destino = repoVazio()
+    await destino.upsertLivro(deitado('meu', 5, 38, 0))
+
+    await destino.importAll(await origem.exportAll())
+
+    expect(await lugar(destino, 'a')).toEqual([0, 5, 0])
+    expect(await lugar(destino, 'meu')).toEqual([0, 6, 0])
+  })
+
+  it('reimportar o mesmo arquivo não muda a pilha', async () => {
+    const origem = repoVazio()
+    await origem.upsertLivro(deitado('a', 5, 24, 0))
+    await origem.upsertLivro(deitado('b', 5, 24, 1))
+    const snapshot = await origem.exportAll()
+
+    const destino = repoVazio()
+    await destino.importAll(snapshot)
+    await destino.importAll(snapshot)
+
+    expect(await lugar(destino, 'a')).toEqual([0, 5, 0])
+    expect(await lugar(destino, 'b')).toEqual([0, 5, 1])
   })
 })

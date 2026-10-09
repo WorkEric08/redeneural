@@ -1,13 +1,18 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 
 import { BarraDeTopo } from '@/components/BarraDeTopo'
 import {
   DIAS_PARA_ADORMECER_PADRAO,
   ESTILO_PADRAO,
+  novoLivro,
   primeiroLugarDaEstante,
+  primeiroLugarLivre,
   type TipoDeLivro,
 } from '@/core'
+import { cabeDepoisDeMudar } from '@/features/estante/cabeNaEstante'
+import { medidasDaEstante } from '@/features/estante/medidasDaEstante'
+import { montarEstante } from '@/features/estante/resumo'
 import { COMPRIMENTO_PADRAO } from '@/features/estante/comprimentos'
 import { FormularioDeLivro } from '@/features/estante/FormularioDeLivro'
 import { LARGURA_PADRAO } from '@/features/estante/larguras'
@@ -30,6 +35,10 @@ export default function NovoLivro() {
   const { key } = useLocation()
   const {
     livros,
+    neuronios,
+    conexoes,
+    anexos,
+    avisar,
     ocupado,
     intensidadeDaLuz,
     iconesNosLivros,
@@ -58,6 +67,32 @@ export default function NovoLivro() {
   const [tipo, setTipo] = useState<TipoDeLivro>('conceitos')
   const ehPasta = tipo === 'acervo'
 
+  // O que a estante sabe de cada livro (a altura automática dos deitados sai daqui): a conta de
+  // caber entre as laterais precisa dela.
+  const alturas = useMemo(
+    () =>
+      new Map(
+        montarEstante(livros, neuronios, conexoes, anexos).map((e) => [e.livro.id, e.altura]),
+      ),
+    [livros, neuronios, conexoes, anexos],
+  )
+
+  /**
+   * Um livro novo só nasce onde os livros da prateleira continuam cabendo inteiros entre as
+   * laterais. Um livro deitado é largo (90 a 130 px), e é ele que torna a conferência necessária.
+   */
+  function cabeNaPrateleira(dados: Parameters<typeof criarLivro>[0]): boolean {
+    const medidas = medidasDaEstante()
+    const ordem = primeiroLugarLivre(livros, prateleira, lugar ?? 0)
+    if (medidas === null || ordem === null) return true // sem medida, ou sem lugar: quem recusa é a store
+    const provisorio = novoLivro(
+      { id: 'novo', ...dados, prateleira, lugar, tipo },
+      new Date(),
+      ordem,
+    )
+    return cabeDepoisDeMudar(livros, [...livros, provisorio], prateleira, alturas, medidas)
+  }
+
   async function depoisDeCriar(livroId: string): Promise<void> {
     if (guardarId === null) {
       // `replace`: voltar depois de criar tem que sair do formulário, e o
@@ -83,6 +118,7 @@ export default function NovoLivro() {
             titulo: '',
             cor: panoSugerido(livros),
             estilo: ESTILO_PADRAO,
+            orientacao: 'em-pe',
             emblema: null,
             larguraLombada: LARGURA_PADRAO,
             comprimentoLombada: COMPRIMENTO_PADRAO,
@@ -96,6 +132,10 @@ export default function NovoLivro() {
           prateleiras={quantidadeDePrateleiras}
           {...(guardarId === null ? { tipo: { valor: tipo, onMudar: setTipo } } : {})}
           onEnviar={(dados) => {
+            if (!cabeNaPrateleira(dados)) {
+              avisar(`A prateleira ${String(prateleira + 1)} não tem espaço para esse livro.`)
+              return
+            }
             void criarLivro(dados, prateleira, lugar, tipo).then((id) => {
               if (id) void depoisDeCriar(id)
             })
