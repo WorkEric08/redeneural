@@ -5529,6 +5529,29 @@ Ajustes ganha uma seção para ligar e desligar.
   rolagem lateral. Os formulários continuam cabendo sem rolagem vertical e sem nada se mexer ao trocar
   largura e comprimento. 634 testes (9 novos), tipos, lint e prettier limpos. **Não verificado em toque real.**
 
+## As fileiras de opções avisam que continuam (08/10/2026)
+
+Pedido do usuário: nas seções Cor e Forma dos formulários de livro, do lado direito, algo que mostre
+que há mais opções além da borda (ele disse "rolagem vertical"; a fileira rola de lado).
+
+- **Esmaecido + seta, só onde há mais.** Na ponta onde ainda há opções escondidas a fileira ganha
+  um esmaecido na cor da sala e, por cima, uma seta redonda (`>` à direita, `<` à esquerda) que
+  **rola a fileira** em 70% da largura visível (sem animação com `prefers-reduced-motion`). Ao abrir,
+  só a da direita; no meio, as duas; no fim, só a da esquerda; se tudo cabe (Largura e Comprimento
+  em 412 px, tudo em 1440 px), nenhuma. O esmaecido não pega o toque — tocar numa opção perto da
+  borda continua escolhendo a opção; só a seta é toque.
+- **Sobreposto, não ocupa lugar**: as alturas e as larguras de tudo ficam como estavam (verificado).
+  Vale para as quatro fileiras (`LinhaDeEscolha`), embora na prática só Cor e Forma estourem em
+  celulares comuns (e Largura e Comprimento a 320 px).
+- A conta de "onde há mais" é pura e testada: `bordasDaFaixa` (`lib/faixa.ts`), com 2 px de
+  tolerância para arredondamento. A medida roda ao rolar e ao redimensionar; a primeira espera um
+  quadro, depois de a fileira abrir com a escolhida no meio.
+- **Verificado** no Chrome (build de produção) em 412×892, 320×568 e 1440×900: setas certas no começo,
+  tocar rola, depois aparece a da esquerda, no fim some a da direita, tocar a da esquerda volta, tocar
+  numa opção sob o esmaecido funciona, e em 1440 px nenhuma aparece; os formulários seguem cabendo sem
+  rolagem vertical e sem nada se mexer. 639 testes (5 novos), tipos, lint e prettier limpos.
+  **Não verificado em toque real.**
+
 ## Mostrar tudo sem deslize vertical: as folhas e o andamento (06/10/2026)
 
 Pedido do usuário, sobre os livros executáveis: melhorar de forma geral, e em especial a

@@ -1,4 +1,12 @@
-import { BookOpen, Hammer, type LucideIcon, Paperclip, Shuffle } from 'lucide-react'
+import {
+  BookOpen,
+  ChevronLeft,
+  ChevronRight,
+  Hammer,
+  type LucideIcon,
+  Paperclip,
+  Shuffle,
+} from 'lucide-react'
 import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react'
 
 import { botao } from '@/components/botao'
@@ -9,6 +17,7 @@ import {
   type EstiloDaLombada,
   type TipoDeLivro,
 } from '@/core'
+import { bordasDaFaixa, type BordasDaFaixa } from '@/lib/faixa'
 import type { NovoLivro } from '@/store/palacio'
 
 import { COMPRIMENTOS } from './comprimentos'
@@ -557,21 +566,95 @@ function LinhaDeEscolha({
   escolhida: string
   children: ReactNode
 }) {
+  const faixa = useRef<HTMLDivElement>(null)
+  const [bordas, setBordas] = useState<BordasDaFaixa>({ esquerda: false, direita: false })
+
+  // Onde ainda há opções escondidas: acende a seta e o esmaecido daquele lado (e só dele). Mede
+  // ao rolar e ao mudar de tamanho; a primeira medida espera um quadro, depois de a fileira
+  // abrir com a escolhida no meio.
+  useEffect(() => {
+    const el = faixa.current
+    if (!el) return
+    const medir = (): void => {
+      setBordas(bordasDaFaixa(el.scrollLeft, el.clientWidth, el.scrollWidth))
+    }
+    const quadro = window.requestAnimationFrame(medir)
+    el.addEventListener('scroll', medir, { passive: true })
+    window.addEventListener('resize', medir)
+    return () => {
+      window.cancelAnimationFrame(quadro)
+      el.removeEventListener('scroll', medir)
+      window.removeEventListener('resize', medir)
+    }
+  }, [])
+
+  function rolar(sentido: -1 | 1): void {
+    const el = faixa.current
+    if (!el) return
+    const reduzido = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    el.scrollBy({ left: sentido * el.clientWidth * 0.7, behavior: reduzido ? 'auto' : 'smooth' })
+  }
+
   return (
     <div className="flex min-w-0 flex-col">
       <span className="flex min-w-0 items-baseline gap-2 px-1 leading-tight" aria-hidden>
         <span className="rotulo-de-secao mb-0">{legenda}</span>
         <span className="text-papel min-w-0 truncate text-xs">{escolhida}</span>
       </span>
-      <div
-        role="radiogroup"
-        aria-label={legenda}
-        data-faixa
-        className="faixa-rolavel relative flex items-center gap-0.5 px-1 py-1 md:overflow-x-auto [@media(max-height:700px)]:py-0"
-      >
-        {children}
+      <div className="relative min-w-0">
+        <div
+          ref={faixa}
+          role="radiogroup"
+          aria-label={legenda}
+          data-faixa
+          className="faixa-rolavel relative flex items-center gap-0.5 px-1 py-1 md:overflow-x-auto [@media(max-height:700px)]:py-0"
+        >
+          {children}
+        </div>
+        {/* As pontas: um esmaecido na cor da sala e uma seta que rola a fileira. Sobrepostos, sem
+            tomar altura nem largura de nada; o esmaecido não pega o toque, só a seta. */}
+        {bordas.direita && (
+          <PontaDaFaixa
+            lado="direita"
+            onClick={() => {
+              rolar(1)
+            }}
+          />
+        )}
+        {bordas.esquerda && (
+          <PontaDaFaixa
+            lado="esquerda"
+            onClick={() => {
+              rolar(-1)
+            }}
+          />
+        )}
       </div>
     </div>
+  )
+}
+
+function PontaDaFaixa({ lado, onClick }: { lado: 'esquerda' | 'direita'; onClick: () => void }) {
+  const direita = lado === 'direita'
+  return (
+    <>
+      <span
+        aria-hidden
+        className={`ponta-da-faixa pointer-events-none absolute inset-y-0 w-14 ${
+          direita ? 'ponta-da-faixa--direita right-0' : 'ponta-da-faixa--esquerda left-0'
+        }`}
+      />
+      <button
+        type="button"
+        aria-label={direita ? 'Ver mais opções, à direita' : 'Ver as opções anteriores, à esquerda'}
+        onClick={onClick}
+        className={`ponta-da-faixa-seta absolute top-1/2 grid size-8 -translate-y-1/2 place-items-center rounded-full ${
+          direita ? 'right-0.5' : 'left-0.5'
+        }`}
+      >
+        {direita ? <ChevronRight size={18} aria-hidden /> : <ChevronLeft size={18} aria-hidden />}
+      </button>
+    </>
   )
 }
 
