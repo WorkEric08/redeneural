@@ -1,13 +1,12 @@
+import { BookOpen, Hammer, type LucideIcon, Paperclip, Shuffle } from 'lucide-react'
 import {
-  BookOpen,
-  ChevronLeft,
-  ChevronRight,
-  Hammer,
-  type LucideIcon,
-  Paperclip,
-  Shuffle,
-} from 'lucide-react'
-import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react'
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type CSSProperties,
+  type ReactNode,
+} from 'react'
 
 import { botao } from '@/components/botao'
 import {
@@ -17,7 +16,7 @@ import {
   type EstiloDaLombada,
   type TipoDeLivro,
 } from '@/core'
-import { bordasDaFaixa, type BordasDaFaixa } from '@/lib/faixa'
+import { espacoParaMeiaOpcao } from '@/lib/faixa'
 import type { NovoLivro } from '@/store/palacio'
 
 import { COMPRIMENTOS } from './comprimentos'
@@ -33,6 +32,11 @@ import {
   TOM_DO_DETALHE_DO_ENFEITE,
 } from './prateleiras'
 import { useMedidasDaFileira } from './useMedidasDaFileira'
+
+/** `px-1` e `gap-0.5` da fileira de opções, em px: o recuo do começo e o espaço de sempre. */
+const RECUO_DA_FAIXA_PX = 4
+const ESPACO_PADRAO_DA_FAIXA_PX = 2
+const ESPACO_MINIMO_DA_FAIXA_PX = 2
 
 /**
  * A caixa que guarda a amostra tem tamanho fixo: a altura é o teto do que uma lombada pode
@@ -550,9 +554,12 @@ export function FormularioDeLivro({
 
 /**
  * Uma configuração: o título em cima (com o nome da opção escolhida ao lado, já que as opções são
- * só a figura) e, embaixo, as opções numa fileira que rola de lado — sem barra, e a opção cortada
- * na borda avisa que continua. Em tela larga também rola. (Título em cima e opções embaixo, a
- * pedido do usuário, 08/10/2026; antes o título ficava à esquerda das opções.)
+ * só a figura) e, embaixo, as opções numa fileira que rola de lado, sem barra. O aviso de que ela
+ * continua é a última opção visível **cortada ao meio** na borda direita, como nas fileiras da
+ * Netflix (08/10/2026; antes eram setas e um esmaecido). Em tela larga também rola, se não couber.
+ *
+ * O tamanho das opções não muda: quem cede é o espaço entre elas (`espacoParaMeiaOpcao`), medido
+ * ao abrir e a cada mudança de largura da fileira.
  *
  * Nada de `<fieldset>`: ele nunca é mais estreito que o conteúdo e esticava a página. A fileira é
  * `relative` para conter os `<input>` invisíveis (posição absoluta), que senão a alargavam.
@@ -567,33 +574,35 @@ function LinhaDeEscolha({
   children: ReactNode
 }) {
   const faixa = useRef<HTMLDivElement>(null)
-  const [bordas, setBordas] = useState<BordasDaFaixa>({ esquerda: false, direita: false })
 
-  // Onde ainda há opções escondidas: acende a seta e o esmaecido daquele lado (e só dele). Mede
-  // ao rolar e ao mudar de tamanho; a primeira medida espera um quadro, depois de a fileira
-  // abrir com a escolhida no meio.
-  useEffect(() => {
+  // Antes de pintar (e antes de o formulário abrir a fileira com a escolhida no meio): o espaço
+  // que deixa uma opção cortada ao meio na borda. Direto no elemento, sem passar pelo React.
+  useLayoutEffect(() => {
     const el = faixa.current
     if (!el) return
-    const medir = (): void => {
-      setBordas(bordasDaFaixa(el.scrollLeft, el.clientWidth, el.scrollWidth))
+    const ajustar = (): void => {
+      // As opções não mudam de largura com o espaço, então não se zera o espaço antes de medir:
+      // isso encolheria a rolagem por um instante e a fileira perderia o ponto onde estava.
+      const larguras = Array.from(el.children, (filho) =>
+        filho instanceof HTMLElement ? filho.offsetWidth : 0,
+      )
+      const espaco = espacoParaMeiaOpcao(
+        larguras,
+        el.clientWidth,
+        RECUO_DA_FAIXA_PX,
+        ESPACO_PADRAO_DA_FAIXA_PX,
+        ESPACO_MINIMO_DA_FAIXA_PX,
+      )
+      el.style.columnGap = espaco === null ? '' : `${String(espaco)}px`
     }
-    const quadro = window.requestAnimationFrame(medir)
-    el.addEventListener('scroll', medir, { passive: true })
-    window.addEventListener('resize', medir)
+    ajustar()
+    if (typeof ResizeObserver === 'undefined') return
+    const observador = new ResizeObserver(ajustar)
+    observador.observe(el)
     return () => {
-      window.cancelAnimationFrame(quadro)
-      el.removeEventListener('scroll', medir)
-      window.removeEventListener('resize', medir)
+      observador.disconnect()
     }
   }, [])
-
-  function rolar(sentido: -1 | 1): void {
-    const el = faixa.current
-    if (!el) return
-    const reduzido = window.matchMedia('(prefers-reduced-motion: reduce)').matches
-    el.scrollBy({ left: sentido * el.clientWidth * 0.7, behavior: reduzido ? 'auto' : 'smooth' })
-  }
 
   return (
     <div className="flex min-w-0 flex-col">
@@ -611,50 +620,8 @@ function LinhaDeEscolha({
         >
           {children}
         </div>
-        {/* As pontas: um esmaecido na cor da sala e uma seta que rola a fileira. Sobrepostos, sem
-            tomar altura nem largura de nada; o esmaecido não pega o toque, só a seta. */}
-        {bordas.direita && (
-          <PontaDaFaixa
-            lado="direita"
-            onClick={() => {
-              rolar(1)
-            }}
-          />
-        )}
-        {bordas.esquerda && (
-          <PontaDaFaixa
-            lado="esquerda"
-            onClick={() => {
-              rolar(-1)
-            }}
-          />
-        )}
       </div>
     </div>
-  )
-}
-
-function PontaDaFaixa({ lado, onClick }: { lado: 'esquerda' | 'direita'; onClick: () => void }) {
-  const direita = lado === 'direita'
-  return (
-    <>
-      <span
-        aria-hidden
-        className={`ponta-da-faixa pointer-events-none absolute inset-y-0 w-14 ${
-          direita ? 'ponta-da-faixa--direita right-0' : 'ponta-da-faixa--esquerda left-0'
-        }`}
-      />
-      <button
-        type="button"
-        aria-label={direita ? 'Ver mais opções, à direita' : 'Ver as opções anteriores, à esquerda'}
-        onClick={onClick}
-        className={`ponta-da-faixa-seta absolute top-1/2 grid size-8 -translate-y-1/2 place-items-center rounded-full ${
-          direita ? 'right-0.5' : 'left-0.5'
-        }`}
-      >
-        {direita ? <ChevronRight size={18} aria-hidden /> : <ChevronLeft size={18} aria-hidden />}
-      </button>
-    </>
   )
 }
 

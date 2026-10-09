@@ -1040,24 +1040,6 @@ img {
   cursor: pointer;
 }
 
-/* O aviso de que a fileira continua: um esmaecido na cor da sala na ponta onde há mais opções
-   e, por cima, uma seta que rola a fileira. Só aparece onde há o que mostrar (ver
-   `LinhaDeEscolha`); o esmaecido não pega o toque, só a seta. */
-.ponta-da-faixa--direita {
-  background: linear-gradient(to left, var(--sala) 30%, transparent);
-}
-
-.ponta-da-faixa--esquerda {
-  background: linear-gradient(to right, var(--sala) 30%, transparent);
-}
-
-.ponta-da-faixa-seta {
-  border: 1px solid var(--linha);
-  background: var(--parede);
-  color: var(--papel);
-  box-shadow: 0 1px 6px rgb(0 0 0 / 0.18);
-}
-
 [data-faixa] .pano-amostra {
   width: 34px;
   height: 34px;

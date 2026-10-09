@@ -5628,6 +5628,32 @@ nem muito grosso, e de tamanho legível.
   rolagem vertical e sem nada se mexer em 412×892, 390×844, 360×640, 320×568, 1024×768 e
   1440×900. 643 testes, tipos e lint limpos. **Não verificado em toque real.**
 
+## As opções avisam que continuam com uma opção cortada ao meio (08/10/2026)
+
+Pedido do usuário: nas seções de cor e forma das telas de editar/criar livro e enfeite, em vez das
+setas, a **última opção visível fica sempre cortada ao meio**, como nas fileiras da Netflix, para
+mostrar que há mais ao lado. **Substitui** o esmaecido e as setas de "As fileiras de opções avisam
+que continuam": saíram `PontaDaFaixa`, `bordasDaFaixa` e as classes `.ponta-da-faixa*`.
+
+- **O tamanho das opções não muda; o espaço entre elas, sim.** `espacoParaMeiaOpcao`
+  (`lib/faixa.ts`, pura e testada) acha o espaço que põe o **meio** de uma opção exatamente na borda
+  direita da fileira, com o menor espaço que ainda serve (a maior quantidade de opções inteiras antes
+  dela; o mínimo é o de sempre, 2 px). As opções têm larguras diferentes (Largura tem 44, 58 e 74
+  px), então a conta usa a largura de cada uma.
+- **Só onde há mais para ver.** Se a fileira inteira cabe com o espaço de sempre (Largura e
+  Comprimento em qualquer celular, tudo em 768 px ou mais), nada muda e nenhuma opção é cortada.
+- **Onde mora:** `LinhaDeEscolha`, num `useLayoutEffect` (antes de pintar, e antes de o formulário
+  abrir a fileira com a opção escolhida à vista) mais um `ResizeObserver`, escrevendo `column-gap`
+  direto no elemento. **Não se zera o espaço antes de medir**: isso encolhia a rolagem por um instante
+  e a opção escolhida (Bloco, a última) abria escondida; as larguras não dependem do espaço.
+- **A borda é a da própria fileira**, dentro das margens da tela (sem sangrar até a borda do
+  aparelho).
+- **Verificado** no Chrome (build de produção): em 412, 390, 360 e 320 px a Cor (10 opções) e, a
+  partir de 390, a Forma (8) ficam com uma opção cortada em 50%; em 412 px a Forma cabe inteira (sem
+  corte); em 1024 e 1440 px nada é cortado; sem setas; rolar até o fim mostra a última inteira; sem
+  rolagem lateral nem vertical; editar um livro de forma "Bloco" abre com ela à vista; os formulários
+  continuam sem nada se mexer. 643 testes. **Não verificado em toque real.**
+
 ## O menu do livro diz só "Editar livro" (08/10/2026)
 
 Pedido do usuário: no menu que abre ao segurar um livro, o texto "Renomear e editar livro" vira
