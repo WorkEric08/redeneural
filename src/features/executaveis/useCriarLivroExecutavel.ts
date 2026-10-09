@@ -10,8 +10,8 @@ import { usePalacio } from '@/store/palacio'
  * livro, na captura, perderia o que ela acabou de escrever.
  *
  * Nasce como qualquer livro novo da estante (pano sugerido, tamanho normal) no
- * primeiro lugar livre; nome, pano e o resto se trocam depois, em "Renomear e
- * editar livro". Devolve o id, ou `null` se não coube ou o motor não conseguiu.
+ * primeiro lugar livre; nome, pano e o resto se trocam depois, em "Editar
+ * livro". Devolve o id, ou `null` se não coube ou o motor não conseguiu.
  */
 export function useCriarLivroExecutavel(): (titulo: string) => Promise<string | null> {
   const { livros, quantidadeDePrateleiras, criarLivro, avisar } = usePalacio()

@@ -303,7 +303,7 @@ function Acoes({ livro, neuronios, anexos, ocupado, onTrocarPainel }: Props & { 
             className="flex min-h-14 w-full items-center gap-3.5 px-4"
           >
             <PencilLine size={19} aria-hidden className="text-poeira" />
-            {ehPasta ? 'Renomear e editar pasta' : 'Renomear e editar livro'}
+            {ehPasta ? 'Editar pasta' : 'Editar livro'}
           </Link>
         </li>
         <li className="linha-de-lista p-0">

@@ -5628,6 +5628,13 @@ nem muito grosso, e de tamanho legível.
   rolagem vertical e sem nada se mexer em 412×892, 390×844, 360×640, 320×568, 1024×768 e
   1440×900. 643 testes, tipos e lint limpos. **Não verificado em toque real.**
 
+## O menu do livro diz só "Editar livro" (08/10/2026)
+
+Pedido do usuário: no menu que abre ao segurar um livro, o texto "Renomear e editar livro" vira
+**"Editar livro"** (e "Editar pasta" numa pasta de acervo). **Substitui** o texto citado em "Editar
+livro vira rota própria" e nas Atualizações aprovadas; o destino (`/livro/:id/editar`) e o resto do
+menu não mudaram. O menu do enfeite já dizia "Editar o enfeite". Só texto: sem teste novo.
+
 ## Fases
 
 0. ✅ Esqueleto (Vite/React/TS/Tailwind/PWA/Capacitor)
