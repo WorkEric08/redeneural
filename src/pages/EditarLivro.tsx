@@ -22,6 +22,7 @@ export default function EditarLivro() {
     anexos,
     ocupado,
     intensidadeDaLuz,
+    iconesNosLivros,
     quantidadeDePrateleiras,
     editarLivro,
   } = usePalacio()
@@ -67,6 +68,7 @@ export default function EditarLivro() {
           rotuloDeEnvio="Salvar"
           ocupado={ocupado}
           intensidadeDaLuz={intensidadeDaLuz}
+          iconesNosLivros={iconesNosLivros}
           onEnviar={(dados) => {
             void editarLivro(livro.id, dados).then((ok) => {
               // `replace`: voltar depois de salvar tem que sair do formulário,

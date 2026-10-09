@@ -643,6 +643,27 @@ describe('modo da busca', () => {
   })
 })
 
+describe('ícones nos livros', () => {
+  it('ligados por padrão, e devolve o que foi escolhido', async () => {
+    expect(await repo.getIconesNosLivros()).toBe(true)
+    await repo.definirIconesNosLivros(false)
+    expect(await repo.getIconesNosLivros()).toBe(false)
+    await repo.definirIconesNosLivros(true)
+    expect(await repo.getIconesNosLivros()).toBe(true)
+  })
+
+  it('não apaga as outras preferências, e elas não o apagam', async () => {
+    await repo.definirIconesNosLivros(false)
+    await repo.definirIntensidadeDaLuz(70)
+    await repo.definirModoDaBusca('exata')
+    expect(await repo.getIconesNosLivros()).toBe(false)
+
+    await repo.definirIconesNosLivros(true)
+    expect(await repo.getIntensidadeDaLuz()).toBe(70)
+    expect(await repo.getModoDaBusca()).toBe('exata')
+  })
+})
+
 describe('modo da Rede', () => {
   it('"rede" por padrão, e devolve o último escolhido', async () => {
     expect(await repo.getModoDaRede()).toBe('rede')

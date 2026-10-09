@@ -5,6 +5,7 @@ import {
   clampDiasParaAdormecer,
   enfeitesSemLivroEmCima,
   estadoAoGuardar,
+  ICONES_NOS_LIVROS_PADRAO,
   INTENSIDADE_DA_LUZ_PADRAO,
   MINIMO_DE_PRATELEIRAS,
   MAPA_VAZIO,
@@ -99,6 +100,8 @@ interface PalacioStore {
   intensidadeDaLuz: number
   /** 0-100: a mesma luz, sobre os enfeites. */
   intensidadeDaLuzDoEnfeite: number
+  /** Se a lombada mostra o ícone da espécie (livro, executável, pasta) no pé. */
+  iconesNosLivros: boolean
   /** O último modo da busca que a pessoa escolheu. */
   modoDaBusca: ModoDaBusca
   /** O último modo da tela da Rede: a constelação ou o Mapa. */
@@ -176,6 +179,8 @@ interface PalacioStore {
   definirIntensidadeDaLuz: (valor: number) => Promise<void>
   /** O mesmo, para a luz sobre os enfeites. */
   definirIntensidadeDaLuzDoEnfeite: (valor: number) => Promise<void>
+  /** Otimista: a estante já mostra ou esconde os ícones do pé na hora. */
+  definirIconesNosLivros: (ligado: boolean) => Promise<void>
   /** Otimista: a busca troca de modo na hora, e a escolha fica gravada para a próxima vez. */
   definirModoDaBusca: (modo: ModoDaBusca) => Promise<void>
   /** O mesmo, para a tela da Rede (constelação ou Mapa). */
@@ -251,6 +256,7 @@ export const usePalacio = create<PalacioStore>()((set, get) => {
     quantidadeDePrateleiras: MINIMO_DE_PRATELEIRAS,
     intensidadeDaLuz: INTENSIDADE_DA_LUZ_PADRAO,
     intensidadeDaLuzDoEnfeite: INTENSIDADE_DA_LUZ_PADRAO,
+    iconesNosLivros: ICONES_NOS_LIVROS_PADRAO,
     modoDaBusca: MODO_DA_BUSCA_PADRAO,
     modoDaRede: MODO_DA_REDE_PADRAO,
     carregado: false,
@@ -680,6 +686,17 @@ export const usePalacio = create<PalacioStore>()((set, get) => {
         set({ intensidadeDaLuzDoEnfeite: await engine.definirIntensidadeDaLuzDoEnfeite(valor) })
       } catch (e) {
         set({ intensidadeDaLuzDoEnfeite: antes, erro: mensagem(e) })
+      }
+    },
+
+    async definirIconesNosLivros(ligado) {
+      const antes = get().iconesNosLivros
+      set({ iconesNosLivros: ligado, erro: null })
+
+      try {
+        set({ iconesNosLivros: await engine.definirIconesNosLivros(ligado) })
+      } catch (e) {
+        set({ iconesNosLivros: antes, erro: mensagem(e) })
       }
     },
 

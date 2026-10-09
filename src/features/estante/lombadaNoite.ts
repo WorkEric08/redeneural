@@ -28,9 +28,16 @@ const BRILHO_DO_ENFEITE_MAXIMO = 18
 /** A sombra que o fundo da estante recebe, a mesma escala (no 0, 70% de preto). */
 const SOMBRA_MAXIMA_DO_FUNDO = 70
 
-/** O emblema ocupa 11 px a 7 px da base; o título precisa terminar acima disso. */
-const TOPO_DO_EMBLEMA = 18
-const FOLGA_DO_EMBLEMA = 2
+/**
+ * O ícone do pé (a espécie do livro) ocupa 11 px, a 7 px da base — ou a 13 px no papel, que
+ * sobe para ficar acima da contagem. O título termina 2 px acima dele: o espaço é **reservado**,
+ * e o título é que cede (08/10/2026; antes o ícone só aparecia se o título, já medido, deixasse
+ * lugar, e com um título de verdade quase nunca deixava).
+ */
+const ICONE_PX = 11
+const BASE_DO_ICONE_PX = 7
+const BASE_DO_ICONE_NO_PAPEL_PX = 13
+const FOLGA_DO_ICONE_PX = 2
 
 const MINIMO_DO_TITULO = 9
 /**
@@ -131,26 +138,10 @@ export function tamanhoDoTitulo(largura: number, espaco: number, caracteres: num
   return Math.round(Math.max(MINIMO_DO_TITULO, livre) * 10) / 10
 }
 
-/**
- * O emblema só aparece se o título terminar acima dele. O título se centra na
- * zona e ocupa o que o texto pede, até a zona inteira. O pé do papel (a
- * contagem) ocupa o mesmo lugar do emblema, então ali ele nunca cabe.
- */
-export function emblemaCabe(
-  estilo: EstiloDaLombada,
-  altura: number,
-  fonte: number,
-  caracteres: number,
-): boolean {
-  if (estilo === 'papel') return false
-  const zona = ZONAS[estilo]
-  const alturaDaZona = ((zona.fundo - zona.topo) / 100) * altura
-  const tamanhoDoTexto = Math.min(
-    Math.max(1, caracteres) * fonte * AVANCO_DO_CARACTERE,
-    alturaDaZona,
-  )
-  const centro = ((zona.topo + zona.fundo) / 200) * altura
-  return centro + tamanhoDoTexto / 2 <= altura - TOPO_DO_EMBLEMA - FOLGA_DO_EMBLEMA
+/** Quantos px do pé a lombada reserva para o ícone, de baixo para cima. */
+export function reservaDoIcone(estilo: EstiloDaLombada): number {
+  const base = estilo === 'papel' ? BASE_DO_ICONE_NO_PAPEL_PX : BASE_DO_ICONE_PX
+  return base + ICONE_PX + FOLGA_DO_ICONE_PX
 }
 
 interface Entrada {
@@ -165,14 +156,14 @@ interface Entrada {
   intensidadeDaLuz: number
   /** Livro por padrão: decide o que a luz de cima de 50 faz. */
   peca?: Peca
+  /** A lombada mostra o ícone da espécie no pé: o título cede o espaço dele. */
+  icone?: boolean
 }
 
 export interface GeometriaDaLombada {
   estilo: EstiloDaLombada
   /** As variáveis CSS que `.lombada` lê. */
   style: CSSProperties
-  /** O emblema, se houver, cabe abaixo do título. */
-  emblemaCabe: boolean
 }
 
 function arredondar(valor: number): number {
@@ -190,7 +181,13 @@ export function geometriaDaLombada(e: Entrada): GeometriaDaLombada {
 
   const caracteres = [...e.titulo].length
   const zona = ZONAS[e.estilo]
-  const fonte = tamanhoDoTitulo(e.largura, ((zona.fundo - zona.topo) / 100) * e.altura, caracteres)
+  // Com ícone, o fim da zona do título sobe para ficar acima dele — sem passar do começo dela:
+  // abaixo do piso de 9 px o título fica minúsculo e o que não cabe vira reticências.
+  const fundoLivre = e.icone
+    ? Math.min(zona.fundo, ((e.altura - reservaDoIcone(e.estilo)) / e.altura) * 100)
+    : zona.fundo
+  const alturaDaZona = Math.max(fundoLivre - zona.topo, (MINIMO_DO_TITULO / e.altura) * 100)
+  const fonte = tamanhoDoTitulo(e.largura, (alturaDaZona / 100) * e.altura, caracteres)
 
   const style = {
     '--cor': cor,
@@ -202,7 +199,7 @@ export function geometriaDaLombada(e: Entrada): GeometriaDaLombada {
     '--fs': `${String(fonte)}px`,
     '--fs-contagem': `${String(Math.round(0.22 * e.largura * 10) / 10)}px`,
     '--zt-topo': `${String(zona.topo)}%`,
-    '--zt-altura': `${String(Math.round((zona.fundo - zona.topo) * 10) / 10)}%`,
+    '--zt-altura': `${String(Math.round(alturaDaZona * 10) / 10)}%`,
     '--zt-x': `${String(zona.x)}%`,
     // Os sinais de andamento (Fazendo, Feita) são proporcionais a H, com piso em px.
     '--faixa-fazendo': `${String(arredondar(Math.max(2, 0.0125 * e.altura)))}px`,
@@ -210,9 +207,5 @@ export function geometriaDaLombada(e: Entrada): GeometriaDaLombada {
     '--disco-feita': `${String(arredondar(2 * Math.max(3.4, 0.034 * e.altura)))}px`,
   } as CSSProperties
 
-  return {
-    estilo: e.estilo,
-    style,
-    emblemaCabe: emblemaCabe(e.estilo, e.altura, fonte, caracteres),
-  }
+  return { estilo: e.estilo, style }
 }

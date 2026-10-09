@@ -19,6 +19,7 @@ import {
   conexaoId,
   conexaoFromSnapshot,
   conexaoToSnapshot,
+  ICONES_NOS_LIVROS_PADRAO,
   INTENSIDADE_DA_LUZ_PADRAO,
   livroFromSnapshot,
   livroToSnapshot,
@@ -357,6 +358,17 @@ export function createDexieRepo(db: PalacioDB = defaultDb): PalacioRepo {
       const recortado = clampIntensidadeDaLuz(valor)
       await db.transaction('rw', db.meta, async () => {
         await db.meta.put(await preferenciasCom({ luzDosEnfeites: recortado }))
+      })
+    },
+
+    async getIconesNosLivros() {
+      const gravado = (await db.meta.get('preferencias')) as PreferenciasGravadas | undefined
+      return gravado?.iconesNosLivros ?? ICONES_NOS_LIVROS_PADRAO
+    },
+
+    async definirIconesNosLivros(ligado) {
+      await db.transaction('rw', db.meta, async () => {
+        await db.meta.put(await preferenciasCom({ iconesNosLivros: ligado }))
       })
     },
 

@@ -146,6 +146,9 @@ export function criarWorkerEngine(): ConnectionEngine {
         valor,
       }),
 
+    definirIconesNosLivros: (ligado: boolean): Promise<boolean> =>
+      pedir<'definirIconesNosLivros'>({ tipo: 'definirIconesNosLivros', ligado }),
+
     definirModoDaBusca: (modo: ModoDaBusca): Promise<ModoDaBusca> =>
       pedir<'definirModoDaBusca'>({ tipo: 'definirModoDaBusca', modo }),
 

@@ -1,16 +1,17 @@
-import { Lightbulb, Minus, Plus, Rows3, Search, Sparkles } from 'lucide-react'
+import { BookOpen, Lightbulb, Minus, Plus, Rows3, Search, Sparkles } from 'lucide-react'
 import type { ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 
 import { botao } from '@/components/botao'
 import { BarraDeTopo } from '@/components/BarraDeTopo'
 import { EtiquetaProcessando } from '@/components/EtiquetaProcessando'
+import { Interruptor } from '@/components/Interruptor'
 import { INTENSIDADE_DA_LUZ_MAXIMA, INTENSIDADE_DA_LUZ_MINIMA, MAXIMO_DE_PRATELEIRAS } from '@/core'
 import { usePalacio } from '@/store/palacio'
 
 /**
- * Ajustes do palácio: quantidade de prateleiras e a intensidade da luz sobre os livros e
- * sobre os enfeites. A seção "Mapa" (Reorganizar mapa) saiu em 07/10/2026.
+ * Ajustes do palácio: quantidade de prateleiras, a intensidade da luz sobre os livros e sobre
+ * os enfeites, e os ícones no pé dos livros. A seção "Mapa" (Reorganizar mapa) saiu em 07/10/2026.
  */
 export default function Ajustes() {
   const {
@@ -25,6 +26,8 @@ export default function Ajustes() {
     definirIntensidadeDaLuz,
     intensidadeDaLuzDoEnfeite,
     definirIntensidadeDaLuzDoEnfeite,
+    iconesNosLivros,
+    definirIconesNosLivros,
   } = usePalacio()
 
   const semVetor = neuronios.filter((n) => n.processando).length
@@ -136,6 +139,28 @@ export default function Ajustes() {
           <p className="text-poeira px-1 pt-2.5 text-xs leading-relaxed">
             Diminuir prateleiras é recusado se ainda sobrar livro nas removidas — mova-os antes.
           </p>
+        </section>
+
+        <section>
+          <h2 className="rotulo-de-secao">Ícones</h2>
+          <div className="cartao">
+            <div className="linha-de-lista">
+              <Icone>
+                <BookOpen size={18} aria-hidden />
+              </Icone>
+              <Texto titulo="Ícone no pé dos livros">
+                Livro, executável (martelo) ou pasta (clipe), na lombada e na amostra.
+              </Texto>
+              <Interruptor
+                ligado={iconesNosLivros}
+                rotulo="Ícone no pé dos livros"
+                desabilitado={travado}
+                onMudar={(ligado) => {
+                  void definirIconesNosLivros(ligado)
+                }}
+              />
+            </div>
+          </div>
         </section>
       </div>
     </div>

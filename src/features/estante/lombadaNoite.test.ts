@@ -6,10 +6,10 @@ import {
   CREME,
   corDoTexto,
   ehCorClara,
-  emblemaCabe,
   corNaLuz,
   geometriaDaLombada,
   luminancia,
+  reservaDoIcone,
   sombraDoFundoEmPercentual,
   tamanhoDoTitulo,
   TEXTO_CLARO,
@@ -78,14 +78,11 @@ describe('tamanho do título', () => {
   })
 })
 
-describe('emblema', () => {
-  it('cabe quando o título é curto e some quando ele ocupa a zona', () => {
-    expect(emblemaCabe('solido', 120, 11, 3)).toBe(true)
-    expect(emblemaCabe('solido', 120, 11, 40)).toBe(false)
-  })
-
-  it('no papel a contagem ocupa o pé: o emblema nunca cabe', () => {
-    expect(emblemaCabe('papel', 130, 11, 1)).toBe(false)
+describe('o ícone do pé', () => {
+  it('reserva 20 px do pé (7 de base, 11 do ícone, 2 de folga) — e 26 no papel, acima da contagem', () => {
+    expect(reservaDoIcone('solido')).toBe(20)
+    expect(reservaDoIcone('contorno')).toBe(20)
+    expect(reservaDoIcone('papel')).toBe(26)
   })
 })
 
@@ -166,14 +163,32 @@ describe('geometriaDaLombada', () => {
     }
   })
 
-  it('a conta do emblema usa a mesma fonte que a lombada vai desenhar', () => {
-    const curto = geometriaDaLombada({ ...base, titulo: 'Arte', altura: 130 })
-    const longo = geometriaDaLombada({
-      ...base,
-      titulo: 'Uma área enorme do que eu sei hoje',
-      altura: 130,
-    })
-    expect(curto.emblemaCabe).toBe(true)
-    expect(longo.emblemaCabe).toBe(false)
+  it('com ícone, o título cede o pé: a zona termina acima dele, qualquer que seja o título', () => {
+    for (const titulo of ['Arte', 'Uma área enorme do que eu sei hoje']) {
+      for (const estilo of ESTILOS_DA_LOMBADA) {
+        const altura = 100
+        const style = geometriaDaLombada({ ...base, estilo, titulo, altura, icone: true })
+          .style as Record<string, string>
+        const fim = parseFloat(style['--zt-topo']!) + parseFloat(style['--zt-altura']!)
+        // o fim da zona (em % de H = px, com H = 100) fica acima da reserva do ícone
+        expect(fim).toBeLessThanOrEqual(100 - reservaDoIcone(estilo) + 0.1)
+      }
+    }
+  })
+
+  it('sem ícone, a zona é a de sempre (o título usa o pé)', () => {
+    const sem = geometriaDaLombada({ ...base, altura: 100 }).style as Record<string, string>
+    const com = geometriaDaLombada({ ...base, altura: 100, icone: true }).style as Record<
+      string,
+      string
+    >
+    expect(sem['--zt-altura']).toBe('75%')
+    expect(parseFloat(com['--zt-altura']!)).toBeLessThan(75)
+  })
+
+  it('o título nunca fica menor que o piso por causa do ícone: a zona tem pelo menos 9 px', () => {
+    const style = geometriaDaLombada({ ...base, estilo: 'duas-cores', altura: 40, icone: true })
+      .style as Record<string, string>
+    expect((parseFloat(style['--zt-altura']!) / 100) * 40).toBeGreaterThanOrEqual(9 - 0.01)
   })
 })

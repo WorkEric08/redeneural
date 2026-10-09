@@ -1272,6 +1272,12 @@ img {
   color: color-mix(in srgb, var(--fg) 80%, transparent);
 }
 
+/* No papel o pé é da contagem: o ícone sobe para ficar logo acima dela (a reserva do título,
+   em lombadaNoite.ts, conta esses 6 px a mais). */
+.lombada[data-estilo='papel'] .lombada-emblema {
+  bottom: 13px;
+}
+
 /* ---------------------------------------------------------------------------
  * A porta de entrada — a sala antes da sala.
  *

@@ -5497,6 +5497,38 @@ mexer na tela. Honra a regra permanente "mostrar tudo sem deslize vertical".
   **Não verificado em toque real, nem com o teclado aberto** (o teclado encolhe a tela e aí a
   rolagem volta; o botão continua preso no pé).
 
+## Todo livro tem o ícone da espécie no pé, e Ajustes liga e desliga (08/10/2026)
+
+Pedido do usuário: na tela de criar livro, a pasta mostrava um clipe no preview, mas o livro criado
+não o tinha na estante. Todos os livros devem ter o ícone no pé — no preview e na estante — e
+Ajustes ganha uma seção para ligar e desligar.
+
+- **Por que o clipe sumia na estante:** `emblemaCabe` só deixava o ícone aparecer se o título, já
+  medido, terminasse acima dele. O preview mostra "…" até se digitar, então cabia; com um título de
+  verdade quase nunca cabia (a pasta de teste, "Referências, vídeos e fotos de estudo", ficava sem).
+- **Agora o espaço é reservado, e o título é que cede:** `geometriaDaLombada` recebe `icone` e sobe
+  o fim da zona do título para acima do ícone (`reservaDoIcone`: 7 px de base + 11 do ícone + 2 de
+  folga = 20 px; **26 no papel**, onde o ícone sobe para ficar acima da contagem). O corpo do título
+  se recalcula nessa zona menor, e o que não cabe vira reticências; a zona nunca passa de 9 px a
+  menos. `emblemaCabe` saiu (e seus testes).
+- **O ícone é a espécie do livro** (`especieDoLivro`, `core/domain/icones.ts`): o mesmo ícone do
+  controle de tipo — **livro aberto**, **martelo** (executável) e **clipe** (pasta). Vale na estante
+  (`Lombada`) e na amostra do formulário, que mostra a espécie escolhida e troca ao vivo. O enfeite não
+  tem. O fantasma do arrasto continua só com cor e título.
+- **Dois casos em que o pé é de outra coisa:** a lombada **feita** (o disco dourado ocupa o pé) fica
+  sem ícone, como já ficava sem emblema; e um **emblema que a pessoa escolheu antes de 14/09/2026**
+  (estrela, coração…) vale mais que o ícone da espécie — a pasta é a exceção, que sempre mostra o clipe.
+- **Ajustes → nova seção "Ícones"**, com um interruptor ("Ícone no pé dos livros"; `components/
+  Interruptor.tsx`, `role="switch"`). A preferência é `meta.preferencias.iconesNosLivros` (ligada por
+  padrão; sem versão nova do Dexie; fora do backup) e vale na hora, na estante e no formulário.
+  **Desligada, a lombada não tem ícone nenhum** e o título volta a usar o pé.
+- **Verificado** no Chrome (build de produção) em 412×892, 320×568 e 1440×900, com livro comum,
+  executável, pasta, papel e contorno de **título longo**: cada um com o ícone certo a 7 px da base (13
+  no papel), dentro da lombada e com o título terminando acima dele; os livros do seed também; o
+  interruptor liga e desliga (a amostra do formulário acompanha), recarregar mantém, e Ajustes não ganha
+  rolagem lateral. Os formulários continuam cabendo sem rolagem vertical e sem nada se mexer ao trocar
+  largura e comprimento. 634 testes (9 novos), tipos, lint e prettier limpos. **Não verificado em toque real.**
+
 ## Mostrar tudo sem deslize vertical: as folhas e o andamento (06/10/2026)
 
 Pedido do usuário, sobre os livros executáveis: melhorar de forma geral, e em especial a

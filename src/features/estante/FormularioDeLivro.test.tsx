@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react'
+import { cleanup, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 
@@ -25,6 +25,7 @@ function montar(inicial: NovoLivro = INICIAL) {
       inicial={inicial}
       rotuloDeEnvio="Criar livro"
       intensidadeDaLuz={42}
+      iconesNosLivros
       onEnviar={onEnviar}
     />,
   )
@@ -89,6 +90,7 @@ describe('FormularioDeLivro: cor e forma', () => {
         inicial={INICIAL}
         rotuloDeEnvio="Criar livro"
         intensidadeDaLuz={42}
+        iconesNosLivros
         onEnviar={vi.fn()}
       />,
     )
@@ -103,6 +105,44 @@ describe('FormularioDeLivro: cor e forma', () => {
   })
 })
 
+describe('FormularioDeLivro: o ícone do pé na amostra', () => {
+  function amostra(props: {
+    iconesNosLivros?: boolean
+    tipoFixo?: 'acervo'
+    executavel?: boolean
+    enfeite?: boolean
+  }): Element | null {
+    const { container } = render(
+      <FormularioDeLivro
+        inicial={{ ...INICIAL, executavel: props.executavel ?? false }}
+        rotuloDeEnvio="Criar livro"
+        intensidadeDaLuz={50}
+        iconesNosLivros={props.iconesNosLivros ?? true}
+        {...(props.tipoFixo ? { tipoFixo: props.tipoFixo } : {})}
+        {...(props.enfeite ? { enfeite: true } : {})}
+        onEnviar={vi.fn()}
+      />,
+    )
+    return container.querySelector('.lombada--amostra .lombada-emblema svg')
+  }
+
+  it('um livro comum mostra o livro aberto; o executável, o martelo; a pasta, o clipe', () => {
+    expect(amostra({})).toHaveClass('lucide-book-open')
+    cleanup()
+    expect(amostra({ executavel: true })).toHaveClass('lucide-hammer')
+    cleanup()
+    expect(amostra({ tipoFixo: 'acervo' })).toHaveClass('lucide-paperclip')
+  })
+
+  it('desligado em Ajustes, a amostra fica sem ícone', () => {
+    expect(amostra({ iconesNosLivros: false })).toBeNull()
+  })
+
+  it('o enfeite não é um livro: nunca tem ícone', () => {
+    expect(amostra({ enfeite: true })).toBeNull()
+  })
+})
+
 describe('FormularioDeLivro: enfeite', () => {
   function montarEnfeite(inicial: NovoLivro) {
     const onEnviar = vi.fn()
@@ -112,6 +152,7 @@ describe('FormularioDeLivro: enfeite', () => {
         inicial={inicial}
         rotuloDeEnvio="Salvar"
         intensidadeDaLuz={0}
+        iconesNosLivros
         onEnviar={onEnviar}
       />,
     )
@@ -154,6 +195,7 @@ describe('FormularioDeLivro: enfeite', () => {
         acabamentoDoEnfeite={{ douradoEm: 'faixa' }}
         rotuloDeEnvio="Salvar"
         intensidadeDaLuz={50}
+        iconesNosLivros
         onEnviar={vi.fn()}
       />,
     )
@@ -176,6 +218,7 @@ describe('FormularioDeLivro: enfeite', () => {
         acabamentoDoEnfeite={{ douradoEm: null }}
         rotuloDeEnvio="Salvar"
         intensidadeDaLuz={50}
+        iconesNosLivros
         onEnviar={vi.fn()}
       />,
     )

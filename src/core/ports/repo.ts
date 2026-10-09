@@ -77,6 +77,9 @@ export interface PalacioRepo {
   getIntensidadeDaLuzDoEnfeite(): Promise<number>
   /** Grava a intensidade da luz dos enfeites, sempre recortada para 0-100. */
   definirIntensidadeDaLuzDoEnfeite(valor: number): Promise<void>
+  /** Se a lombada mostra o ícone da espécie no pé. Default `ICONES_NOS_LIVROS_PADRAO` (sim). */
+  getIconesNosLivros(): Promise<boolean>
+  definirIconesNosLivros(ligado: boolean): Promise<void>
   /** O último modo da busca que a pessoa escolheu. `MODO_DA_BUSCA_PADRAO` se nunca escolheu. */
   getModoDaBusca(): Promise<ModoDaBusca>
   definirModoDaBusca(modo: ModoDaBusca): Promise<void>

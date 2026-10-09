@@ -49,6 +49,7 @@ export interface RespostasDoMotor {
   definirQuantidadeDePrateleiras: number
   definirIntensidadeDaLuz: number
   definirIntensidadeDaLuzDoEnfeite: number
+  definirIconesNosLivros: boolean
   definirModoDaBusca: ModoDaBusca
   definirModoDaRede: ModoDaRede
   reorganizarMapa: MapaDoPalacio
@@ -92,6 +93,7 @@ export type ParaMotor =
   | { req: number; tipo: 'definirQuantidadeDePrateleiras'; quantidade: number }
   | { req: number; tipo: 'definirIntensidadeDaLuz'; valor: number }
   | { req: number; tipo: 'definirIntensidadeDaLuzDoEnfeite'; valor: number }
+  | { req: number; tipo: 'definirIconesNosLivros'; ligado: boolean }
   | { req: number; tipo: 'definirModoDaBusca'; modo: ModoDaBusca }
   | { req: number; tipo: 'definirModoDaRede'; modo: ModoDaRede }
   | { req: number; tipo: 'reorganizarMapa' }

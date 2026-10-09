@@ -1,6 +1,6 @@
 import { createPortal } from 'react-dom'
 
-import { INTENSIDADE_DA_LUZ_PADRAO } from '@/core'
+import { especieDoLivro, INTENSIDADE_DA_LUZ_PADRAO } from '@/core'
 import { contar } from '@/lib/plural'
 
 import { EmblemaDaLombada } from './EmblemaDaLombada'
@@ -41,6 +41,8 @@ interface Props {
   intensidadeDaLuz: number
   /** A altura da fileira em px: a lombada é % dela, e o título se mede em px. */
   alturaDaFileira: number
+  /** Ajustes: o ícone da espécie (livro, executável, pasta) no pé da lombada. */
+  iconesNosLivros: boolean
   manipular: ManipulacaoDaLombada
 }
 
@@ -69,10 +71,13 @@ export function Lombada({
   chegando,
   intensidadeDaLuz,
   alturaDaFileira,
+  iconesNosLivros,
   manipular,
 }: Props) {
   const altura = alturaDaLombadaEmPercentual(item.livro.comprimentoLombada, item.altura)
   const ehPasta = item.livro.tipo === 'acervo'
+  // O pé da feita é do disco: o ícone não cabe junto, e a lombada feita fica sem ele.
+  const icone = iconesNosLivros && item.andamento !== 'feita'
   const geo = geometriaDaLombada({
     estilo: item.livro.estilo,
     cor: item.livro.cor,
@@ -80,6 +85,7 @@ export function Lombada({
     largura,
     altura: (altura * alturaDaFileira) / 100,
     intensidadeDaLuz,
+    icone,
   })
 
   return (
@@ -128,9 +134,12 @@ export function Lombada({
           </svg>
         </span>
       )}
-      {/* O pé da feita é do disco: o emblema não cabe junto. */}
-      {geo.emblemaCabe && item.andamento !== 'feita' && (
-        <EmblemaDaLombada chave={ehPasta ? 'pasta' : item.livro.emblema} />
+      {/* Um emblema que a pessoa escolheu (antes de 14/09/2026) vale mais que o ícone da espécie;
+          a pasta mostra sempre o clipe. O espaço do pé é reservado em `geometriaDaLombada`. */}
+      {icone && (
+        <EmblemaDaLombada
+          chave={ehPasta ? 'pasta' : (item.livro.emblema ?? especieDoLivro(item.livro))}
+        />
       )}
       {item.andamento === 'adormecido' && <span className="lombada-nevoa" aria-hidden />}
     </button>

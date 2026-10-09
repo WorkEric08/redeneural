@@ -59,6 +59,8 @@ export interface PreferenciasGravadas {
   luzDosLivros?: number
   /** 0-100, a luz sobre os enfeites e o fundo da estante — 50 é a cor real. Ausente: o padrão. */
   luzDosEnfeites?: number
+  /** O ícone no pé de cada lombada. Ausente antes de 08/10/2026: `ICONES_NOS_LIVROS_PADRAO`. */
+  iconesNosLivros?: boolean
   /** Ausente em preferências gravadas antes de 30/09/2026 — o repo trata como `MODO_DA_BUSCA_PADRAO`. */
   modoDaBusca?: ModoDaBusca
   /** Ausente antes do Mapa (01/10/2026) — o repo trata como `MODO_DA_REDE_PADRAO`. */

@@ -32,6 +32,7 @@ export default function NovoLivro() {
     livros,
     ocupado,
     intensidadeDaLuz,
+    iconesNosLivros,
     quantidadeDePrateleiras,
     criarLivro,
     guardarNeuronio,
@@ -91,6 +92,7 @@ export default function NovoLivro() {
           rotuloDeEnvio={ehPasta ? 'Criar pasta' : 'Criar livro'}
           ocupado={ocupado}
           intensidadeDaLuz={intensidadeDaLuz}
+          iconesNosLivros={iconesNosLivros}
           prateleiras={quantidadeDePrateleiras}
           {...(guardarId === null ? { tipo: { valor: tipo, onMudar: setTipo } } : {})}
           onEnviar={(dados) => {

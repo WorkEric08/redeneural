@@ -87,6 +87,8 @@ export default function EditarEnfeite() {
           rotuloDeEnvio="Salvar"
           ocupado={ocupado}
           intensidadeDaLuz={intensidadeDaLuzDoEnfeite}
+          // O enfeite não é um livro: não tem espécie, e portanto nenhum ícone.
+          iconesNosLivros={false}
           onEnviar={(dados) => {
             void salvarEnfeite({
               prateleira,

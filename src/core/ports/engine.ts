@@ -146,6 +146,8 @@ export interface EstadoDoPalacio {
   intensidadeDaLuz: number
   /** 0-100: a mesma luz, sobre os enfeites. */
   intensidadeDaLuzDoEnfeite: number
+  /** Se a lombada mostra o ícone da espécie (livro, executável, pasta) no pé. */
+  iconesNosLivros: boolean
   /** O último modo da busca que a pessoa escolheu — a tela abre nele. */
   modoDaBusca: ModoDaBusca
   /** O último modo da tela da Rede — constelação ou Mapa. */
@@ -277,6 +279,8 @@ export interface ConnectionEngine {
   definirIntensidadeDaLuz(valor: number): Promise<number>
   /** Grava a intensidade da luz dos enfeites (0-100), sempre recortada para essa faixa. */
   definirIntensidadeDaLuzDoEnfeite(valor: number): Promise<number>
+  /** Liga ou desliga o ícone da espécie no pé das lombadas. */
+  definirIconesNosLivros(ligado: boolean): Promise<boolean>
   /** Grava o modo da busca que a pessoa acabou de escolher. */
   definirModoDaBusca(modo: ModoDaBusca): Promise<ModoDaBusca>
   /** Grava o modo da tela da Rede que a pessoa acabou de escolher. */

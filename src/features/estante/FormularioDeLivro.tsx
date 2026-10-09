@@ -5,6 +5,7 @@ import { botao } from '@/components/botao'
 import {
   clampDiasParaAdormecer,
   DIAS_PARA_ADORMECER_MAXIMO,
+  type EspecieDoLivro,
   type EstiloDaLombada,
   type TipoDeLivro,
 } from '@/core'
@@ -62,6 +63,8 @@ interface Props {
   ocupado?: boolean
   /** 0-100: para a amostra mostrar a mesma lavagem da estante. */
   intensidadeDaLuz: number
+  /** Ajustes: o ícone da espécie no pé. A amostra o mostra como a estante: livro, executável ou pasta. */
+  iconesNosLivros: boolean
   /**
    * Só ao criar: livro de conceitos ou pasta de acervo. Editando, fica de
    * fora — o tipo não muda depois (ver `TipoDeLivro`).
@@ -119,6 +122,7 @@ export function FormularioDeLivro({
   rotuloDeEnvio,
   ocupado = false,
   intensidadeDaLuz,
+  iconesNosLivros,
   tipo,
   tipoFixo,
   enfeite = false,
@@ -183,6 +187,14 @@ export function FormularioDeLivro({
     escuroEm !== undefined &&
     estilo === escuroEm.estilo &&
     cor.toLowerCase() === escuroEm.cor.toLowerCase()
+  // O ícone do pé: a espécie que está escolhida agora (livro, executável ou pasta), como a
+  // estante vai mostrar. O enfeite não é um livro, e não tem.
+  const especie: EspecieDoLivro = ehPasta
+    ? 'pasta'
+    : podeSerExecutavel && executavel
+      ? 'executavel'
+      : 'livro'
+  const icone = iconesNosLivros && !enfeite
   const geo = geometriaDaLombada({
     estilo,
     cor,
@@ -191,6 +203,7 @@ export function FormularioDeLivro({
     altura: alturaDaAmostra,
     intensidadeDaLuz,
     peca: enfeite ? 'enfeite' : 'livro',
+    icone,
   })
 
   const opcoesDeTipo: OpcaoDeTipo[] = [
@@ -356,9 +369,7 @@ export function FormularioDeLivro({
                 {contagem}
               </span>
             )}
-            {geo.emblemaCabe && !enfeite && (
-              <EmblemaDaLombada chave={ehPasta ? 'pasta' : emblema} />
-            )}
+            {icone && <EmblemaDaLombada chave={ehPasta ? 'pasta' : (emblema ?? especie)} />}
           </span>
         </div>
       </div>

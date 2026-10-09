@@ -1,4 +1,16 @@
-import { Feather, Flame, Heart, Leaf, Moon, Paperclip, Star, Sun, Zap } from 'lucide-react'
+import {
+  BookOpen,
+  Feather,
+  Flame,
+  Hammer,
+  Heart,
+  Leaf,
+  Moon,
+  Paperclip,
+  Star,
+  Sun,
+  Zap,
+} from 'lucide-react'
 
 /**
  * O emblema, já como ícone na lombada — ou nada, se `chave` for `null` ou
@@ -38,8 +50,13 @@ function iconeElemento(chave: string | null) {
       return <Flame size={11} aria-hidden />
     case 'pena':
       return <Feather size={11} aria-hidden />
-    // Não é escolha de ninguém: toda pasta de acervo mostra o clipe, no lugar
-    // do emblema — é o que a distingue de um livro sem abrir (ver Lombada).
+    // A espécie do livro, que não é escolha de ninguém (08/10/2026): o mesmo ícone do tipo
+    // na tela de criar — livro, executável (martelo) ou pasta (clipe). É o que distingue
+    // um livro do outro sem abrir (ver Lombada).
+    case 'livro':
+      return <BookOpen size={11} aria-hidden />
+    case 'executavel':
+      return <Hammer size={11} aria-hidden />
     case 'pasta':
       return <Paperclip size={11} aria-hidden />
     default:

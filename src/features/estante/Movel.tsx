@@ -49,6 +49,8 @@ interface Props {
   intensidadeDaLuz: number
   /** 0-100: a mesma luz, sobre os enfeites. */
   intensidadeDaLuzDoEnfeite: number
+  /** O ícone da espécie no pé de cada lombada (Ajustes). */
+  iconesNosLivros: boolean
   onEspiar: (livroId: string) => void
   onAcoes: (livroId: string) => void
   /** Põe o livro no lugar `(prateleira, lugar)` — mesma assinatura da store. */
@@ -92,6 +94,7 @@ export function Movel({
   quantidadeDePrateleiras,
   intensidadeDaLuz,
   intensidadeDaLuzDoEnfeite,
+  iconesNosLivros,
   onEspiar,
   onAcoes,
   onMover,
@@ -255,6 +258,7 @@ export function Movel({
                     ponte={(pontesDoFoco?.get(lugar.item.livro.id) ?? 0) > 0}
                     chegando={chegandoId === lugar.item.livro.id}
                     intensidadeDaLuz={intensidadeDaLuz}
+                    iconesNosLivros={iconesNosLivros}
                     alturaDaFileira={alturaDaFileira}
                     manipular={manipular(lugar.item.livro.id)}
                   />
