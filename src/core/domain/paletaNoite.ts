@@ -1,6 +1,6 @@
 /**
- * A paleta Noite: as dez cores que um livro pode ter, e as dez formas da
- * lombada (estante no estilo Noite, 06/10/2026).
+ * A paleta Noite: as dez cores que um livro pode ter, e as oito formas da
+ * lombada (estante no estilo Noite, 06/10/2026; "Duas cores" e "Metade" saíram em 08/10/2026).
  *
  * `Livro.cor` continua sendo um hex gravado, mas só um destes dez. Backup e
  * banco de antes da paleta trazem hex livre: `corMaisProxima` leva cada um ao
@@ -32,13 +32,11 @@ export const COR_PADRAO = PALETA_NOITE[0].hex
 export const ESTILOS_DA_LOMBADA = [
   'solido',
   'faixa',
-  'duas-cores',
   'contorno',
   'ponto',
   'fio',
   'degrade',
   'papel',
-  'metade',
   'bloco',
 ] as const
 
@@ -48,6 +46,17 @@ export const ESTILO_PADRAO: EstiloDaLombada = 'solido'
 
 export function ehEstiloDaLombada(valor: unknown): valor is EstiloDaLombada {
   return ESTILOS_DA_LOMBADA.some((e) => e === valor)
+}
+
+/** As formas que saíram em 08/10/2026. Um backup antigo pode trazê-las; vale como sólido. */
+export const ESTILOS_QUE_SAIRAM: readonly string[] = ['duas-cores', 'metade']
+
+/**
+ * Uma forma que existe, ou `ESTILO_PADRAO`. Livros e enfeites gravados (ou num backup) com uma
+ * das formas que saíram — "duas-cores" e "metade" — viram sólidos em vez de ficar sem desenho.
+ */
+export function estiloOuPadrao(valor: unknown): EstiloDaLombada {
+  return ehEstiloDaLombada(valor) ? valor : ESTILO_PADRAO
 }
 
 const HEX = /^#[0-9a-f]{6}$/i

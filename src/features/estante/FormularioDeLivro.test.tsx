@@ -42,10 +42,12 @@ describe('FormularioDeLivro: cor e forma', () => {
     }
   })
 
-  it('oferece as dez formas, com o sólido marcado num livro novo', () => {
+  it('oferece as oito formas — sem "Duas cores" nem "Metade" —, com o sólido marcado num livro novo', () => {
     montar()
     const formas = screen.getByRole('radiogroup', { name: 'Forma' })
-    expect(formas.querySelectorAll('input[type=radio]')).toHaveLength(10)
+    expect(formas.querySelectorAll('input[type=radio]')).toHaveLength(8)
+    expect(screen.queryByRole('radio', { name: 'Duas cores' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('radio', { name: 'Metade' })).not.toBeInTheDocument()
     expect(screen.getByRole('radio', { name: 'Sólido' })).toBeChecked()
     expect(screen.getByRole('radio', { name: 'Azul base' })).toBeChecked()
   })
@@ -56,11 +58,11 @@ describe('FormularioDeLivro: cor e forma', () => {
 
     await usuario.type(screen.getByRole('textbox'), 'Psicologia')
     await usuario.click(screen.getByRole('radio', { name: 'Vinho' }))
-    await usuario.click(screen.getByRole('radio', { name: 'Duas cores' }))
+    await usuario.click(screen.getByRole('radio', { name: 'Contorno' }))
     await usuario.click(screen.getByRole('button', { name: 'Criar livro' }))
 
     expect(onEnviar).toHaveBeenCalledWith(
-      expect.objectContaining({ titulo: 'Psicologia', cor: '#4A2540', estilo: 'duas-cores' }),
+      expect.objectContaining({ titulo: 'Psicologia', cor: '#4A2540', estilo: 'contorno' }),
     )
   })
 

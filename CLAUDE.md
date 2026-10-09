@@ -5593,6 +5593,41 @@ forma geral" virou ajuste de tela, não de comportamento. A seção "Adormecidas
 recolhida (dois toques para ver e acordar), e a folha do andamento não diz que a ideia está
 adormecida nem há quantos dias — sugestão, não implementada.
 
+## Oito formas de lombada e uma fonte só para o título (08/10/2026)
+
+Pedido do usuário: tirar "Duas cores" e "Metade" da seção Forma e padronizar a fonte do título
+do livro, que parecia mudar de uma forma para outra. Tinha de ser sóbria, sem traço muito fino
+nem muito grosso, e de tamanho legível.
+
+> **Substitui:** tudo o que este arquivo diz sobre "dez formas" (a paleta Noite, o formulário, a
+> amostra), o título da lombada em Literata (ver "A estante no estilo Noite") e o piso de 9 px
+> do título.
+
+- **As formas** (`ESTILOS_DA_LOMBADA`): sólido, faixa, contorno, ponto, fio, degradê, papel e
+  bloco. `Duas cores` e `Metade` saíram da lista, do CSS e das zonas de título.
+- **Quem já as tinha vira sólido, sem perder o resto.** Dexie **v16** (sem índice novo)
+  regrava `estilo` de livros e enfeites com `estiloOuPadrao`. No **backup**, só as duas formas
+  que saíram (`ESTILOS_QUE_SAIRAM`) são mapeadas para sólido; uma forma que nunca existiu
+  continua recusando o arquivo, porque aí o arquivo foi mexido.
+- **A fonte do título** é Source Sans 3 (a de interface, já auto-hospedada), peso 600,
+  maiúsculas e 0,06em de espaçamento, **em todas as formas** — o papel também (antes mostrava o
+  título como foi digitado, em Literata). A amostra do formulário e a animação de abrir o livro
+  usam a mesma. Só há uma regra de fonte no CSS (`.lombada-titulo`): nenhuma forma sobrescreve
+  peso ou caixa.
+- **Por que Source Sans 3 600:** a Literata 700 em maiúsculas gastava ~0,81 do corpo por
+  caractere e variava bastante de letra para letra; a Source Sans 3 é mais estreita e regular
+  (média 0,60, palavras de 0,67 a 0,68, pior caso 0,77 — medido no canvas), então o mesmo
+  título cabe maior na mesma lombada. O 600 fica entre o fino (400) e o grosso (700).
+- **Tamanho legível:** `AVANCO_DO_CARACTERE` 0,9 → **0,72** e piso `MINIMO_DO_TITULO` 9 → **11
+  px**. Título comprido em lombada baixa continua terminando em reticências (o piso é o que
+  garante a leitura); "Programação" numa lombada de 38 px com 4 prateleiras ainda perde as
+  últimas letras.
+- **Verificado** no Chrome (build de produção), 32 lombadas (as 8 formas × 4 títulos): uma fonte
+  só, peso 600 e maiúsculas em todas, tamanho mínimo 11 px; a lista de Forma tem 8 opções e a
+  amostra usa a mesma fonte; os formulários de livro, pasta, executável e enfeite continuam sem
+  rolagem vertical e sem nada se mexer em 412×892, 390×844, 360×640, 320×568, 1024×768 e
+  1440×900. 643 testes, tipos e lint limpos. **Não verificado em toque real.**
+
 ## Fases
 
 0. ✅ Esqueleto (Vite/React/TS/Tailwind/PWA/Capacitor)

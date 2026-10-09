@@ -5,6 +5,7 @@ import {
   DIAS_PARA_ADORMECER_PADRAO,
   distribuicaoAntiga,
   ESTILO_PADRAO,
+  estiloOuPadrao,
   posicoesAntigas,
   type Anexo,
   type ArquivoDoAnexo,
@@ -335,6 +336,21 @@ export function createDb(name: string = DB_NAME): PalacioDB {
         .table<EnfeiteGravado, [number, number]>('enfeites')
         .toCollection()
         .modify({ dourado: true })
+    })
+
+  // v16 (08/10/2026): as formas "Duas cores" e "Metade" saíram. Quem as tinha — livro ou
+  // enfeite — vira sólido, em vez de ficar com uma forma que a tela não sabe mais escolher.
+  db.version(16)
+    .stores({})
+    .upgrade(async (tx) => {
+      const livros = tx.table<Livro, string>('livros')
+      await livros.toCollection().modify((l) => {
+        l.estilo = estiloOuPadrao(l.estilo)
+      })
+      const enfeites = tx.table<EnfeiteGravado, [number, number]>('enfeites')
+      await enfeites.toCollection().modify((e) => {
+        e.estilo = estiloOuPadrao(e.estilo)
+      })
     })
 
   return db

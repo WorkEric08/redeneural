@@ -791,14 +791,12 @@ img {
   );
 }
 
-/* --- as dez formas: o detalhe é um pseudo-elemento só --------------------- */
+/* --- as oito formas: o detalhe é um pseudo-elemento só --------------------- */
 
 .lombada[data-estilo='faixa']::before,
-.lombada[data-estilo='duas-cores']::before,
 .lombada[data-estilo='contorno']::before,
 .lombada[data-estilo='ponto']::before,
 .lombada[data-estilo='fio']::before,
-.lombada[data-estilo='metade']::before,
 .lombada[data-estilo='bloco']::before {
   content: '';
   position: absolute;
@@ -811,15 +809,6 @@ img {
   left: 0;
   height: max(2px, 2.2%);
   background: color-mix(in srgb, var(--base) 45%, var(--fg) 55%);
-}
-
-.lombada[data-estilo='duas-cores']::before {
-  top: 0;
-  right: 0;
-  left: 0;
-  height: 30%;
-  border-radius: 2px 2px 0 0;
-  background: color-mix(in srgb, var(--base) 78%, var(--fg) 22%);
 }
 
 .lombada[data-estilo='contorno']::before {
@@ -857,15 +846,6 @@ img {
     color-mix(in srgb, var(--base) 72%, var(--degrade-alvo) 28%) 0,
     var(--base) 100%
   );
-}
-
-.lombada[data-estilo='metade']::before {
-  top: 0;
-  right: 0;
-  bottom: 0;
-  width: 38%;
-  border-radius: 0 2px 0 0;
-  background: color-mix(in srgb, var(--base) 70%, var(--fg) 30%);
 }
 
 .lombada[data-estilo='bloco']::before {
@@ -1149,7 +1129,12 @@ img {
 
 /* O título: vertical, na zona da forma (--zt-*), centrado na horizontal em
    --zt-x. O tamanho já vem em px (--fs); o que não cabe na zona vira
-   reticências. A pilha de fontes é a que o app já usa. */
+   reticências.
+
+   Uma fonte só, em toda forma (08/10/2026): Source Sans 3 em peso 600 — sóbria, sem traço fino
+   nem grosso —, em caixa alta. Antes a Literata trocava de peso (700 ou 400) e o papel não tinha
+   caixa alta, então o título mudava de cara de uma forma para a outra. A conta do tamanho
+   (lombadaNoite.ts) usa a largura medida desta fonte. */
 .lombada-titulo {
   position: absolute;
   top: var(--zt-topo);
@@ -1157,28 +1142,17 @@ img {
   height: var(--zt-altura);
   overflow: hidden;
   transform: translateX(-50%);
-  font-family: var(--fonte-titulo);
+  font-family: var(--fonte-texto);
   font-size: var(--fs);
-  font-weight: 700;
+  font-weight: 600;
   line-height: 1;
-  letter-spacing: 0.1em;
+  letter-spacing: 0.06em;
   text-align: center;
   text-overflow: ellipsis;
   text-transform: uppercase;
   white-space: nowrap;
   color: var(--fg);
   writing-mode: vertical-rl;
-}
-
-.lombada[data-estilo='contorno'] .lombada-titulo,
-.lombada[data-estilo='fio'] .lombada-titulo,
-.lombada[data-estilo='papel'] .lombada-titulo {
-  font-weight: 400;
-}
-
-/* O papel mostra o título como foi digitado. */
-.lombada[data-estilo='papel'] .lombada-titulo {
-  text-transform: none;
 }
 
 /* A contagem de ideias, no pé do papel. */
@@ -2396,10 +2370,10 @@ img {
 .abertura-lombada-titulo {
   max-height: calc(100% - 14px * var(--aumento-da-lombada));
   overflow: hidden;
-  font-family: var(--fonte-titulo);
+  font-family: var(--fonte-texto);
   font-size: calc(0.72rem * var(--aumento-da-lombada));
-  font-weight: 700;
-  letter-spacing: 0.1em;
+  font-weight: 600;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
   white-space: nowrap;
   color: var(--fg);

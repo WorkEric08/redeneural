@@ -1459,6 +1459,79 @@ describe('a imagem do resultado de uma ideia', () => {
   })
 })
 
+describe('migração para a v16', () => {
+  // Em 08/10/2026 as formas "Duas cores" e "Metade" saíram: quem as tinha vira sólido.
+  it('livro e enfeite com uma forma que saiu viram sólidos, e o resto não muda', async () => {
+    const nome = `palacio-migracao-v16-${String(nth)}`
+
+    const antigo = new Dexie(nome)
+    antigo.version(1).stores({
+      livros: 'id, createdAt',
+      neuronios: 'id, livroId, updatedAt',
+      conexoes: 'id, aId, bId, updatedAt',
+    })
+    antigo.version(2).stores({ meta: 'chave' })
+    antigo.version(3).stores({ livros: 'id, createdAt, ordem' })
+    antigo.version(4).stores({ livros: 'id, createdAt, ordem, prateleira' })
+    antigo.version(5).stores({ etiquetas: 'prateleira' })
+    antigo.version(6).stores({})
+    antigo.version(7).stores({})
+    antigo.version(8).stores({})
+    antigo.version(9).stores({ vagas: '[prateleira+ordem], prateleira' })
+    antigo.version(10).stores({
+      anexos: 'id, livroId, updatedAt',
+      arquivos: 'anexoId',
+      vinculos: 'id, anexoId, conceitoId',
+    })
+    antigo.version(11).stores({})
+    antigo.version(12).stores({})
+    antigo.version(13).stores({ enfeites: '[prateleira+ordem], prateleira' })
+    antigo.version(14).stores({ resultados: 'neuronioId' })
+    antigo.version(15).stores({})
+    const livro = (id: string, estilo: string, ordem: number) => ({
+      id,
+      tipo: 'conceitos',
+      titulo: id,
+      cor: '#1B2A6B',
+      estilo,
+      prateleira: 0,
+      ordem,
+      emblema: null,
+      larguraLombada: null,
+      comprimentoLombada: null,
+      executavel: false,
+      diasParaAdormecer: 30,
+      createdAt: T0,
+    })
+    await antigo
+      .table('livros')
+      .bulkPut([livro('a', 'duas-cores', 0), livro('b', 'metade', 1), livro('c', 'contorno', 2)])
+    await antigo.table('enfeites').bulkPut([
+      {
+        prateleira: 0,
+        ordem: 5,
+        cor: '#1B2A6B',
+        estilo: 'metade',
+        larguraLombada: 38,
+        comprimentoLombada: 80,
+        dourado: true,
+        detalheEscuro: true,
+      },
+    ])
+    antigo.close()
+
+    const migrado = createDexieRepo(createDb(nome))
+    const livros = await migrado.listLivros()
+    expect(livros.map((l) => [l.id, l.estilo])).toEqual([
+      ['a', 'solido'],
+      ['b', 'solido'],
+      ['c', 'contorno'],
+    ])
+    const [e] = await migrado.listEnfeites()
+    expect(e).toMatchObject({ estilo: 'solido', larguraLombada: 38, cor: '#1B2A6B' })
+  })
+})
+
 describe('migração para a v15', () => {
   // Antes de 08/10/2026 o dourado dependia dos vizinhos, e mover um enfeite isolado o gravava
   // apagado. Nenhuma tela o escolhia, então todo `false` que já existe vem do bug.

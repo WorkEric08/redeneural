@@ -39,15 +39,21 @@ const BASE_DO_ICONE_PX = 7
 const BASE_DO_ICONE_NO_PAPEL_PX = 13
 const FOLGA_DO_ICONE_PX = 2
 
-const MINIMO_DO_TITULO = 9
 /**
- * Quanto cada caractere ocupa na vertical, em fração do corpo. O desenho Noite
- * estimava 0,78; medida na Literata em negrito, maiúscula e com 0,1em de
- * espaçamento, a média dá 0,81 e as letras largas (O, D, M) passam de 0,9 —
- * com 0,78, "CONTORNO" virava "CONTOR…" mesmo cabendo na conta. 0,9 deixa o
- * título inteiro caber, e as reticências ficam para o que não cabe de verdade.
+ * O menor corpo do título (08/10/2026; era 9 px): abaixo disso ele deixa de ser legível. A
+ * lombada mais estreita (24 px) já dá 11 px (0,46 × 24), então ninguém perde por causa do piso —
+ * só o título que não cabe vira reticências, em vez de encolher até sumir.
  */
-const AVANCO_DO_CARACTERE = 0.9
+const MINIMO_DO_TITULO = 11
+/**
+ * Quanto cada caractere ocupa na vertical, em fração do corpo, na fonte do título (Source Sans 3
+ * em peso 600, caixa alta, 0,06em de espaçamento). Medido com a fonte carregada, sobre títulos
+ * de verdade: a média dá 0,60, as palavras de letras largas (CONTORNO, PROGRAMAÇÃO) 0,67–0,68 e o
+ * pior caso inventado (WWWW MMMM) 0,77. 0,72 deixa os títulos comuns inteiros, e as reticências
+ * ficam para o que não cabe de verdade. (Na Literata de antes eram 0,9; por isso o título agora
+ * sai maior na mesma lombada.)
+ */
+const AVANCO_DO_CARACTERE = 0.72
 
 /** Luminância de 0 a 1 (0,299 R + 0,587 G + 0,114 B), a conta do desenho. */
 export function luminancia(hex: string): number {
@@ -114,14 +120,11 @@ interface Zona {
 const ZONAS: Record<EstiloDaLombada, Zona> = {
   solido: { topo: 12.5, fundo: 87.5, x: 50 },
   faixa: { topo: 19.4, fundo: 90.6, x: 50 },
-  'duas-cores': { topo: 36.3, fundo: 93.8, x: 50 },
   contorno: { topo: 10.6, fundo: 90, x: 50 },
   ponto: { topo: 22.5, fundo: 92.5, x: 50 },
   fio: { topo: 13.8, fundo: 86.3, x: 50 },
   degrade: { topo: 12.5, fundo: 87.5, x: 50 },
   papel: { topo: 12.5, fundo: 84.4, x: 50 },
-  // A coluna da direita tem 38% de W: o título se centra nos 62% da esquerda.
-  metade: { topo: 12.5, fundo: 87.5, x: 31 },
   bloco: { topo: 15.6, fundo: 84.4, x: 50 },
 }
 

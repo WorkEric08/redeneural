@@ -1,6 +1,21 @@
 import { describe, expect, it } from 'vitest'
 
+import { estiloOuPadrao } from './paletaNoite'
 import { especieDoLivro, ICONES_NOS_LIVROS_PADRAO } from './icones'
+
+describe('estiloOuPadrao', () => {
+  it('uma forma que existe fica como está', () => {
+    expect(estiloOuPadrao('contorno')).toBe('contorno')
+    expect(estiloOuPadrao('papel')).toBe('papel')
+  })
+
+  it('as que saíram (duas-cores, metade) e o que não é forma viram sólido', () => {
+    expect(estiloOuPadrao('duas-cores')).toBe('solido')
+    expect(estiloOuPadrao('metade')).toBe('solido')
+    expect(estiloOuPadrao(undefined)).toBe('solido')
+    expect(estiloOuPadrao(42)).toBe('solido')
+  })
+})
 
 describe('especieDoLivro', () => {
   it('pasta de acervo é pasta, mesmo que o dado diga executável', () => {

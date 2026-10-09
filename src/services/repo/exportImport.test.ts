@@ -641,7 +641,7 @@ describe('cor e forma da lombada no backup', () => {
   it('a forma e a cor da paleta viajam e voltam iguais', async () => {
     const origem = await palacioPovoado()
     const [primeiro] = await origem.listLivros()
-    await origem.upsertLivro({ ...primeiro!, cor: '#F1EEE6', estilo: 'duas-cores' })
+    await origem.upsertLivro({ ...primeiro!, cor: '#F1EEE6', estilo: 'contorno' })
     const snapshot = await origem.exportAll()
 
     const destino = repoVazio()
@@ -649,8 +649,28 @@ describe('cor e forma da lombada no backup', () => {
 
     expect(await destino.getLivro(primeiro!.id)).toMatchObject({
       cor: '#F1EEE6',
-      estilo: 'duas-cores',
+      estilo: 'contorno',
     })
+  })
+
+  // "Duas cores" e "Metade" saíram em 08/10/2026: um backup que as traz importa, e viram sólido.
+  it('backup com uma forma que saiu (duas-cores, metade) importa, e a forma vira sólido', async () => {
+    const origem = await palacioPovoado()
+    const snapshot = await origem.exportAll()
+    const antigo = {
+      ...snapshot,
+      livros: snapshot.livros.map((l, i) => ({
+        ...l,
+        estilo: i % 2 === 0 ? 'duas-cores' : 'metade',
+      })),
+    }
+
+    const destino = repoVazio()
+    await destino.importAll(antigo as unknown as typeof snapshot)
+
+    const livros = await destino.listLivros()
+    expect(livros.length).toBeGreaterThan(0)
+    for (const l of livros) expect(l.estilo).toBe('solido')
   })
 
   // Backup de antes de 06/10/2026: hex livre e nenhuma forma.

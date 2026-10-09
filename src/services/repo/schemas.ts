@@ -1,6 +1,12 @@
 import { z } from 'zod'
 
-import { DIAS_PARA_ADORMECER_MAXIMO, ehCorDaPaleta, ESTILOS_DA_LOMBADA } from '@/core'
+import {
+  DIAS_PARA_ADORMECER_MAXIMO,
+  ehCorDaPaleta,
+  ESTILO_PADRAO,
+  ESTILOS_DA_LOMBADA,
+  ESTILOS_QUE_SAIRAM,
+} from '@/core'
 
 /** CLAUDE.md §7: validar a entrada antes de gravar no IndexedDB. */
 
@@ -9,6 +15,14 @@ const hexColor = z.string().regex(/^#[0-9a-fA-F]{6}$/, 'cor deve ser hex #rrggbb
 /** Um livro só grava um dos tons da paleta Noite; o backup traz hex livre e é mapeado antes. */
 const corDaPaleta = hexColor.refine(ehCorDaPaleta, 'cor fora da paleta Noite')
 const estiloDaLombada = z.enum(ESTILOS_DA_LOMBADA)
+/**
+ * No backup, uma das formas que saíram ("duas-cores", "metade") vira sólida em vez de recusar o
+ * arquivo. Uma forma que nunca existiu continua recusada: é arquivo mexido ou corrompido.
+ */
+const estiloDoBackup = z.preprocess(
+  (v) => (typeof v === 'string' && ESTILOS_QUE_SAIRAM.includes(v) ? ESTILO_PADRAO : v),
+  estiloDaLombada,
+)
 const unitInterval = z.number().min(0).max(1)
 
 const ordem = z.number().int().min(0)
@@ -176,7 +190,7 @@ export const snapshotSchema = z.object({
       // Hex livre: o import leva ao tom mais próximo da paleta (`livroFromSnapshot`).
       cor: hexColor,
       // Opcional: backup de antes da paleta Noite (06/10/2026) não tinha forma.
-      estilo: estiloDaLombada.optional(),
+      estilo: estiloDoBackup.optional(),
       // Opcional: backup de antes de 12/09/2026 não tinha ordem de estante.
       ordem: ordem.optional(),
       // Opcional: backup de antes da Fase 10 (13-14/09/2026) não tinha prateleira.
@@ -237,7 +251,7 @@ export const snapshotSchema = z.object({
         prateleira: ordem,
         ordem,
         cor: hexColor,
-        estilo: estiloDaLombada,
+        estilo: estiloDoBackup,
         larguraLombada,
         comprimentoLombada,
         dourado: z.boolean(),

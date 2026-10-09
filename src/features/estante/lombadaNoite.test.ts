@@ -64,13 +64,13 @@ describe('tamanho do título', () => {
     expect(tamanhoDoTitulo(24, 90, 3)).toBe(11)
   })
 
-  it('num título longo quem manda é o espaço: espaço ÷ (n × 0,9)', () => {
-    // 100 ÷ (10 × 0,9) = 11,1…
-    expect(tamanhoDoTitulo(68, 100, 10)).toBe(11.1)
+  it('num título longo quem manda é o espaço: espaço ÷ (n × 0,72)', () => {
+    // 100 ÷ (10 × 0,72) = 13,88…
+    expect(tamanhoDoTitulo(68, 100, 10)).toBe(13.9)
   })
 
-  it('nunca desce de 9 px — o resto vira reticências', () => {
-    expect(tamanhoDoTitulo(24, 70, 60)).toBe(9)
+  it('nunca desce de 11 px, o piso de leitura — o resto vira reticências', () => {
+    expect(tamanhoDoTitulo(24, 70, 60)).toBe(11)
   })
 
   it('título vazio não divide por zero', () => {
@@ -136,21 +136,23 @@ describe('geometriaDaLombada', () => {
   })
 
   it('o título se mede pela zona da forma: no sólido a zona é 0,75 × H', () => {
-    const fonte = (estilo: 'solido' | 'duas-cores'): string =>
+    const fonte = (estilo: 'solido' | 'fio'): string =>
       (
         geometriaDaLombada({ ...base, estilo, largura: 68, titulo: 'Arte' }).style as Record<
           string,
           string
         >
       )['--fs']!
-    // 75 ÷ (4 × 0,9) = 20,8 px no sólido; a zona de duas cores (57,5) é menor.
-    expect(fonte('solido')).toBe('20.8px')
-    expect(fonte('duas-cores')).toBe('16px')
+    // 75 ÷ (4 × 0,72) = 26 px no sólido; a zona do fio (72,5) é um pouco menor.
+    expect(fonte('solido')).toBe('26px')
+    expect(fonte('fio')).toBe('25.2px')
   })
 
-  it('a coluna da forma metade desloca o título para os 62% da esquerda', () => {
-    const { style } = geometriaDaLombada({ ...base, estilo: 'metade' })
-    expect(style).toMatchObject({ '--zt-x': '31%' })
+  it('o título se centra na lombada em toda forma', () => {
+    for (const estilo of ESTILOS_DA_LOMBADA) {
+      const { style } = geometriaDaLombada({ ...base, estilo })
+      expect(style).toMatchObject({ '--zt-x': '50%' })
+    }
   })
 
   it('a zona do título cabe dentro da lombada em todas as formas', () => {
@@ -186,9 +188,9 @@ describe('geometriaDaLombada', () => {
     expect(parseFloat(com['--zt-altura']!)).toBeLessThan(75)
   })
 
-  it('o título nunca fica menor que o piso por causa do ícone: a zona tem pelo menos 9 px', () => {
-    const style = geometriaDaLombada({ ...base, estilo: 'duas-cores', altura: 40, icone: true })
+  it('o título nunca fica menor que o piso por causa do ícone: a zona tem pelo menos 11 px', () => {
+    const style = geometriaDaLombada({ ...base, estilo: 'ponto', altura: 40, icone: true })
       .style as Record<string, string>
-    expect((parseFloat(style['--zt-altura']!) / 100) * 40).toBeGreaterThanOrEqual(9 - 0.01)
+    expect((parseFloat(style['--zt-altura']!) / 100) * 40).toBeGreaterThanOrEqual(11 - 0.01)
   })
 })
