@@ -423,16 +423,6 @@ function MenuDoLugar({
       </header>
 
       <ul className="cartao flex flex-col">
-        <li className="linha-de-lista p-0">
-          <Link
-            to={`/novo-livro?prateleira=${String(prateleira)}&lugar=${String(lugar)}`}
-            replace
-            className="flex min-h-14 w-full items-center gap-3.5 px-4"
-          >
-            <Plus size={19} aria-hidden className="text-poeira" />
-            Criar um livro aqui
-          </Link>
-        </li>
         {!aberto && (
           <li className="linha-de-lista p-0">
             <Link
@@ -445,6 +435,16 @@ function MenuDoLugar({
             </Link>
           </li>
         )}
+        <li className="linha-de-lista p-0">
+          <Link
+            to={`/novo-livro?prateleira=${String(prateleira)}&lugar=${String(lugar)}`}
+            replace
+            className="flex min-h-14 w-full items-center gap-3.5 px-4"
+          >
+            <Plus size={19} aria-hidden className="text-poeira" />
+            Criar um livro aqui
+          </Link>
+        </li>
         <li className="linha-de-lista p-0">
           <button
             type="button"
