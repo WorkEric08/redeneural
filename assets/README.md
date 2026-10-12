@@ -22,7 +22,7 @@ está aplicado em `public/` (logo-192, logo-512, maskable, apple-touch-icon, fav
 
 ## Ícone do Locus (12/10/2026)
 
-O ícone novo — hexágono de linha branca com círculo amarelo sobre degradê de azul-noite — está
+O ícone novo — hexágono de linha branca com círculo amarelo sobre fundo preto — está
 aqui como fonte (`icon.svg`, `icon-only.png`, `icon-foreground.png` e `icon-background.png`, os dois
 últimos para o ícone adaptativo do Android) e aplicado em `public/` (`logo-192.png`,
 `logo-512.png`, `apple-touch-icon.png`, `favicon.svg`, `favicon.ico`). O `icon.png` acima é o antigo

@@ -53,12 +53,12 @@ export default defineConfig({
         orientation: 'portrait',
         start_url: '/',
         scope: '/',
-        // O azul-noite da base do degradê do ícone (12/10/2026, ícone novo do Locus): a splash
-        // do PWA pinta esta cor atrás do ícone, e é ela que o faz emendar com o fundo dele. Antes
-        // as duas eram pretas (17/09/2026). Os ícones têm fundo cheio e o símbolo na zona segura
-        // central, então os mesmos arquivos servem como `any` e como `maskable`.
-        theme_color: '#0B1230',
-        background_color: '#0B1230',
+        // Preto puro, a cor de fundo do ícone do Locus (12/10/2026): a splash do PWA pinta esta cor
+        // atrás do ícone, e é ela que o faz emendar com o fundo dele. Igual ao `theme-color` do
+        // `index.html` e ao fundo da WebView do Capacitor. Os ícones têm fundo cheio e o símbolo
+        // na zona segura central, então os mesmos arquivos servem como `any` e como `maskable`.
+        theme_color: '#000000',
+        background_color: '#000000',
         icons: [
           { src: '/logo-192.png', sizes: '192x192', type: 'image/png', purpose: 'any maskable' },
           { src: '/logo-512.png', sizes: '512x512', type: 'image/png', purpose: 'any maskable' },
