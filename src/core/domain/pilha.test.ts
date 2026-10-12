@@ -2,7 +2,9 @@ import { describe, expect, it } from 'vitest'
 
 import { ALTURA_UTIL_DA_PILHA_PX, FILEIRA_MINIMA_PX } from './medidas'
 import {
+  alturaDaPilhaNoLugar,
   cabeNaPilha,
+  cabeNaPilhaDepoisDeMudar,
   LUGARES_POR_PRATELEIRA,
   lugarParaChegar,
   moverEnfeiteNaEstante,
@@ -276,5 +278,36 @@ describe('mudarOrientacaoNaEstante', () => {
   it('id inexistente não muda nada', () => {
     const estante = [p('a', 0)]
     expect(mudarOrientacaoNaEstante(estante, 'fantasma', 'deitado')).toEqual(estante)
+  })
+})
+
+describe('mudar a espessura de um livro da pilha (editar)', () => {
+  it('a altura da pilha é a soma das espessuras; lugar com livro de pé não é pilha', () => {
+    const livros = [d('a', 3, 24), d('b', 3, 38, 1), p('x', 5), d('c', 7, 52)]
+    expect(alturaDaPilhaNoLugar(livros, 0, 3)).toBe(62)
+    expect(alturaDaPilhaNoLugar(livros, 0, 5)).toBe(0)
+    expect(alturaDaPilhaNoLugar(livros, 0, 9)).toBe(0)
+  })
+
+  it('escolher uma largura que estoura o teto da pilha é recusado', () => {
+    const antes = [d('a', 3, 38), d('b', 3, 38, 1)] // 76
+    const grossa = antes.map((l) => (l.id === 'b' ? { ...l, larguraLombada: 52 } : l)) // 90
+    const grande = antes.map((l) => (l.id === 'b' ? { ...l, larguraLombada: 68 } : l)) // 106
+    expect(cabeNaPilhaDepoisDeMudar(antes, grossa, 0, 3)).toBe(true)
+    expect(cabeNaPilhaDepoisDeMudar(antes, grande, 0, 3)).toBe(false)
+  })
+
+  it('uma pilha que já passava do teto pode ser mexida, desde que não piore', () => {
+    const antes = [d('a', 3, 52), d('b', 3, 52, 1)] // 104, de um dado antigo
+    const menor = antes.map((l) => (l.id === 'b' ? { ...l, larguraLombada: 38 } : l))
+    const maior = antes.map((l) => (l.id === 'b' ? { ...l, larguraLombada: 68 } : l))
+    expect(cabeNaPilhaDepoisDeMudar(antes, menor, 0, 3)).toBe(true)
+    expect(cabeNaPilhaDepoisDeMudar(antes, maior, 0, 3)).toBe(false)
+  })
+
+  it('livro de pé não tem pilha: a largura dele nunca é recusada por altura', () => {
+    const antes = [p('x', 3)]
+    const depois = [{ ...p('x', 3), larguraLombada: 68 }]
+    expect(cabeNaPilhaDepoisDeMudar(antes, depois, 0, 3)).toBe(true)
   })
 })

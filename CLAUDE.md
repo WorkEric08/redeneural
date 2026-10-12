@@ -5815,6 +5815,35 @@ continuam cortados — é o caso que nenhuma regra de largura consegue resolver,
   ficariam bem mais difíceis).
 - A pilha usa a altura mínima da fileira mesmo em telas altas (ver "O limite de altura").
 
+### Nada fica mais fino que a Fina (12/10/2026)
+
+Pedido do usuário: ao pôr um livro deitado em outra prateleira, os livros às vezes ficavam mais
+finos que a "Fina" (24 px). **As larguras predefinidas (Fina 24, Normal 38, Grossa 52, Grande 68)
+são o piso e o único conjunto de larguras que existe.**
+
+- **A causa era o enfeite, não a pilha.** Um livro deitado é largo (90 a 130 px) e aperta a
+  fileira; `encolherParaCaber` escalava enfeites e vagas de forma contínua até
+  `LARGURA_MINIMA_DO_ENFEITE` = 10 px. **Isto revoga** o "encolhem na mesma escala até 10 px" de
+  "As laterais são sólidas".
+- **Agora enfeite e vaga só têm uma das larguras que existem** (`DEGRAUS_DE_LARGURA`, tirados de
+  `LARGURAS`): a fileira aperta passando cada um para a maior largura menor que cabe (a escala
+  continua sendo uma só, achada por busca; a largura de cada um é arredondada **para baixo**, até a
+  Fina). Se nem com todos na Fina cabe, os mais perto da lateral somem, como antes.
+  `LARGURA_MINIMA_DO_ENFEITE` passou a valer 24.
+- **O enfeite que a lateral corta** vai para a maior largura que cabe no que sobra (ou some, se nem a
+  Fina cabe). **Custo assumido:** o que sobrar depois disso não é mais repartido sem vão — sobe os
+  enfeites depois do último livro para a largura seguinte, um a um, e o vão que resta junto da lateral
+  é sempre **menor que uma Fina** (antes era zero).
+- **A pilha tinha um segundo jeito de ficar fina:** editar a largura de um livro **dentro** de uma
+  pilha (Fina → Grande) não conferia o teto de 90 px, e a pilha passava da fileira — a prateleira de
+  cima cortava o livro do topo. `cabeNaPilhaDepoisDeMudar` (`core/domain/ordem.ts`) recusa a edição
+  com "A pilha não tem altura para essa largura.", e vale sempre (o teto é fixo, não depende de a
+  estante ter sido medida). Quem já passava do teto pode ser mexido, desde que não piore. Mover e
+  importar já respeitavam o teto.
+- **Verificado só por teste automatizado** (720 testes; novos: largura de enfeite/vaga em todas as
+  larguras de fileira com um deitado de 127 px, o vão máximo, e a altura da pilha ao editar). **Não
+  visto no navegador nem em toque real.**
+
 ## Fases
 
 0. ✅ Esqueleto (Vite/React/TS/Tailwind/PWA/Capacitor)

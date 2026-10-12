@@ -61,6 +61,39 @@ export function cabeNaPilha(espessuras: readonly number[]): boolean {
   return espessuras.reduce((total, e) => total + e, 0) <= ALTURA_UTIL_DA_PILHA_PX
 }
 
+/**
+ * Quanto a pilha do lugar `(prateleira, ordem)` pesa de altura, em px: a soma das espessuras dos
+ * livros dele. Um lugar com algum livro de pé não é pilha (o de pé é o que aparece), e pesa 0.
+ */
+export function alturaDaPilhaNoLugar(
+  livros: readonly NoLugar[],
+  prateleira: number,
+  ordem: number,
+): number {
+  const nele = livros.filter((l) => l.prateleira === prateleira && l.ordem === ordem)
+  if (!nele.every(deitado)) return 0
+  return nele.reduce((total, l) => total + espessuraDe(l), 0)
+}
+
+/**
+ * Uma mudança que não passa por mover (editar a largura de um livro, por exemplo) deixa a pilha
+ * do lugar dele alta demais? A pilha acima do teto ficaria cortada pela prateleira de cima: o livro
+ * do topo apareceria mais fino que a largura que ele tem. Quem já passava do teto pode ser mexido,
+ * desde que não piore — a mesma regra de `cabeNaPrateleira`.
+ */
+export function cabeNaPilhaDepoisDeMudar(
+  antes: readonly NoLugar[],
+  depois: readonly NoLugar[],
+  prateleira: number,
+  ordem: number,
+): boolean {
+  const alturaDepois = alturaDaPilhaNoLugar(depois, prateleira, ordem)
+  return (
+    alturaDepois <= ALTURA_UTIL_DA_PILHA_PX ||
+    alturaDepois <= alturaDaPilhaNoLugar(antes, prateleira, ordem)
+  )
+}
+
 /** A ordem dentro da pilha: de baixo para cima; o id desempata para a ordem nunca variar. */
 function daPilha(a: NoLugar, b: NoLugar): number {
   return (a.nivel ?? 0) - (b.nivel ?? 0) || (a.id < b.id ? -1 : 1)

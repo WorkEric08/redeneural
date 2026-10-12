@@ -17,7 +17,11 @@ import {
   type Lugar,
   type Prateleira,
 } from './prateleiras'
+import { LARGURAS } from './larguras'
 import type { LivroNaEstante } from './resumo'
+
+/** As larguras que o formulário oferece: as únicas que um enfeite ou uma vaga pode ter. */
+const LARGURAS_QUE_EXISTEM = LARGURAS.map((l) => l.px)
 
 const T0 = new Date('2026-01-01T12:00:00.000Z')
 
@@ -233,15 +237,27 @@ describe('as laterais sólidas', () => {
     expect(ocupadoAteOUltimoLivro(ajustada)).toBeLessThanOrEqual(300)
     expect(livrosDoPrefixo(ajustada)).toEqual([38, 38])
 
-    // Até o último livro nenhum lugar sumiu e só enfeite encolheu — nunca abaixo do mínimo.
+    // Até o último livro nenhum lugar sumiu e só enfeite encolheu — para uma largura que existe,
+    // nunca abaixo da Fina.
     ajustada.lugares.slice(0, 10).forEach((l, i) => {
       const antes = natural.lugares[i]!
       expect(l.indice).toBe(antes.indice)
       if (l.tipo === 'enfeite') {
-        expect(l.largura).toBeGreaterThanOrEqual(LARGURA_MINIMA_DO_ENFEITE)
+        expect(LARGURAS_QUE_EXISTEM).toContain(l.largura)
         expect(l.largura).toBeLessThanOrEqual(antes.largura)
       }
     })
+  })
+
+  it('enfeite e vaga nunca ficam mais finos que a Fina, nem têm largura que não existe', () => {
+    expect(LARGURA_MINIMA_DO_ENFEITE).toBe(24)
+    const estante = [livro('a', 0, 0, 38), livro('b', 0, 9, 38)]
+    const vagas: Vaga[] = [{ prateleira: 0, ordem: 4 }]
+    for (let util = 100; util <= 720; util += 7) {
+      for (const l of montarPrateleiras(estante, vagas, 1, util)[0]!.lugares) {
+        if (l.tipo !== 'livro') expect(LARGURAS_QUE_EXISTEM).toContain(l.largura)
+      }
+    }
   })
 
   it('a vaga encolhe junto com o enfeite: a fileira não anda quando um vira o outro', () => {
@@ -259,7 +275,7 @@ describe('as laterais sólidas', () => {
     }
   })
 
-  it('o que sobra no fim é repartido entre os enfeites depois do último livro, sem vão', () => {
+  it('o vão no fim, junto da lateral, é sempre menor que uma Fina', () => {
     const estante = [livro('a', 0, 0, 38), livro('b', 0, 9, 38)]
     for (const util of [300, 361, 412]) {
       const p = montarPrateleiras(estante, [], 1, util)[0]!
@@ -537,6 +553,24 @@ describe('livros deitados e pilhas', () => {
     expect(pilhas(p)[0]?.largura).toBe(98)
     const usado = p.lugares.reduce((t, l, i) => t + l.largura + (i > 0 ? 1 : 0), 0)
     expect(usado).toBeLessThanOrEqual(140.01)
+  })
+
+  it('um livro deitado numa prateleira nunca afina enfeite ou vaga abaixo da Fina', () => {
+    // O livro deitado é largo (aqui 127 px, 98% de uma fileira de 130): é ele que aperta a fileira.
+    // Em qualquer largura de tela onde os livros cabem, o que cede é a escolha de uma largura menor
+    // que existe, ou o sumiço — nunca 10 px. (Os livros sozinhos ocupam 166 px.)
+    const estante = [deitado('a', 2, 0, 24, 98), deitado('b', 2, 1, 24, 98), livro('x', 0, 6, 38)]
+    const vagas: Vaga[] = [{ prateleira: 0, ordem: 4 }]
+    for (let util = 170; util <= 700; util += 5) {
+      const p = montarPrateleiras(estante, vagas, 1, util, [], 130)[0]!
+      for (const l of p.lugares) {
+        if (l.tipo === 'enfeite' || l.tipo === 'vazio') {
+          expect(LARGURAS_QUE_EXISTEM).toContain(l.largura)
+        }
+      }
+      const usado = p.lugares.reduce((t, l, i) => t + l.largura + (i > 0 ? 1 : 0), 0)
+      expect(usado).toBeLessThanOrEqual(util + 0.01)
+    }
   })
 
   it('livros deitados e de pé somam a largura por lugar, e não por livro', () => {

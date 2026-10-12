@@ -12,6 +12,7 @@ import {
 } from '@/core'
 import { sorteio } from '@/lib/semente'
 
+import { LARGURAS } from './larguras'
 import type { LivroNaEstante } from './resumo'
 
 /**
@@ -139,13 +140,28 @@ function ehLivro(l: Lugar): l is Extract<Lugar, { tipo: 'livro' | 'pilha' }> {
 }
 
 /**
+ * As larguras que existem para uma lombada: as do formulário (Fina, Normal, Grossa, Grande).
+ * Um enfeite ou uma vaga só tem uma delas — o que a fileira aperta é a escolha de uma menor,
+ * nunca uma largura no meio do caminho (08/10/2026: um livro deitado, largo, apertava os
+ * enfeites até 10 px, mais finos que a Fina).
+ */
+const DEGRAUS_DE_LARGURA: readonly number[] = LARGURAS.map((l) => l.px)
+
+/**
  * As laterais do móvel são sólidas: nenhum livro passa delas nem fica cortado
  * ao meio. Quem cede é o enfeite — e a vaga, que tem a largura dele —: ele
- * encolhe até esta largura, a versão mais fina possível, para os livros
- * caberem inteiros. (06/10/2026; antes os livros somiam atrás da pilastra da
- * direita.)
+ * passa para uma largura menor, até esta, a Fina, para os livros caberem
+ * inteiros. Se nem assim cabe, ele some. (06/10/2026; antes os livros somiam
+ * atrás da pilastra da direita.)
  */
-export const LARGURA_MINIMA_DO_ENFEITE = 10
+export const LARGURA_MINIMA_DO_ENFEITE: number = DEGRAUS_DE_LARGURA[0] ?? 24
+
+/** A maior largura que existe e cabe em `px`; `null` se nem a Fina cabe. */
+function degrauAte(px: number): number | null {
+  let achado: number | null = null
+  for (const degrau of DEGRAUS_DE_LARGURA) if (degrau <= px + 0.01) achado = degrau
+  return achado
+}
 
 /** O espaço entre dois lugares da fileira — o `gap` de `.movel-fila`. */
 const FOLGA_ENTRE_LUGARES = 1
@@ -294,8 +310,9 @@ export function enfeiteDoLugar(
   return enfeite(prateleira, indice)
 }
 
+/** A largura que um enfeite de largura `natural` tem na escala dada: sempre uma que existe. */
 function larguraComEscala(natural: number, escala: number): number {
-  return Math.max(LARGURA_MINIMA_DO_ENFEITE, Math.round(natural * escala))
+  return degrauAte(natural * escala) ?? LARGURA_MINIMA_DO_ENFEITE
 }
 
 /** A fileira de `lugares`, na escala dada (1 = enfeites e vagas do tamanho de sempre). */
@@ -327,10 +344,11 @@ export function ajustarALargura(lugares: readonly Lugar[], larguraUtil: number):
 
 /**
  * Nada fica pela metade atrás da lateral: o primeiro enfeite ou vaga que não cabe
- * inteiro encolhe até a lateral (se ainda sobrar o mínimo de um enfeite) e os
- * seguintes somem — livro nunca é tirado. Uma sobra menor que o mínimo é repartida
- * entre os enfeites depois do último livro, para a parede não ficar com um vão ao
- * lado da lateral. Só aparência: nada é gravado.
+ * inteiro passa para a maior largura que existe e cabe no que sobra (se nem a Fina
+ * cabe, some) e os seguintes somem — livro nunca é tirado. O que sobra depois disso,
+ * menos que uma Fina, sobe os enfeites depois do último livro para a largura seguinte,
+ * um a um, para a parede não ficar com um vão grande ao lado da lateral. Só aparência:
+ * nada é gravado.
  */
 function semCortarNaLateral(lugares: readonly Lugar[], larguraUtil: number): Lugar[] {
   const mantidos: Lugar[] = []
@@ -347,11 +365,12 @@ function semCortarNaLateral(lugares: readonly Lugar[], larguraUtil: number): Lug
       mantidos.push(l)
       usado += largura
     } else {
-      // O último a caber encolhe até a lateral, se sobrar o mínimo de um enfeite.
-      const resto = larguraUtil - usado - (usado === 0 ? 0 : FOLGA_ENTRE_LUGARES)
-      if (resto >= LARGURA_MINIMA_DO_ENFEITE) {
-        mantidos.push({ ...l, largura: resto })
-        usado = larguraUtil
+      // O último a caber passa para a maior largura que existe e cabe, se nem a Fina cabe, some.
+      const folga = usado === 0 ? 0 : FOLGA_ENTRE_LUGARES
+      const cabe = degrauAte(larguraUtil - usado - folga)
+      if (cabe !== null) {
+        mantidos.push({ ...l, largura: cabe })
+        usado += folga + cabe
       }
       cheia = true
     }
@@ -362,12 +381,14 @@ function semCortarNaLateral(lugares: readonly Lugar[], larguraUtil: number): Lug
   mantidos.forEach((l, i) => {
     if (ehLivro(l)) ultimoLivro = i
   })
-  const depois = mantidos.length - 1 - ultimoLivro
-  const sobra = larguraUtil - usado
-  if (depois <= 0 || sobra <= 0) return mantidos
-  return mantidos.map((l, i): Lugar =>
-    i > ultimoLivro && !ehLivro(l) ? { ...l, largura: l.largura + sobra / depois } : l,
-  )
+  let sobra = larguraUtil - usado
+  return mantidos.map((l, i): Lugar => {
+    if (i <= ultimoLivro || ehLivro(l)) return l
+    const proximo = DEGRAUS_DE_LARGURA.find((degrau) => degrau > l.largura)
+    if (proximo === undefined || proximo - l.largura > sobra) return l
+    sobra -= proximo - l.largura
+    return { ...l, largura: proximo }
+  })
 }
 
 function encolherParaCaber(lugares: readonly Lugar[], larguraUtil: number): Lugar[] {

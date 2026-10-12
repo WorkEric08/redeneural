@@ -3,7 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { useMemo } from 'react'
 
 import { BarraDeTopo } from '@/components/BarraDeTopo'
-import { mudarOrientacaoNaEstante } from '@/core'
+import { cabeNaPilhaDepoisDeMudar, mudarOrientacaoNaEstante } from '@/core'
 import { cabeDepoisDeMudar } from '@/features/estante/cabeNaEstante'
 import { FormularioDeLivro } from '@/features/estante/FormularioDeLivro'
 import { medidasDaEstante } from '@/features/estante/medidasDaEstante'
@@ -79,21 +79,31 @@ export default function EditarLivro() {
             // Virar o livro ou mudar o comprimento dele pode estourar as laterais da prateleira: a
             // estante diz o quanto a fileira tem, e a mudança só vale onde os livros continuam
             // cabendo (quem já passava do limite pode ser mexido, desde que não piore).
+            const virado = mudarOrientacaoNaEstante(livros, livro.id, dados.orientacao) ?? livros
+            const depois = virado.map((l) =>
+              l.id === livro.id
+                ? {
+                    ...l,
+                    larguraLombada: dados.larguraLombada,
+                    comprimentoLombada: dados.comprimentoLombada,
+                  }
+                : l,
+            )
+            // Num livro deitado a largura é a espessura que ele pesa na pilha: escolher uma maior
+            // pode passar do teto de altura, e a pilha seria cortada pela prateleira de cima. O
+            // teto é fixo (não depende de a estante ter sido medida), então vale sempre.
+            const lugarDepois = depois.find((l) => l.id === livro.id)
+            if (
+              lugarDepois &&
+              !cabeNaPilhaDepoisDeMudar(livros, depois, lugarDepois.prateleira, lugarDepois.ordem)
+            ) {
+              avisar('A pilha não tem altura para essa largura.')
+              return
+            }
             const medidas = medidasDaEstante()
             if (medidas !== null) {
-              const virado = mudarOrientacaoNaEstante(livros, livro.id, dados.orientacao) ?? livros
-              const depois = virado.map((l) =>
-                l.id === livro.id
-                  ? {
-                      ...l,
-                      larguraLombada: dados.larguraLombada,
-                      comprimentoLombada: dados.comprimentoLombada,
-                    }
-                  : l,
-              )
               const alturas = new Map(estante.map((e) => [e.livro.id, e.altura]))
-              const prateleira =
-                depois.find((l) => l.id === livro.id)?.prateleira ?? livro.prateleira
+              const prateleira = lugarDepois?.prateleira ?? livro.prateleira
               if (!cabeDepoisDeMudar(livros, depois, prateleira, alturas, medidas)) {
                 avisar(`A prateleira ${String(prateleira + 1)} não tem espaço para essa mudança.`)
                 return
