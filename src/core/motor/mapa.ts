@@ -570,6 +570,26 @@ function lugarLivreMaisPerto(
 }
 
 /**
+ * O mapa já tem lugar para todo neurônio e nenhuma ilha de sobra? Então `atualizarMapa` não
+ * teria o que mudar, e quem abre o palácio pode pular a conta (centro de cada livro, encaixe) e a
+ * gravação: abrir o app não precisa reescrever, todas as vezes, o que já está escrito.
+ */
+export function mapaEmDia(
+  mapa: MapaDoPalacio,
+  nos: readonly NoDoMapa[],
+  livros: ReadonlySet<Id>,
+): boolean {
+  const grupos = agrupar(nos, livros)
+  if (Object.keys(mapa.ilhas).length !== grupos.size) return false
+  for (const [livroId, membros] of grupos) {
+    const ilha = mapa.ilhas[livroId]
+    if (!ilha || Object.keys(ilha.pontos).length !== membros.length) return false
+    if (membros.some((n) => !(n.id in ilha.pontos))) return false
+  }
+  return true
+}
+
+/**
  * O mapa depois de uma mudança no palácio, mexendo o mínimo:
  *
  * - quem saiu (apagado, ou mudou de livro) some do ponto onde estava — ninguém

@@ -35,6 +35,7 @@ export default function Estante() {
     conexoes,
     anexos,
     carregado,
+    erro,
     ocupado,
     quantidadeDePrateleiras,
     intensidadeDaLuz,
@@ -47,6 +48,13 @@ export default function Estante() {
     porEnfeite,
     avisar,
   } = usePalacio()
+  // Na abertura do app a estante nasce antes de o palácio chegar do banco: sem esperar, ela
+  // desenharia o móvel só com enfeites e os livros pulariam para dentro um instante depois. Então
+  // o móvel só aparece com os dados — direto, sem o respiro de entrada, que só atrasaria a
+  // primeira imagem. Voltar para a estante depois (já carregada) mantém o respiro de sempre.
+  // Se abrir o banco falhar, o móvel (vazio) aparece mesmo assim, com o erro no aviso.
+  const pronto = carregado || erro !== null
+  const [abriuCarregada] = useState(pronto)
   const { painel, abrir, trocar, fechar } = usePainel()
   const navegar = useNavigate()
   const [busca, setBusca] = useSearchParams()
@@ -118,7 +126,7 @@ export default function Estante() {
     painel?.tipo === 'lugar' ? { prateleira: painel.prateleira, lugar: painel.lugar } : null
 
   return (
-    <div className="animar-entrada flex flex-col gap-5">
+    <div className={abriuCarregada ? 'animar-entrada flex flex-col gap-5' : 'flex flex-col gap-5'}>
       {/* A altura mínima é a tela inteira menos o respiro do `<main>` (0px no
           topo, 24px embaixo, ver App.tsx): o `mt-auto` empurra a contagem até
           a mesma altura do botão de criar (h-14, como .dial-botao).
@@ -126,44 +134,46 @@ export default function Estante() {
           Só abaixo de 1024 px: no desktop não existe dial para alinhar (a
           navegação é a coluna fixa — ver Dial.tsx). */}
       <div className="flex min-h-[calc(100dvh_-_24px_-_env(safe-area-inset-bottom))] flex-col lg:min-h-0">
-        <Movel
-          estante={estante}
-          vagas={vagas}
-          enfeites={enfeites}
-          pontes={pontes}
-          selecionadoId={selecionadoId}
-          lugarEscolhido={lugarEscolhido}
-          abrindoId={abrindoAgora?.livro.id ?? null}
-          chegandoId={chegandoId}
-          quantidadeDePrateleiras={quantidadeDePrateleiras}
-          intensidadeDaLuz={intensidadeDaLuz}
-          intensidadeDaLuzDoEnfeite={intensidadeDaLuzDoEnfeite}
-          iconesNosLivros={iconesNosLivros}
-          onEspiar={(livroId) => {
-            // Um espiar novo nunca herda a abertura de um anterior que foi
-            // desistida no meio — senão ela recomeçaria sozinha.
-            setAbrindo(null)
-            abrir({ tipo: 'espiar', livroId })
-          }}
-          onAcoes={(livroId) => {
-            abrir({ tipo: 'acoes', livroId })
-          }}
-          onMover={(livroId, prateleira, lugar) => {
-            void moverLivro(livroId, prateleira, lugar)
-          }}
-          onNovo={(prateleira, lugar) => {
-            void navegar(`/novo-livro?prateleira=${String(prateleira)}&lugar=${String(lugar)}`)
-          }}
-          onSemEspaco={(prateleira) => {
-            avisar(`A prateleira ${String(prateleira + 1)} não tem espaço para mais um livro.`)
-          }}
-          onAcoesDoLugar={(prateleira, lugar) => {
-            abrir({ tipo: 'lugar', prateleira, lugar })
-          }}
-          onMoverEnfeite={(origem, destino, dados) => {
-            void moverEnfeite(origem, destino, dados)
-          }}
-        />
+        {pronto && (
+          <Movel
+            estante={estante}
+            vagas={vagas}
+            enfeites={enfeites}
+            pontes={pontes}
+            selecionadoId={selecionadoId}
+            lugarEscolhido={lugarEscolhido}
+            abrindoId={abrindoAgora?.livro.id ?? null}
+            chegandoId={chegandoId}
+            quantidadeDePrateleiras={quantidadeDePrateleiras}
+            intensidadeDaLuz={intensidadeDaLuz}
+            intensidadeDaLuzDoEnfeite={intensidadeDaLuzDoEnfeite}
+            iconesNosLivros={iconesNosLivros}
+            onEspiar={(livroId) => {
+              // Um espiar novo nunca herda a abertura de um anterior que foi
+              // desistida no meio — senão ela recomeçaria sozinha.
+              setAbrindo(null)
+              abrir({ tipo: 'espiar', livroId })
+            }}
+            onAcoes={(livroId) => {
+              abrir({ tipo: 'acoes', livroId })
+            }}
+            onMover={(livroId, prateleira, lugar) => {
+              void moverLivro(livroId, prateleira, lugar)
+            }}
+            onNovo={(prateleira, lugar) => {
+              void navegar(`/novo-livro?prateleira=${String(prateleira)}&lugar=${String(lugar)}`)
+            }}
+            onSemEspaco={(prateleira) => {
+              avisar(`A prateleira ${String(prateleira + 1)} não tem espaço para mais um livro.`)
+            }}
+            onAcoesDoLugar={(prateleira, lugar) => {
+              abrir({ tipo: 'lugar', prateleira, lugar })
+            }}
+            onMoverEnfeite={(origem, destino, dados) => {
+              void moverEnfeite(origem, destino, dados)
+            }}
+          />
+        )}
 
         <div className="mt-auto flex h-14 items-center gap-3">
           {/* O botão vem antes do texto, e não depois: o botão de criar

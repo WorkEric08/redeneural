@@ -821,6 +821,9 @@ também a navegação.
 
 ### A porta de entrada não foi feita
 
+> **Revogado em 12/10/2026:** ela foi feita, ficou e foi **removida** a pedido do usuário — o app
+> abre direto na estante. Ver "A abertura vai direto à estante, e o que a tornou mais rápida".
+
 Ela está no plano desta fase, mas é **pura atmosfera** — não faz nada funcional. Pela
 decisão de estética por último, construí-la sóbria agora seria construir algo para
 jogar fora. Ela entra na passada de acabamento, junto com a luz da fresta.
@@ -5843,6 +5846,51 @@ são o piso e o único conjunto de larguras que existe.**
 - **Verificado só por teste automatizado** (720 testes; novos: largura de enfeite/vaga em todas as
   larguras de fileira com um deitado de 127 px, o vão máximo, e a altura da pilha ao editar). **Não
   visto no navegador nem em toque real.**
+
+### A abertura vai direto à estante, e o que a tornou mais rápida (12/10/2026)
+
+Pedido do usuário: tirar a porta do início — quem entra no site/PWA cai direto na estante — e
+otimizar a entrada, principalmente no PWA. **Isto revoga** "A porta de entrada" (Fase 8 e a
+passada de acabamento): o componente `Porta`, o CSS `.porta-*` e o estado `naPorta` do `App`
+saíram, junto com o `luz-da-porta` (que só ela usava).
+
+O que tornou a abertura mais curta, **medido no `dist`** (a porta custava 840 ms mais um toque; o
+resto são bytes e passos que a estante não precisava):
+
+| O quê                                    | Antes                | Depois                                       |
+| ---------------------------------------- | -------------------- | -------------------------------------------- |
+| JS de entrada (main + comuns)            | 525 KB (160 KB gzip) | ~390 KB (~125 KB gzip)                       |
+| Worker do motor, lido antes de responder | 773 KB               | 257 KB                                       |
+| transformers.js (516 KB)                 | dentro do Worker     | trecho à parte, só quando o modelo é preciso |
+
+- **Só a estante está no bundle de entrada** (`router.tsx`): as outras 14 rotas são `lazy`
+  (CLAUDE.md §11). O roteador espera o trecho chegar antes de trocar de tela, e o service worker
+  já os guarda no precache — offline é igual.
+- **O transformers.js é um `import()` dentro de `transformersEmbedding.ts`**, chamado na primeira
+  inferência. O Worker responde "carregar o palácio" (só leitura de banco) sem ter lido a
+  biblioteca. Exige `worker: { format: 'es' }` no `vite.config.ts`: no formato padrão (iife) o
+  Rollup junta os `import()` ao arquivo e nada seria adiado. Quem só olha a estante nunca baixa
+  esse trecho (verificado: nenhuma requisição a ele na abertura; ao criar um neurônio ele carrega e
+  o modelo começa a baixar).
+- **`carregar()` é pedido em `main.tsx`, antes do React montar**, e não num `useEffect` do `App`:
+  o banco é lido enquanto a interface ainda se monta.
+- **Abrir o palácio (`abrirPalacio`, no Worker) lê livros e neurônios uma vez** — eram quatro
+  leituras, cada neurônio com 384 floats — e **só grava o que falta**: as posições da Rede de quem
+  não tem lugar, e o Mapa (`mapaEmDia`, núcleo, testado) de quem não tem ilha. Antes toda abertura
+  reescrevia o Mapa. Um palácio arrumado não escreve nada ao abrir.
+- **A estante só desenha o móvel quando os dados chegaram** (ou deram erro) e, na abertura do app,
+  sem o respiro de entrada de 260 ms: antes o móvel nascia só com enfeites e os livros pulavam para
+  dentro depois. Voltar para a estante já carregada mantém o respiro de sempre.
+- **As duas fontes da primeira tela** (Source Sans 3, 400 e 600) têm `<link rel="preload">` no
+  `index.html`.
+
+**Verificado** no Chrome (build de produção, cache desligado, 412×892): móvel e livros visíveis em
+~130–200 ms depois de navegar, sem porta, sem erro no console; as rotas `/busca` e `/novo` carregam
+seus trechos ao serem abertas, e voltar devolve a estante. 724 testes (4 novos, de `mapaEmDia`).
+**Não medido em aparelho de verdade nem com o PWA instalado** — os tempos acima são do desktop, em
+localhost. **Fora daqui (sugestões, não feitas):** pré-carregar o trecho da Rede ao ficar ocioso
+na estante; guardar um resumo da estante para desenhá-la antes de o Worker responder.
+
 
 ## Fases
 

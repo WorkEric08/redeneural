@@ -1,4 +1,4 @@
-import { env, pipeline, type ProgressInfo } from '@huggingface/transformers'
+import type { env as Ambiente, pipeline, ProgressInfo } from '@huggingface/transformers'
 import fabricaOrt from 'onnxruntime-web/ort-wasm-simd-threaded.asyncify.mjs?url'
 import binarioOrt from 'onnxruntime-web/ort-wasm-simd-threaded.asyncify.wasm?url'
 
@@ -48,7 +48,7 @@ const LIMITE_CARACTERES = 2500
  * O Safari carrega o par não-asyncify e continua no caminho padrão: embutir os
  * dois pares dobraria o peso por um navegador que não é o alvo deste app.
  */
-function hospedarRuntimeLocalmente(): void {
+function hospedarRuntimeLocalmente(env: typeof Ambiente): void {
   const wasm = env.backends.onnx.wasm
   const padrao = wasm?.wasmPaths
   if (!wasm || typeof padrao !== 'object') return
@@ -72,7 +72,7 @@ function hospedarRuntimeLocalmente(): void {
  * a ponte do Capacitor não existe e `isNativePlatform()` mentiria. E o build do
  * Android já é outro comando de qualquer forma, porque precisa baixar o modelo.
  */
-function apontarParaOModeloEmbutido(): void {
+function apontarParaOModeloEmbutido(env: typeof Ambiente): void {
   if (import.meta.env.VITE_ANDROID !== '1') return
 
   env.allowLocalModels = true
@@ -105,18 +105,24 @@ export function criarTransformersEmbedding(opcoes: OpcoesEmbedding = {}): Embedd
   // acima ficam dentro da guarda de propósito — depois da primeira carga o
   // transformers.js troca `wasmPaths.mjs` por um blob, e reescrever por cima
   // desfaria isso.
+  //
+  // A biblioteca entra por `import()`, só aqui: ela é a parte pesada do Worker, e o Worker
+  // precisa responder "carregar o palácio" (que só lê o banco) sem ter lido e executado o
+  // transformers.js inteiro. Quem abre o app e só olha a estante nunca paga por ele.
   const carregar = (): Promise<Extrator> => {
     if (carregando) return carregando
 
-    hospedarRuntimeLocalmente()
-    apontarParaOModeloEmbutido()
+    carregando = import('@huggingface/transformers').then(({ env, pipeline: criar }) => {
+      hospedarRuntimeLocalmente(env)
+      apontarParaOModeloEmbutido(env)
 
-    carregando = pipeline('feature-extraction', MODELO_EMBEDDING, {
-      dtype: DTYPE,
-      progress_callback: (info: ProgressInfo) => {
-        if (info.status !== 'progress' || info.total <= 0) return
-        opcoes.aoBaixar?.(info.file, Math.min(100, Math.round((info.loaded / info.total) * 100)))
-      },
+      return criar('feature-extraction', MODELO_EMBEDDING, {
+        dtype: DTYPE,
+        progress_callback: (info: ProgressInfo) => {
+          if (info.status !== 'progress' || info.total <= 0) return
+          opcoes.aoBaixar?.(info.file, Math.min(100, Math.round((info.loaded / info.total) * 100)))
+        },
+      })
     })
     return carregando
   }

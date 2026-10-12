@@ -14,16 +14,30 @@
       name="viewport"
       content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover, interactive-widget=resizes-content"
     />
-    <!-- Preto fixo, sempre — não segue mais o tema nem a porta (pedido do
-         usuário, 17/09/2026; antes era Rich Black à noite/Platinum de dia,
-         trocada por App.tsx ao passar da porta). "Padrão" aqui quer dizer
-         uma cor só, sem condição nenhuma. -->
+    <!-- Preto fixo, sempre — não segue o tema (pedido do usuário, 17/09/2026). -->
     <meta name="theme-color" content="#000000" />
     <meta
       name="description"
       content="Seu palácio mental: conceitos viram neurônios dentro de livros e se conectam sozinhos por significado."
     />
     <title>Palácio Mental</title>
+    <!-- As duas letras da primeira tela (o título gravado nas lombadas e o texto da fileira de
+         baixo): a fonte só começa a baixar quando o CSS a descobre, e o texto trocaria de letra
+         depois de já desenhado. O caminho é fixo porque `public/` não passa pelo hash do Vite. -->
+    <link
+      rel="preload"
+      href="/fontes/source-sans-3-600.woff2"
+      as="font"
+      type="font/woff2"
+      crossorigin
+    />
+    <link
+      rel="preload"
+      href="/fontes/source-sans-3-400.woff2"
+      as="font"
+      type="font/woff2"
+      crossorigin
+    />
     <script>
       // CLAUDE.md §10: capturar o evento antes do bundle React carregar.
       window.__deferredInstallPrompt = null

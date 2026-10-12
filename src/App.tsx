@@ -1,11 +1,10 @@
-import { useEffect, useLayoutEffect, useState } from 'react'
+import { useLayoutEffect } from 'react'
 import { Outlet, useLocation } from 'react-router-dom'
 
 import type { ProgressoDoMotor } from '@/core'
 import { Aviso } from '@/components/Aviso'
 import { Dial } from '@/components/Dial'
 import { Navegacao } from '@/components/Navegacao'
-import { Porta } from '@/components/Porta'
 import { GuardarNoPorto } from '@/features/porto/GuardarNoPorto'
 import { usePalacio } from '@/store/palacio'
 
@@ -16,19 +15,10 @@ import { usePalacio } from '@/store/palacio'
  */
 const SEM_BOTAO_DE_CRIAR = ['/novo', '/novo-livro', '/novo-anexo']
 
-/** O casco: carrega o palácio uma vez e emoldura a página da vez. */
+/** O casco: emoldura a página da vez. O palácio é carregado em `main.tsx`, antes do React. */
 export default function App() {
-  const carregar = usePalacio((s) => s.carregar)
   const progresso = usePalacio((s) => s.progresso)
   const { pathname } = useLocation()
-  // Pura atmosfera: uma vez por carregamento do app, não por rota — ver
-  // CLAUDE.md, "A porta de entrada".
-  const [naPorta, setNaPorta] = useState(true)
-
-  useEffect(() => {
-    void carregar()
-  }, [carregar])
-
   // Toda troca de tela começa do topo — nunca no meio ou no fim (pedido do
   // usuário, 17/09/2026, sem exceção até ele pedir uma). `useLayoutEffect`,
   // não `useEffect`: roda antes do navegador pintar, para não haver um
@@ -56,10 +46,6 @@ export default function App() {
   // topo real da tela.
   const respiro = naEstante ? 'pt-0 pb-6 lg:pt-6' : mostrarCriar ? 'pb-28 lg:pb-16' : 'pb-0'
   const horizontal = naEstante ? 'px-[5px] lg:px-4' : 'px-4'
-
-  if (naPorta) {
-    return <Porta onEntrar={() => setNaPorta(false)} />
-  }
 
   return (
     <div className="min-h-dvh lg:pl-52">

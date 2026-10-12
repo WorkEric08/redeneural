@@ -5,6 +5,7 @@ import {
   arestaParaConexao,
   buscarPorSentido,
   atualizarMapa,
+  mapaEmDia,
   calcularLayoutDaRede,
   clampDiasParaAdormecer,
   entraEmExecutavel,
@@ -47,6 +48,7 @@ import {
   type EstadoDoPalacio,
   type EstanteGravada,
   type Id,
+  type Livro,
   type MapaDoPalacio,
   type MidiaDoAnexo,
   type NoDoMapa,
@@ -107,7 +109,10 @@ const pontuar: PontuarPar = SEM_RERANK
  */
 const CRESCIMENTO_ATE_REPROCESSAR = 1.5
 
-async function estadoAtual(): Promise<EstadoDoPalacio> {
+async function estadoAtual(
+  /** Quem já leu os livros e os neurônios (abrir o palácio) não os manda ler de novo. */
+  lidos?: { livros: Livro[]; neuronios: Neuronio[] },
+): Promise<EstadoDoPalacio> {
   const [
     livros,
     vagas,
@@ -124,10 +129,10 @@ async function estadoAtual(): Promise<EstadoDoPalacio> {
     mapa,
     acervo,
   ] = await Promise.all([
-    repo.listLivros(),
+    lidos?.livros ?? repo.listLivros(),
     repo.listVagas(),
     repo.listEnfeites(),
-    repo.listNeuronios(),
+    lidos?.neuronios ?? repo.listNeuronios(),
     repo.listConexoes(),
     repo.getQuantidadeDePrateleiras(),
     repo.getIntensidadeDaLuz(),
@@ -243,13 +248,6 @@ async function recalcularPosicoesDaRede(
   await repo.setPosicoesDaRede(gravado)
 }
 
-/**
- * Garante, ao abrir, que todo neurônio tem lugar na Rede. As posições só eram
- * calculadas numa escrita — então um palácio de antes delas (15/09/2026), que
- * não teve neurônio criado, editado ou apagado desde então, abria a Rede com a
- * contagem certa e nenhum ponto. Quem já tem lugar não se mexe: é a mesma
- * partida quente de sempre.
- */
 /** O que o Mapa precisa: os livros de conceitos e os neurônios que moram neles. */
 async function entradaDoMapa(): Promise<{
   nos: NoDoMapa[]
@@ -308,10 +306,42 @@ async function moverNeuronioNoMapa(id: Id, ponto: Ponto): Promise<MapaDoPalacio>
   return mapa
 }
 
-async function darLugarAQuemFalta(): Promise<void> {
-  const [neuronios, posicoes] = await Promise.all([repo.listNeuronios(), repo.getPosicoesDaRede()])
-  if (neuronios.every((n) => n.id in posicoes)) return
-  await recalcularPosicoesDaRede(await repo.listConexoes())
+/**
+ * Abre o palácio: o caminho de toda abertura do app, e por isso o mais enxuto possível.
+ *
+ * Lê livros e neurônios (o que mais pesa: cada neurônio traz o vetor de 384 floats) **uma vez
+ * só** e os entrega a quem precisa — antes eram quatro leituras, uma de cada passo. E só grava o
+ * que está faltando: as posições da Rede de quem ainda não tem lugar (as posições só eram
+ * calculadas numa escrita, e um palácio de antes delas — 15/09/2026 — abria a Rede com a contagem
+ * certa e nenhum ponto; quem já tem lugar não se mexe) e o
+ * Mapa de quem ainda não tem ilha (`encaixarNoMapa`, a migração de quem tinha um palácio antes
+ * do Mapa). Um palácio já arrumado — o caso de quase toda abertura — não escreve nada.
+ */
+async function abrirPalacio(): Promise<EstadoDoPalacio> {
+  await seedPalacio(repo)
+
+  const [livros, neuronios, posicoes, mapa] = await Promise.all([
+    repo.listLivros(),
+    repo.listNeuronios(),
+    repo.getPosicoesDaRede(),
+    repo.getMapa(),
+  ])
+
+  if (!neuronios.every((n) => n.id in posicoes)) {
+    await recalcularPosicoesDaRede(await repo.listConexoes())
+  }
+
+  const nos: NoDoMapa[] = []
+  for (const n of neuronios) {
+    if (n.livroId !== null) nos.push({ id: n.id, livroId: n.livroId, embedding: n.embedding })
+  }
+  const deConceitos = new Set(livros.filter((l) => l.tipo === 'conceitos').map((l) => l.id))
+  if (!mapaEmDia(mapa, nos, deConceitos)) {
+    const perfil = await repo.getPerfil()
+    await repo.setMapa(atualizarMapa(mapa, nos, deConceitos, perfil?.centroide ?? null))
+  }
+
+  return estadoAtual({ livros, neuronios })
 }
 
 /** Calcula e grava o embedding que faltava. Devolve o neurônio já com vetor. */
@@ -865,10 +895,7 @@ async function responder(msg: ParaMotor): Promise<DoMotor> {
   try {
     switch (msg.tipo) {
       case 'carregar':
-        await seedPalacio(repo)
-        await darLugarAQuemFalta()
-        await encaixarNoMapa()
-        return { req: msg.req, ok: true, dados: await estadoAtual() }
+        return { req: msg.req, ok: true, dados: await abrirPalacio() }
 
       case 'criarNeuronio':
         return { req: msg.req, ok: true, dados: await escrever(msg.input, undefined) }

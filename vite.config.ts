@@ -95,6 +95,11 @@ export default defineConfig({
       },
     },
   },
+  // O Worker do motor é módulo (`type: 'module'`) e precisa sair em ES: no formato padrão (iife) o
+  // Rollup junta os `import()` ao arquivo, e o transformers.js adiado em
+  // `transformersEmbedding.ts` continuaria dentro do Worker, lido e executado antes de ele
+  // responder qualquer coisa.
+  worker: { format: 'es' },
   // onnxruntime-web não sobrevive ao pré-bundle do Vite.
   optimizeDeps: { exclude: ['@huggingface/transformers'] },
   test: {

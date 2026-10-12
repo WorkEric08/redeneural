@@ -8,6 +8,7 @@ import {
   FOLGA_ENTRE_ILHAS,
   MAPA_VAZIO,
   mapaCompleto,
+  mapaEmDia,
   MARGEM_DA_COSTA,
   moverIlha,
   moverPontoNoMapa,
@@ -273,5 +274,30 @@ describe('a mão da pessoa', () => {
   it('ilha ou neurônio que não existe deixa o mapa como estava', () => {
     expect(moverIlha(MAPA, 'nenhuma', { x: 1, y: 1 })).toBe(MAPA)
     expect(moverPontoNoMapa(MAPA, 'nenhum', { x: 1, y: 1 })).toBe(MAPA)
+  })
+})
+
+describe('mapaEmDia', () => {
+  const ANTES = mapaCompleto(palacio(), LIVROS, null)
+
+  it('o mapa que acabou de ser feito está em dia, e atualizar não mudaria nada', () => {
+    expect(mapaEmDia(ANTES, palacio(), LIVROS)).toBe(true)
+    expect(atualizarMapa(ANTES, palacio(), LIVROS, null)).toEqual(ANTES)
+  })
+
+  it('sem mapa, ou com neurônio sem lugar, não está em dia', () => {
+    expect(mapaEmDia(MAPA_VAZIO, palacio(), LIVROS)).toBe(false)
+    const novo = no('psi-novo', 'psi', 0, 0.05, 1)
+    expect(mapaEmDia(ANTES, [...palacio(), novo], LIVROS)).toBe(false)
+  })
+
+  it('ilha de um livro que esvaziou, ou neurônio que saiu, não está em dia', () => {
+    const [, ...semUm] = palacio()
+    expect(mapaEmDia(ANTES, semUm, LIVROS)).toBe(false)
+    expect(mapaEmDia(ANTES, palacio(), new Set([...LIVROS].slice(1)))).toBe(false)
+  })
+
+  it('palácio sem neurônio e sem ilha também está em dia', () => {
+    expect(mapaEmDia(MAPA_VAZIO, [], LIVROS)).toBe(true)
   })
 })

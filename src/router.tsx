@@ -1,21 +1,8 @@
-import { createBrowserRouter } from 'react-router-dom'
+import type { ComponentType } from 'react'
+import { createBrowserRouter, type RouteObject } from 'react-router-dom'
 
 import App from '@/App'
-import Ajustes from '@/pages/Ajustes'
-import Anexo from '@/pages/Anexo'
-import Busca from '@/pages/Busca'
-import Editar from '@/pages/Editar'
-import EditarAnexo from '@/pages/EditarAnexo'
-import EditarEnfeite from '@/pages/EditarEnfeite'
-import EditarLivro from '@/pages/EditarLivro'
 import Estante from '@/pages/Estante'
-import Livro from '@/pages/Livro'
-import Neuronio from '@/pages/Neuronio'
-import Novo from '@/pages/Novo'
-import NovoAnexo from '@/pages/NovoAnexo'
-import NovoLivro from '@/pages/NovoLivro'
-import Porto from '@/pages/Porto'
-import Rede from '@/pages/Rede'
 
 /**
  * Rotas de verdade, e não estado local, por um motivo de Android: sem histórico,
@@ -23,27 +10,40 @@ import Rede from '@/pages/Rede'
  *
  * É também por isso que criar e editar são rotas, e não bottom sheets como o
  * mestre sugere para modais: voltar tem que fechar o formulário.
+ *
+ * **Só a estante está no bundle de entrada** (CLAUDE.md §11, code splitting por rota): é a
+ * única tela que o app abre sozinho, e o resto — a Rede e o Mapa em canvas, os formulários, a
+ * busca — não precisa ser baixado, lido e executado antes de a estante aparecer. O roteador
+ * espera o trecho da rota chegar antes de trocar de tela, então nada pisca; e como o service
+ * worker já guarda todos, offline é a mesma coisa.
  */
+function pagina(carregar: () => Promise<{ default: ComponentType }>): Pick<RouteObject, 'lazy'> {
+  return { lazy: async () => ({ Component: (await carregar()).default }) }
+}
+
 export const router = createBrowserRouter([
   {
     path: '/',
     element: <App />,
     children: [
       { index: true, element: <Estante /> },
-      { path: 'livro/:livroId', element: <Livro /> },
-      { path: 'livro/:livroId/editar', element: <EditarLivro /> },
-      { path: 'enfeite/:prateleira/:lugar/editar', element: <EditarEnfeite /> },
-      { path: 'rede', element: <Rede /> },
-      { path: 'novo', element: <Novo /> },
-      { path: 'novo-livro', element: <NovoLivro /> },
-      { path: 'neuronio/:neuronioId', element: <Neuronio /> },
-      { path: 'neuronio/:neuronioId/editar', element: <Editar /> },
-      { path: 'novo-anexo', element: <NovoAnexo /> },
-      { path: 'anexo/:anexoId', element: <Anexo /> },
-      { path: 'anexo/:anexoId/editar', element: <EditarAnexo /> },
-      { path: 'ajustes', element: <Ajustes /> },
-      { path: 'busca', element: <Busca /> },
-      { path: 'porto', element: <Porto /> },
+      { path: 'livro/:livroId', ...pagina(() => import('@/pages/Livro')) },
+      { path: 'livro/:livroId/editar', ...pagina(() => import('@/pages/EditarLivro')) },
+      {
+        path: 'enfeite/:prateleira/:lugar/editar',
+        ...pagina(() => import('@/pages/EditarEnfeite')),
+      },
+      { path: 'rede', ...pagina(() => import('@/pages/Rede')) },
+      { path: 'novo', ...pagina(() => import('@/pages/Novo')) },
+      { path: 'novo-livro', ...pagina(() => import('@/pages/NovoLivro')) },
+      { path: 'neuronio/:neuronioId', ...pagina(() => import('@/pages/Neuronio')) },
+      { path: 'neuronio/:neuronioId/editar', ...pagina(() => import('@/pages/Editar')) },
+      { path: 'novo-anexo', ...pagina(() => import('@/pages/NovoAnexo')) },
+      { path: 'anexo/:anexoId', ...pagina(() => import('@/pages/Anexo')) },
+      { path: 'anexo/:anexoId/editar', ...pagina(() => import('@/pages/EditarAnexo')) },
+      { path: 'ajustes', ...pagina(() => import('@/pages/Ajustes')) },
+      { path: 'busca', ...pagina(() => import('@/pages/Busca')) },
+      { path: 'porto', ...pagina(() => import('@/pages/Porto')) },
     ],
   },
 ])
