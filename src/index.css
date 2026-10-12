@@ -2154,6 +2154,68 @@ img {
     }
   }
 
+  /* O controle deslizante de Ajustes: faixa fina, bolinha de papel e uma marca no meio — o ponto
+     em que a luz mostra a cor real (INTENSIDADE_DA_LUZ_PADRAO). A faixa se preenche a partir
+     dele, para os dois lados: `--de` e `--ate` chegam em % (Ajustes.tsx). 40 px de altura de
+     toque, com a faixa de 4 px. A marca é o fundo do próprio campo, que a faixa encobre no meio
+     e deixa aparecer 5 px acima e abaixo dela. */
+  .faixa-de-ajuste {
+    height: 40px;
+    appearance: none;
+    background: linear-gradient(var(--poeira), var(--poeira)) 50% 50% / 2px 14px no-repeat;
+    cursor: pointer;
+  }
+
+  .faixa-de-ajuste:disabled {
+    cursor: default;
+  }
+
+  .faixa-de-ajuste::-webkit-slider-runnable-track {
+    height: 4px;
+    border-radius: 999px;
+    background: linear-gradient(
+      to right,
+      var(--linha) var(--de),
+      var(--papel) var(--de) var(--ate),
+      var(--linha) var(--ate)
+    );
+  }
+
+  .faixa-de-ajuste::-moz-range-track {
+    height: 4px;
+    border-radius: 999px;
+    background: linear-gradient(
+      to right,
+      var(--linha) var(--de),
+      var(--papel) var(--de) var(--ate),
+      var(--linha) var(--ate)
+    );
+  }
+
+  .faixa-de-ajuste::-webkit-slider-thumb {
+    width: 22px;
+    height: 22px;
+    margin-top: -9px;
+    appearance: none;
+    border: 2px solid var(--parede);
+    border-radius: 50%;
+    background: var(--papel);
+    box-shadow: 0 1px 4px rgb(0 0 0 / 0.45);
+  }
+
+  .faixa-de-ajuste::-moz-range-thumb {
+    width: 18px;
+    height: 18px;
+    border: 2px solid var(--parede);
+    border-radius: 50%;
+    background: var(--papel);
+    box-shadow: 0 1px 4px rgb(0 0 0 / 0.45);
+  }
+
+  .faixa-de-ajuste:focus-visible {
+    outline-offset: 2px;
+  }
+
   .campo {
     width: 100%;
     border: 1px solid var(--linha);

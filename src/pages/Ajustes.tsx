@@ -1,17 +1,27 @@
-import { BookOpen, Lightbulb, Minus, Plus, Rows3, Search, Sparkles } from 'lucide-react'
-import type { ReactNode } from 'react'
+import { BookOpen, Lightbulb, Minus, Moon, Plus, Rows3, Search, Sparkles, Sun } from 'lucide-react'
+import type { CSSProperties, ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 
 import { botao } from '@/components/botao'
 import { BarraDeTopo } from '@/components/BarraDeTopo'
 import { EtiquetaProcessando } from '@/components/EtiquetaProcessando'
 import { Interruptor } from '@/components/Interruptor'
-import { INTENSIDADE_DA_LUZ_MAXIMA, INTENSIDADE_DA_LUZ_MINIMA, MAXIMO_DE_PRATELEIRAS } from '@/core'
+import {
+  INTENSIDADE_DA_LUZ_MAXIMA,
+  INTENSIDADE_DA_LUZ_MINIMA,
+  INTENSIDADE_DA_LUZ_PADRAO,
+  MAXIMO_DE_PRATELEIRAS,
+} from '@/core'
 import { usePalacio } from '@/store/palacio'
 
 /**
- * Ajustes do palácio: quantidade de prateleiras, a intensidade da luz sobre os livros e sobre
- * os enfeites, e os ícones no pé dos livros. A seção "Mapa" (Reorganizar mapa) saiu em 07/10/2026.
+ * Ajustes do palácio: os números dele no alto e, num cartão só, tudo o que mexe na estante —
+ * quantidade de prateleiras, a luz sobre os livros e sobre os enfeites, e os ícones no pé dos
+ * livros. A seção "Mapa" (Reorganizar mapa) saiu em 07/10/2026.
+ *
+ * Tudo cabe na tela, sem rolagem (12/10/2026): cada ajuste é uma linha de ícone + título + valor
+ * + controle, e o que antes era parágrafo explicativo virou rótulo curto no valor ("50% · real")
+ * e no desenho do controle (lua, sol e a marca do meio da faixa).
  */
 export default function Ajustes() {
   const {
@@ -49,8 +59,15 @@ export default function Ajustes() {
         }
       />
 
-      <div className="animar-entrada flex flex-col gap-7 pt-5">
-        <section>
+      <div className="animar-entrada flex flex-col gap-3 pt-5 md:gap-5 md:pt-6">
+        <section className="relative">
+          {/* O selo fica por cima da borda do cartão e não ocupa lugar: um aviso que só existe
+              às vezes não pode empurrar a tela para fora do que cabe. */}
+          {semVetor > 0 && (
+            <span className="bg-sala absolute -top-2.5 right-3 z-10 rounded-full">
+              <EtiquetaProcessando texto={`${String(semVetor)} sem processar`} />
+            </span>
+          )}
           <dl className="cartao grid grid-cols-3">
             <Numero valor={livros.length} rotulo={livros.length === 1 ? 'livro' : 'livros'} />
             <Numero
@@ -62,11 +79,6 @@ export default function Ajustes() {
               rotulo={conexoes.length === 1 ? 'conexão' : 'conexões'}
             />
           </dl>
-          {semVetor > 0 && (
-            <p className="flex items-center gap-2 px-1 pt-3 text-sm">
-              <EtiquetaProcessando texto={`${String(semVetor)} sem processar`} />
-            </p>
-          )}
         </section>
 
         <section>
@@ -76,7 +88,7 @@ export default function Ajustes() {
               <Icone>
                 <Rows3 size={18} aria-hidden />
               </Icone>
-              <Texto titulo="Prateleiras">Quantas fileiras o móvel tem.</Texto>
+              <Texto titulo="Prateleiras" detalhe={`De 1 a ${String(MAXIMO_DE_PRATELEIRAS)}`} />
               <div className="flex shrink-0 items-center gap-2">
                 <button
                   type="button"
@@ -95,7 +107,10 @@ export default function Ajustes() {
                 >
                   <Minus size={16} aria-hidden />
                 </button>
-                <span className="font-dado w-5 text-center text-sm tabular-nums">
+                <span
+                  className="font-dado w-5 text-center text-base tabular-nums"
+                  aria-live="polite"
+                >
                   {quantidadeDePrateleiras}
                 </span>
                 <button
@@ -117,7 +132,6 @@ export default function Ajustes() {
             <ControleDeLuz
               icone={<Lightbulb size={18} aria-hidden />}
               titulo="Luz dos livros"
-              descricao="50% mostra as cores reais. Abaixo, cada livro ganha uma sombra; acima, ele brilha mais."
               valor={intensidadeDaLuz}
               travado={travado}
               onMudar={(valor) => {
@@ -128,29 +142,18 @@ export default function Ajustes() {
             <ControleDeLuz
               icone={<Sparkles size={18} aria-hidden />}
               titulo="Luz dos enfeites"
-              descricao="50% mostra as cores reais. Abaixo, enfeites e fundo da estante escurecem; acima, os enfeites ficam mais brancos."
               valor={intensidadeDaLuzDoEnfeite}
               travado={travado}
               onMudar={(valor) => {
                 void definirIntensidadeDaLuzDoEnfeite(valor)
               }}
             />
-          </div>
-          <p className="text-poeira px-1 pt-2.5 text-xs leading-relaxed">
-            Diminuir prateleiras é recusado se ainda sobrar livro nas removidas — mova-os antes.
-          </p>
-        </section>
 
-        <section>
-          <h2 className="rotulo-de-secao">Ícones</h2>
-          <div className="cartao">
             <div className="linha-de-lista">
               <Icone>
                 <BookOpen size={18} aria-hidden />
               </Icone>
-              <Texto titulo="Ícone no pé dos livros">
-                Livro, executável (martelo) ou pasta (clipe), na lombada e na amostra.
-              </Texto>
+              <Texto titulo="Ícones nos livros" detalhe="Livro, martelo ou clipe" />
               <Interruptor
                 ligado={iconesNosLivros}
                 rotulo="Ícone no pé dos livros"
@@ -167,49 +170,69 @@ export default function Ajustes() {
   )
 }
 
+/** O que o valor da luz quer dizer: 50 mostra a cor real, abaixo sombra, acima brilho. */
+function leituraDaLuz(valor: number): string {
+  if (valor === INTENSIDADE_DA_LUZ_PADRAO) return `${String(valor)}% · real`
+  return `${String(valor)}% · ${valor < INTENSIDADE_DA_LUZ_PADRAO ? 'sombra' : 'brilho'}`
+}
+
 function ControleDeLuz({
   icone,
   titulo,
-  descricao,
   valor,
   travado,
   onMudar,
 }: {
   icone: ReactNode
   titulo: string
-  descricao: string
   valor: number
   travado: boolean
   onMudar: (valor: number) => void
 }) {
+  const leitura = leituraDaLuz(valor)
+  // A faixa preenche a partir do meio (a cor real), para os dois lados: é o que mostra de relance
+  // se a luz está abaixo ou acima do normal.
+  const faixa = {
+    '--de': `${String(Math.min(valor, INTENSIDADE_DA_LUZ_PADRAO))}%`,
+    '--ate': `${String(Math.max(valor, INTENSIDADE_DA_LUZ_PADRAO))}%`,
+  } as CSSProperties
+
   return (
-    <div className="linha-de-lista flex-col items-stretch gap-3">
-      <div className="flex items-center gap-3.5">
-        <Icone>{icone}</Icone>
-        <Texto titulo={titulo}>{descricao}</Texto>
-        <span className="font-dado w-9 shrink-0 text-right text-sm tabular-nums">{valor}%</span>
+    <div className="linha-de-lista py-2">
+      <Icone>{icone}</Icone>
+      <div className="flex min-w-0 flex-1 flex-col">
+        <div className="flex items-baseline justify-between gap-2">
+          <span className="text-[0.95rem] font-medium">{titulo}</span>
+          <span className="font-dado text-poeira text-xs tabular-nums">{leitura}</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <Moon size={14} aria-hidden className="text-poeira shrink-0" />
+          <input
+            type="range"
+            min={INTENSIDADE_DA_LUZ_MINIMA}
+            max={INTENSIDADE_DA_LUZ_MAXIMA}
+            value={valor}
+            disabled={travado}
+            aria-label={titulo}
+            aria-valuetext={leitura}
+            onChange={(e) => {
+              onMudar(Number(e.target.value))
+            }}
+            className="faixa-de-ajuste min-w-0 flex-1"
+            style={faixa}
+          />
+          <Sun size={14} aria-hidden className="text-poeira shrink-0" />
+        </div>
       </div>
-      <input
-        type="range"
-        min={INTENSIDADE_DA_LUZ_MINIMA}
-        max={INTENSIDADE_DA_LUZ_MAXIMA}
-        value={valor}
-        disabled={travado}
-        aria-label={titulo}
-        onChange={(e) => {
-          onMudar(Number(e.target.value))
-        }}
-        className="accent-realce h-11 w-full"
-      />
     </div>
   )
 }
 
 function Numero({ valor, rotulo }: { valor: number; rotulo: string }) {
   return (
-    <div className="border-linha flex flex-col-reverse items-center gap-0.5 px-2 py-4 not-first:border-l">
+    <div className="border-linha flex flex-row-reverse items-baseline justify-center gap-1.5 px-2 py-2.5 not-first:border-l">
       <dt className="text-poeira text-xs">{rotulo}</dt>
-      <dd className="font-titulo text-2xl font-semibold tabular-nums">{valor}</dd>
+      <dd className="font-titulo text-xl font-semibold tabular-nums">{valor}</dd>
     </div>
   )
 }
@@ -222,11 +245,11 @@ function Icone({ children }: { children: ReactNode }) {
   )
 }
 
-function Texto({ titulo, children }: { titulo: string; children: ReactNode }) {
+function Texto({ titulo, detalhe }: { titulo: string; detalhe: string }) {
   return (
     <span className="flex min-w-0 flex-1 flex-col gap-0.5">
       <span className="text-[0.95rem] font-medium">{titulo}</span>
-      <span className="text-poeira text-xs leading-snug">{children}</span>
+      <span className="text-poeira text-xs leading-snug">{detalhe}</span>
     </span>
   )
 }

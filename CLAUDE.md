@@ -5892,6 +5892,43 @@ localhost. **Fora daqui (sugestões, não feitas):** pré-carregar o trecho da R
 na estante; guardar um resumo da estante para desenhá-la antes de o Worker responder.
 
 
+### Ajustes redesenhada, sem rolagem (12/10/2026)
+
+Pedido do usuário: melhorar a tela de Ajustes como um todo — design, layout, UX e UI — com tudo
+na tela, sem rolagem vertical. **Isto substitui** o desenho das seções "Estante" e "Ícones" de
+"Ajustes: sem a seção Mapa…" e o "controle de linha inteira" da Fase 17; o que cada ajuste faz não
+mudou (as mesmas preferências, o mesmo `usePalacio`).
+
+Medido no Chrome (build de produção): antes a tela rolava **446 px em 320×568**, 318 px em
+360×640 e ainda alguns px em 390×844, 412×892 e 1024×768. Agora **cabe em 320×568, 360×640,
+390×844, 412×892, 768×1024, 1024×768 e 1440×900, nos dois temas**, sem rolagem lateral.
+
+- **Dois cartões, não três seções.** Os números do palácio (livros, neurônios, conexões) numa
+  fileira compacta no alto, sem título; e **um cartão só de "Estante"** com as quatro linhas:
+  prateleiras, luz dos livros, luz dos enfeites e ícones nos livros. A seção "Ícones" tinha uma
+  linha só e foi absorvida. Toda linha é ícone + título + valor + controle.
+- **O parágrafo explicativo virou leitura do valor.** A luz mostra "50% · real", "15% · sombra" ou
+  "85% · brilho" (lua e sol nas pontas da faixa), com `aria-valuetext` igual. As frases "50% mostra
+  as cores reais…" e a nota "Diminuir prateleiras é recusado…" saíram: a recusa já avisa na hora,
+  pelo aviso flutuante.
+- **Faixa própria** (`.faixa-de-ajuste`, `index.css`): trilha de 4 px, bolinha de papel, uma
+  **marca no meio** (o 50, cor real) e preenchimento **a partir do meio**, para os dois lados — dá
+  para ver de relance se a luz está abaixo ou acima do normal. Só tokens da paleta; segue o tema.
+  Altura de toque de **40 px** (a faixa em si é de 4), um pouco abaixo dos 44 px do resto do app,
+  para a tela caber em 320×568.
+- **O selo "N sem processar" fica por cima da borda do cartão** e não ocupa lugar: um aviso que só
+  existe às vezes não pode empurrar a tela para fora do que cabe.
+- **Por que 320×568 é a conta que manda:** o `<main>` reserva 112 px embaixo para o botão de criar
+  (que é a navegação — ver "O dial"), e esses 112 px entram na altura da página. Por isso o
+  conteúdo precisa terminar em ~456 px, e é também o que mantém o interruptor de baixo livre do botão.
+- **Não mudou:** as setas −/+ das prateleiras (ainda `aria-disabled` no limite, não `disabled`), o
+  interruptor, a barra de topo com a busca e o teto de 6 prateleiras.
+- **Verificado** no Chrome, por toque programático: − e + mudam as prateleiras, as faixas gravam e
+  atualizam a leitura, o interruptor liga e desliga; capturas em 320, 412 e 1440 px nos dois temas.
+  Sem teste automatizado novo (a tela é composição, sem lógica pura nova); 724 testes seguem verdes.
+  **Não visto em toque real num aparelho.** Em desktop a coluna continua estreita (`max-w-2xl`), com
+  espaço vazio dos lados — igual às outras telas.
+
 ## Fases
 
 0. ✅ Esqueleto (Vite/React/TS/Tailwind/PWA/Capacitor)
