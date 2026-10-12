@@ -19,3 +19,11 @@ Enquanto isso, o app usa placeholders explícitos:
 
 `icon.png` chegou em 12/09/2026 (a porta dupla azul-marinho, ferragem dourada) e já
 está aplicado em `public/` (logo-192, logo-512, maskable, apple-touch-icon, favicon).
+
+## Ícone do Locus (12/10/2026)
+
+O ícone novo — hexágono de linha branca com círculo amarelo sobre degradê de azul-noite — está
+aqui como fonte (`icon.svg`, `icon-only.png`, `icon-foreground.png` e `icon-background.png`, os dois
+últimos para o ícone adaptativo do Android) e aplicado em `public/` (`logo-192.png`,
+`logo-512.png`, `apple-touch-icon.png`, `favicon.svg`, `favicon.ico`). O `icon.png` acima é o antigo
+(a porta dupla) e já não é usado.

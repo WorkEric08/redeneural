@@ -42,10 +42,10 @@ export default defineConfig({
     VitePWA({
       disable: paraAndroid,
       registerType: 'autoUpdate',
-      includeAssets: ['favicon.png', 'apple-touch-icon.png'],
+      includeAssets: ['favicon.svg', 'favicon.ico', 'apple-touch-icon.png'],
       manifest: {
-        name: 'Palácio Mental',
-        short_name: 'Palácio',
+        name: 'Locus',
+        short_name: 'Locus',
         description:
           'Seu palácio mental: conceitos viram neurônios dentro de livros e se conectam sozinhos por significado.',
         lang: 'pt-BR',
@@ -53,25 +53,15 @@ export default defineConfig({
         orientation: 'portrait',
         start_url: '/',
         scope: '/',
-        // Barra de status e splash screen, as duas pretas — pedido do
-        // usuário, 17/09/2026, sem seguir o tema (antes as duas eram Rich
-        // Black, a cor da sala). `logo-maskable-512.png` e
-        // `apple-touch-icon.png` (os dois ícones opacos, que não podem ficar
-        // transparentes) foram recompostos com fundo preto na mesma leva,
-        // senão a splash mostraria o quadrado antigo de `#0d1b2a` por trás
-        // do ícone — a mesma costura corrigida em "Os ícones do app tinham
-        // um fundo cravado".
-        theme_color: '#000000',
-        background_color: '#000000',
+        // O azul-noite da base do degradê do ícone (12/10/2026, ícone novo do Locus): a splash
+        // do PWA pinta esta cor atrás do ícone, e é ela que o faz emendar com o fundo dele. Antes
+        // as duas eram pretas (17/09/2026). Os ícones têm fundo cheio e o símbolo na zona segura
+        // central, então os mesmos arquivos servem como `any` e como `maskable`.
+        theme_color: '#0B1230',
+        background_color: '#0B1230',
         icons: [
-          { src: '/logo-192.png', sizes: '192x192', type: 'image/png', purpose: 'any' },
-          { src: '/logo-512.png', sizes: '512x512', type: 'image/png', purpose: 'any' },
-          {
-            src: '/logo-maskable-512.png',
-            sizes: '512x512',
-            type: 'image/png',
-            purpose: 'maskable',
-          },
+          { src: '/logo-192.png', sizes: '192x192', type: 'image/png', purpose: 'any maskable' },
+          { src: '/logo-512.png', sizes: '512x512', type: 'image/png', purpose: 'any maskable' },
         ],
       },
       workbox: {
