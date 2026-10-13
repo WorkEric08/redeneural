@@ -260,13 +260,14 @@ html:root[data-tema^='padrao'] main[data-estante] {
 /* A madeira sai — laterais, tampo, tábuas, base e a luz da sala. A lombada, que é objeto escuro
    nos dois temas, continua igual; o que muda é o que há por baixo dela. */
 html:root[data-tema^='padrao'] .movel {
-  /* O ar de cima de cada cartão e o vão entre eles; a fileira desconta os dois (e mais nada). */
+  /* A altura da fileira é a do Clássico, a mesma conta (`.movel-fila` em index.css): o que muda é só o
+     que há em volta dela. O ar de cima de cada cartão e o vão entre eles ocupam o lugar da madeira, e
+     por isso encolhem com a quantidade de prateleiras (ver abaixo): o total nunca passa do que o
+     trilho, as tábuas e a base ocupavam, e o cabeçalho cabe na folga que o `--mv-fora` já tem. */
   --pd-vao-ar: 12px;
   --pd-vao-vao: 10px;
-  --mv-bordas: 0px;
-  /* O que não é prateleira: o cabeçalho (60) e a linha de baixo (56 + 24), com uma folga. */
-  --mv-fora: 146px;
-  --mv-lateral: 14px;
+  /* 5 + 11 = 16 px de cada lado até a fileira, como no Clássico (5 + 4 + 18 = 27 → aqui 16 + 11). */
+  --mv-lateral: 11px;
   overflow: visible;
   border-radius: 0;
   box-shadow: none;
@@ -279,6 +280,24 @@ html:root[data-tema^='padrao'] .movel-pilastra,
 html:root[data-tema^='padrao'] .movel-base,
 html:root[data-tema^='padrao'] .movel-luar {
   display: none;
+}
+
+html:root[data-tema^='padrao'] .movel[data-prateleiras='5'] {
+  --pd-vao-ar: 6px;
+  --pd-vao-vao: 7px;
+}
+
+html:root[data-tema^='padrao'] .movel[data-prateleiras='6'] {
+  --pd-vao-ar: 4px;
+  --pd-vao-vao: 6px;
+}
+
+/* Com quatro prateleiras, em tela de 640 px de altura, o cartão perde um pouco de ar. */
+@media (max-height: 700px) {
+  html:root[data-tema^='padrao'] .movel[data-prateleiras='4'] {
+    --pd-vao-ar: 9px;
+    --pd-vao-vao: 8px;
+  }
 }
 
 html:root[data-tema^='padrao'] .movel-corpo {
@@ -301,15 +320,10 @@ html:root[data-tema^='padrao'] .movel-vao:last-child {
   margin-bottom: 0;
 }
 
-html:root[data-tema^='padrao'] .movel-fila {
-  height: clamp(
-    92px,
-    calc(
-      (100dvh - var(--mv-fora) - env(safe-area-inset-bottom)) / var(--mv-prateleiras) -
-        var(--pd-vao-ar) - var(--pd-vao-vao)
-    ),
-    132px
-  );
+@media (min-width: 1024px) {
+  html:root[data-tema^='padrao'] .movel {
+    --mv-lateral: 22px;
+  }
 }
 
 /* A linha de baixo (busca e contagem): 13 px. */
@@ -2186,7 +2200,7 @@ html:root[data-tema^='padrao'] .aviso:popover-open {
 /* Tela baixa: o ar e o vão dos cartões da estante encolhem para as prateleiras caberem sem rolar
    (a fileira não desce de 92 px), e Ajustes aperta o vão entre as seções. */
 @media (max-height: 600px) {
-  html:root[data-tema^='padrao'] .movel {
+  html:root[data-tema^='padrao'] .movel:not([data-prateleiras='5']):not([data-prateleiras='6']) {
     --pd-vao-ar: 6px;
     --pd-vao-vao: 8px;
   }
