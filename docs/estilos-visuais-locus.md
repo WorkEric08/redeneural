@@ -8,6 +8,12 @@
 Mockups (canvas privado "Locus: estilos de livro"): https://claude.ai/artifact/JwfmoSW8n1bmZkYuV6xq2w
 — só o dono abre, até compartilhar pelo menu Share da página.
 
+**Versão em PDF (13/10/2026):** `C:\Users\Pichau\Documents\Locus\design\` guarda quatro PDFs com a documentação
+completa (fundamentos, tokens, componentes e as 45 telas de cada versão):
+`Locus-Design-A-Papel.pdf`, `Locus-Design-D-Marca-texto.pdf`, `Locus-Design-E-Padrao.pdf` e
+`Locus-Design-00-Comparativo.pdf`. São fotografias do canvas na data de geração; se o canvas mudar, os PDFs
+precisam ser gerados de novo. Este arquivo continua sendo a referência em texto, dentro do projeto.
+
 ---
 
 ## 1. Escopo e status
