@@ -22,18 +22,18 @@ export function Interruptor({ ligado, onMudar, rotulo, desabilitado = false }: P
       onClick={() => {
         onMudar(!ligado)
       }}
-      className="grid h-11 w-14 shrink-0 place-items-center"
+      className="interruptor grid h-11 w-14 shrink-0 place-items-center"
     >
       <span
         aria-hidden
-        className={`border-linha relative block h-7 w-12 rounded-full border transition-colors ${
+        className={`interruptor-chave border-linha relative block h-7 w-12 rounded-full border transition-colors ${
           ligado ? 'bg-papel' : 'bg-realce'
         }`}
       >
         <span
           // `left` explícito: sem ele a posição "automática" de um absoluto soma o deslocamento
           // e a bolinha saía da chave.
-          className={`absolute top-0.5 left-0.5 size-5 rounded-full transition-transform ${
+          className={`interruptor-bolinha absolute top-0.5 left-0.5 size-5 rounded-full transition-transform ${
             ligado ? 'bg-sala translate-x-[1.375rem]' : 'bg-poeira translate-x-0'
           }`}
         />

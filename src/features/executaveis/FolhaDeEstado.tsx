@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from 'react'
 
 import { botao } from '@/components/botao'
 import { Folha } from '@/components/Folha'
+import { useTemaPadrao } from '@/hooks/useTemaPadrao'
 import type { EstadoDaIdeia, ImagemParaGuardar, NeuronioNaTela } from '@/core'
 import { escolherImagem } from '@/services/native/midia'
 
@@ -79,6 +80,7 @@ function Conteudo({
   onDefinir: Props['onDefinir']
   onFechar: () => void
 }) {
+  const padrao = useTemaPadrao()
   const [escolhido, setEscolhido] = useState<EstadoDaIdeia>(estadoAtual)
   const [link, setLink] = useState(neuronio.resultadoLink ?? '')
   const [gravando, setGravando] = useState(false)
@@ -130,9 +132,12 @@ function Conteudo({
     <div className="flex flex-col gap-3">
       {/* O título inteiro, quebrando em linhas: a folha existe para mudar o
           andamento DESTA ideia, e cortar o nome com reticências esconde qual é. */}
-      <h2 className="font-titulo px-1 text-xl leading-snug font-semibold tracking-tight [overflow-wrap:anywhere]">
-        {neuronio.titulo}
-      </h2>
+      <div className="px-1">
+        {padrao && <p className="pd-folha-rotulo">Andamento</p>}
+        <h2 className="pd-folha-titulo-ideia font-titulo text-xl leading-snug font-semibold tracking-tight [overflow-wrap:anywhere]">
+          {neuronio.titulo}
+        </h2>
+      </div>
 
       {/* As três opções numa fileira só (e não numa lista de três linhas): a
           folha inteira cabe sem rolar mesmo numa tela baixa ou com o teclado

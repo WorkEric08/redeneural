@@ -39,7 +39,7 @@ export function EscolhaDeLivro({ livros, escolhido, onEscolher, antes, depois }:
             className="opcao"
           >
             <span
-              className="size-2.5 shrink-0 rounded-full"
+              className="pd-ponto-livro size-2.5 shrink-0 rounded-full"
               style={{ background: l.cor }}
               aria-hidden
             />

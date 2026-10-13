@@ -1,6 +1,8 @@
 import { useNavigate, useSearchParams } from 'react-router-dom'
 
 import { BarraDeTopo } from '@/components/BarraDeTopo'
+import { BlocoDeTitulo } from '@/components/BlocoDeTitulo'
+import { useTemaPadrao } from '@/hooks/useTemaPadrao'
 import { restantesNaPasta, type TipoDeItem } from '@/core'
 import { FormularioDeAnexo } from '@/features/acervo/FormularioDeAnexo'
 import { usePalacio } from '@/store/palacio'
@@ -13,6 +15,7 @@ export default function NovoAnexo() {
   const [busca] = useSearchParams()
   const navegar = useNavigate()
   const { livros, anexos, carregado, ocupado, criarAnexo } = usePalacio()
+  const padrao = useTemaPadrao()
 
   const livroId = busca.get('livro')
   const pasta = livros.find((l) => l.id === livroId && l.tipo === 'acervo')
@@ -37,18 +40,29 @@ export default function NovoAnexo() {
         voltarPara={`/livro/${pasta.id}`}
         icone="fechar"
         titulo={
-          <>
-            <span
-              className="h-5 w-1 shrink-0 rounded-full"
-              style={{ background: pasta.cor }}
-              aria-hidden
-            />
-            <span className="truncate">{pasta.titulo}</span>
-          </>
+          padrao ? (
+            ''
+          ) : (
+            <>
+              <span
+                className="marca-do-livro h-5 w-1 shrink-0 rounded-full"
+                style={{ background: pasta.cor }}
+                aria-hidden
+              />
+              <span className="truncate">{pasta.titulo}</span>
+            </>
+          )
         }
       />
 
-      <div className="animar-entrada flex flex-1 flex-col pt-4">
+      <div className="animar-entrada pd-conteudo flex flex-1 flex-col pt-4">
+        {padrao && (
+          <BlocoDeTitulo
+            rotulo={`Pasta · ${pasta.titulo}`}
+            titulo="Novo item"
+            sub="Imagem ou link, com uma legenda"
+          />
+        )}
         <FormularioDeAnexo
           modo="novo"
           tipoInicial={tipoInicial}

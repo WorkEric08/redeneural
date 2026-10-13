@@ -1,8 +1,11 @@
-import { Anchor } from 'lucide-react'
+import { Anchor, Check, Search } from 'lucide-react'
 import { useMemo } from 'react'
 import { Link } from 'react-router-dom'
 
 import { BarraDeTopo } from '@/components/BarraDeTopo'
+import { BlocoDeTitulo } from '@/components/BlocoDeTitulo'
+import { EstadoVazio } from '@/components/EstadoVazio'
+import { useTemaPadrao } from '@/hooks/useTemaPadrao'
 import { botao } from '@/components/botao'
 import { EtiquetaProcessando } from '@/components/EtiquetaProcessando'
 import { noPorto } from '@/features/porto/porto'
@@ -16,35 +19,81 @@ import { usePalacio } from '@/store/palacio'
  */
 export default function Porto() {
   const { neuronios, carregado } = usePalacio()
+  const padrao = useTemaPadrao()
   const esperando = useMemo(() => noPorto(neuronios), [neuronios])
 
   return (
     <div className="flex flex-col">
-      <BarraDeTopo voltarPara="/" titulo="Porto" />
+      <BarraDeTopo
+        voltarPara="/"
+        titulo={padrao ? '' : 'Porto'}
+        acoes={
+          padrao ? (
+            <Link
+              to="/busca"
+              aria-label="Buscar"
+              className={botao({ tipo: 'fantasma', tamanho: 'icone' })}
+            >
+              <Search size={20} aria-hidden />
+            </Link>
+          ) : undefined
+        }
+      />
 
-      <div className="animar-entrada flex flex-col pt-5">
+      <div className="animar-entrada pd-conteudo flex flex-col pt-5">
+        {padrao && (
+          <BlocoDeTitulo
+            rotulo="Porto"
+            titulo="No porto"
+            sub={
+              carregado && esperando.length > 0
+                ? contar(
+                    esperando.length,
+                    'neurônio esperando um livro',
+                    'neurônios esperando um livro',
+                  )
+                : 'Nenhum neurônio esperando'
+            }
+          />
+        )}
         {!carregado ? (
           <p className="text-poeira px-1 text-sm">Abrindo…</p>
         ) : esperando.length === 0 ? (
-          <div className="cartao flex flex-col items-center gap-4 px-6 py-10 text-center">
-            <span className="bg-realce text-papel grid size-12 place-items-center rounded-full">
-              <Anchor size={22} aria-hidden />
-            </span>
-            <div className="flex flex-col gap-1">
-              <p className="font-titulo text-lg font-semibold">Nada no porto</p>
-              <p className="text-poeira text-sm">
-                Quando o palácio não souber onde guardar um neurônio, ele espera aqui.
-              </p>
+          padrao ? (
+            <EstadoVazio
+              icone={<Check size={28} aria-hidden />}
+              titulo="Tudo guardado"
+              texto="Quando o palácio não achar um livro para um neurônio, ele espera aqui."
+            />
+          ) : (
+            <div className="cartao flex flex-col items-center gap-4 px-6 py-10 text-center">
+              <span className="bg-realce text-papel grid size-12 place-items-center rounded-full">
+                <Anchor size={22} aria-hidden />
+              </span>
+              <div className="flex flex-col gap-1">
+                <p className="font-titulo text-lg font-semibold">Nada no porto</p>
+                <p className="text-poeira text-sm">
+                  Quando o palácio não souber onde guardar um neurônio, ele espera aqui.
+                </p>
+              </div>
             </div>
-          </div>
+          )
         ) : (
           <>
-            <p className="text-poeira px-1 pb-4 text-sm">
-              {contar(esperando.length, 'neurônio esperando livro', 'neurônios esperando livro')}
-            </p>
-            <ul className="flex flex-col gap-3">
+            {!padrao && (
+              <p className="text-poeira px-1 pb-4 text-sm">
+                {contar(esperando.length, 'neurônio esperando livro', 'neurônios esperando livro')}
+              </p>
+            )}
+            {padrao && (
+              <h2 className="rotulo-de-secao">
+                <span>Sem livro</span>
+                <span>toque para guardar</span>
+              </h2>
+            )}
+            <ul className={padrao ? 'pd-porto-lista' : 'flex flex-col gap-3'}>
               {esperando.map((n) => (
-                <li key={n.id} className="cartao flex flex-col">
+                <li key={n.id} className={padrao ? 'pd-porto-item' : 'cartao flex flex-col'}>
                   <Link
                     to={`/neuronio/${n.id}`}
                     className="active:bg-realce hover:bg-realce/60 flex min-w-0 flex-col gap-1.5 px-4 pt-4 pb-3 transition-colors"

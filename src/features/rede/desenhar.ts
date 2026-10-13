@@ -1,6 +1,6 @@
 import type { Conexao, Id, Livro, NeuronioNaTela, Ponto } from '@/core'
 
-import { spriteDeNevoa } from './canvas'
+import { alvoDoPadrao, etiquetaDoPadrao, spriteDeNevoa, type CaixaDeTela } from './canvas'
 
 import {
   ESCALA_QUE_REVELA,
@@ -39,6 +39,15 @@ export interface CoresDaRede {
   mistura: GlobalCompositeOperation
   /** A fonte do nome do neurônio escolhido (ver `lerFonteDoCanvas`). */
   fonteTitulo: string
+  /** O tema Padrão: pontos de tinta sem o toque do livro, o alvo no escolhido e etiquetas em retângulo. */
+  padrao: boolean
+  /** Preenchimento e texto de destaque, e a superfície — só o tema Padrão usa. */
+  blk: string
+  blkt: string
+  parede: string
+  poeira: string
+  /** A sombra curta das etiquetas (`null` onde o fundo é escuro). */
+  sombraDaEtiqueta: string | null
 }
 
 export interface Camera {
@@ -90,7 +99,9 @@ const FAIXAS = 6
  * constelação o ponto continua ponto quando você aproxima. O hub cresce um
  * pouco — o motor já o faz crescer —, mas nunca vira bola.
  */
-export function raioNaTela(grau: number): number {
+export function raioNaTela(grau: number, padrao = false): number {
+  // No Padrão o ponto é o das pranchas (4 px), com o hub só um pouco maior.
+  if (padrao) return 3 + Math.min(grau, 12) * 0.1
   return 1.25 + Math.min(grau, 12) * 0.11
 }
 
@@ -175,11 +186,12 @@ export function desenhar(
   desenharPontes(ctx, cena, livroDoNeuronio, ponteApagada, px)
   desenharNeuronios(ctx, cena, noApagado, px)
   desenharSatelites(ctx, cena, camera.escala, sateliteApagado, px)
-  desenharRotulosAmbiente(ctx, cena, camera.escala, noApagado)
+  if (!cores.padrao) desenharRotulosAmbiente(ctx, cena, camera.escala, noApagado)
 
   ctx.restore()
 
-  if (cena.selecionado) desenharEtiqueta(ctx, cena, camera, largura, altura)
+  if (cores.padrao) desenharRotulosDoPadrao(ctx, cena, camera, largura, altura, noApagado)
+  else if (cena.selecionado) desenharEtiqueta(ctx, cena, camera, largura, altura)
 }
 
 function finito(p: Ponto | undefined): p is Ponto {
@@ -246,14 +258,24 @@ function desenharFios(
     const forca = (faixa + 0.5) / FAIXAS
     const dorme = cena.adormecidas.has(c.aId) || cena.adormecidas.has(c.bId)
 
+    // No Padrão (pranchas "Rede"): fio fino de tinta; o que toca o escolhido fica forte.
+    const doEscolhido = cena.cores.padrao && cena.selecionado !== null && !longe
     acrescentar(
       lotes,
-      `${String(faixa)}:${String(longe)}:${String(tracejado)}:${String(dorme)}`,
-      {
-        alfa: (0.12 + forca * 0.45) * (longe ? APAGADO : 1) * (dorme ? DORMENTE : 1),
-        largura: (0.55 + forca * 0.65) * px,
-        tracejado,
-      },
+      `${String(faixa)}:${String(longe)}:${String(tracejado)}:${String(dorme)}:${String(doEscolhido)}`,
+      cena.cores.padrao
+        ? {
+            alfa: doEscolhido
+              ? 0.85
+              : (0.12 + forca * 0.22) * (longe ? 0.5 : 1) * (dorme ? DORMENTE : 1),
+            largura: (doEscolhido ? 1.75 : 1.1) * px,
+            tracejado,
+          }
+        : {
+            alfa: (0.12 + forca * 0.45) * (longe ? APAGADO : 1) * (dorme ? DORMENTE : 1),
+            largura: (0.55 + forca * 0.65) * px,
+            tracejado,
+          },
       a,
       b,
     )
@@ -299,6 +321,23 @@ function desenharPontes(
     const dorme = cena.adormecidas.has(c.aId) || cena.adormecidas.has(c.bId)
     const chave = `${String(faixa)}:${String(longe)}:${String(tracejado)}:${String(dorme)}`
     const escurecer = (longe ? APAGADO : 1) * (dorme ? DORMENTE : 1)
+
+    // No Padrão a ponte é um fio de 2 px no azul do acento, sem halo.
+    if (cena.cores.padrao) {
+      const forte = cena.selecionado !== null && !longe
+      acrescentar(
+        fios,
+        chave,
+        {
+          alfa: (forte ? 0.95 : 0.75) * (longe ? 0.4 : 1) * (dorme ? DORMENTE : 1),
+          largura: 2 * px,
+          tracejado,
+        },
+        a,
+        b,
+      )
+      continue
+    }
 
     acrescentar(
       halos,
@@ -363,13 +402,15 @@ function desenharNeuronios(
     const dorme = cena.adormecidas.has(n.id)
     const feita = cena.feitas.has(n.id)
     const chave = `${n.livroId}:${String(longe)}:${String(dorme)}:${String(feita)}`
-    const raio = raioNaTela(cena.graus.get(n.id) ?? 0) * px
+    const raio = raioNaTela(cena.graus.get(n.id) ?? 0, cena.cores.padrao) * px
     const grupo = grupos.get(chave)
     if (grupo) grupo.pontos.push([p, raio])
     else {
       // No porto não há livro, então não há o toque da cor de livro nenhum.
-      const cor = n.livroId === null || feita ? undefined : corDoLivro.get(n.livroId)
-      const escurecer = (longe ? APAGADO : 1) * (dorme ? DORMENTE : 1)
+      // No Padrão os pontos são só tinta: as pranchas não levam o toque da cor do livro.
+      const cor =
+        n.livroId === null || feita || cena.cores.padrao ? undefined : corDoLivro.get(n.livroId)
+      const escurecer = (longe ? (cena.cores.padrao ? 0.3 : APAGADO) : 1) * (dorme ? DORMENTE : 1)
       grupos.set(chave, { cor, escurecer, feita, pontos: [[p, raio]] })
     }
   }
@@ -399,7 +440,12 @@ function desenharNeuronios(
   ctx.globalAlpha = 1
 
   const escolhido = cena.selecionado ? cena.posicoes.get(cena.selecionado) : undefined
-  if (finito(escolhido) && cena.selecionado) {
+  if (finito(escolhido) && cena.selecionado && cena.cores.padrao) {
+    alvoDoPadrao(ctx, escolhido.x, escolhido.y, px, {
+      cheio: cena.cores.blk,
+      fundo: cena.cores.sala,
+    })
+  } else if (finito(escolhido) && cena.selecionado) {
     const raio = raioNaTela(cena.graus.get(cena.selecionado) ?? 0) * px
     ctx.strokeStyle = cena.cores.papel
     ctx.lineWidth = 1.5 * px
@@ -619,4 +665,84 @@ function desenharEtiqueta(
   ctx.fillStyle = cena.cores.papel
   ctx.fillText(n.titulo, caixaX, caixaY)
   ctx.restore()
+}
+
+/**
+ * Os nomes no tema Padrão (pranchas "Rede"): o do escolhido numa etiqueta clara, à direita do
+ * ponto, e os dos vizinhos — ou, sem escolhido, os dos mais conectados, a partir do zoom que revela
+ * nomes — em etiquetas menores. Em pixels de tela, e uma etiqueta que bateria noutra fica de fora.
+ */
+function desenharRotulosDoPadrao(
+  ctx: CanvasRenderingContext2D,
+  cena: Cena,
+  camera: Camera,
+  largura: number,
+  altura: number,
+  apagado: (n: NeuronioNaTela) => boolean,
+): void {
+  const { cores } = cena
+  const naTela = (p: Ponto): Ponto => ({
+    x: largura / 2 + camera.x + p.x * camera.escala,
+    y: altura / 2 + camera.y + p.y * camera.escala,
+  })
+  const ocupadas: CaixaDeTela[] = []
+  const bate = (c: CaixaDeTela): boolean =>
+    ocupadas.some((o) => c.x0 < o.x1 && c.x1 > o.x0 && c.y0 < o.y1 && c.y1 > o.y0)
+
+  const escolhido = cena.neuronios.find((n) => n.id === cena.selecionado)
+  const pEscolhido = cena.selecionado ? cena.posicoes.get(cena.selecionado) : undefined
+  if (escolhido && finito(pEscolhido)) {
+    const p = naTela(pEscolhido)
+    ocupadas.push(
+      etiquetaDoPadrao(ctx, escolhido.titulo, p.x + 18, p.y, {
+        fonte: `600 13px ${cores.fonteTitulo}`,
+        cor: cores.papel,
+        fundo: cores.parede,
+        sombra: cores.sombraDaEtiqueta,
+        limite: largura,
+      }),
+    )
+  }
+
+  const vizinhanca = vizinhancaDe(cena.selecionado, cena.conexoes)
+  // Sem escolhido, nome só de perto — como no Clássico.
+  if (vizinhanca === null && camera.escala < ESCALA_MINIMA_DOS_ROTULOS) return
+
+  const candidatos: { n: NeuronioNaTela; p: Ponto; grau: number }[] = []
+  for (const n of cena.neuronios) {
+    if (n.id === cena.selecionado) continue
+    if (vizinhanca === null ? apagado(n) : !vizinhanca.has(n.id)) continue
+    const p = cena.posicoes.get(n.id)
+    if (!finito(p)) continue
+    candidatos.push({ n, p: naTela(p), grau: cena.graus.get(n.id) ?? 0 })
+  }
+  candidatos.sort((a, b) => b.grau - a.grau || (a.n.id < b.n.id ? -1 : 1))
+
+  const fonte = `500 12px ${cores.fonteTitulo}`
+  let postos = 0
+  for (const { n, p, grau } of candidatos) {
+    if (postos >= MAX_ROTULOS_AMBIENTE) break
+    if (p.x < -40 || p.x > largura + 40 || p.y < -20 || p.y > altura + 20) continue
+    const r = raioNaTela(grau, true)
+    ctx.save()
+    ctx.font = fonte
+    const meio = ctx.measureText(n.titulo).width / 2 + 10
+    ctx.restore()
+    // Embaixo do ponto; se bater noutro nome, em cima.
+    for (const dy of [r + 14, -(r + 14)]) {
+      const prova = { x0: p.x - meio, y0: p.y + dy - 10, x1: p.x + meio, y1: p.y + dy + 10 }
+      if (bate(prova)) continue
+      ocupadas.push(
+        etiquetaDoPadrao(ctx, n.titulo, p.x, p.y + dy, {
+          fonte,
+          cor: cores.poeira,
+          fundo: cores.parede,
+          sombra: cores.sombraDaEtiqueta,
+          centro: true,
+        }),
+      )
+      postos++
+      break
+    }
+  }
 }

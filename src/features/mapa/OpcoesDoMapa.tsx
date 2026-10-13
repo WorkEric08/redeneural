@@ -1,6 +1,8 @@
 import { Waypoints } from 'lucide-react'
 
 import { botao } from '@/components/botao'
+import { Interruptor } from '@/components/Interruptor'
+import { useTemaPadrao } from '@/hooks/useTemaPadrao'
 import { contar } from '@/lib/plural'
 
 import { TRACEJADO_DA_TRILHA_PX } from './desenharMapa'
@@ -18,6 +20,61 @@ interface Props {
  * de longe e a legenda do que se vê. Só existe no Mapa.
  */
 export function OpcoesDoMapa({ todasAsPontes, onAlternarPontes, escondidas }: Props) {
+  const padrao = useTemaPadrao()
+
+  // O Padrão (docs/estilos-visuais-locus.md, "Filtros do Mapa"): título, uma linha com o interruptor e
+  // a legenda em quatro linhas — a trilha, a ponte, a ideia feita e a adormecida.
+  if (padrao) {
+    return (
+      <div className="flex flex-col">
+        <h2 className="pd-folha-titulo">Mapa</h2>
+        <div className="pd-linha-interruptor">
+          <div className="min-w-0 flex-1">
+            <p className="pd-linha-interruptor-titulo">Ver todas as pontes</p>
+            <p className="pd-linha-interruptor-desc">
+              {escondidas > 0 && !todasAsPontes
+                ? `${contar(escondidas, 'fica escondida', 'ficam escondidas')} de longe`
+                : `De longe, cada ilha mostra as ${String(PONTES_POR_ILHA)} mais fortes`}
+            </p>
+          </div>
+          <Interruptor
+            ligado={todasAsPontes}
+            onMudar={onAlternarPontes}
+            rotulo="Ver todas as pontes"
+          />
+        </div>
+
+        <h3 className="rotulo-de-secao pd-secao-da-folha">Legenda</h3>
+        <ul className="pd-legenda">
+          <li>
+            <span className="pd-legenda-amostra">
+              <Amostra tipo="trilha" />
+            </span>
+            Trilha: conexão dentro do livro
+          </li>
+          <li>
+            <span className="pd-legenda-amostra">
+              <Amostra tipo="ponte" />
+            </span>
+            Ponte: liga dois livros
+          </li>
+          <li>
+            <span className="pd-legenda-amostra">
+              <span className="pd-legenda-ponto pd-legenda-ponto--feita" />
+            </span>
+            Ideia feita
+          </li>
+          <li>
+            <span className="pd-legenda-amostra">
+              <span className="pd-legenda-ponto pd-legenda-ponto--dorme" />
+            </span>
+            Ideia adormecida
+          </li>
+        </ul>
+      </div>
+    )
+  }
+
   return (
     <div className="flex flex-col gap-6">
       <section>

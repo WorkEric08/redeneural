@@ -1,4 +1,4 @@
-import { ExternalLink, Hammer, PencilLine, Search, Trash2, Undo2 } from 'lucide-react'
+import { Check, ExternalLink, Hammer, PencilLine, Search, Trash2, Undo2 } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link, useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 
@@ -18,6 +18,7 @@ import { IconeDoEstado } from '@/features/executaveis/IconeDoEstado'
 import { ImagemDoResultado } from '@/features/executaveis/ImagemDoResultado'
 import { useCriarLivroExecutavel } from '@/features/executaveis/useCriarLivroExecutavel'
 import { TextoComLinks } from '@/features/neuronio/TextoComLinks'
+import { useTemaPadrao } from '@/hooks/useTemaPadrao'
 import { useVisorNaUrl } from '@/hooks/useVisorNaUrl'
 import { ROTULO_DO_PORTO } from '@/features/porto/porto'
 import { usePalacio } from '@/store/palacio'
@@ -75,6 +76,7 @@ export default function Neuronio() {
     tocar,
   } = usePalacio()
   const criarLivroExecutavel = useCriarLivroExecutavel()
+  const padrao = useTemaPadrao()
 
   // A imagem do resultado, ampliada: no meio da tela, com o fundo desfocado. Mora na URL
   // (`?ver=`), para o voltar do Android fechar. Uma imagem só — sem setas.
@@ -216,18 +218,52 @@ export default function Neuronio() {
     })
   }
 
+  const acoesDaBarra = (
+    <>
+      {!padrao && (
+        <Link
+          to="/busca"
+          aria-label="Buscar"
+          className={botao({ tipo: 'fantasma', tamanho: 'icone' })}
+        >
+          <Search size={20} aria-hidden />
+        </Link>
+      )}
+      <Link
+        to={`/neuronio/${neuronio.id}/editar`}
+        aria-label="Editar"
+        className={botao({ tipo: 'fantasma', tamanho: 'icone' })}
+      >
+        <PencilLine size={20} aria-hidden />
+      </Link>
+      {/* Apagar durante um processamento deixaria o motor gravando o
+          vetor de quem não existe mais. */}
+      <button
+        type="button"
+        aria-label="Apagar"
+        disabled={ocupado}
+        onClick={perguntar}
+        className={botao({ tipo: 'fantasma', tamanho: 'icone' })}
+      >
+        <Trash2 size={20} aria-hidden />
+      </button>
+    </>
+  )
+
   return (
     <div className="flex flex-col">
       <BarraDeTopo
         voltarPara={saida}
         titulo={
-          livro ? (
+          padrao ? (
+            ''
+          ) : livro ? (
             <Link
               to={`/livro/${livro.id}`}
               className="flex min-w-0 items-center gap-2.5 rounded-lg py-2 pr-2"
             >
               <span
-                className="h-5 w-1 shrink-0 rounded-full"
+                className="marca-do-livro h-5 w-1 shrink-0 rounded-full"
                 style={{ background: livro.cor }}
                 aria-hidden
               />
@@ -247,136 +283,229 @@ export default function Neuronio() {
             'Neurônio'
           )
         }
-        acoes={
-          <>
-            <Link
-              to="/busca"
-              aria-label="Buscar"
-              className={botao({ tipo: 'fantasma', tamanho: 'icone' })}
-            >
-              <Search size={20} aria-hidden />
-            </Link>
-            <Link
-              to={`/neuronio/${neuronio.id}/editar`}
-              aria-label="Editar"
-              className={botao({ tipo: 'fantasma', tamanho: 'icone' })}
-            >
-              <PencilLine size={20} aria-hidden />
-            </Link>
-            {/* Apagar durante um processamento deixaria o motor gravando o
-                vetor de quem não existe mais. */}
-            <button
-              type="button"
-              aria-label="Apagar"
-              disabled={ocupado}
-              onClick={perguntar}
-              className={botao({ tipo: 'fantasma', tamanho: 'icone' })}
-            >
-              <Trash2 size={20} aria-hidden />
-            </button>
-          </>
-        }
+        acoes={acoesDaBarra}
       />
 
-      <article className="animar-entrada flex flex-col gap-6 pt-5">
-        <header className="flex flex-col items-start gap-2.5 px-1">
-          <h1 className="texto-do-usuario font-titulo text-[1.75rem] leading-tight font-semibold tracking-tight text-balance">
-            {neuronio.titulo}
-          </h1>
+      {padrao ? (
+        <article className="animar-entrada pd-neuronio-pagina">
+          {/* O livro de origem é uma etiqueta sob a barra (e não o título dela, como no Clássico). */}
+          {livro ? (
+            <Link to={`/livro/${livro.id}`} className="pd-chip-livro">
+              <span
+                className="marca-do-livro"
+                style={{ background: livro.cor, width: 7, height: 16 }}
+                aria-hidden
+              />
+              {livro.titulo}
+            </Link>
+          ) : neuronio.livroId === null ? (
+            <Link to={{ search: `?guardar=${neuronio.id}` }} className="pd-chip-livro">
+              <span className="pd-marca-pontilhada" aria-hidden />
+              {ROTULO_DO_PORTO}
+            </Link>
+          ) : null}
+
+          <h1 className="pd-neuronio-h1 texto-do-usuario">{neuronio.titulo}</h1>
           {neuronio.processando && <EtiquetaProcessando texto="procurando conexões" />}
-          <div className="flex flex-wrap gap-2">
-            {neuronio.livroId === null && (
-              <Link
-                to={{ search: `?guardar=${neuronio.id}` }}
-                className={botao({ tipo: 'secundario', tamanho: 'pequeno' })}
-              >
-                Guardar em…
-              </Link>
+
+          <div className="pd-neuronio-cartao">
+            {neuronio.conteudo && (
+              <TextoComLinks
+                texto={neuronio.conteudo}
+                className="pd-neuronio-conteudo texto-do-usuario whitespace-pre-wrap"
+              />
             )}
+
             {estado ? (
-              // Duas colunas: o andamento e, sob ele, o resultado (a mesma caixa); ao lado do
-              // andamento, o "Deixar de ser executável".
-              <div className="grid w-full grid-cols-[max-content_minmax(0,1fr)] items-center gap-2">
+              // O andamento e o resultado são caixas de 128 × 44; ao lado do andamento, o
+              // "Deixar de ser executável", em texto miúdo.
+              <div className="pd-andamento">
                 <button
                   type="button"
                   onClick={() => {
                     abrir('estado')
                   }}
                   aria-label={`Andamento: ${ROTULO_DO_ESTADO[estado]}`}
-                  className={`${botao({ tipo: 'secundario', tamanho: 'pequeno' })} ${CAIXA_DO_ANDAMENTO} col-start-1 row-start-1`}
+                  className="pd-caixa-de-estado"
                 >
-                  <IconeDoEstado estado={estado} tamanho={16} />
+                  <span className="pd-estado pd-estado--miudo" data-estado={estado}>
+                    {estado === 'feita' && <Check size={14} aria-hidden strokeWidth={2.5} />}
+                  </span>
                   {ROTULO_DO_ESTADO[estado]}
                 </button>
-                {estado === 'feita' && neuronio.resultadoLink && (
-                  <a
-                    href={neuronio.resultadoLink}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className={`${botao({ tipo: 'secundario', tamanho: 'pequeno' })} ${CAIXA_DO_ANDAMENTO} col-start-1 row-start-2`}
-                  >
-                    <ExternalLink size={15} aria-hidden />
-                    Resultado
-                  </a>
-                )}
                 <button
                   type="button"
                   onClick={() => {
                     abrir('desfazer')
                   }}
                   disabled={ocupado || comuns.length === 0}
-                  // Numa tela estreita o texto quebra em duas linhas, e o botão cresce.
-                  className={`${botao({ tipo: 'fantasma', tamanho: 'pequeno' })} col-start-2 row-start-1 h-auto! min-h-11 justify-self-start py-1 text-left`}
+                  className="pd-desfazer"
                 >
-                  <Undo2 size={15} aria-hidden className="shrink-0" />
-                  <span className="leading-tight">Deixar de ser executável</span>
+                  Deixar de ser executável
                 </button>
+                {estado === 'feita' && neuronio.resultadoLink && (
+                  <a
+                    href={neuronio.resultadoLink}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="pd-caixa-de-estado"
+                  >
+                    <ExternalLink size={18} aria-hidden />
+                    Resultado
+                  </a>
+                )}
               </div>
             ) : (
-              <button
-                type="button"
-                onClick={tornarExecutavel}
-                disabled={ocupado}
-                className={botao({ tipo: 'secundario', tamanho: 'pequeno' })}
-              >
-                <Hammer size={15} aria-hidden />
-                Tornar executável
-              </button>
+              <div className="pd-acoes">
+                {neuronio.livroId === null && (
+                  <Link
+                    to={{ search: `?guardar=${neuronio.id}` }}
+                    className={botao({ tipo: 'primario', largo: true })}
+                  >
+                    Guardar em…
+                  </Link>
+                )}
+                <button
+                  type="button"
+                  onClick={tornarExecutavel}
+                  disabled={ocupado}
+                  className={botao({ tipo: 'secundario', largo: true })}
+                >
+                  <Hammer size={18} aria-hidden />
+                  Tornar executável
+                </button>
+                {neuronio.livroId === null && (
+                  <p className="pd-nota">Sem livro, o neurônio ainda não entra nas pontes.</p>
+                )}
+              </div>
+            )}
+
+            {estado === 'feita' && neuronio.resultadoImagem && (
+              <section aria-labelledby="resultado-imagem" className="flex flex-col">
+                <h2 id="resultado-imagem" className="rotulo-de-secao">
+                  <span>Resultado</span>
+                  <span>imagem</span>
+                </h2>
+                <button
+                  type="button"
+                  aria-label="Ampliar a imagem do resultado"
+                  onClick={() => {
+                    visor.abrir(neuronio.id)
+                  }}
+                  className="block w-full cursor-zoom-in"
+                >
+                  <ImagemDoResultado
+                    neuronio={neuronio}
+                    tamanho="inteira"
+                    alturaMaxima="24rem"
+                    className="rounded-2xl"
+                  />
+                </button>
+              </section>
             )}
           </div>
-        </header>
+        </article>
+      ) : (
+        <article className="animar-entrada flex flex-col gap-6 pt-5">
+          <header className="flex flex-col items-start gap-2.5 px-1">
+            <h1 className="texto-do-usuario font-titulo text-[1.75rem] leading-tight font-semibold tracking-tight text-balance">
+              {neuronio.titulo}
+            </h1>
+            {neuronio.processando && <EtiquetaProcessando texto="procurando conexões" />}
+            <div className="flex flex-wrap gap-2">
+              {neuronio.livroId === null && (
+                <Link
+                  to={{ search: `?guardar=${neuronio.id}` }}
+                  className={botao({ tipo: 'secundario', tamanho: 'pequeno' })}
+                >
+                  Guardar em…
+                </Link>
+              )}
+              {estado ? (
+                // Duas colunas: o andamento e, sob ele, o resultado (a mesma caixa); ao lado do
+                // andamento, o "Deixar de ser executável".
+                <div className="grid w-full grid-cols-[max-content_minmax(0,1fr)] items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      abrir('estado')
+                    }}
+                    aria-label={`Andamento: ${ROTULO_DO_ESTADO[estado]}`}
+                    className={`${botao({ tipo: 'secundario', tamanho: 'pequeno' })} ${CAIXA_DO_ANDAMENTO} col-start-1 row-start-1`}
+                  >
+                    <IconeDoEstado estado={estado} tamanho={16} />
+                    {ROTULO_DO_ESTADO[estado]}
+                  </button>
+                  {estado === 'feita' && neuronio.resultadoLink && (
+                    <a
+                      href={neuronio.resultadoLink}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className={`${botao({ tipo: 'secundario', tamanho: 'pequeno' })} ${CAIXA_DO_ANDAMENTO} col-start-1 row-start-2`}
+                    >
+                      <ExternalLink size={15} aria-hidden />
+                      Resultado
+                    </a>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      abrir('desfazer')
+                    }}
+                    disabled={ocupado || comuns.length === 0}
+                    // Numa tela estreita o texto quebra em duas linhas, e o botão cresce.
+                    className={`${botao({ tipo: 'fantasma', tamanho: 'pequeno' })} col-start-2 row-start-1 h-auto! min-h-11 justify-self-start py-1 text-left`}
+                  >
+                    <Undo2 size={15} aria-hidden className="shrink-0" />
+                    <span className="leading-tight">Deixar de ser executável</span>
+                  </button>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={tornarExecutavel}
+                  disabled={ocupado}
+                  className={botao({ tipo: 'secundario', tamanho: 'pequeno' })}
+                >
+                  <Hammer size={15} aria-hidden />
+                  Tornar executável
+                </button>
+              )}
+            </div>
+          </header>
 
-        {neuronio.conteudo && (
-          <TextoComLinks
-            texto={neuronio.conteudo}
-            className="texto-do-usuario px-1 text-[1.03rem] leading-[1.7] whitespace-pre-wrap"
-          />
-        )}
+          {neuronio.conteudo && (
+            <TextoComLinks
+              texto={neuronio.conteudo}
+              className="texto-do-usuario px-1 text-[1.03rem] leading-[1.7] whitespace-pre-wrap"
+            />
+          )}
 
-        {/* O que saiu da ideia, quando ela está feita: a imagem inteira, na proporção dela. */}
-        {estado === 'feita' && neuronio.resultadoImagem && (
-          <section aria-labelledby="resultado-imagem" className="flex flex-col">
-            <h2 id="resultado-imagem" className="rotulo-de-secao">
-              Resultado
-            </h2>
-            <button
-              type="button"
-              aria-label="Ampliar a imagem do resultado"
-              onClick={() => {
-                visor.abrir(neuronio.id)
-              }}
-              className="block w-full cursor-zoom-in"
-            >
-              <ImagemDoResultado
-                neuronio={neuronio}
-                tamanho="inteira"
-                alturaMaxima="24rem"
-                className="rounded-2xl"
-              />
-            </button>
-          </section>
-        )}
-      </article>
+          {/* O que saiu da ideia, quando ela está feita: a imagem inteira, na proporção dela. */}
+          {estado === 'feita' && neuronio.resultadoImagem && (
+            <section aria-labelledby="resultado-imagem" className="flex flex-col">
+              <h2 id="resultado-imagem" className="rotulo-de-secao">
+                Resultado
+              </h2>
+              <button
+                type="button"
+                aria-label="Ampliar a imagem do resultado"
+                onClick={() => {
+                  visor.abrir(neuronio.id)
+                }}
+                className="block w-full cursor-zoom-in"
+              >
+                <ImagemDoResultado
+                  neuronio={neuronio}
+                  tamanho="inteira"
+                  alturaMaxima="24rem"
+                  className="rounded-2xl"
+                />
+              </button>
+            </section>
+          )}
+        </article>
+      )}
 
       {neuronio.resultadoImagem && (
         <VisorDeImagens

@@ -58,9 +58,13 @@ function Menu({ anexo, onTrocarPainel }: Props & { anexo: AnexoNaTela }) {
   return (
     <div className="flex flex-col gap-5">
       <header className="flex items-center gap-3">
-        <Miniatura anexo={anexo} compacta className="size-14 shrink-0 rounded-xl" />
+        <Miniatura
+          anexo={anexo}
+          compacta
+          className="pd-miniatura-do-menu size-14 shrink-0 rounded-xl"
+        />
         <div className="min-w-0">
-          <h2 className="font-titulo line-clamp-2 text-lg leading-snug font-semibold tracking-tight">
+          <h2 className="pd-cab-titulo pd-cab-titulo--item font-titulo line-clamp-2 text-lg leading-snug font-semibold tracking-tight">
             {nomeDoItem(anexo)}
           </h2>
           <p className="text-poeira text-sm">{ehImagem ? 'Imagem' : 'Link'}</p>

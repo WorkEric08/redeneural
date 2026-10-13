@@ -1,5 +1,8 @@
 import { useEffect, useRef } from 'react'
+import { CircleAlert } from 'lucide-react'
 import { Link } from 'react-router-dom'
+
+import { useTemaPadrao } from '@/hooks/useTemaPadrao'
 
 import { usePalacio } from '@/store/palacio'
 
@@ -30,6 +33,7 @@ export function Aviso() {
   const acao = usePalacio((s) => s.acaoDoAviso)
   const dispensar = usePalacio((s) => s.dispensarAvisos)
   const caixa = useRef<HTMLDivElement>(null)
+  const padrao = useTemaPadrao()
 
   const mensagem = erro ?? aviso
   // Um erro por cima tira o botão do aviso: ele falaria de outra coisa.
@@ -61,7 +65,14 @@ export function Aviso() {
       onClick={dispensar}
     >
       {botao === null ? (
-        mensagem
+        padrao ? (
+          <span className="pd-aviso">
+            {erro !== null && <CircleAlert size={20} aria-hidden className="pd-aviso-icone" />}
+            {mensagem}
+          </span>
+        ) : (
+          mensagem
+        )
       ) : (
         <span className="flex items-center gap-3">
           <span className="min-w-0 flex-1">{mensagem}</span>

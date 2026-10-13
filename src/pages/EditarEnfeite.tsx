@@ -57,7 +57,7 @@ export default function EditarEnfeite() {
     <div className="flex min-h-dvh flex-col">
       <BarraDeTopo voltarPara="/" icone="fechar" titulo="Editar enfeite" />
 
-      <div className="animar-entrada flex flex-1 flex-col pt-4">
+      <div className="animar-entrada pd-conteudo flex flex-1 flex-col pt-4">
         <FormularioDeLivro
           enfeite
           acabamentoDoEnfeite={{

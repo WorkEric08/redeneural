@@ -5931,80 +5931,107 @@ Medido no Chrome (build de produção): antes a tela rolava **446 px em 320×568
 
 ## Temas: Clássico e Padrão (13/10/2026)
 
-Pedido do usuário: o visual de sempre passa a se chamar **Clássico**, Ajustes ganha uma seção
-para trocar de tema, e entra a versão **E · Padrão** da documentação de design
-(`docs/estilos-visuais-locus.md`) em claro e escuro. Três escolhas, e só: Clássico, Padrão claro,
-Padrão escuro. **O Clássico não mudou** (a seção "Tema" em Ajustes e o aperto de Ajustes em tela
-baixa, abaixo, são as únicas marcas dele).
+Pedido do usuário: o visual de sempre passa a se chamar **Clássico**, Ajustes ganha uma seção para trocar de
+tema, e entra a versão **E · Padrão** da documentação de design (`docs/estilos-visuais-locus.md`, e o PDF
+`Locus-Design-E-Padrao`) em claro e escuro. Três escolhas, e só: Clássico, Padrão claro, Padrão escuro.
+**O Clássico não mudou** — conferido pixel a pixel contra o commit anterior, em 20 telas e três tamanhos
+(só a seção "Tema" de Ajustes é nova nele, e entrou sem mexer no resto).
 
-| Tema            | O que é                                                                                     |
-| --------------- | ------------------------------------------------------------------------------------------- |
-| `classico`      | O estilo Noite de sempre. **Segue o sistema** (claro ou escuro). É o padrão.                |
-| `padrao-claro`  | A versão E: cinza-claro `#f3f3f5`, cartões brancos, texto `#111113`, Figtree.               |
-| `padrao-escuro` | A versão E: preto, cartões `#1b1b1d`, texto `#f5f5f7`, Figtree. **Não** segue o sistema.    |
+A primeira entrega do Padrão (só tokens e acabamento) foi recusada pelo usuário por não ser **igual às
+pranchas** — a regra que ficou: **o Padrão copia as medidas dos mockups, e só Ajustes pode ser diferente**
+(ali há uma seção a mais, a dos temas). Os HTML dos mockups (cada prancha, com os números exatos) guiaram a
+segunda entrega; o que segue é o registro dela.
+
+| Tema            | O que é                                                                                  |
+| --------------- | ---------------------------------------------------------------------------------------- |
+| `classico`      | O estilo Noite de sempre. **Segue o sistema** (claro ou escuro). É o padrão.             |
+| `padrao-claro`  | A versão E: cinza-claro `#f3f3f5`, cartões brancos, texto `#111113`, Figtree.            |
+| `padrao-escuro` | A versão E: preto, cartões `#1b1b1d`, texto `#f5f5f7`, Figtree. **Não** segue o sistema. |
 
 ### Como funciona
 
-- **A preferência** é `meta.preferencias.tema` (sem versão nova do Dexie, fora do backup), pelo mesmo
-  caminho das outras: `core/domain/tema.ts` (`Tema`, `temaOuPadrao`, `ehTemaPadrao`) → porta
-  `definirTema` → Worker → `DexieRepo.getTema/definirTema` → store (`tema`, `definirTema`, **otimista**:
-  a interface troca na hora e a gravação vem por trás).
-- **Na página:** `services/native/tema.ts` liga `<html data-tema="…">`; `App.tsx` o aplica num
-  `useLayoutEffect` sempre que o tema da store muda.
-- **Primeira pintura sem piscar:** o banco só responde depois de o CSS pintar. Por isso o tema também fica
-  espelhado em `localStorage` (`locus-tema`) e um script de uma linha no `index.html` o lê antes do CSS.
-  **É uma exceção consciente à regra de "nunca localStorage"**: o tema não é dado do palácio, o espelho é só
-  um atalho da primeira pintura, e o **banco vence** — se o aparelho apagar o espelho, o banco o devolve.
-- **O CSS:** `src/tema-padrao.css`, importado depois do `index.css`, fora de `@layer` (assim vence os
-  componentes sem `!important`). Os valores de cada versão ficam em `--t-*`, e um bloco comum os liga aos
-  tokens que o app já lê (`--sala`, `--parede`, `--papel`, `--poeira`, `--linha`, `--realce`, `--ponte`…) —
-  por isso todas as telas mudam juntas. Os seletores começam por `html:root[data-tema^='padrao']`, que vale
-  mais que o bloco escuro do sistema (`:root:not(.claro)` dentro de `@media`): o Padrão claro vence mesmo
-  num aparelho em modo escuro. `.cores-de-antes` (que prende as cores da estante no Clássico) também segue
-  o tema no Padrão.
+- **A preferência** é `meta.preferencias.tema` (sem versão nova do Dexie, fora do backup), pelo mesmo caminho
+  das outras: `core/domain/tema.ts` (`Tema`, `temaOuPadrao`, `ehTemaPadrao`) → porta `definirTema` → Worker →
+  `DexieRepo.getTema/definirTema` → store (`tema`, `definirTema`, **otimista**).
+- **Na página:** `services/native/tema.ts` liga `<html data-tema="…">`; `App.tsx` o aplica num `useLayoutEffect`.
+- **Primeira pintura sem piscar:** o tema também fica espelhado em `localStorage` (`locus-tema`) e um script de
+  uma linha no `index.html` o lê antes do CSS. **Exceção consciente à regra de "nunca localStorage"**: o tema
+  não é dado do palácio, e o **banco vence** (se o espelho sumir, o banco o devolve).
+- **Duas camadas:**
+  1. **CSS** (`src/tema-padrao.css`, depois do `index.css`, fora de `@layer`, seletores `html:root[data-tema^='padrao']`
+     — vale mais que o bloco escuro do sistema): os tokens do Apêndice A (`--t-*`, ligados aos tokens que o app
+     já lê), a fonte, os cantos, os botões (`botao.ts` agora leva `btn btn-<tipo> btn-<tamanho>`), a barra, a
+     folha, a estante em cartões, o botão de criar e todas as peças dos formulários.
+  2. **Estrutura** (`useTemaPadrao()`, que lê o mesmo atributo do `<html>` — não a store, para uma peça pequena
+     não puxar o Worker): onde a prancha tem **outra ordem ou outra peça**, o componente desenha as duas.
+     São as telas: Estante (cabeçalho), Livro (cartão com duas setas; ideias em linhas com o círculo do
+     andamento), Neurônio e item da pasta (etiqueta do livro sob a barra, tudo num cartão), Rede (pílula
+     Rede | Mapa na barra, cartão de "Abrir →"), Novo livro e enfeite (cartões, bolinhas de cor 5 × 2, pílulas de
+     largura/comprimento), Busca (campo na barra, resultados em linhas), Porto, Pasta, formulário de item, os
+     filtros e as folhas de escolha.
 
-### O que o Padrão muda
+### O que o Padrão tem (e o Clássico não)
 
-- **Fonte:** Figtree, **auto-hospedada** (`public/fontes/figtree-latin.woff2`, 20 KB, fonte variável 300–900,
-  subset latino, SIL OFL; entra no precache do PWA). Substitui Literata e Source Sans 3 só neste tema.
-- **Cantos e traço:** cartão 18, campo 14, chip 12, botão 14 (`botao.ts` lê `--raio-botao` e
-  `--raio-botao-pequeno`; sem as variáveis valem 14 e 10 px, como sempre), sheet 26, alerta 16; ícones a
-  1,75 px. Sem o grão do fundo e sem sombra nos cartões.
-- **Peças:** chip escolhido é bloco cheio; `.segmentado` vira trilho cinza com pílula (dentro de sheet, caixas
-  contornadas); `.opcao` escolhida cheia; barra de topo sem linha; alerta invertido com sombra; campo sem borda.
-- **Estante:** cada prateleira é um **cartão arredondado**; saem a madeira, o tampo, as tábuas, a base, as
-  laterais e a luz da sala. **A lombada é igual** (objeto escuro nos dois temas); a luz dos enfeites
-  (abaixo de 50) escurece o cartão. O vão de 8 px entre cartões ocupa o lugar da tábua, então a conta da
-  altura da fileira não muda.
-- **Botão de criar:** liso, círculo cheio com sombra suave. **O anel vira só ícones em arco** (a mesma
-  geometria de `lib/dial.ts`): segurar mostra os três ícones; o nome aparece **à esquerda do ícone sob o
-  dedo**, só dele (`DestinosEmArco` em `Dial.tsx`). O Clássico segue com o anel de cunhas.
-- **Rede e Mapa:** as cores vêm dos tokens; os nomes no canvas usam Figtree (`--fonte-canvas-titulo`) e o
-  nome da ilha deixa de ser versalete (`--canvas-versalete: nao`). O canvas repinta quando `data-tema` muda.
-- **Neurônio:** o texto lido vai num cartão.
+- **Fonte:** Figtree, auto-hospedada (`public/fontes/figtree-latin.woff2`, 20 KB, SIL OFL, no precache do PWA).
+- **Cantos e traço:** cartão 18, campo 14, chip 12, botão 14, sheet 26 (alça 40 × 5), alerta 16; ícones a 1,75 px;
+  voltar é "‹". Botão principal de 52 px. Sem grão no fundo e sem sombra nos cartões.
+- **Estante:** cada prateleira é um **cartão arredondado** (12 px de ar em cima, 10 px de vão); saem a madeira, o
+  tampo, as tábuas, a base e as laterais. Ganha o cabeçalho "Estante" com a busca. **A lombada é igual**, e os
+  enfeites continuam azuis com filetes dourados (a prancha da estante os desenha em cinza só como
+  esquema; a prancha "Estados da lombada" os mostra azuis).
+- **Botão de criar:** liso, círculo cheio com sombra. **O anel vira três ícones em arco, na ordem da
+  prancha: Ajustes em cima, Rede no meio, Estante junto da borda**; o nome aparece à esquerda do ícone sob o
+  dedo. O gesto é o mesmo (`lib/dial.ts`); só a ordem das cunhas muda.
+- **Rede e Mapa:** pontos de tinta sem o toque da cor do livro; o escolhido é um alvo (miolo, volta, anel); nomes em
+  etiquetas de canto 12 (clara, com sombra curta no tema claro); ponte de 2 px no azul do acento; ilha com
+  borda neutra, sem a linha de contagem; etiqueta do escolhido escura. O canvas lê `--canvas-padrao`,
+  `--fonte-canvas-titulo`, `--mapa-borda`, `--sombra-da-etiqueta`, e repinta quando `data-tema` muda.
+- **Folhas:** título de 22 px, linhas de 56 px entre filetes, "Onde guardar?" em linhas com círculo de escolha e a
+  contagem, filtros com interruptor, legenda do Mapa em quatro linhas.
+- **Alertas:** faixa invertida (escura no claro, clara no escuro), ação em pílula, erro com ícone vermelho.
+- **Visor:** setas no pé, uma de cada lado do nome da imagem; contador em pílula.
 
-### Desvios da documentação, e por quê
+### Onde o Padrão difere da prancha — e por quê
 
-- **O acento (a ponte) ficou um pouco diferente do documento**, por contraste: `#2f6bff` dava 4,06:1 sobre a
-  sala clara e `#3f6fd8` dava 3,67:1 sobre o cartão escuro, ambos abaixo do 4,5:1 do texto pequeno ("N pontes").
-  No app: **`#2a63f0`** (4,58:1 sobre a sala; 5,07:1 sobre o cartão) e **`#5582e8`** (5,74:1 e 4,70:1).
-- **A ordem do arco** do botão de criar segue a do app (Estante, Rede, Ajustes, de cima para baixo), e não a do mockup.
-- **Ajustes ganhou a seção "Tema"** (um segmentado de três opções) e, para continuar cabendo sem rolar em
-  320 × 568, **só em tela baixa** (`max-height: 640px`) as linhas apertam o respiro (`.ajustes-compacto` em
-  `index.css`); os alvos de toque continuam de 44 px. Vale para os três temas.
+- **Escrever:** o cartão do texto ocupa o que sobra da tela (a documentação diz "ocupando o resto"); a
+  prancha o desenha com altura fixa.
+- **Largura e Comprimento do livro** têm as quatro opções da prancha. O "Auto" (legado) só aparece em quem já
+  está nele — uma opção a mais não cabe em 320 px — e quem escolhe um tamanho não volta ao automático por ali.
+- **Rede:** sem a linha "N neurônios · N conexões · N pontes" (a prancha não a tem). Pontos de 3 a 4,2 px
+  (4 na prancha, que tem 20 pontos; num palácio de centenas, um pouco menos).
+- **Neurônio comum:** o "Tornar executável" fica dentro do cartão (a prancha não o desenha; é uma função do app).
+- **Livro:** o resumo continua dizendo "fios saindo" (a prancha, "pontes"), e as etiquetas "Pontes com" não
+  mostram a quantidade.
+- **Botão de criar aberto:** o nome do ícone de cima (Ajustes) cobre um pouco o ícone do meio — é a
+  geometria da prancha, que só desenha o nome da Rede.
+- **Não implementado por não existir no app:** o cartão "Nenhum livro ainda" da estante vazia.
+- **O acento é o da documentação** (`#2f6bff` e `#3f6fd8`): a própria prancha registra 4,06:1 e 4,48:1 — "AA
+  para texto grande e controles". Nenhum texto pequeno é só azul; a etiqueta "ponte" leva texto branco.
+- **Ajustes:** ganhou a seção "Tema" (um segmentado de três opções) e, para continuar cabendo sem rolar em 320 × 568,
+  as linhas apertam o respiro em tela baixa (`.ajustes-compacto` em `index.css`; alvos de 44 px mantidos).
+
+### Telas baixas
+
+As pranchas são desenhadas para 390 × 844. Em 320 × 568 o Padrão cabe sem rolagem vertical (regra do projeto)
+porque o CSS aperta, só em `max-height: 700px` e `600px`: a fileira das prateleiras (ar e vão do cartão), o
+formulário de livro (cor, forma, pílulas, prévia; o rótulo "Nome" cede), o formulário de item e o bloco de
+título. Telas de **lista** (pasta, porto, busca) e de **texto** rolam quando o conteúdo é maior que a tela.
 
 ### Verificado
 
-Chrome (build de produção), 412 × 892, 320 × 568, 768 × 1024 e 1440 × 900, nos dois temas do Padrão e no
-Clássico: estante, livro, neurônio, escrever, Rede, Mapa, novo livro, Ajustes, sheets e o botão de criar
-(por toque: segurar, arrastar até o ícone, soltar navega). A troca persiste ao recarregar e sobrevive ao
-espelho apagado. Ajustes cabe sem rolar em 320 × 568, 360 × 640, 390 × 844 e 412 × 892. 735 testes, tipos e
-lint limpos. **Não verificado em aparelho de verdade, no PWA instalado nem com o teclado aberto.**
+Chrome (build de produção), nos dois temas do Padrão: estante, livro (comum e executável), neurônio (comum,
+ideia feita, porto), escrever, Rede e Mapa (com neurônio escolhido), novo livro (livro, executável, pasta,
+deitado, enfeite), Ajustes, pasta, item, novo e editar item, busca, porto, visor e as 17 folhas, em 390 × 844,
+320 × 568, 360 × 640 e 1440 × 900; o botão de criar por toque (95°, 135° e 175° navegam para Ajustes, Rede e
+Estante); alertas de informação, ação e erro. O Clássico, idêntico ao commit anterior em 20 telas. 739 testes,
+tipos e lint limpos. **Não verificado em aparelho de verdade, no PWA instalado, nem com o teclado aberto.**
 
 ### Fora daqui
 
-As versões A · Papel e D · Marca-texto da documentação **não** foram implementadas. O Padrão não tem
-modo "segue o sistema". A coluna de navegação do desktop ainda diz "Palácio Mental".
+As versões A · Papel e D · Marca-texto **não** foram implementadas. O Padrão não tem modo "segue o sistema". A
+coluna de navegação do desktop segue com o desenho de tokens (não há prancha de tela larga — é uma pendência
+registrada na documentação).
+
 
 ## Fases
 

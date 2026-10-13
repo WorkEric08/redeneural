@@ -1,6 +1,8 @@
 import { useLocation, useNavigate, useParams } from 'react-router-dom'
 
 import { BarraDeTopo } from '@/components/BarraDeTopo'
+import { BlocoDeTitulo } from '@/components/BlocoDeTitulo'
+import { useTemaPadrao } from '@/hooks/useTemaPadrao'
 import { FormularioDeAnexo } from '@/features/acervo/FormularioDeAnexo'
 import { usePalacio } from '@/store/palacio'
 
@@ -8,7 +10,8 @@ export default function EditarAnexo() {
   const { anexoId } = useParams()
   const { key } = useLocation()
   const navegar = useNavigate()
-  const { anexos, carregado, ocupado, editarAnexo } = usePalacio()
+  const { livros, anexos, carregado, ocupado, editarAnexo } = usePalacio()
+  const padrao = useTemaPadrao()
 
   const anexo = anexos.find((a) => a.id === anexoId)
 
@@ -25,9 +28,20 @@ export default function EditarAnexo() {
 
   return (
     <div className="flex min-h-dvh flex-col">
-      <BarraDeTopo voltarPara={`/anexo/${anexo.id}`} icone="fechar" titulo="Editar item" />
+      <BarraDeTopo
+        voltarPara={`/anexo/${anexo.id}`}
+        icone="fechar"
+        titulo={padrao ? '' : 'Editar item'}
+      />
 
-      <div className="animar-entrada flex flex-1 flex-col pt-4">
+      <div className="animar-entrada pd-conteudo flex flex-1 flex-col pt-4">
+        {padrao && (
+          <BlocoDeTitulo
+            rotulo={`Pasta · ${livros.find((l) => l.id === anexo.livroId)?.titulo ?? ''}`}
+            titulo="Editar item"
+            sub="Troque a imagem ou a legenda"
+          />
+        )}
         <FormularioDeAnexo
           modo="editar"
           anexo={anexo}

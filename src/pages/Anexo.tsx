@@ -3,6 +3,7 @@ import { useCallback, useMemo, useState } from 'react'
 import { Link, useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 
 import { BarraDeTopo } from '@/components/BarraDeTopo'
+import { useTemaPadrao } from '@/hooks/useTemaPadrao'
 import { botao } from '@/components/botao'
 import { Confirmacao } from '@/components/Confirmacao'
 import { EtiquetaProcessando } from '@/components/EtiquetaProcessando'
@@ -38,6 +39,7 @@ const EXPLICACAO: Record<'sem-legenda' | 'solto', string> = {
  */
 export default function Anexo() {
   const { anexoId } = useParams()
+  const padrao = useTemaPadrao()
   const [busca] = useSearchParams()
   const localizacao = useLocation()
   const { key } = localizacao
@@ -126,13 +128,15 @@ export default function Anexo() {
       <BarraDeTopo
         voltarPara={saida}
         titulo={
-          pasta ? (
+          padrao ? (
+            ''
+          ) : pasta ? (
             <Link
               to={`/livro/${pasta.id}`}
               className="flex min-w-0 items-center gap-2.5 rounded-lg py-2 pr-2"
             >
               <span
-                className="h-5 w-1 shrink-0 rounded-full"
+                className="marca-do-livro h-5 w-1 shrink-0 rounded-full"
                 style={{ background: pasta.cor }}
                 aria-hidden
               />
@@ -164,97 +168,134 @@ export default function Anexo() {
         }
       />
 
-      <article className="animar-entrada flex flex-col gap-6 pt-5">
-        {anexo.midia.tipo === 'imagem' ? (
-          <button
-            type="button"
-            aria-label="Ampliar a imagem"
-            onClick={() => {
-              visor.abrir(anexo.id)
-            }}
-            className="block w-full cursor-zoom-in"
-          >
-            <Miniatura
-              anexo={anexo}
-              tamanho="inteira"
-              alturaMaxima="70dvh"
-              className="rounded-2xl"
+      <article
+        className={
+          padrao
+            ? 'animar-entrada pd-neuronio-pagina pd-anexo'
+            : 'animar-entrada flex flex-col gap-6 pt-5'
+        }
+      >
+        {padrao && pasta && (
+          <Link to={`/livro/${pasta.id}`} className="pd-chip-livro">
+            <span
+              className="marca-do-livro"
+              style={{ background: pasta.cor, width: 7, height: 16 }}
+              aria-hidden
             />
-          </button>
-        ) : (
-          <div className="cartao flex flex-col">
-            {/* Sem miniatura (link que não é vídeo), a caixa só repetiria o
+            {pasta.titulo}
+          </Link>
+        )}
+        {padrao && (
+          <h1 className="pd-neuronio-h1 texto-do-usuario">{anexo.legenda || 'Sem legenda'}</h1>
+        )}
+        <div className={padrao ? 'pd-neuronio-cartao pd-anexo-cartao' : 'contents'}>
+          {anexo.midia.tipo === 'imagem' ? (
+            <button
+              type="button"
+              aria-label="Ampliar a imagem"
+              onClick={() => {
+                visor.abrir(anexo.id)
+              }}
+              className="block w-full cursor-zoom-in"
+            >
+              <Miniatura
+                anexo={anexo}
+                tamanho="inteira"
+                alturaMaxima="70dvh"
+                className="rounded-2xl"
+              />
+            </button>
+          ) : (
+            <div className="cartao flex flex-col">
+              {/* Sem miniatura (link que não é vídeo), a caixa só repetiria o
                 domínio que a linha de baixo já diz. */}
-            {miniaturaDoLink(anexo.midia.url) && (
-              <Miniatura anexo={anexo} className="aspect-video w-full" />
+              {miniaturaDoLink(anexo.midia.url) && (
+                <Miniatura anexo={anexo} className="aspect-video w-full" />
+              )}
+              <div className="flex items-center gap-3 px-4 py-3">
+                <span className="text-poeira min-w-0 flex-1 truncate text-sm">
+                  {dominioDe(anexo.midia.url)}
+                </span>
+                <a
+                  href={anexo.midia.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className={botao({ tipo: 'primario', tamanho: 'pequeno' })}
+                >
+                  <ExternalLink size={16} aria-hidden />
+                  Abrir
+                </a>
+              </div>
+            </div>
+          )}
+
+          {!padrao &&
+            (anexo.legenda ? (
+              <TextoComLinks
+                texto={anexo.legenda}
+                className="texto-do-usuario px-1 text-[1.03rem] leading-[1.7] whitespace-pre-wrap"
+              />
+            ) : (
+              <p className="text-poeira px-1 text-sm italic">Sem legenda</p>
+            ))}
+
+          <section>
+            <h2 className="rotulo-de-secao">
+              {padrao ? (
+                <>
+                  <span>Combina com</span>
+                  {situacao === 'preso' && (
+                    <span>
+                      {conceitos.length === 1
+                        ? '1 conceito'
+                        : `${String(conceitos.length)} conceitos`}
+                    </span>
+                  )}
+                </>
+              ) : (
+                'Combina com'
+              )}
+            </h2>
+            {situacao === 'processando' && (
+              <div className="px-1">
+                <EtiquetaProcessando texto="procurando conceitos" />
+              </div>
             )}
-            <div className="flex items-center gap-3 px-4 py-3">
-              <span className="text-poeira min-w-0 flex-1 truncate text-sm">
-                {dominioDe(anexo.midia.url)}
-              </span>
-              <a
-                href={anexo.midia.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className={botao({ tipo: 'primario', tamanho: 'pequeno' })}
-              >
-                <ExternalLink size={16} aria-hidden />
-                Abrir
-              </a>
-            </div>
-          </div>
-        )}
-
-        {anexo.legenda ? (
-          <TextoComLinks
-            texto={anexo.legenda}
-            className="texto-do-usuario px-1 text-[1.03rem] leading-[1.7] whitespace-pre-wrap"
-          />
-        ) : (
-          <p className="text-poeira px-1 text-sm italic">Sem legenda</p>
-        )}
-
-        <section>
-          <h2 className="rotulo-de-secao">Combina com</h2>
-          {situacao === 'processando' && (
-            <div className="px-1">
-              <EtiquetaProcessando texto="procurando conceitos" />
-            </div>
-          )}
-          {(situacao === 'sem-legenda' || situacao === 'solto') && (
-            <p className="text-poeira px-1 text-sm leading-relaxed">{EXPLICACAO[situacao]}</p>
-          )}
-          {situacao === 'preso' && (
-            <ul className="cartao flex flex-col">
-              {conceitos.map((c) => {
-                const livroDoConceito = c.livroId === null ? undefined : livroDe.get(c.livroId)
-                return (
-                  <li key={c.id} className="linha-de-lista p-0">
-                    <Link
-                      to={`/neuronio/${c.id}`}
-                      className="flex min-h-14 w-full items-center gap-3 px-4"
-                    >
-                      <span
-                        className="h-6 w-1 shrink-0 rounded-full"
-                        style={{ background: livroDoConceito?.cor }}
-                        aria-hidden
-                      />
-                      <span className="min-w-0 flex-1">
-                        <span className="block truncate">{c.titulo}</span>
-                        <span className="text-poeira block truncate text-xs">
-                          {livroDoConceito?.titulo ?? ROTULO_DO_PORTO}
+            {(situacao === 'sem-legenda' || situacao === 'solto') && (
+              <p className="text-poeira px-1 text-sm leading-relaxed">{EXPLICACAO[situacao]}</p>
+            )}
+            {situacao === 'preso' && (
+              <ul className={padrao ? 'pd-conceitos' : 'cartao flex flex-col'}>
+                {conceitos.map((c) => {
+                  const livroDoConceito = c.livroId === null ? undefined : livroDe.get(c.livroId)
+                  return (
+                    <li key={c.id} className="linha-de-lista p-0">
+                      <Link
+                        to={`/neuronio/${c.id}`}
+                        className="flex min-h-14 w-full items-center gap-3 px-4"
+                      >
+                        <span
+                          className="h-6 w-1 shrink-0 rounded-full"
+                          style={{ background: livroDoConceito?.cor }}
+                          aria-hidden
+                        />
+                        <span className="min-w-0 flex-1">
+                          <span className="block truncate">{c.titulo}</span>
+                          <span className="text-poeira block truncate text-xs">
+                            {livroDoConceito?.titulo ?? ROTULO_DO_PORTO}
+                          </span>
                         </span>
-                      </span>
-                      <span className="text-poeira font-dado text-xs tabular-nums">
-                        {String(Math.round(c.score * 100))}%
-                      </span>
-                    </Link>
-                  </li>
-                )
-              })}
-            </ul>
-          )}
-        </section>
+                        <span className="text-poeira font-dado text-xs tabular-nums">
+                          {String(Math.round(c.score * 100))}%
+                        </span>
+                      </Link>
+                    </li>
+                  )
+                })}
+              </ul>
+            )}
+          </section>
+        </div>
       </article>
 
       {anexo.midia.tipo === 'imagem' && (

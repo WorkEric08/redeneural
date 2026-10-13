@@ -9,8 +9,8 @@ import {
 } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 
-import { ehTemaPadrao } from '@/core'
 import { useMediaQuery } from '@/hooks/useMediaQuery'
+import { useTemaPadrao } from '@/hooks/useTemaPadrao'
 import {
   RAIO_EXTERNO,
   RAIO_MEIO,
@@ -20,7 +20,6 @@ import {
   setorEm,
   setores,
 } from '@/lib/dial'
-import { usePalacio } from '@/store/palacio'
 
 /**
  * O dial: o botão de criar que também é a navegação.
@@ -66,6 +65,17 @@ const OPCOES = DESTINOS.map((destino, i) => ({
   rotuloY: PRIMEIRO_ROTULO + i * PASSO_ROTULO,
 }))
 
+/**
+ * No tema Padrão a ordem do arco é a da documentação (docs/estilos-visuais-locus.md, "Botão de
+ * criar"): Ajustes em cima, Rede no meio e Estante junto da borda — o inverso do anel do Clássico.
+ * As cunhas (a geometria do gesto) são as mesmas; só quem ocupa cada uma muda.
+ */
+const OPCOES_PADRAO = [...DESTINOS].reverse().map((destino, i) => ({
+  ...destino,
+  setor: CUNHAS[i]!,
+  rotuloY: 0,
+}))
+
 type Fase = 'fechado' | 'segurando' | 'aberto'
 
 const px = (valor: number): string => `${String(Math.round(valor))}px`
@@ -74,7 +84,9 @@ export function Dial() {
   const navegar = useNavigate()
   const { pathname } = useLocation()
   const noDesktop = useMediaQuery('(min-width: 1024px)')
-  const padrao = usePalacio((s) => ehTemaPadrao(s.tema))
+  const padrao = useTemaPadrao()
+
+  const opcoes = padrao ? OPCOES_PADRAO : OPCOES
 
   const [fase, setFase] = useState<Fase>('fechado')
   const [ativo, setAtivo] = useState<number | null>(null)
@@ -129,7 +141,7 @@ export function Dial() {
   function aoArrastar(evento: EventoDePonteiro<HTMLAnchorElement>): void {
     if (fase !== 'segurando') return
     setAtivo(
-      setorEm(evento.clientX - centro.current.x, evento.clientY - centro.current.y, OPCOES.length),
+      setorEm(evento.clientX - centro.current.x, evento.clientY - centro.current.y, opcoes.length),
     )
   }
 
@@ -137,7 +149,7 @@ export function Dial() {
     pararORelogio()
     if (fase !== 'segurando') return
 
-    const escolhido = ativo === null ? undefined : OPCOES[ativo]
+    const escolhido = ativo === null ? undefined : opcoes[ativo]
     if (escolhido) {
       fechar()
       void navegar(escolhido.para)
@@ -149,7 +161,7 @@ export function Dial() {
   }
 
   const visivel = !noDesktop && fase !== 'fechado'
-  const opcaoAtiva = ativo === null ? undefined : OPCOES[ativo]
+  const opcaoAtiva = ativo === null ? undefined : opcoes[ativo]
 
   return (
     <>
@@ -160,6 +172,7 @@ export function Dial() {
           <div className="dial-anel">
             {padrao ? (
               <DestinosEmArco
+                opcoes={opcoes}
                 ativo={ativo}
                 aoEscolher={(para) => {
                   fechar()
@@ -283,15 +296,17 @@ export function Dial() {
  * geometria de `lib/dial.ts`), só o desenho muda.
  */
 function DestinosEmArco({
+  opcoes,
   ativo,
   aoEscolher,
 }: {
+  opcoes: typeof OPCOES_PADRAO
   ativo: number | null
   aoEscolher: (para: string) => void
 }) {
   return (
     <>
-      {OPCOES.map((opcao, i) => {
+      {opcoes.map((opcao, i) => {
         const ponto = pontoNoArco(RAIO_DOS_ICONES, opcao.setor.meio)
         const sobODedo = i === ativo
 
@@ -312,7 +327,7 @@ function DestinosEmArco({
             {sobODedo && (
               <span
                 className="dial-nome"
-                style={{ right: px(-(ponto.x - 38)), top: px(ponto.y) }}
+                style={{ right: px(40 - ponto.x), top: px(ponto.y) }}
                 aria-hidden
               >
                 {opcao.rotulo}

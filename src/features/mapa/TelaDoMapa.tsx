@@ -110,6 +110,9 @@ function lerCoresDoMapa(el: HTMLElement): CoresDoMapa {
     ouro: lerCor(el, '--ouro-gravado'),
     nevoa: lerCor(el, '--nevoa'),
     ...lerFonteDoCanvas(el),
+    blk: lerCor(el, '--blk'),
+    blkt: lerCor(el, '--blkt'),
+    borda: lerCor(el, '--mapa-borda'),
   }
 }
 

@@ -1,5 +1,5 @@
 import type { Conexao, Id, IlhaDoMapa, Livro, MapaDoPalacio, NeuronioNaTela, Ponto } from '@/core'
-import { spriteDeNevoa } from '@/features/rede/canvas'
+import { alvoDoPadrao, etiquetaDoPadrao, spriteDeNevoa } from '@/features/rede/canvas'
 import type { Camera } from '@/features/rede/desenhar'
 import { vizinhancaDe } from '@/features/rede/layout'
 import { contar } from '@/lib/plural'
@@ -46,6 +46,12 @@ export interface CoresDoMapa {
   /** A fonte dos nomes (ilha e neurônio escolhido) e se o nome da ilha é em versalete. */
   fonteTitulo: string
   versalete: boolean
+  /** O tema Padrão: ilhas de borda neutra, o alvo no escolhido e a etiqueta de destaque. */
+  padrao: boolean
+  /** O preenchimento de destaque e o texto sobre ele, e a borda do hexágono — só o Padrão usa. */
+  blk: string
+  blkt: string
+  borda: string
 }
 
 export interface CenaDoMapa {
@@ -78,6 +84,8 @@ export interface CenaDoMapa {
 
 /** O ponto do neurônio, em pixels de tela — continua ponto em qualquer zoom. */
 const RAIO_DO_PONTO_PX = 2.2
+/** No Padrão o ponto é o das pranchas, um pouco maior. */
+const RAIO_DO_PONTO_PADRAO_PX = 3.4
 /** O quanto o véu do neurônio tocado apaga o resto do mapa. */
 const VEU = 0.62
 /** O quanto uma ideia adormecida, e as trilhas dela, perdem de luz — sem sumir. */
@@ -186,9 +194,10 @@ export function desenharMapa(
       else if (cena.feitas.has(id)) feitas.push(ponto)
       else acordadas.push(ponto)
     }
-    desenharPontos(ctx, acordadas, cores.no, 1, px)
-    desenharPontos(ctx, dormentes, cores.no, DORMENTE, px)
-    desenharPontos(ctx, feitas, cores.ouro, 1, px)
+    const raioPx = cores.padrao ? RAIO_DO_PONTO_PADRAO_PX : RAIO_DO_PONTO_PX
+    desenharPontos(ctx, acordadas, cores.no, 1, px, raioPx)
+    desenharPontos(ctx, dormentes, cores.no, DORMENTE, px, raioPx)
+    desenharPontos(ctx, feitas, cores.ouro, 1, px, raioPx)
   }
   ctx.restore()
 
@@ -237,11 +246,14 @@ function desenharPontesAgrupadas(
     const b = cena.mapa.ilhas[ponte.livroB]
     if (!a || !b) continue
     const controle = controleDoArco(a.centro, b.centro)
-    const espessura = espessuraDaPonte(ponte.quantidade)
+    // No Padrão a rota é mais grossa (1,5 a 3 px), como nas pranchas.
+    const espessura = cena.cores.padrao
+      ? 0.75 + espessuraDaPonte(ponte.quantidade)
+      : espessuraDaPonte(ponte.quantidade)
     ctx.beginPath()
     ctx.moveTo(a.centro.x, a.centro.y)
     ctx.quadraticCurveTo(controle.x, controle.y, b.centro.x, b.centro.y)
-    ctx.globalAlpha = 0.85
+    ctx.globalAlpha = cena.cores.padrao ? 0.8 : 0.85
     ctx.lineWidth = espessura * px
     ctx.stroke()
   }
@@ -275,9 +287,10 @@ function desenharIlha(
   ctx.closePath()
   ctx.fillStyle = cores.parede
   ctx.fill()
-  ctx.strokeStyle = cor ?? cores.poeira
+  // No Padrão a borda é neutra (as pranchas não pintam a ilha com a cor do livro).
+  ctx.strokeStyle = cores.padrao ? cores.borda : (cor ?? cores.poeira)
   ctx.lineJoin = 'miter'
-  ctx.lineWidth = (erguida ? 2 : 1) * px
+  ctx.lineWidth = (cores.padrao ? (erguida ? 2.5 : 1.5) : erguida ? 2 : 1) * px
   ctx.stroke()
 }
 
@@ -327,11 +340,11 @@ function desenharTrilhas(
       ctx.moveTo(a.x, a.y)
       ctx.lineTo(b.x, b.y)
     }
-    ctx.globalAlpha = 0.6 * presenca * (dormentes ? DORMENTE : 1)
+    ctx.globalAlpha = (cena.cores.padrao ? 0.55 : 0.6) * presenca * (dormentes ? DORMENTE : 1)
     ctx.stroke()
   }
-  ctx.strokeStyle = cena.cores.fio
-  ctx.lineWidth = 0.7 * px
+  ctx.strokeStyle = cena.cores.padrao ? cena.cores.poeira : cena.cores.fio
+  ctx.lineWidth = (cena.cores.padrao ? 1.25 : 0.7) * px
   ctx.setLineDash(TRACEJADO_DA_TRILHA_PX.map((d) => d * px))
   tracar(false)
   tracar(true)
@@ -346,9 +359,10 @@ function desenharPontos(
   tinta: string,
   presenca: number,
   px: number,
+  raioPx = RAIO_DO_PONTO_PX,
 ): void {
   if (pontos.length === 0) return
-  const raio = RAIO_DO_PONTO_PX * px
+  const raio = raioPx * px
   ctx.beginPath()
   for (const p of pontos) {
     ctx.moveTo(p.x + raio, p.y)
@@ -412,17 +426,24 @@ function desenharNomesDasIlhas(
 
     const quantos = contar(Object.keys(ilha.pontos).length, 'neurônio', 'neurônios')
     ctx.font = fonteDaIlha(cena.cores)
-    ctx.letterSpacing = ESPACO_DO_NOME
+    ctx.letterSpacing = cena.cores.padrao ? '0px' : ESPACO_DO_NOME
     const largo = Math.max(ctx.measureText(livro.titulo).width, 60)
     const x = Math.min(Math.max(centro.x, largo / 2 + 8), largura - largo / 2 - 8)
     const topo = centro.y - raio
-    const caixa = { x0: x - largo / 2 - 4, y0: topo - 38, x1: x + largo / 2 + 4, y1: topo - 2 }
+    const caixa = {
+      x0: x - largo / 2 - 4,
+      y0: topo - (cena.cores.padrao ? 26 : 38),
+      x1: x + largo / 2 + 4,
+      y1: topo - 2,
+    }
     if (bate(caixa, ocupadas)) continue
     ocupadas.push(caixa)
 
     ctx.fillStyle = cena.cores.papel
-    escreverComHalo(ctx, livro.titulo, x, topo - 20, cena.cores)
+    escreverComHalo(ctx, livro.titulo, x, topo - (cena.cores.padrao ? 8 : 20), cena.cores)
     ctx.letterSpacing = '0px'
+    // O Padrão só nomeia a ilha: as pranchas não levam a contagem.
+    if (cena.cores.padrao) continue
     ctx.font = fonteDaContagem(cena.cores)
     ctx.fillStyle = cena.cores.poeira
     escreverComHalo(ctx, quantos, x, topo - 6, cena.cores)
@@ -466,7 +487,7 @@ function escreverNomesDePontos(
   alfa: number,
 ): void {
   ctx.save()
-  ctx.font = FONTE_DO_NEURONIO
+  ctx.font = cena.cores.padrao ? `11px ${cena.cores.fonteTitulo}` : FONTE_DO_NEURONIO
   ctx.textAlign = 'center'
   ctx.textBaseline = 'top'
   ctx.fillStyle = cena.cores.papel
@@ -475,7 +496,7 @@ function escreverNomesDePontos(
   for (const { n, p } of candidatos) {
     if (postos >= MAX_NOMES_DE_NEURONIO) break
     const largo = ctx.measureText(n.titulo).width
-    const y = p.y + RAIO_DO_PONTO_PX + 3
+    const y = p.y + (cena.cores.padrao ? RAIO_DO_PONTO_PADRAO_PX : RAIO_DO_PONTO_PX) + 3
     const caixa = { x0: p.x - largo / 2 - 3, y0: y - 2, x1: p.x + largo / 2 + 3, y1: y + 14 }
     if (bate(caixa, ocupadas)) continue
     ocupadas.push(caixa)
@@ -527,7 +548,7 @@ function desenharVizinhanca(
       ctx.setLineDash(TRACEJADO_DA_TRILHA_PX.map((d) => d * px))
     } else {
       ctx.strokeStyle = cores.ponte
-      ctx.lineWidth = 1.4 * px
+      ctx.lineWidth = (cores.padrao ? 2 : 1.4) * px
       // Score zero é tracejado, como em todo o app: o vizinho menos ruim.
       ctx.setLineDash(c.score === 0 ? [2 * px, 5 * px] : [])
     }
@@ -538,13 +559,25 @@ function desenharVizinhanca(
   for (const id of vizinhanca) {
     const p = cena.absolutos.get(id)
     if (!finito(p)) continue
-    desenharPontos(ctx, [p], cena.feitas.has(id) ? cores.ouro : cores.no, 1, px)
+    desenharPontos(
+      ctx,
+      [p],
+      cena.feitas.has(id) ? cores.ouro : cores.no,
+      1,
+      px,
+      cores.padrao ? RAIO_DO_PONTO_PADRAO_PX : RAIO_DO_PONTO_PX,
+    )
   }
-  ctx.strokeStyle = cores.papel
-  ctx.lineWidth = 1.5 * px
-  ctx.beginPath()
-  ctx.arc(origem.x, origem.y, (RAIO_DO_PONTO_PX + 5) * px, 0, 2 * Math.PI)
-  ctx.stroke()
+  if (cores.padrao) {
+    // O alvo das pranchas: miolo cheio, volta da cor da ilha e anel fino por fora.
+    alvoDoPadrao(ctx, origem.x, origem.y, px, { cheio: cores.blk, fundo: cores.parede })
+  } else {
+    ctx.strokeStyle = cores.papel
+    ctx.lineWidth = 1.5 * px
+    ctx.beginPath()
+    ctx.arc(origem.x, origem.y, (RAIO_DO_PONTO_PX + 5) * px, 0, 2 * Math.PI)
+    ctx.stroke()
+  }
   ctx.restore()
 
   const n = cena.neuronios.find((x) => x.id === selecionado)
@@ -568,6 +601,17 @@ function desenharEtiqueta(
   largura: number,
   cores: CoresDoMapa,
 ): Caixa {
+  // O Padrão: uma pílula escura (clara no escuro) à direita do ponto, com o nome em 12 px.
+  if (cores.padrao) {
+    return etiquetaDoPadrao(ctx, titulo, ponto.x + 18, ponto.y, {
+      fonte: `600 12px ${cores.fonteTitulo}`,
+      cor: cores.blkt,
+      fundo: cores.blk,
+      sombra: null,
+      limite: largura,
+    })
+  }
+
   ctx.save()
   ctx.font = `600 13px ${cores.fonteTitulo}`
   ctx.textAlign = 'center'

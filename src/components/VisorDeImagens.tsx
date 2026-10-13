@@ -217,6 +217,8 @@ export function VisorDeImagens({ aberto, imagens, indice, onIndice, carregar, on
               >
                 <ChevronRight size={26} aria-hidden />
               </button>
+              {/* O Padrão põe as setas no pé, uma de cada lado do nome da imagem. */}
+              <p className="visor-legenda">{imagens[atual]?.rotulo}</p>
             </>
           )}
         </>

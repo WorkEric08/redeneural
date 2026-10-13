@@ -4,6 +4,7 @@ import { useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 
 import { BarraDeTopo } from '@/components/BarraDeTopo'
 import { botao } from '@/components/botao'
+import { useTemaPadrao } from '@/hooks/useTemaPadrao'
 import { Folha } from '@/components/Folha'
 import type { Livro } from '@/core'
 import { FolhaDeExecutaveis } from '@/features/executaveis/FolhaDeExecutaveis'
@@ -77,6 +78,7 @@ export function Formulario({
   executar,
   onEnviar,
 }: Props) {
+  const padrao = useTemaPadrao()
   // `null`: "Automático" ao criar; ao editar, um neurônio que está no porto.
   const [livroId, setLivroId] = useState<string | null>(inicial?.livroId ?? null)
   const [titulo, setTitulo] = useState(inicial?.titulo ?? '')
@@ -145,12 +147,12 @@ export function Formulario({
               placeholder="Título"
               // A lista de preenchimento do navegador é coisa de formulário web.
               autoComplete="off"
-              className="font-titulo placeholder:text-poeira min-w-0 flex-1 bg-transparent text-lg font-semibold outline-none placeholder:font-normal"
+              className="pd-titulo-campo font-titulo placeholder:text-poeira min-w-0 flex-1 bg-transparent text-lg font-semibold outline-none placeholder:font-normal"
             />
           }
         />
 
-        <div className="animar-entrada flex flex-1 flex-col pt-4">
+        <div className="animar-entrada pd-escrever flex flex-1 flex-col pt-4">
           <div className="flex flex-wrap items-center gap-2">
             {livros.length === 0 && !automatico ? (
               <span className="text-poeira text-xs leading-relaxed">
@@ -160,14 +162,14 @@ export function Formulario({
               <span className="relative flex min-w-0 items-center">
                 {livro ? (
                   <span
-                    className="pointer-events-none absolute left-3.5 size-2 shrink-0 rounded-full"
+                    className="pd-marca-chip pointer-events-none absolute left-3.5 size-2 shrink-0 rounded-full"
                     style={{ background: livro.cor }}
                     aria-hidden
                   />
                 ) : (
                   // Sem livro ainda: um anel vazio no lugar da cor.
                   <span
-                    className="border-poeira pointer-events-none absolute left-3.5 size-2 shrink-0 rounded-full border"
+                    className="pd-marca-chip pd-marca-chip--vazia border-poeira pointer-events-none absolute left-3.5 size-2 shrink-0 rounded-full border"
                     aria-hidden
                   />
                 )}
@@ -175,7 +177,7 @@ export function Formulario({
                   type="button"
                   onClick={abrirEscolhaDeLivro}
                   aria-label={`Livro: ${nomeDoLivro}`}
-                  className="chip text-papel min-w-0 truncate pr-8 pl-7"
+                  className="chip pd-chip-livro-escolha text-papel min-w-0 truncate pr-8 pl-7"
                 >
                   {nomeDoLivro}
                 </button>
@@ -213,7 +215,7 @@ export function Formulario({
             aria-label="Com suas palavras"
             placeholder="Escreva com suas palavras."
             autoComplete="off"
-            className="placeholder:text-poeira [field-sizing:content] w-full flex-1 resize-none bg-transparent px-1 pt-4 pb-2 text-base leading-relaxed outline-none"
+            className="pd-folha placeholder:text-poeira [field-sizing:content] w-full flex-1 resize-none bg-transparent px-1 pt-4 pb-2 text-base leading-relaxed outline-none"
           />
         </div>
 
@@ -229,6 +231,7 @@ export function Formulario({
       </form>
 
       <Folha aberta={escolhendoLivro} rotulo="Escolher livro" onFechar={fecharEscolhaDeLivro}>
+        {padrao && <h2 className="pd-folha-titulo">Escolher livro</h2>}
         <EscolhaDeLivro
           livros={livros}
           escolhido={livroId}

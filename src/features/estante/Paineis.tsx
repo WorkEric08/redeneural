@@ -15,6 +15,7 @@ import {
   type NeuronioNaTela,
   type Vaga,
 } from '@/core'
+import { useTemaPadrao } from '@/hooks/useTemaPadrao'
 import { contar } from '@/lib/plural'
 
 import type { Painel } from './painel'
@@ -167,12 +168,12 @@ function Cabecalho({ livro, children }: { livro: Livro; children?: ReactNode }) 
   return (
     <header className="flex items-center gap-3">
       <span
-        className="h-10 w-1.5 shrink-0 rounded-full"
+        className="pd-cab-marca h-10 w-1.5 shrink-0 rounded-full"
         style={{ background: livro.cor }}
         aria-hidden
       />
       <div className="min-w-0">
-        <h2 className="font-titulo truncate text-xl font-semibold tracking-tight">
+        <h2 className="pd-cab-titulo font-titulo truncate text-xl font-semibold tracking-tight">
           {livro.titulo}
         </h2>
         {children !== undefined && <p className="text-poeira text-sm">{children}</p>}
@@ -245,16 +246,16 @@ function Espiar({ livro, livros, neuronios, pontes, onAbrirLivro }: Props & { li
       )}
 
       {ligacoes.length > 0 && (
-        <section>
+        <section className="pd-pontes">
           <h3 className="rotulo-de-secao">Pontes com</h3>
           <ul className="faixa-rolavel flex gap-2">
             {ligacoes.map(({ outro, quantas }) => (
               <li
                 key={outro.id}
-                className="border-ponte/35 flex h-9 shrink-0 items-center gap-2 rounded-lg border pr-3 pl-2.5 text-sm"
+                className="pd-ponte-com border-ponte/35 flex h-9 shrink-0 items-center gap-2 rounded-lg border pr-3 pl-2.5 text-sm"
               >
                 <span
-                  className="size-2 shrink-0 rounded-full"
+                  className="pd-ponto-livro size-2 shrink-0 rounded-full"
                   style={{ background: outro.cor }}
                   aria-hidden
                 />
@@ -403,6 +404,7 @@ function MenuDoLugar({
   onTirarEnfeite,
   onPorEnfeite,
 }: Props & { prateleira: number; lugar: number }) {
+  const padrao = useTemaPadrao()
   const chave = chaveDoLugar({ prateleira, ordem: lugar })
   // Guardado na abertura, como o livro de Apagar: a store já troca o enfeite
   // antes de a folha terminar de fechar, e o menu não pode piscar a outra opção.
@@ -415,11 +417,14 @@ function MenuDoLugar({
 
   return (
     <div className="flex flex-col gap-5">
-      <header>
-        <h2 className="font-titulo text-xl font-semibold tracking-tight">
-          {nomeDoLugar(prateleira, lugar)}
-        </h2>
-        <p className="text-poeira text-sm">{aberto ? 'Um lugar vazio' : 'Um enfeite'}</p>
+      <header className="pd-cab-lugar">
+        {padrao && <span className="pd-cab-marca" style={{ background: '#1b2a6b' }} aria-hidden />}
+        <div>
+          <h2 className="pd-cab-titulo font-titulo text-xl font-semibold tracking-tight">
+            {nomeDoLugar(prateleira, lugar)}
+          </h2>
+          <p className="text-poeira text-sm">{aberto ? 'Um lugar vazio' : 'Um enfeite'}</p>
+        </div>
       </header>
 
       <ul className="cartao flex flex-col">

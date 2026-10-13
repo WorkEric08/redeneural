@@ -1,20 +1,21 @@
 /* ---------------------------------------------------------------------------
  * O tema "Padrão" — a versão E da documentação de design (docs/estilos-visuais-locus.md).
  *
- * Interface neutra e familiar: cinza-claro ou preto, cartões arredondados, botões
- * pretos ou brancos e a fonte Figtree. Em duas versões fixas, `padrao-claro` e
- * `padrao-escuro` — elas NÃO seguem o sistema; quem segue é o clássico.
+ * Interface neutra e familiar: cinza-claro ou preto, cartões arredondados, botões pretos ou
+ * brancos e a fonte Figtree. Em duas versões fixas, `padrao-claro` e `padrao-escuro` — elas NÃO
+ * seguem o sistema; quem segue é o Clássico.
  *
- * Como funciona: `services/native/tema.ts` liga `<html data-tema="...">`. Sem o
- * atributo (ou com `classico`), nada daqui vale e o app é o estilo Noite de sempre.
- * Este arquivo só redefine os mesmos tokens do design system (`--sala`, `--parede`,
- * `--papel`…) e ajusta o acabamento (cantos, traço, estante em cartões), então
- * todas as telas, que já leem os tokens, mudam juntas.
+ * Como funciona: `services/native/tema.ts` liga `<html data-tema="...">`. Sem o atributo (ou com
+ * `classico`), nada daqui vale e o app é o estilo Noite de sempre. Este arquivo redefine os
+ * mesmos tokens do design system (`--sala`, `--parede`, `--papel`…) e redesenha as peças que a
+ * documentação desenha de outro jeito — as medidas vêm das pranchas (os HTML dos mockups), não de
+ * adjetivos. O que muda de **estrutura** (outra ordem, outra peça) está nos componentes, atrás de
+ * `useTemaPadrao()`.
  *
- * Especificidade: tudo começa por `html:root[data-tema…]`, que vale mais que o
- * bloco do tema escuro do sistema (`:root:not(.claro)` dentro de `@media`) — o
- * Padrão claro vence mesmo num aparelho em modo escuro. Fica fora de `@layer`,
- * então também vence os componentes (`@layer components`) sem `!important`.
+ * Especificidade: tudo começa por `html:root[data-tema…]`, que vale mais que o bloco do tema
+ * escuro do sistema (`:root:not(.claro)` dentro de `@media`) — o Padrão claro vence mesmo num
+ * aparelho em modo escuro. Fica fora de `@layer`, então também vence os componentes
+ * (`@layer components`) e os utilitários do Tailwind sem `!important`.
  * ------------------------------------------------------------------------ */
 
 /* Figtree: uma fonte variável só, subset latino (20 KB), auto-hospedada como as outras. */
@@ -26,35 +27,33 @@
   font-display: swap;
 }
 
-/* --- os tokens ------------------------------------------------------------ */
+/* --- os tokens (Apêndice A da documentação) -------------------------------- */
 
-/* Os valores de cada versão ficam em `--t-*`; o bloco de baixo os liga aos tokens que o app lê.
-   É por esse desvio que a estante (`.cores-de-antes`, que prende os próprios tokens) também
-   consegue seguir o tema. */
+/* Os valores de cada versão ficam em `--t-*`; o bloco comum os liga aos tokens que o app lê.
+   É por esse desvio que a estante (`.cores-de-antes`, que prende os próprios tokens no
+   Clássico) também consegue seguir o tema. */
 html:root[data-tema='padrao-claro'] {
   color-scheme: light;
 
-  --t-sala: #f3f3f5;
-  --t-parede: #ffffff;
-  --t-campo: #f1f1f4;
-  --t-realce: #ececf0;
-  --t-papel: #111113;
-  --t-poeira: #6e6e75;
-  --t-linha: #d9d9df;
-  --t-veu: rgb(17 17 19 / 0.42);
+  --t-sala: #f3f3f5; /* bg */
+  --t-parede: #ffffff; /* surf */
+  --t-campo: #f1f1f4; /* field */
+  --t-papel: #111113; /* ink */
+  --t-poeira: #6e6e75; /* sub */
+  --t-linha: #d9d9df; /* line, line2 */
+  --t-ponte: #2f6bff; /* acc */
+  --t-blk: #111113;
+  --t-blkt: #ffffff;
+  --t-perigo: #d92d20;
+  --t-inv: #111113;
+  --t-invt: #f5f5f7;
+  --t-fantasma: #e4e4e9; /* fant */
+  --t-veu: rgb(17 17 19 / 0.42); /* scrim */
 
-  /* O acento da documentação (#2f6bff) dava 4,06:1 sobre a sala — abaixo do 4,5:1 do texto
-     pequeno ("N pontes"). Este tom é o mesmo azul, um pouco mais fundo: 4,58:1 e 5,07:1. */
-  --t-ponte: #2a63f0;
-  --t-ponte-luz: rgb(42 99 240 / 0.22);
-  --t-aviso-fundo: #111113;
-  --t-aviso-texto: #f5f5f7;
-  --t-destructive: #d92d20;
-
-  --t-rede-fio: #111113;
-  --t-rede-no: #111113;
-  --t-rede-mistura: multiply;
   --t-nevoa: #ffffff;
+  --t-mapa-borda: #e1e1e6;
+  --t-trilho-do-modo: #e8e8ec;
+  --t-sombra-da-etiqueta: rgb(0 0 0 / 0.2);
 }
 
 html:root[data-tema='padrao-escuro'] {
@@ -63,47 +62,50 @@ html:root[data-tema='padrao-escuro'] {
   --t-sala: #000000;
   --t-parede: #1b1b1d;
   --t-campo: #2a2a2e;
-  --t-realce: #2a2a2e;
   --t-papel: #f5f5f7;
   --t-poeira: #9a9aa2;
   --t-linha: #48484d;
+  --t-ponte: #3f6fd8;
+  --t-blk: #ffffff;
+  --t-blkt: #000000;
+  --t-perigo: #ff6b61;
+  --t-inv: #f5f5f7;
+  --t-invt: #111113;
+  --t-fantasma: #2e2e33;
   --t-veu: rgb(0 0 0 / 0.65);
 
-  /* #3f6fd8, da documentação, dava 3,67:1 sobre o cartão. Mais claro: 5,74:1 sobre a sala
-     e 4,70:1 sobre o cartão. */
-  --t-ponte: #5582e8;
-  --t-ponte-luz: rgb(85 130 232 / 0.3);
-  --t-aviso-fundo: #f5f5f7;
-  --t-aviso-texto: #111113;
-  --t-destructive: #ff6b61;
-
-  --t-rede-fio: #f5f5f7;
-  --t-rede-no: #f5f5f7;
-  --t-rede-mistura: lighter;
   --t-nevoa: #8e8e96;
+  --t-mapa-borda: #2a2a2e;
+  --t-trilho-do-modo: #2a2a2e;
+  --t-sombra-da-etiqueta: transparent;
 }
 
 html:root[data-tema^='padrao'] {
   --sala: var(--t-sala);
   --parede: var(--t-parede);
   --campo: var(--t-campo);
-  --realce: var(--t-realce);
+  /* "Sob o dedo" e "escolhido" no Padrão são o tom de campo. */
+  --realce: var(--t-campo);
   --papel: var(--t-papel);
   --poeira: var(--t-poeira);
   --linha: var(--t-linha);
   --veu: var(--t-veu);
 
   --ponte: var(--t-ponte);
-  --ponte-luz: var(--t-ponte-luz);
+  --ponte-luz: color-mix(in srgb, var(--t-ponte) 25%, transparent);
   --estante: var(--t-parede);
   --sombra-cartao: none;
-  --aviso-fundo: var(--t-aviso-fundo);
-  --aviso-texto: var(--t-aviso-texto);
-  --destructive: var(--t-destructive);
+  --blk: var(--t-blk);
+  --blkt: var(--t-blkt);
+  --destructive: var(--t-perigo);
+  --fantasma: var(--t-fantasma);
+  --aviso-fundo: var(--t-inv);
+  --aviso-texto: var(--t-invt);
 
-  --rede-fio: var(--t-rede-fio);
-  --rede-no: var(--t-rede-no);
-  --rede-mistura: var(--t-rede-mistura);
+  /* A Rede e o Mapa: os fios e os pontos são tinta (ink), e a ponte, o acento. */
+  --rede-fio: var(--t-papel);
+  --rede-no: var(--t-papel);
+  --rede-mistura: source-over;
   --nevoa: var(--t-nevoa);
 
   --fonte-titulo: 'Figtree', ui-sans-serif, system-ui, 'Segoe UI', Roboto, sans-serif;
@@ -112,14 +114,18 @@ html:root[data-tema^='padrao'] {
   /* O canvas (Rede e Mapa) lê estas duas: nomes em Figtree, e o nome da ilha sem versalete. */
   --fonte-canvas-titulo: 'Figtree', ui-sans-serif, system-ui, sans-serif;
   --canvas-versalete: nao;
+  /* Liga o desenho do tema Padrão no canvas: pontos de tinta, o alvo no escolhido, etiquetas em retângulo. */
+  --canvas-padrao: sim;
+  --mapa-borda: var(--t-mapa-borda);
+  --sombra-da-etiqueta: var(--t-sombra-da-etiqueta);
 
-  /* Cantos dos botões (ver components/botao.ts): no Padrão os dois tamanhos têm 14 px. */
+  /* Cantos dos botões (ver components/botao.ts): 14 px nos dois tamanhos. */
   --raio-botao: 14px;
   --raio-botao-pequeno: 14px;
 }
 
 /* A estante e o que dela se copia (a lombada de amostra, o fantasma do arrasto) prendem as
-   próprias cores no clássico (`.cores-de-antes`: sempre azul-marinho escuro). No Padrão elas
+   próprias cores no Clássico (`.cores-de-antes`: sempre azul-marinho escuro). No Padrão elas
    seguem o tema, para a prateleira ser um cartão da mesma cor dos outros. */
 html:root[data-tema^='padrao'] .cores-de-antes {
   --sala: var(--t-sala);
@@ -130,192 +136,199 @@ html:root[data-tema^='padrao'] .cores-de-antes {
   --linha: var(--t-linha);
 }
 
-/* --- base ----------------------------------------------------------------- */
+/* --- base ------------------------------------------------------------------ */
 
 html:root[data-tema^='padrao'] body {
   /* Sem o grão da parede lambrilhada: o Padrão é liso. */
   background-image: none;
 }
 
-/* Traço de 1,75 px nos ícones (o do lucide é 2). O botão de criar tem o traço dele, grosso. */
+/* Traço de 1,75 px nos ícones (o do lucide é 2); o botão de criar tem o traço dele, de 2. */
 html:root[data-tema^='padrao'] svg.lucide {
   stroke-width: 1.75;
 }
 
 html:root[data-tema^='padrao'] .dial-botao svg.lucide {
-  stroke-width: 2.25;
+  stroke-width: 2;
 }
 
-/* --- componentes ---------------------------------------------------------- */
+/* --- botões (components/botao.ts) ------------------------------------------ */
 
-html:root[data-tema^='padrao'] .cartao {
-  border: 0;
-  border-radius: 18px;
-  box-shadow: none;
-}
-
-html:root[data-tema^='padrao'] .folha .cartao {
-  background: var(--campo);
-}
-
-html:root[data-tema^='padrao'] .rotulo-de-secao {
-  letter-spacing: 0.02em;
-  text-transform: none;
-  font-size: 0.8125rem;
-}
-
-/* Campos: fundo de campo, sem borda, canto de 14 px. */
-html:root[data-tema^='padrao'] .campo {
-  border: 1px solid transparent;
+/* Principal: 52 px, preto no claro e branco no escuro; largura total quando `largo`. */
+html:root[data-tema^='padrao'] .btn-normal {
+  height: 52px;
   border-radius: 14px;
-  background: var(--campo);
+  font-size: 1rem;
+  font-weight: 700;
 }
 
-html:root[data-tema^='padrao'] .campo:focus,
-html:root[data-tema^='padrao'] .campo:focus-visible {
-  border-color: color-mix(in oklab, var(--papel) 45%, transparent);
-  box-shadow: none;
-}
-
-html:root[data-tema^='padrao'] .folha .campo {
-  background: var(--campo);
-}
-
-/* Chips: escolhido é bloco cheio (preto no claro, branco no escuro). */
-html:root[data-tema^='padrao'] .chip {
-  border-radius: 12px;
-  border-color: var(--linha);
-  color: var(--papel);
-  font-weight: 500;
-}
-
-html:root[data-tema^='padrao'] .chip[aria-pressed='true'] {
-  border-color: var(--papel);
-  background: var(--papel);
-  color: var(--sala);
+html:root[data-tema^='padrao'] .btn-pequeno {
+  height: 44px;
+  border-radius: 14px;
+  font-size: 0.875rem;
   font-weight: 600;
 }
 
-/* Segmentado: trilho cinza com uma pílula clara por cima da opção escolhida. */
-html:root[data-tema^='padrao'] .segmentado {
-  overflow: visible;
-  padding: 3px;
-  border: 0;
-  border-radius: 22px;
+html:root[data-tema^='padrao'] .btn-primario {
+  background: var(--blk);
+  color: var(--blkt);
+}
+
+html:root[data-tema^='padrao'] .btn-primario:disabled {
   background: var(--campo);
+  color: var(--poeira);
 }
 
-html:root[data-tema^='padrao'] .segmento {
-  height: 38px;
-  border-radius: 19px;
-  font-weight: 500;
-}
-
-html:root[data-tema^='padrao'] .segmento + .segmento {
-  border-left: 0;
-}
-
-html:root[data-tema^='padrao'] .segmento[aria-pressed='true'] {
-  background: var(--parede);
-  color: var(--papel);
-  font-weight: 600;
-  box-shadow: 0 1px 3px rgb(0 0 0 / 0.18);
-}
-
-/* Dentro de uma folha o segmentado são caixas separadas com contorno (o andamento da ideia,
-   como nos sheets desenhados): a escolhida fica cheia. */
-html:root[data-tema^='padrao'] .folha .segmentado {
-  gap: 8px;
-  padding: 0;
-  background: none;
-}
-
-html:root[data-tema^='padrao'] .folha .segmento {
-  height: 46px;
+/* Secundário: só o contorno, sem fundo. */
+html:root[data-tema^='padrao'] .btn-secundario {
   border: 1px solid var(--linha);
-  border-radius: 12px;
-  box-shadow: none;
-}
-
-html:root[data-tema^='padrao'] .folha .segmento[aria-pressed='true'] {
-  border-color: var(--papel);
-  background: var(--papel);
-  color: var(--sala);
-}
-
-/* Opção de escolha (livros do "Onde guardar?"): a escolhida é bloco cheio. */
-html:root[data-tema^='padrao'] .opcao {
-  border-radius: 12px;
   background: transparent;
-  font-weight: 500;
-}
-
-html:root[data-tema^='padrao'] .opcao:active {
-  background: var(--realce);
-}
-
-html:root[data-tema^='padrao'] .opcao[aria-pressed='true'] {
-  border-color: var(--papel);
-  background: var(--papel);
-  color: var(--sala);
+  color: var(--papel);
   font-weight: 600;
 }
 
-/* Barra de topo: sem linha embaixo, só o desfoque. */
+html:root[data-tema^='padrao'] .btn-secundario[aria-pressed='true'] {
+  border-color: var(--blk);
+  background: var(--blk);
+  color: var(--blkt);
+}
+
+/* Fantasma: tinta cheia (ink) — as ações da barra e os ícones soltos. */
+html:root[data-tema^='padrao'] .btn-fantasma {
+  color: var(--papel);
+}
+
+html:root[data-tema^='padrao'] .btn-fantasma:active {
+  background: var(--campo);
+}
+
+html:root[data-tema^='padrao'] .btn-perigo {
+  background: var(--destructive);
+  color: var(--blkt);
+}
+
+/* --- barra de topo (BarraDeTopo.tsx) --------------------------------------- */
+
+/* 56 px, sem linha embaixo, título de 20 px / 600. O desfoque fica: o que rola por baixo continua
+   dizendo que está ali. */
 html:root[data-tema^='padrao'] .barra-de-topo {
   border-bottom: 0;
   border-image: linear-gradient(
       to top,
-      color-mix(in oklab, var(--sala) 88%, transparent),
-      color-mix(in oklab, var(--sala) 88%, transparent)
+      color-mix(in srgb, var(--sala) 90%, transparent),
+      color-mix(in srgb, var(--sala) 90%, transparent)
     )
     0 fill / 0 / 0 100vmax;
+  padding-inline: 12px;
 }
 
 html:root[data-tema^='padrao'] .barra-de-topo-titulo {
+  font-size: 1.25rem;
   font-weight: 600;
+  letter-spacing: -0.01em;
 }
 
-/* Alerta: faixa invertida (escura no claro, clara no escuro), canto de 16 px, com sombra. */
-html:root[data-tema^='padrao'] .aviso {
-  border-color: transparent;
-  border-radius: 16px;
-  color: var(--aviso-texto);
-  box-shadow: 0 6px 18px rgb(0 0 0 / 0.25);
+/* A marca da cor do livro: 9 × 24, canto de 2 px (no Clássico é um fio redondo). */
+html:root[data-tema^='padrao'] .marca-do-livro {
+  width: 9px;
+  height: 24px;
+  border-radius: 2px;
 }
 
-/* Folha: canto de 26 px no topo, sem sombra de cima, alça de 40 × 5. */
-html:root[data-tema^='padrao'] .folha {
-  border-radius: 26px 26px 0 0;
+/* --- a estante: cada prateleira é um cartão -------------------------------- */
+
+html:root[data-tema^='padrao'] main[data-estante] {
+  padding-inline: 16px;
+}
+
+/* O cabeçalho: "Estante" e a busca (Estante.tsx). */
+.pd-estante-topo {
+  display: flex;
+  height: 60px;
+  align-items: center;
+  justify-content: space-between;
+  padding: 4px 0 0 4px;
+  margin-right: -4px;
+}
+
+.pd-estante-topo h1 {
+  font-size: 1.5rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+/* A madeira sai — laterais, tampo, tábuas, base e a luz da sala. A lombada, que é objeto escuro
+   nos dois temas, continua igual; o que muda é o que há por baixo dela. */
+html:root[data-tema^='padrao'] .movel {
+  /* O ar de cima de cada cartão e o vão entre eles; a fileira desconta os dois (e mais nada). */
+  --pd-vao-ar: 12px;
+  --pd-vao-vao: 10px;
+  --mv-bordas: 0px;
+  /* O que não é prateleira: o cabeçalho (60) e a linha de baixo (56 + 24), com uma folga. */
+  --mv-fora: 146px;
+  --mv-lateral: 14px;
+  overflow: visible;
+  border-radius: 0;
   box-shadow: none;
+  margin-top: 4px;
 }
 
-html:root[data-tema^='padrao'] .folha::backdrop {
-  background: var(--veu);
+html:root[data-tema^='padrao'] .movel-cornija,
+html:root[data-tema^='padrao'] .movel-tabua,
+html:root[data-tema^='padrao'] .movel-pilastra,
+html:root[data-tema^='padrao'] .movel-base,
+html:root[data-tema^='padrao'] .movel-luar {
+  display: none;
 }
 
-html:root[data-tema^='padrao'] .folha-alca-barra {
-  width: 40px;
-  height: 5px;
+html:root[data-tema^='padrao'] .movel-corpo {
+  margin-inline: 0;
+  background: none;
 }
 
-/* A faixa de ajuste: a bolinha ganha a borda da superfície. */
-html:root[data-tema^='padrao'] .faixa-de-ajuste::-webkit-slider-thumb {
-  border-color: var(--parede);
+/* O cartão da prateleira: 18 px de canto, um vão de 10 px entre eles. A luz dos enfeites (abaixo de
+   50) escurece o cartão, como escurecia o fundo da madeira. A fileira ganha 12 px de ar em cima e
+   perde os 8 px da tábua, então a conta da altura (`.movel-fila`) desconta 22 px por prateleira. */
+html:root[data-tema^='padrao'] .movel-vao {
+  overflow: hidden;
+  margin-bottom: var(--pd-vao-vao);
+  padding-top: var(--pd-vao-ar);
+  border-radius: 18px;
+  background: color-mix(in srgb, var(--parede), #000 var(--mv-sombra-do-fundo, 0%));
 }
 
-/* --- o botão de criar e o anel ------------------------------------------- */
+html:root[data-tema^='padrao'] .movel-vao:last-child {
+  margin-bottom: 0;
+}
 
-/* No Padrão o botão é liso: círculo cheio, com a sombra suave, e o fundo do anel é o véu do tema. */
+html:root[data-tema^='padrao'] .movel-fila {
+  height: clamp(
+    92px,
+    calc(
+      (100dvh - var(--mv-fora) - env(safe-area-inset-bottom)) / var(--mv-prateleiras) -
+        var(--pd-vao-ar) - var(--pd-vao-vao)
+    ),
+    132px
+  );
+}
+
+/* A linha de baixo (busca e contagem): 13 px. */
+html:root[data-tema^='padrao'] main[data-estante] .text-xs {
+  font-size: 0.8125rem;
+}
+
+/* --- o botão de criar e o anel -------------------------------------------- */
+
+/* Liso: círculo cheio com a sombra suave, e o fundo do anel é o véu do tema. */
 html:root[data-tema^='padrao'] .dial-veu {
   background: var(--veu);
   backdrop-filter: none;
 }
 
 html:root[data-tema^='padrao'] .dial-botao {
-  background: var(--papel);
+  background: var(--blk);
   box-shadow: 0 6px 18px rgb(0 0 0 / 0.25);
-  color: var(--sala);
+  color: var(--blkt);
 }
 
 html:root[data-tema^='padrao'] .dial-botao::before,
@@ -331,8 +344,8 @@ html:root[data-tema^='padrao'] .dial-botao[data-aberto='true'] {
   box-shadow: 0 6px 18px rgb(0 0 0 / 0.25);
 }
 
-/* Os destinos, soltos em arco: só o ícone, num círculo com a sombra. O nome só aparece no
-   que está sob o dedo, à esquerda dele (Dial.tsx). */
+/* Os destinos, soltos em arco: só o ícone, num círculo com a sombra. O nome só aparece no que
+   está sob o dedo, à esquerda do ícone (Dial.tsx). */
 .dial-icone {
   position: absolute;
   display: grid;
@@ -350,8 +363,8 @@ html:root[data-tema^='padrao'] .dial-botao[data-aberto='true'] {
 }
 
 .dial-icone--ativo {
-  background: var(--papel);
-  color: var(--sala);
+  background: var(--blk);
+  color: var(--blkt);
   transform: scale(1.1);
 }
 
@@ -365,7 +378,7 @@ html:root[data-tema^='padrao'] .dial-botao[data-aberto='true'] {
   border-radius: 12px;
   background: var(--parede);
   color: var(--papel);
-  font-size: 0.9rem;
+  font-size: 0.875rem;
   font-weight: 700;
   white-space: nowrap;
   transform: translateY(-50%);
@@ -373,57 +386,1880 @@ html:root[data-tema^='padrao'] .dial-botao[data-aberto='true'] {
   animation: dial-surgir 120ms ease-out both;
 }
 
-/* --- a estante: cada prateleira é um cartão ------------------------------- */
+/* --- o livro: neurônios em cartões, e ideias em linhas ---------------------- */
 
-/* A madeira sai — laterais, tampo, tábuas, base e a luz da sala. A lombada, que é objeto
-   escuro nos dois temas, continua igual; o que muda é o que há por baixo dela. */
-html:root[data-tema^='padrao'] .movel {
-  box-shadow: none;
-  border-radius: 0;
-  /* Sem tampo e sem base, a fileira ganha esse espaço. */
-  --mv-lateral: 8px;
-  --mv-projecao: 0px;
-  /* O respiro de 6 px entre o topo da tela e o primeiro cartão sai da altura das fileiras. */
-  --mv-fora: 150px;
-}
-
-html:root[data-tema^='padrao'] .movel[data-prateleiras] {
-  --mv-trilho: 0px;
-  --mv-base: 0px;
-}
-
-html:root[data-tema^='padrao'] .movel-cornija,
-html:root[data-tema^='padrao'] .movel-tabua,
-html:root[data-tema^='padrao'] .movel-pilastra,
-html:root[data-tema^='padrao'] .movel-base,
-html:root[data-tema^='padrao'] .movel-luar {
-  display: none;
-}
-
-/* O cartão da prateleira. A luz dos enfeites (abaixo de 50) escurece o cartão, como
-   escurecia o fundo da madeira: Movel.tsx escreve `--mv-sombra-do-fundo`. O vão de 8 px
-   entre os cartões ocupa o lugar da tábua (8 px), então a conta da altura não muda. */
-html:root[data-tema^='padrao'] .movel-corpo {
-  padding-top: 6px;
-  background: transparent;
-}
-
-html:root[data-tema^='padrao'] .movel-vao {
-  margin-bottom: 8px;
-  overflow: hidden;
+/* A lista: 10 px entre os cartões. */
+html:root[data-tema^='padrao'] .pd-neuronio {
+  padding: 14px 8px 14px 16px;
   border-radius: 18px;
-  background: color-mix(in srgb, var(--parede), #000 var(--mv-sombra-do-fundo, 0%));
+  background: var(--parede);
 }
 
-html:root[data-tema^='padrao'] .movel-vao:last-child {
+.pd-neuronio-linha {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.pd-neuronio-texto {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  flex-direction: column;
+  gap: 3px;
+  text-align: left;
+}
+
+.pd-neuronio-titulo {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 8px;
+  font-size: 1.0625rem;
+  font-weight: 600;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+}
+
+.pd-neuronio-previa {
+  display: -webkit-box;
+  overflow: hidden;
+  color: var(--poeira);
+  font-size: 0.875rem;
+  line-height: 1.45;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+/* Os botões redondos de 44 px: a seta dos fios, solta, e a de abrir, num círculo de campo. */
+.pd-icone {
+  display: grid;
+  width: 44px;
+  height: 44px;
+  flex: none;
+  place-items: center;
+  border-radius: 50%;
+  color: var(--papel);
+}
+
+.pd-icone--campo {
+  background: var(--campo);
+}
+
+/* Os fios abertos: caixas de campo, de 12 px de canto, uma sob a outra. */
+.pd-fios {
+  margin: 10px 8px 0 0;
+}
+
+.pd-fios-lista {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.pd-fio {
+  display: flex;
+  min-height: 48px;
+  align-items: center;
+  gap: 10px;
+  padding: 0 12px;
+  border-radius: 12px;
+  background: var(--campo);
+}
+
+.pd-fio-nome {
+  display: block;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.pd-fio-meta {
+  display: block;
+  margin-top: 1px;
+  color: var(--poeira);
+  font-size: 0.75rem;
+}
+
+/* A etiqueta "ponte": o acento, em pílula. */
+.pd-ponte {
+  display: inline-flex;
+  height: 22px;
+  flex: none;
+  align-items: center;
+  padding: 0 9px;
+  border-radius: 11px;
+  background: var(--ponte);
+  color: #ffffff;
+  font-size: 0.71875rem;
+  font-weight: 600;
+}
+
+/* Ideia executável: uma linha de lista, sem cartão, com o círculo do andamento à frente. */
+html:root[data-tema^='padrao'] .pd-ideia {
+  padding: 8px 0;
+  border-bottom: 1px solid var(--linha);
+}
+
+html:root[data-tema^='padrao'] .pd-ideia:last-child {
+  border-bottom: 0;
+}
+
+.pd-ideia .pd-neuronio-linha {
+  gap: 12px;
+}
+
+.pd-ideia .pd-icone {
+  width: 32px;
+  color: var(--poeira);
+}
+
+/* O círculo do andamento (26 px): vazio, meio cheio ou cheio com o visto. A área de toque é de
+   44 px, com o desenho no meio. */
+.pd-estado {
+  position: relative;
+  display: grid;
+  width: 26px;
+  height: 26px;
+  flex: none;
+  place-items: center;
+  border: 1.5px solid var(--linha);
+  border-radius: 50%;
+  box-sizing: border-box;
+}
+
+.pd-estado::after {
+  content: '';
+  position: absolute;
+  inset: -9px;
+}
+
+.pd-estado[data-estado='fazendo'] {
+  border-color: var(--papel);
+  background: conic-gradient(var(--papel) 0 50%, transparent 0 100%);
+}
+
+.pd-estado[data-estado='feita'] {
+  border-color: transparent;
+  background: var(--ponte);
+  color: #ffffff;
+}
+
+/* O resumo sob a barra ("3 neurônios · 2 pontes") e o respiro de cima: 6 px sob a barra, 14 px
+   até a lista, 10 px entre os cartões. */
+html:root[data-tema^='padrao'] .pd-conteudo {
+  padding-top: 6px;
+}
+
+html:root[data-tema^='padrao'] .pd-sub {
+  padding-bottom: 14px;
+  font-size: 0.875rem;
+}
+
+html:root[data-tema^='padrao'] .pd-lista {
+  gap: 10px;
+}
+
+/* O rótulo de seção: 13 px / 600, sem caixa-alta, com o número à direita. */
+html:root[data-tema^='padrao'] .rotulo-de-secao {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-top: 4px;
+  margin-bottom: 6px;
+  padding-inline: 0;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+/* O bloco de título (components/BlocoDeTitulo.tsx): rótulo de 13 px, nome de 28 px / 700 com a
+   marca da cor, e o resumo de 14 px. */
+.pd-titulo-bloco {
+  padding: 4px 8px 0;
+  margin-bottom: 14px;
+}
+
+.pd-titulo-rotulo {
+  color: var(--poeira);
+  font-size: 0.8125rem;
+  font-weight: 600;
+}
+
+.pd-titulo-h1 {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 2px 0;
+  font-size: 1.75rem;
+  font-weight: 700;
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+  overflow-wrap: anywhere;
+}
+
+.pd-titulo-h1 .marca-do-livro {
+  width: 12px;
+  height: 28px;
+}
+
+.pd-titulo-sub {
+  color: var(--poeira);
+  font-size: 0.875rem;
+}
+
+/* "Adormecidas · 1": uma linha de 48 px sob um filete, com a seta à direita. */
+.pd-adormecidas {
+  display: flex;
+  width: 100%;
+  min-height: 48px;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 14px;
+  border-top: 1px solid var(--linha);
+  color: var(--poeira);
+  font-size: 0.9375rem;
+  font-weight: 600;
+  text-align: left;
+}
+
+html:root[data-tema^='padrao'] .pd-sub .text-ponte {
+  color: var(--poeira);
+  text-shadow: none;
+}
+
+/* --- o neurônio ------------------------------------------------------------- */
+
+.pd-neuronio-pagina {
+  padding: 6px 4px 0;
+}
+
+/* O livro de origem: uma etiqueta de 32 px sob a barra. */
+.pd-chip-livro {
+  display: inline-flex;
+  height: 32px;
+  align-items: center;
+  gap: 8px;
+  padding: 0 12px 0 10px;
+  border-radius: 16px;
+  background: var(--parede);
+  font-size: 0.8125rem;
+  font-weight: 600;
+}
+
+.pd-marca-pontilhada {
+  width: 7px;
+  height: 16px;
+  border: 1.5px dashed var(--poeira);
+  border-radius: 2px;
+  box-sizing: border-box;
+}
+
+.pd-neuronio-h1 {
+  margin: 16px 0;
+  font-size: 2rem;
+  font-weight: 700;
+  line-height: 1.12;
+  letter-spacing: -0.025em;
+  overflow-wrap: anywhere;
+}
+
+/* O texto (e o que se faz com ele) mora num cartão só. */
+.pd-neuronio-cartao {
+  padding: 18px 18px 20px;
+  border-radius: 18px;
+  background: var(--parede);
+}
+
+.pd-neuronio-conteudo {
+  margin-bottom: 16px;
+  font-size: 1rem;
+  line-height: 1.65;
+}
+
+.pd-neuronio-conteudo:last-child {
   margin-bottom: 0;
 }
 
-/* --- o texto do neurônio -------------------------------------------------- */
+/* O andamento: duas colunas — a caixa de 128 × 44 e, ao lado, o "Deixar de ser executável". */
+.pd-andamento {
+  display: grid;
+  grid-template-columns: 128px minmax(0, 1fr);
+  align-items: start;
+  gap: 10px 14px;
+}
 
-/* A leitura vai num cartão (o título, que também é `.texto-do-usuario`, fica solto). */
-html:root[data-tema^='padrao'] p.texto-do-usuario {
-  padding: 16px 18px;
+.pd-caixa-de-estado {
+  display: flex;
+  width: 128px;
+  height: 44px;
+  align-items: center;
+  gap: 8px;
+  padding: 0 12px;
+  border-radius: 14px;
+  background: var(--campo);
+  font-size: 0.9375rem;
+  font-weight: 600;
+  box-sizing: border-box;
+}
+
+.pd-estado--miudo {
+  width: 22px;
+  height: 22px;
+}
+
+.pd-estado--miudo::after {
+  display: none;
+}
+
+.pd-desfazer {
+  display: flex;
+  min-height: 44px;
+  align-items: center;
+  color: var(--poeira);
+  font-size: 0.8125rem;
+  line-height: 1.3;
+  text-align: left;
+}
+
+.pd-desfazer:disabled {
+  opacity: 0.45;
+}
+
+.pd-acoes {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.pd-nota {
+  margin-top: 2px;
+  color: var(--poeira);
+  font-size: 0.8125rem;
+}
+
+/* --- escrever (Formulario.tsx) ---------------------------------------------- */
+
+/* O título na barra: 21 px / 600. */
+html:root[data-tema^='padrao'] .pd-titulo-campo {
+  font-size: 1.3125rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+html:root[data-tema^='padrao'] .pd-escrever {
+  padding-top: 8px;
+}
+
+/* Os dois botões em pílula (44 px, canto de 22): o livro, num cartão sem borda, e "Quero executar
+   isso", só com o contorno. */
+html:root[data-tema^='padrao'] .pd-escrever .chip {
+  border: 1px solid var(--linha);
+  border-radius: 22px;
+  background: transparent;
+  color: var(--poeira);
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+html:root[data-tema^='padrao'] .pd-escrever .chip[aria-pressed='true'] {
+  border-color: var(--blk);
+  background: var(--blk);
+  color: var(--blkt);
+}
+
+html:root[data-tema^='padrao'] .pd-escrever .pd-chip-livro-escolha {
+  padding-left: 32px;
+  border-color: transparent;
+  background: var(--parede);
+  color: var(--papel);
+}
+
+/* A marca do livro no botão: 8 × 20, ou um contorno pontilhado enquanto o livro é "Automático". */
+html:root[data-tema^='padrao'] .pd-marca-chip {
+  left: 16px;
+  width: 8px;
+  height: 20px;
+  border-radius: 2px;
+}
+
+html:root[data-tema^='padrao'] .pd-marca-chip--vazia {
+  border: 1.5px dashed var(--poeira);
+}
+
+/* A folha de texto: um cartão que ocupa o que sobra da tela. */
+html:root[data-tema^='padrao'] .pd-folha {
+  margin-top: 14px;
+  padding: 16px;
   border-radius: 18px;
   background: var(--parede);
+  font-size: 1.0625rem;
+  line-height: 1.65;
+}
+
+/* O botão do pé: preso embaixo, no fundo da tela (sem a transição em degradê do Clássico). */
+html:root[data-tema^='padrao'] .barra-de-acao {
+  padding: 12px 16px calc(28px + env(safe-area-inset-bottom));
+  background: var(--sala);
+}
+
+@media (min-width: 768px) {
+  html:root[data-tema^='padrao'] .barra-de-acao {
+    padding: 8px 0 32px;
+    background: none;
+  }
+}
+
+/* --- a rede e o mapa (pages/Rede.tsx) -------------------------------------- */
+
+/* O seletor Rede | Mapa: uma pílula no meio da barra, num trilho de campo. */
+.pd-modo {
+  display: inline-flex;
+  margin-inline: auto;
+  padding: 3px;
+  border-radius: 22px;
+  background: var(--t-trilho-do-modo);
+}
+
+.pd-modo button {
+  min-width: 84px;
+  height: 40px;
+  padding: 0 16px;
+  border-radius: 20px;
+  color: var(--poeira);
+  font-size: 0.9375rem;
+  font-weight: 500;
+}
+
+.pd-modo button[aria-pressed='true'] {
+  background: var(--parede);
+  color: var(--papel);
+  font-weight: 600;
+  box-shadow: 0 1px 3px rgb(0 0 0 / 0.18);
+}
+
+/* O cartão de quem foi tocado: título, a etiqueta do livro, o começo do texto e o rodapé com
+   "Abrir →". Fica a 100 px do pé, acima dos botões. */
+.pd-cartao-rede {
+  position: fixed;
+  inset-inline: 16px;
+  bottom: calc(100px + env(safe-area-inset-bottom));
+  z-index: 10;
+  max-width: 36rem;
+  margin-inline: auto;
+  padding: 16px 16px 14px;
+  border-radius: 20px;
+  background: var(--parede);
+  box-shadow: 0 8px 30px rgb(0 0 0 / 0.12);
+}
+
+@media (min-width: 1024px) {
+  .pd-cartao-rede {
+    left: calc(13rem + 1rem);
+  }
+}
+
+.pd-cartao-rede-topo {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.pd-cartao-rede-titulo {
+  min-width: 0;
+  font-size: 1.1875rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  overflow-wrap: anywhere;
+}
+
+.pd-pilula {
+  display: inline-flex;
+  height: 26px;
+  flex: none;
+  align-items: center;
+  gap: 6px;
+  padding: 0 10px 0 8px;
+  border-radius: 13px;
+  background: var(--campo);
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.pd-cartao-rede-texto {
+  display: -webkit-box;
+  overflow: hidden;
+  margin-top: 6px;
+  color: var(--poeira);
+  font-size: 0.875rem;
+  line-height: 1.45;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+.pd-cartao-rede-pe {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 12px;
+  color: var(--poeira);
+  font-size: 0.8125rem;
+}
+
+.pd-abrir {
+  display: inline-flex;
+  height: 44px;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 0 22px;
+  border-radius: 22px;
+  background: var(--blk);
+  color: var(--blkt);
+  font-size: 0.9375rem;
+  font-weight: 600;
+}
+
+/* Enquadrar e filtros: dois círculos de 48 px, com a sombra suave. */
+html:root[data-tema^='padrao'] .pd-pe-da-rede {
+  left: 12px;
+  gap: 8px;
+}
+
+html:root[data-tema^='padrao'] .pd-pe-da-rede .btn-icone {
+  width: 48px;
+  height: 48px;
+  border: 0;
+  background: var(--parede);
+  box-shadow: 0 2px 10px rgb(0 0 0 / 0.18);
+}
+
+html:root[data-tema^='padrao'] .pd-pe-da-rede .btn-icone[aria-pressed='true'] {
+  background: var(--blk);
+  color: var(--blkt);
+}
+
+/* --- escolha entre poucas: a pílula (.segmentado) --------------------------- */
+
+/* Um trilho de campo com uma pílula clara sob a opção escolhida. */
+html:root[data-tema^='padrao'] .segmentado {
+  display: flex;
+  overflow: visible;
+  padding: 3px;
+  border: 0;
+  border-radius: 22px;
+  background: var(--campo);
+}
+
+html:root[data-tema^='padrao'] .segmento {
+  height: 40px;
+  flex: 1;
+  border-radius: 20px;
+  color: var(--poeira);
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+html:root[data-tema^='padrao'] .segmento + .segmento {
+  border-left: 0;
+}
+
+html:root[data-tema^='padrao'] .segmento[aria-pressed='true'],
+html:root[data-tema^='padrao'] .segmento[data-marcado='true'] {
+  background: var(--parede);
+  color: var(--papel);
+  font-weight: 600;
+  box-shadow: 0 1px 3px rgb(0 0 0 / 0.18);
+}
+
+/* A versão miúda (largura e comprimento do livro): 38 px, 12,5 px. */
+html:root[data-tema^='padrao'] .segmentado--miudo {
+  min-width: 0;
+  flex: 1;
+  border-radius: 20px;
+}
+
+html:root[data-tema^='padrao'] .segmentado--miudo .segmento {
+  height: 38px;
+  border-radius: 19px;
+  font-size: 0.78125rem;
+  padding-inline: 2px;
+}
+
+.segmento-rotulo {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+}
+
+.segmento-rotulo .segmento {
+  width: 100%;
+}
+
+/* --- o formulário de livro (FormularioDeLivro.tsx) ---------------------------- */
+
+.pd-form {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.pd-form-tipo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* O botão de livro deitado: um círculo de campo, que acende quando está deitado. */
+.pd-deitar {
+  display: grid;
+  width: 46px;
+  height: 46px;
+  flex: none;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--campo);
+  color: var(--papel);
+}
+
+.pd-deitar[aria-pressed='true'] {
+  background: var(--blk);
+  color: var(--blkt);
+}
+
+.pd-form-nome-linha {
+  display: flex;
+  align-items: stretch;
+  gap: 10px;
+  margin-top: 2px;
+}
+
+.pd-nome {
+  display: block;
+  min-width: 0;
+  flex: 1;
+  padding: 12px 16px;
+  border-radius: 18px;
+  background: var(--parede);
+}
+
+.pd-nome span {
+  display: block;
+  color: var(--poeira);
+  font-size: 0.78125rem;
+  font-weight: 500;
+}
+
+.pd-nome input {
+  width: 100%;
+  height: 44px;
+  margin-top: 2px;
+  padding: 0;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: var(--papel);
+  font-family: inherit;
+  font-size: 1.5rem;
+  font-weight: 600;
+}
+
+.pd-nome input::placeholder {
+  color: var(--poeira);
+  font-size: 1rem;
+  font-weight: 400;
+}
+
+/* A prévia: um cartão de altura fixa, com a lombada em pé no fundo dele. */
+.pd-previa {
+  display: flex;
+  flex: none;
+  align-items: flex-end;
+  justify-content: center;
+  overflow: hidden;
+  border-radius: 18px;
+  background: var(--parede);
+  box-sizing: border-box;
+}
+
+.pd-dias {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--poeira);
+  font-size: 0.9375rem;
+}
+
+.pd-dias input {
+  width: 56px;
+  height: 44px;
+  border: 0;
+  border-radius: 14px;
+  background: var(--campo);
+  color: var(--papel);
+  font-family: inherit;
+  font-weight: 700;
+  text-align: center;
+}
+
+/* A caixa de opções: cor, forma, largura e comprimento num cartão só. */
+.pd-opcoes {
+  padding: 8px 16px 6px;
+  border-radius: 18px;
+  background: var(--parede);
+}
+
+.pd-opcao-titulo {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.pd-opcao-titulo--forma {
+  margin-top: 2px;
+}
+
+.pd-opcao-nome {
+  color: var(--poeira);
+  font-size: 0.8125rem;
+  font-weight: 400;
+}
+
+.pd-cores {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+
+.pd-cor {
+  position: relative;
+  display: grid;
+  height: 46px;
+  place-items: center;
+}
+
+.pd-cor-anel {
+  display: grid;
+  width: 38px;
+  height: 38px;
+  place-items: center;
+  border: 2px solid transparent;
+  border-radius: 50%;
+  box-sizing: border-box;
+}
+
+.pd-cor input:checked + .pd-cor-anel {
+  border-color: var(--papel);
+}
+
+.pd-cor input:focus-visible + .pd-cor-anel {
+  outline: 2px solid var(--ponte);
+  outline-offset: 2px;
+}
+
+.pd-cor-miolo {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  box-shadow: 0 0 0 1px var(--linha);
+}
+
+.pd-formas {
+  display: flex;
+  gap: 6px;
+  justify-content: space-between;
+  margin-top: 6px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.pd-formas::-webkit-scrollbar {
+  display: none;
+}
+
+.pd-forma {
+  position: relative;
+  display: flex;
+  width: 36px;
+  height: 46px;
+  flex: none;
+  align-items: flex-end;
+  justify-content: center;
+  padding-bottom: 5px;
+  border: 2px solid transparent;
+  border-radius: 10px;
+  box-sizing: border-box;
+}
+
+.pd-forma:has(input:checked) {
+  border-color: var(--papel);
+}
+
+.pd-forma:has(input:focus-visible) {
+  outline: 2px solid var(--ponte);
+  outline-offset: 2px;
+}
+
+.pd-medida {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 6px;
+}
+
+.pd-medida-nome {
+  width: 96px;
+  flex: none;
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+/* Tela estreita: o nome encolhe e a pílula também (lado a lado ainda cabe, com a letra em 11 px). */
+@media (max-width: 359px) {
+  .pd-medida {
+    gap: 8px;
+  }
+
+  .pd-medida-nome {
+    width: 82px;
+    font-size: 0.8125rem;
+  }
+
+  html:root[data-tema^='padrao'] .segmentado--miudo .segmento {
+    padding-inline: 0;
+    font-size: 0.6875rem;
+  }
+}
+
+/* Tela baixa (320 × 568): o formulário cabe sem rolar (regra do projeto), então os cartões, as
+   bolinhas e as pílulas apertam — os alvos de toque continuam de 40 px ou mais. */
+@media (max-height: 700px) {
+  .pd-form {
+    gap: 6px;
+  }
+
+  .pd-form-tipo .segmento {
+    height: 36px;
+  }
+
+  .pd-deitar {
+    width: 42px;
+    height: 42px;
+  }
+
+  .pd-form-nome-linha {
+    margin-top: 0;
+  }
+
+  .pd-nome {
+    padding: 8px 16px;
+  }
+
+  .pd-nome input {
+    height: 34px;
+  }
+
+  .pd-previa {
+    max-height: 98px;
+  }
+
+  .pd-formas {
+    margin-top: 4px;
+  }
+
+  .pd-opcoes {
+    padding: 6px 14px 4px;
+  }
+
+  .pd-cor {
+    height: 40px;
+  }
+
+  .pd-cor-anel {
+    width: 36px;
+    height: 36px;
+  }
+
+  .pd-cor-miolo {
+    width: 26px;
+    height: 26px;
+  }
+
+  .pd-forma {
+    height: 42px;
+    padding-bottom: 3px;
+  }
+
+  .pd-medida {
+    margin-top: 0;
+  }
+
+  html:root[data-tema^='padrao'] .segmentado--miudo .segmento {
+    height: 34px;
+  }
+}
+
+/* Tela muito baixa (320 × 568): o rótulo "Nome" cede o lugar — o placeholder e o `aria-label` já dizem
+   o que o campo é — e a prévia, a linha dos dias e o cartão de opções encolhem mais um pouco. */
+@media (max-height: 600px) {
+  .pd-nome span {
+    display: none;
+  }
+
+  .pd-nome {
+    padding: 4px 16px;
+  }
+
+  .pd-nome input {
+    height: 36px;
+    margin-top: 0;
+  }
+
+  .pd-previa {
+    max-height: 84px;
+  }
+
+  .pd-dias input {
+    height: 36px;
+  }
+
+  .pd-dias {
+    margin-top: -2px;
+  }
+}
+
+@media (max-height: 600px) {
+  .pd-form {
+    gap: 4px;
+  }
+
+  .pd-previa {
+    max-height: 76px;
+  }
+
+  .pd-cor {
+    height: 36px;
+  }
+
+  .pd-cor-anel {
+    width: 34px;
+    height: 34px;
+  }
+
+  .pd-cor-miolo {
+    width: 24px;
+    height: 24px;
+  }
+
+  .pd-forma {
+    height: 38px;
+    padding-bottom: 2px;
+  }
+
+  html:root[data-tema^='padrao'] .segmentado--miudo .segmento {
+    height: 32px;
+  }
+}
+
+@media (max-height: 600px) {
+  .pd-opcoes {
+    padding: 4px 14px 2px;
+  }
+
+  .pd-previa {
+    max-height: 80px;
+  }
+}
+
+@media (max-height: 600px) {
+  html:root[data-tema^='padrao'] .pd-conteudo {
+    padding-top: 2px;
+  }
+}
+
+/* --- chips e opções ------------------------------------------------------- */
+
+/* Chip: 44 px, canto de 12, contorno; escolhido é bloco cheio (preto no claro, branco no escuro). */
+html:root[data-tema^='padrao'] .chip {
+  border: 1px solid var(--linha);
+  border-radius: 12px;
+  background: transparent;
+  color: var(--papel);
+  font-size: 0.9375rem;
+  font-weight: 500;
+}
+
+html:root[data-tema^='padrao'] .chip[aria-pressed='true'] {
+  border-color: var(--blk);
+  background: var(--blk);
+  color: var(--blkt);
+  font-weight: 700;
+}
+
+/* A marca da cor de um livro dentro de um chip, uma opção ou uma etiqueta: um quadradinho. */
+html:root[data-tema^='padrao'] .pd-ponto-livro {
+  width: 9px;
+  height: 9px;
+  border-radius: 2px;
+}
+
+/* Opção de livro (as folhas de escolha): contorno, e a escolhida cheia, com o visto. */
+html:root[data-tema^='padrao'] .opcao {
+  border: 1px solid var(--linha);
+  border-radius: 12px;
+  background: transparent;
+  font-size: 0.9375rem;
+  font-weight: 500;
+}
+
+html:root[data-tema^='padrao'] .opcao:active {
+  background: var(--campo);
+}
+
+html:root[data-tema^='padrao'] .opcao[aria-pressed='true'] {
+  border-color: var(--blk);
+  background: var(--blk);
+  color: var(--blkt);
+  font-weight: 700;
+}
+
+html:root[data-tema^='padrao'] .opcao[aria-pressed='true'] svg {
+  color: inherit;
+}
+
+/* --- campos --------------------------------------------------------------- */
+
+/* Campo: fundo de campo, sem contorno, canto de 14. */
+html:root[data-tema^='padrao'] .campo {
+  border: 1px solid transparent;
+  border-radius: 14px;
+  background: var(--campo);
+}
+
+html:root[data-tema^='padrao'] .campo:focus,
+html:root[data-tema^='padrao'] .campo:focus-visible {
+  border-color: color-mix(in srgb, var(--papel) 45%, transparent);
+  box-shadow: none;
+}
+
+/* --- cartões -------------------------------------------------------------- */
+
+html:root[data-tema^='padrao'] .cartao {
+  border: 0;
+  border-radius: 18px;
+  box-shadow: none;
+}
+
+/* --- a folha (Folha.tsx) --------------------------------------------------- */
+
+/* 26 px de canto em cima, o véu do tema atrás (sem desfoque), alça de 40 × 5. */
+html:root[data-tema^='padrao'] .folha {
+  border-radius: 26px 26px 0 0;
+  box-shadow: none;
+}
+
+html:root[data-tema^='padrao'] .folha::backdrop {
+  background: var(--veu);
+  backdrop-filter: none;
+}
+
+html:root[data-tema^='padrao'] .folha-alca-barra {
+  width: 40px;
+  height: 5px;
+}
+
+html:root[data-tema^='padrao'] .folha-corpo {
+  padding: 0 24px calc(28px + env(safe-area-inset-bottom));
+}
+
+/* Os títulos: 22 px / 700. */
+html:root[data-tema^='padrao'] .folha h2 {
+  font-size: 1.375rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+}
+
+.pd-folha-titulo {
+  margin-bottom: 14px;
+}
+
+.pd-folha-titulo--com-sub {
+  margin-bottom: 2px;
+}
+
+.pd-folha-sub {
+  margin-bottom: 14px;
+  padding-inline: 0;
+  font-size: 0.875rem;
+}
+
+.pd-folha-rotulo {
+  color: var(--poeira);
+  font-size: 0.8125rem;
+  font-weight: 600;
+}
+
+html:root[data-tema^='padrao'] .folha h2.pd-folha-titulo-ideia {
+  margin-top: 2px;
+  font-size: 1.3125rem;
+}
+
+/* O cabeçalho de um livro, de um lugar ou de um item: marca, nome de 24 px e a linha de resumo. */
+.pd-cab-lugar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+html:root[data-tema^='padrao'] .pd-cab-marca {
+  width: 12px;
+  height: 38px;
+  flex: none;
+  border-radius: 3px;
+}
+
+html:root[data-tema^='padrao'] .folha h2.pd-cab-titulo {
+  font-size: 1.5rem;
+}
+
+html:root[data-tema^='padrao'] .folha h2.pd-cab-titulo--item {
+  font-size: 1.1875rem;
+}
+
+html:root[data-tema^='padrao'] .pd-miniatura-do-menu {
+  width: 48px;
+  height: 48px;
+  border-radius: 16px;
+}
+
+/* As ações e os neurônios espiados: linhas de 56 px entre dois filetes. */
+html:root[data-tema^='padrao'] .folha .cartao {
+  overflow: visible;
+  border-width: 1px 0;
+  border-style: solid;
+  border-color: var(--linha);
+  border-radius: 0;
+  background: transparent;
+}
+
+html:root[data-tema^='padrao'] .folha .linha-de-lista {
+  min-height: 56px;
+  padding-inline: 0;
+  font-size: 1rem;
+  font-weight: 500;
+}
+
+html:root[data-tema^='padrao'] .folha .linha-de-lista a,
+html:root[data-tema^='padrao'] .folha .linha-de-lista button {
+  padding-inline: 0;
+  font-size: 1rem;
+}
+
+html:root[data-tema^='padrao'] .folha .linha-de-lista:active {
+  background: transparent;
+}
+
+html:root[data-tema^='padrao'] .folha .linha-de-lista .text-destructive {
+  font-weight: 600;
+}
+
+/* "Pontes com": o rótulo e as etiquetas na mesma linha. */
+html:root[data-tema^='padrao'] .pd-pontes {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+html:root[data-tema^='padrao'] .pd-pontes .rotulo-de-secao {
+  margin: 0;
+  padding: 0;
+  font-weight: 400;
+}
+
+html:root[data-tema^='padrao'] .pd-pontes ul {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  overflow: visible;
+}
+
+html:root[data-tema^='padrao'] .pd-ponte-com {
+  height: 30px;
+  border: 1px solid var(--linha);
+  border-radius: 10px;
+  padding: 0 12px 0 10px;
+  font-size: 0.8125rem;
+  font-weight: 600;
+}
+
+html:root[data-tema^='padrao'] .pd-ponte-com .font-dado {
+  display: none;
+}
+
+/* O botão principal da folha: 52 px, como em toda parte. */
+html:root[data-tema^='padrao'] .folha .btn-pequeno.btn-primario {
+  height: 52px;
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+/* O andamento da ideia: três caixas separadas (e não uma pílula), a escolhida cheia. */
+html:root[data-tema^='padrao'] .folha .segmentado {
+  gap: 8px;
+  padding: 0;
+  background: none;
+}
+
+html:root[data-tema^='padrao'] .folha .segmento {
+  height: 46px;
+  border: 1px solid var(--linha);
+  border-radius: 12px;
+  box-shadow: none;
+  font-size: 0.9375rem;
+}
+
+html:root[data-tema^='padrao'] .folha .segmento svg {
+  display: none;
+}
+
+html:root[data-tema^='padrao'] .folha .segmento[aria-pressed='true'] {
+  border-color: var(--blk);
+  background: var(--blk);
+  color: var(--blkt);
+  font-weight: 700;
+}
+
+html:root[data-tema^='padrao'] .folha .campo {
+  height: 46px;
+  border: 1px solid var(--linha);
+  border-radius: 12px;
+  background: transparent;
+}
+
+html:root[data-tema^='padrao'] .folha .campo.size-11 {
+  width: 46px;
+}
+
+/* --- "Onde guardar?": uma linha por livro --------------------------------- */
+
+.pd-linhas-de-livro {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.pd-linha-de-livro {
+  display: flex;
+  width: 100%;
+  min-height: 60px;
+  align-items: center;
+  gap: 14px;
+  padding: 0 14px;
+  border-radius: 14px;
+  text-align: left;
+}
+
+.pd-linha-de-livro[aria-pressed='true'] {
+  background: var(--campo);
+}
+
+.pd-linha-marca {
+  width: 12px;
+  height: 34px;
+  flex: none;
+  border-radius: 3px;
+}
+
+.pd-linha-nome {
+  display: block;
+  font-size: 1rem;
+  font-weight: 500;
+}
+
+.pd-linha-de-livro[aria-pressed='true'] .pd-linha-nome {
+  font-weight: 600;
+}
+
+.pd-linha-conta {
+  display: block;
+  margin-top: 1px;
+  color: var(--poeira);
+  font-size: 0.8125rem;
+}
+
+.pd-radio {
+  display: grid;
+  width: 24px;
+  height: 24px;
+  flex: none;
+  place-items: center;
+  border: 1.5px solid var(--linha);
+  border-radius: 50%;
+  box-sizing: border-box;
+}
+
+.pd-linha-de-livro[aria-pressed='true'] .pd-radio {
+  border-color: var(--blk);
+  background: var(--blk);
+  color: var(--blkt);
+}
+
+.pd-criar-livro {
+  display: flex;
+  width: 100%;
+  height: 52px;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 12px;
+  border: 1px solid var(--linha);
+  border-radius: 14px;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+/* --- filtros: o interruptor e a legenda ------------------------------------ */
+
+.pd-secao-da-folha {
+  margin-top: 16px;
+}
+
+.pd-linha-interruptor {
+  display: flex;
+  min-height: 58px;
+  align-items: center;
+  gap: 12px;
+  margin-top: 8px;
+  border-block: 1px solid var(--linha);
+}
+
+.pd-linha-interruptor-titulo {
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.pd-linha-interruptor-desc {
+  color: var(--poeira);
+  font-size: 0.8125rem;
+}
+
+/* O interruptor: 48 × 28, vazado com a bolinha de tinta; ligado, cheio com a bolinha clara. */
+html:root[data-tema^='padrao'] .interruptor-chave {
+  border: 1px solid var(--linha);
+  background: transparent;
+}
+
+html:root[data-tema^='padrao'] .interruptor-bolinha {
+  background: var(--papel);
+}
+
+html:root[data-tema^='padrao'] [aria-checked='true'] .interruptor-chave {
+  border-color: var(--blk);
+  background: var(--blk);
+}
+
+html:root[data-tema^='padrao'] [aria-checked='true'] .interruptor-bolinha {
+  background: var(--blkt);
+}
+
+.pd-legenda li {
+  display: flex;
+  min-height: 44px;
+  align-items: center;
+  gap: 14px;
+  border-bottom: 1px solid var(--linha);
+  font-size: 0.9375rem;
+}
+
+.pd-legenda li:last-child {
+  border-bottom: 0;
+}
+
+.pd-legenda-amostra {
+  display: flex;
+  width: 44px;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+}
+
+.pd-legenda-ponto {
+  display: block;
+  border-radius: 50%;
+}
+
+.pd-legenda-ponto--feita {
+  width: 10px;
+  height: 10px;
+  background: #e8c471;
+}
+
+.pd-legenda-ponto--dorme {
+  width: 16px;
+  height: 16px;
+  background: radial-gradient(circle, var(--papel) 0 3px, transparent 4px);
+  opacity: 0.45;
+}
+
+/* --- busca ------------------------------------------------------------------ */
+
+/* O campo mora na barra de topo: uma pílula de campo, de 44 px, com a lupa. */
+.pd-busca-campo {
+  display: flex;
+  height: 44px;
+  min-width: 0;
+  flex: 1;
+  align-items: center;
+  gap: 8px;
+  padding: 0 12px;
+  border-radius: 14px;
+  background: var(--campo);
+  color: var(--poeira);
+  font-weight: 400;
+}
+
+.pd-busca-campo input {
+  min-width: 0;
+  flex: 1;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: var(--papel);
+  font-family: inherit;
+  font-size: 1rem;
+  letter-spacing: 0;
+}
+
+.pd-busca-campo input::placeholder {
+  color: var(--poeira);
+}
+
+.pd-busca-campo input::-webkit-search-cancel-button {
+  display: none;
+}
+
+/* Os resultados: linhas sem cartão, separadas por filetes. */
+.pd-resultados {
+  display: flex;
+  flex-direction: column;
+}
+
+.pd-resultado {
+  border-bottom: 1px solid var(--linha);
+}
+
+.pd-resultado:last-child {
+  border-bottom: 0;
+}
+
+.pd-resultado a {
+  display: flex;
+  min-height: 84px;
+  flex-direction: column;
+  justify-content: center;
+  gap: 3px;
+  padding: 8px 0;
+}
+
+.pd-resultado-titulo {
+  font-size: 1.0625rem;
+  font-weight: 600;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+}
+
+.pd-resultado-meta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--poeira);
+  font-size: 0.78125rem;
+}
+
+.pd-resultado-texto {
+  display: -webkit-box;
+  overflow: hidden;
+  color: var(--poeira);
+  font-size: 0.84375rem;
+  line-height: 1.4;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+/* --- estado vazio ------------------------------------------------------------- */
+
+.pd-vazio {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 80px 40px 0;
+  text-align: center;
+}
+
+.pd-vazio-icone {
+  display: grid;
+  width: 64px;
+  height: 64px;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--campo);
+  color: var(--poeira);
+}
+
+.pd-vazio-titulo {
+  margin-top: 16px;
+  font-size: 1.25rem;
+  font-weight: 700;
+}
+
+.pd-vazio-texto {
+  margin-top: 6px;
+  color: var(--poeira);
+  font-size: 0.9375rem;
+  line-height: 1.5;
+}
+
+/* --- o porto ------------------------------------------------------------------ */
+
+.pd-porto-lista {
+  display: flex;
+  flex-direction: column;
+}
+
+.pd-porto-item {
+  padding: 10px 0 14px;
+  border-bottom: 1px solid var(--linha);
+}
+
+.pd-porto-item:last-child {
+  border-bottom: 0;
+}
+
+.pd-porto-item > a:first-child {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 0;
+}
+
+.pd-porto-item > a:first-child .font-titulo {
+  font-size: 1.0625rem;
+}
+
+.pd-porto-item > div {
+  padding: 10px 0 0;
+}
+
+/* --- a pasta e o item ----------------------------------------------------------- */
+
+/* A imagem sem cartão: o desenho de 16 px de canto e, embaixo, a legenda e com quem combina. */
+html:root[data-tema^='padrao'] .pd-pasta-imagem {
+  overflow: visible;
+  border-radius: 0;
+  background: transparent;
+}
+
+html:root[data-tema^='padrao'] .pd-pasta-imagem > :first-child {
+  overflow: hidden;
+  border-radius: 16px;
+}
+
+html:root[data-tema^='padrao'] .pd-pasta-legenda {
+  padding: 8px 0 0;
+}
+
+html:root[data-tema^='padrao'] .pd-pasta-legenda .text-sm {
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+html:root[data-tema^='padrao'] .pd-pasta-legenda .text-xs {
+  font-size: 0.78125rem;
+}
+
+/* O link: uma linha de lista com um quadrado de 36 px à frente, sem cartão. */
+html:root[data-tema^='padrao'] .pd-pasta-link {
+  min-height: 60px;
+  padding: 8px 0;
+  border-radius: 0;
+  border-bottom: 1px solid var(--linha);
+  background: transparent;
+}
+
+html:root[data-tema^='padrao'] .pd-pasta-link > :first-child {
+  width: 36px;
+  height: 36px;
+  border: 1px solid var(--linha);
+  border-radius: 16px;
+  background: transparent;
+}
+
+html:root[data-tema^='padrao'] .pd-pasta-link .text-sm {
+  font-size: 1.0625rem;
+  font-weight: 600;
+}
+
+/* O "+" com o que ainda cabe: tracejado, 16 px de canto. */
+html:root[data-tema^='padrao'] .pd-pasta-mais {
+  border-width: 1.5px;
+  border-radius: 16px;
+  color: var(--papel);
+}
+
+html:root[data-tema^='padrao'] .pd-pasta-mais span {
+  font-weight: 700;
+}
+
+/* O item: a imagem no cartão do texto, e os conceitos em linhas. */
+.pd-anexo-cartao {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+html:root[data-tema^='padrao'] .pd-anexo-cartao .cartao {
+  border: 1px solid var(--linha);
+  border-radius: 16px;
+}
+
+.pd-conceitos {
+  display: flex;
+  flex-direction: column;
+}
+
+.pd-conceitos li {
+  border-bottom: 1px solid var(--linha);
+}
+
+.pd-conceitos li:last-child {
+  border-bottom: 0;
+}
+
+.pd-conceitos a {
+  display: flex;
+  min-height: 58px;
+  align-items: center;
+  gap: 12px;
+}
+
+html:root[data-tema^='padrao'] .pd-conceitos .marca-do-livro,
+html:root[data-tema^='padrao'] .pd-conceitos .h-6 {
+  width: 9px;
+  height: 9px;
+  border-radius: 2px;
+}
+
+html:root[data-tema^='padrao'] .pd-conceitos .block.truncate:first-child {
+  font-size: 1.0625rem;
+  font-weight: 600;
+}
+
+/* --- formulário de item ------------------------------------------------------------ */
+
+/* Imagem primeiro, depois Link (a ordem das pranchas). */
+html:root[data-tema^='padrao'] .pd-tipo-item {
+  flex-direction: row-reverse;
+  justify-content: flex-end;
+}
+
+html:root[data-tema^='padrao'] .pd-escolher-imagem {
+  height: min(150px, 18dvh);
+  border-width: 1.5px;
+  border-radius: 18px;
+  color: var(--papel);
+  font-weight: 600;
+}
+
+html:root[data-tema^='padrao'] .pd-form-anexo .campo {
+  border-radius: 16px;
+}
+
+.pd-dica {
+  margin-top: 8px;
+  color: var(--poeira);
+  font-size: 0.8125rem;
+}
+
+/* A legenda e o endereço: rótulo de 13 px / 600. */
+html:root[data-tema^='padrao'] .pd-form-anexo .rotulo-de-secao {
+  padding-inline: 0;
+}
+
+/* --- o alerta (Aviso.tsx) ------------------------------------------------------- */
+
+/* Uma faixa invertida — escura no tema claro, clara no escuro —, de canto 16, com a sombra do
+   botão de criar. O erro leva um ícone de alerta vermelho à frente; a ação é uma pílula. */
+html:root[data-tema='padrao-claro'] .aviso {
+  --perigo-no-alerta: #ff9b90;
+}
+
+html:root[data-tema='padrao-escuro'] .aviso {
+  --perigo-no-alerta: #d92d20;
+}
+
+html:root[data-tema^='padrao'] .aviso {
+  min-height: 56px;
+  align-items: center;
+  padding: 6px 6px 6px 16px;
+  border: 0;
+  border-radius: 16px;
+  background: var(--aviso-fundo);
+  color: var(--aviso-texto);
+  font-size: 0.9375rem;
+  line-height: 1.35;
+  box-shadow: 0 6px 18px rgb(0 0 0 / 0.25);
+}
+
+html:root[data-tema^='padrao'] .aviso > span {
+  min-width: 0;
+  flex: 1;
+}
+
+html:root[data-tema^='padrao'] .pd-aviso {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+html:root[data-tema^='padrao'] .pd-aviso-icone {
+  flex: none;
+  color: var(--perigo-no-alerta);
+}
+
+html:root[data-tema^='padrao'] .aviso a {
+  min-height: 40px;
+  margin: 0;
+  padding: 0 16px;
+  border-radius: 20px;
+  background: rgb(127 127 127 / 0.3);
+  color: var(--aviso-texto);
+  font-size: 0.875rem;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+/* --- o visor de imagens ------------------------------------------------------- */
+
+/* O contador numa pílula translúcida, os botões em círculo de 48 px sem contorno, e a moldura da
+   imagem com 20 px de canto. */
+html:root[data-tema^='padrao'] .visor-contador {
+  position: absolute;
+  left: 50%;
+  flex: none;
+  margin-left: 0;
+  transform: translateX(-50%);
+  padding: 6px 14px;
+  border-radius: 16px;
+  background: rgb(255 255 255 / 0.18);
+  color: #fff;
+  font-size: 0.9375rem;
+  font-weight: 600;
+}
+
+html:root[data-tema^='padrao'] .visor-topo {
+  justify-content: flex-end;
+}
+
+html:root[data-tema^='padrao'] .visor-botao {
+  width: 48px;
+  height: 48px;
+  border: 0;
+  background: rgb(255 255 255 / 0.18);
+}
+
+html:root[data-tema^='padrao'] .visor-imagem {
+  border-radius: 20px;
+  box-shadow: 0 10px 30px rgb(0 0 0 / 0.45);
+}
+
+/* `display` só com o aviso aberto: um popover fechado fica `display: none` pelo navegador, e um
+   `display: flex` solto o mostraria sempre. */
+html:root[data-tema^='padrao'] .aviso:popover-open {
+  display: flex;
+}
+
+/* Tela baixa: o ar e o vão dos cartões da estante encolhem para as prateleiras caberem sem rolar
+   (a fileira não desce de 92 px), e Ajustes aperta o vão entre as seções. */
+@media (max-height: 600px) {
+  html:root[data-tema^='padrao'] .movel {
+    --pd-vao-ar: 6px;
+    --pd-vao-vao: 8px;
+  }
+
+  html:root[data-tema^='padrao'] .ajustes-compacto {
+    gap: 6px;
+  }
+}
+
+/* Com a coluna de navegação (a partir de 1024 px), os botões do pé da Rede saem de baixo dela. */
+@media (min-width: 1024px) {
+  html:root[data-tema^='padrao'] .pd-pe-da-rede {
+    left: calc(13rem + 12px);
+  }
+}
+
+/* Na opção escolhida só o nome engrossa; a frase de apoio continua leve. */
+html:root[data-tema^='padrao'] .opcao[aria-pressed='true'] .text-xs {
+  font-weight: 400;
+}
+
+/* A legenda: um campo de 96 px (as pranchas não a esticam até o fim da tela). */
+html:root[data-tema^='padrao'] .pd-form-anexo label:has(textarea) {
+  flex: none;
+}
+
+html:root[data-tema^='padrao'] .pd-form-anexo textarea {
+  height: min(96px, 15dvh);
+  min-height: min(96px, 15dvh);
+  flex: none;
+}
+
+/* O nome da imagem e as setas: no pé, na altura de 96 px, como nas pranchas. */
+.visor-legenda {
+  display: none;
+}
+
+html:root[data-tema^='padrao'] .visor-legenda {
+  position: absolute;
+  inset-inline: 84px;
+  bottom: calc(96px + 14px);
+  z-index: 2;
+  display: block;
+  overflow: hidden;
+  color: #fff;
+  font-size: 0.875rem;
+  opacity: 0.85;
+  text-align: center;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+html:root[data-tema^='padrao'] .visor-seta {
+  top: auto;
+  bottom: calc(96px + env(safe-area-inset-bottom));
+  transform: none;
+}
+
+html:root[data-tema^='padrao'] .visor-seta--esq {
+  left: 24px;
+}
+
+html:root[data-tema^='padrao'] .visor-seta--dir {
+  right: 24px;
+}
+
+/* Tela baixa: o bloco de título perde a linha de resumo. */
+@media (max-height: 600px) {
+  .pd-titulo-sub {
+    display: none;
+  }
+
+  .pd-titulo-bloco {
+    margin-bottom: 6px;
+  }
 }

@@ -15,7 +15,7 @@ import {
   vizinhancaDe,
   type NoArrastado,
 } from './layout'
-import { lerCor, lerFonteDoCanvas, useRepintarAoMudar } from './canvas'
+import { lerCor, lerFonteDoCanvas, sombraDaEtiqueta, useRepintarAoMudar } from './canvas'
 import { useCamera } from './useCamera'
 
 /**
@@ -137,6 +137,12 @@ function lerCores(el: HTMLElement): CoresDaRede {
     nevoa: lerCor(el, '--nevoa'),
     mistura: ehMistura(mistura) ? mistura : 'source-over',
     fonteTitulo: lerFonteDoCanvas(el).fonteTitulo,
+    padrao: lerFonteDoCanvas(el).padrao,
+    blk: lerCor(el, '--blk'),
+    blkt: lerCor(el, '--blkt'),
+    parede: lerCor(el, '--parede'),
+    poeira: lerCor(el, '--poeira'),
+    sombraDaEtiqueta: sombraDaEtiqueta(el),
   }
 }
 

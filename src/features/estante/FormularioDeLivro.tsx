@@ -17,6 +17,7 @@ import {
 } from 'react'
 
 import { botao } from '@/components/botao'
+import { useTemaPadrao } from '@/hooks/useTemaPadrao'
 import {
   clampDiasParaAdormecer,
   DIAS_PARA_ADORMECER_MAXIMO,
@@ -154,6 +155,7 @@ export function FormularioDeLivro({
   prateleiras = 4,
   onEnviar,
 }: Props) {
+  const padrao = useTemaPadrao()
   const [titulo, setTitulo] = useState(inicial.titulo)
   const [cor, setCor] = useState(inicial.cor)
   const [estilo, setEstilo] = useState(inicial.estilo)
@@ -297,6 +299,294 @@ export function FormularioDeLivro({
     }
     tipo?.onMudar('conceitos')
     setExecutavel(chave === 'executavel')
+  }
+
+  // O Padrão (docs/estilos-visuais-locus.md, "Novo livro"): o tipo numa pílula, o nome e a prévia em
+  // dois cartões, e uma caixa só com cor (5 × 2 bolinhas), forma (a fileira) e as duas medidas, cada
+  // uma com o nome à esquerda e uma pílula de escolha à direita. A mesma amostra, as mesmas escolhas.
+  const rotuloDoEnvio = rotuloDeEnvio
+  const opcoesDeLargura = [
+    // "Auto" só aparece para quem já está nele (um livro de antes): é o legado, e uma opção a mais
+    // não cabe numa tela de 320 px. Quem escolhe um tamanho não volta ao automático por aqui.
+    ...(enfeite || inicial.larguraLombada !== null
+      ? []
+      : [{ chave: 'auto', rotulo: 'Auto', valor: null as number | null }]),
+    ...LARGURAS.map((l) => ({ chave: l.chave, rotulo: l.rotulo, valor: l.px })),
+  ]
+  const opcoesDeComprimento = [
+    ...(enfeite || inicial.comprimentoLombada !== null
+      ? []
+      : [{ chave: 'auto', rotulo: 'Auto', valor: null as number | null }]),
+    ...COMPRIMENTOS.map((c) => ({
+      chave: c.chave,
+      rotulo: c.rotulo,
+      valor: c.percentual,
+    })),
+  ]
+  if (padrao) {
+    return (
+      <form
+        ref={formulario}
+        className="pd-form"
+        onSubmit={(evento) => {
+          evento.preventDefault()
+          if (podeEnviar) {
+            onEnviar({
+              titulo: titulo.trim(),
+              cor,
+              estilo,
+              orientacao: enfeite ? 'em-pe' : orientacao,
+              emblema,
+              larguraLombada,
+              comprimentoLombada,
+              executavel: podeSerExecutavel && executavel,
+              diasParaAdormecer: clampDiasParaAdormecer(
+                dias.trim() === '' ? Number.NaN : Number(dias),
+              ),
+            })
+          }
+        }}
+        autoComplete="off"
+      >
+        {!enfeite && (
+          <div className="pd-form-tipo">
+            {opcoesDeTipo.length > 1 && (
+              <div role="group" aria-label="Tipo" className="segmentado min-w-0 flex-1">
+                {opcoesDeTipo.map(({ chave, rotulo, nomeAcessivel }) => (
+                  <button
+                    key={chave}
+                    type="button"
+                    aria-pressed={atual === chave}
+                    aria-label={nomeAcessivel}
+                    onClick={() => {
+                      escolherTipo(chave)
+                    }}
+                    className="segmento"
+                  >
+                    {rotulo}
+                  </button>
+                ))}
+              </div>
+            )}
+            <button
+              type="button"
+              aria-pressed={deitado}
+              aria-label="Livro deitado"
+              title={deitado ? 'Deitado: tocar para pôr em pé' : 'Em pé: tocar para deitar'}
+              onClick={() => {
+                setOrientacao(deitado ? 'em-pe' : 'deitado')
+              }}
+              className={`pd-deitar ${opcoesDeTipo.length > 1 ? '' : 'ml-auto'}`}
+            >
+              {deitado ? (
+                <RectangleHorizontal size={20} aria-hidden />
+              ) : (
+                <RectangleVertical size={20} aria-hidden />
+              )}
+            </button>
+          </div>
+        )}
+
+        <div className="pd-form-nome-linha">
+          {!enfeite && (
+            <label className="pd-nome">
+              <span>Nome</span>
+              <input
+                aria-label="Nome"
+                value={titulo}
+                onChange={(evento) => {
+                  setTitulo(evento.target.value)
+                }}
+                maxLength={120}
+                autoComplete="off"
+                enterKeyHint="done"
+                placeholder={
+                  tipo?.valor === 'acervo'
+                    ? 'Vídeos, referências, fotos…'
+                    : 'Uma área do que você sabe'
+                }
+              />
+            </label>
+          )}
+          <div
+            className="pd-previa"
+            style={{
+              height: `${String(Math.max(122, alturaDaCaixa + 6))}px`,
+              width: `${String(Math.max(92, larguraDaCaixa + 28))}px`,
+            }}
+          >
+            {deitado ? (
+              <span
+                className="lombada-giro"
+                style={{
+                  width: `${String(extensaoDaAmostra)}px`,
+                  height: `${String(larguraDaAmostra)}px`,
+                }}
+              >
+                {amostra}
+              </span>
+            ) : (
+              amostra
+            )}
+          </div>
+        </div>
+
+        {podeSerExecutavel && executavel && (
+          <label className="pd-dias">
+            Adormece com
+            <input
+              value={dias}
+              onChange={(evento) => {
+                setDias(evento.target.value)
+              }}
+              type="number"
+              inputMode="numeric"
+              min={0}
+              max={DIAS_PARA_ADORMECER_MAXIMO}
+              aria-label="Dias parada até adormecer"
+              autoComplete="off"
+            />
+            dias parada
+          </label>
+        )}
+
+        <div className="pd-opcoes">
+          <div className="pd-opcao-titulo">
+            <span>Cor</span>
+            <span className="pd-opcao-nome">{nomeDaCor}</span>
+          </div>
+          <div role="radiogroup" aria-label="Cor" className="pd-cores">
+            {PANOS.map((p) => (
+              <label key={p.cor} className="pd-cor" title={p.nome}>
+                <input
+                  type="radio"
+                  name="cor"
+                  value={p.cor}
+                  checked={cor.toLowerCase() === p.cor.toLowerCase()}
+                  onChange={() => {
+                    setCor(p.cor)
+                  }}
+                  className="sr-only"
+                />
+                <span className="pd-cor-anel" aria-hidden>
+                  <span className="pd-cor-miolo" style={{ backgroundColor: p.cor }} />
+                </span>
+                <span className="sr-only">{p.nome}</span>
+              </label>
+            ))}
+          </div>
+
+          <div className="pd-opcao-titulo pd-opcao-titulo--forma">
+            <span>Forma</span>
+            <span className="pd-opcao-nome">{nomeDaForma}</span>
+          </div>
+          <div role="radiogroup" aria-label="Forma" className="pd-formas">
+            {FORMAS.map((f) => (
+              <label key={f.chave} className="pd-forma" title={f.rotulo}>
+                <input
+                  type="radio"
+                  name="forma"
+                  value={f.chave}
+                  checked={estilo === f.chave}
+                  onChange={() => {
+                    setEstilo(f.chave)
+                  }}
+                  className="sr-only"
+                />
+                <MiniaturaDaForma
+                  estilo={f.chave}
+                  cor={cor}
+                  intensidadeDaLuz={intensidadeDaLuz}
+                  peca={enfeite ? 'enfeite' : 'livro'}
+                />
+                <span className="sr-only">{f.rotulo}</span>
+              </label>
+            ))}
+          </div>
+
+          <div className="pd-medida">
+            <span className="pd-medida-nome">Largura</span>
+            <div role="radiogroup" aria-label="Largura" className="segmentado segmentado--miudo">
+              {opcoesDeLargura.map((o) => (
+                <label key={o.chave} className="segmento-rotulo">
+                  <input
+                    type="radio"
+                    name="largura"
+                    checked={larguraLombada === o.valor}
+                    onChange={() => {
+                      setLarguraLombada(o.valor)
+                    }}
+                    className="sr-only"
+                  />
+                  <span className="segmento" aria-hidden data-marcado={larguraLombada === o.valor}>
+                    {o.rotulo}
+                  </span>
+                </label>
+              ))}
+            </div>
+          </div>
+          <div className="pd-medida">
+            <span className="pd-medida-nome">Comprimento</span>
+            <div
+              role="radiogroup"
+              aria-label="Comprimento"
+              className="segmentado segmentado--miudo"
+            >
+              {opcoesDeComprimento.map((o) => (
+                <label key={o.chave} className="segmento-rotulo">
+                  <input
+                    type="radio"
+                    name="comprimento"
+                    checked={comprimentoLombada === o.valor}
+                    onChange={() => {
+                      setComprimentoLombada(o.valor)
+                    }}
+                    className="sr-only"
+                  />
+                  <span
+                    className="segmento"
+                    aria-hidden
+                    data-marcado={comprimentoLombada === o.valor}
+                  >
+                    {o.rotulo}
+                  </span>
+                </label>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        <div
+          ref={medidor}
+          aria-hidden
+          className="movel cores-de-antes"
+          data-prateleiras={prateleiras}
+          style={
+            {
+              '--mv-prateleiras': prateleiras,
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              width: '200px',
+              visibility: 'hidden',
+              pointerEvents: 'none',
+            } as CSSProperties
+          }
+        >
+          <div className="movel-fila" />
+        </div>
+
+        <div className="barra-de-acao max-md:mt-auto md:flex md:justify-end">
+          <button
+            type="submit"
+            disabled={!podeEnviar}
+            className={`${botao({ tipo: 'primario', largo: true })} md:w-auto md:min-w-44`}
+          >
+            {rotuloDoEnvio}
+          </button>
+        </div>
+      </form>
+    )
   }
 
   return (

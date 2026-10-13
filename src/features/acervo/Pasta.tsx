@@ -3,10 +3,12 @@ import { useMemo } from 'react'
 import { Link } from 'react-router-dom'
 
 import { BarraDeTopo } from '@/components/BarraDeTopo'
+import { BlocoDeTitulo } from '@/components/BlocoDeTitulo'
 import { botao } from '@/components/botao'
 import { EtiquetaProcessando } from '@/components/EtiquetaProcessando'
 import { restantesNaPasta, type AnexoNaTela, type Livro, type TipoDeItem } from '@/core'
 import { useSegurar } from '@/hooks/useSegurar'
+import { useTemaPadrao } from '@/hooks/useTemaPadrao'
 import { contar } from '@/lib/plural'
 import { usePalacio } from '@/store/palacio'
 
@@ -37,6 +39,7 @@ import { conceitosPorAnexo, situacaoDoAnexo, type ConceitoDoAnexo } from './resu
 export function Pasta({ livro }: { livro: Livro }) {
   const { anexos, vinculos, neuronios, ocupado, apagarAnexo } = usePalacio()
   const { painel, abrir, trocar, fechar } = usePainelDaPasta()
+  const padrao = useTemaPadrao()
   const segurar = (anexoId: string): void => {
     abrir({ tipo: 'acoes', anexoId })
   }
@@ -52,14 +55,18 @@ export function Pasta({ livro }: { livro: Livro }) {
       <BarraDeTopo
         voltarPara="/"
         titulo={
-          <>
-            <span
-              className="h-5 w-1 shrink-0 rounded-full"
-              style={{ background: livro.cor }}
-              aria-hidden
-            />
-            <span className="truncate">{livro.titulo}</span>
-          </>
+          padrao ? (
+            ''
+          ) : (
+            <>
+              <span
+                className="marca-do-livro h-5 w-1 shrink-0 rounded-full"
+                style={{ background: livro.cor }}
+                aria-hidden
+              />
+              <span className="truncate">{livro.titulo}</span>
+            </>
+          )
         }
         acoes={
           <Link
@@ -72,10 +79,31 @@ export function Pasta({ livro }: { livro: Livro }) {
         }
       />
 
-      <div className="animar-entrada flex flex-col gap-6 pt-5">
+      <div className="animar-entrada pd-conteudo flex flex-col gap-6 pt-5">
+        {padrao && (
+          <BlocoDeTitulo
+            rotulo="Pasta"
+            titulo={livro.titulo}
+            cor={livro.cor}
+            sub={
+              meus.length === 0
+                ? 'Nada guardado ainda'
+                : `${contar(imagens.length, 'imagem', 'imagens')} · ${contar(links.length, 'link', 'links')}`
+            }
+          />
+        )}
         <section aria-labelledby="pasta-imagens" className="flex flex-col">
           <h2 id="pasta-imagens" className="rotulo-de-secao">
-            Imagens
+            {padrao ? (
+              <>
+                <span>Imagens</span>
+                <span>
+                  cabem {restantes.imagem === 0 ? 'nenhuma' : `mais ${String(restantes.imagem)}`}
+                </span>
+              </>
+            ) : (
+              'Imagens'
+            )}
           </h2>
           <ul className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-4">
             {imagens.map((a) => (
@@ -99,7 +127,16 @@ export function Pasta({ livro }: { livro: Livro }) {
 
         <section aria-labelledby="pasta-links" className="flex flex-col">
           <h2 id="pasta-links" className="rotulo-de-secao">
-            Links
+            {padrao ? (
+              <>
+                <span>Links</span>
+                <span>
+                  cabem {restantes.link === 0 ? 'nenhum' : `mais ${String(restantes.link)}`}
+                </span>
+              </>
+            ) : (
+              'Links'
+            )}
           </h2>
           <ul className="flex flex-col gap-2">
             {links.map((a) => (
@@ -160,7 +197,7 @@ function Adicionar({
     <Link
       to={`/novo-anexo?livro=${livroId}&tipo=${tipo}`}
       aria-label={`Adicionar ${nome.um}. Cabem mais ${falta}.`}
-      className={`border-linha text-poeira active:bg-realce hover:bg-realce/60 flex items-center justify-center gap-2 rounded-2xl border border-dashed transition-colors ${
+      className={`pd-pasta-mais border-linha text-poeira active:bg-realce hover:bg-realce/60 flex items-center justify-center gap-2 rounded-2xl border border-dashed transition-colors ${
         tipo === 'imagem' ? 'aspect-[4/3] flex-col' : 'min-h-14 px-4'
       }`}
     >
@@ -190,10 +227,10 @@ function CartaoDaImagem({
       to={`/anexo/${anexo.id}`}
       draggable={false}
       {...segurar}
-      className="cartao active:bg-realce hover:bg-realce/60 flex h-full flex-col transition-colors"
+      className="pd-pasta-imagem cartao active:bg-realce hover:bg-realce/60 flex h-full flex-col transition-colors"
     >
       <Miniatura anexo={anexo} className="aspect-[4/3] w-full" />
-      <span className="flex flex-1 flex-col gap-1.5 px-3 pt-2.5 pb-3">
+      <span className="pd-pasta-legenda flex flex-1 flex-col gap-1.5 px-3 pt-2.5 pb-3">
         {anexo.legenda ? (
           <span className="line-clamp-2 text-sm leading-snug">{anexo.legenda}</span>
         ) : (
@@ -235,7 +272,7 @@ function LinhaDoLink({
       to={`/anexo/${anexo.id}`}
       draggable={false}
       {...segurar}
-      className="cartao active:bg-realce hover:bg-realce/60 flex min-h-16 items-center gap-3 p-2 transition-colors"
+      className="pd-pasta-link cartao active:bg-realce hover:bg-realce/60 flex min-h-16 items-center gap-3 p-2 transition-colors"
     >
       <Miniatura anexo={anexo} compacta className="size-12 shrink-0 rounded-xl" />
       <span className="flex min-w-0 flex-1 flex-col gap-0.5">

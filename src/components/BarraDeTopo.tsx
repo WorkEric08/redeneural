@@ -1,6 +1,8 @@
-import { ArrowLeft, X } from 'lucide-react'
+import { ArrowLeft, ChevronLeft, X } from 'lucide-react'
 import type { ReactNode } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
+
+import { useTemaPadrao } from '@/hooks/useTemaPadrao'
 
 import { botao } from './botao'
 
@@ -27,6 +29,8 @@ interface Props {
 export function BarraDeTopo({ titulo, voltarPara, icone = 'voltar', acoes }: Props) {
   const navegar = useNavigate()
   const { key } = useLocation()
+  // No Padrão voltar é um "<", e não a seta do Clássico (docs/estilos-visuais-locus.md, "Ícones").
+  const padrao = useTemaPadrao()
 
   return (
     <header className="barra-de-topo">
@@ -40,7 +44,13 @@ export function BarraDeTopo({ titulo, voltarPara, icone = 'voltar', acoes }: Pro
           else void navegar(-1)
         }}
       >
-        {icone === 'fechar' ? <X size={22} aria-hidden /> : <ArrowLeft size={22} aria-hidden />}
+        {icone === 'fechar' ? (
+          <X size={22} aria-hidden />
+        ) : padrao ? (
+          <ChevronLeft size={22} aria-hidden />
+        ) : (
+          <ArrowLeft size={22} aria-hidden />
+        )}
       </button>
 
       <div className="barra-de-topo-titulo">{titulo}</div>

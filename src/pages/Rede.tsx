@@ -1,6 +1,8 @@
 import {
   Anchor,
+  ArrowRight,
   Map as IconeDoMapa,
+  Maximize,
   Maximize2,
   Search,
   Share2,
@@ -13,6 +15,7 @@ import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-do
 import { BarraDeTopo } from '@/components/BarraDeTopo'
 import { botao } from '@/components/botao'
 import { Folha } from '@/components/Folha'
+import { Interruptor } from '@/components/Interruptor'
 import { OpcoesDoMapa } from '@/features/mapa/OpcoesDoMapa'
 import { marcasDoAndamento } from '@/features/executaveis/andamento'
 import { ParesDaPonte } from '@/features/mapa/ParesDaPonte'
@@ -21,6 +24,7 @@ import { TelaDoMapa } from '@/features/mapa/TelaDoMapa'
 import { noPorto, ROTULO_DO_PORTO } from '@/features/porto/porto'
 import { grausDoMapa, satelitesDaCena } from '@/features/rede/layout'
 import { Tela, type ControleDaTela, type Folgas } from '@/features/rede/Tela'
+import { useTemaPadrao } from '@/hooks/useTemaPadrao'
 import { useTravarRolagem } from '@/hooks/useTravarRolagem'
 import { contar } from '@/lib/plural'
 import { usePalacio } from '@/store/palacio'
@@ -31,6 +35,8 @@ import { usePalacio } from '@/store/palacio'
  * de módulo porque a Tela depende da identidade.
  */
 const FOLGAS: Folgas = { topo: 152, base: 112, lados: 28 }
+/** No Padrão a barra é só voltar, o seletor e a busca: não há chips nem contagem sob ela. */
+const FOLGAS_DO_PADRAO: Folgas = { topo: 84, base: 112, lados: 28 }
 
 /**
  * A rede do palácio, em tela cheia, de dois jeitos (01/10/2026): a
@@ -45,6 +51,7 @@ const FOLGAS: Folgas = { topo: 152, base: 112, lados: 28 }
 export default function Rede() {
   // O canvas é do dedo inteiro: arrastar a rede não pode disputar com a rolagem.
   useTravarRolagem()
+  const padrao = useTemaPadrao()
 
   const {
     livros,
@@ -186,7 +193,43 @@ export default function Rede() {
   const esperandoNoPorto = noPorto(neuronios).length
   // No Mapa o cartão traz o começo do texto: é a ficha de quem foi achado no
   // mapa. A Rede continua como era.
-  const resumo = modo === 'mapa' && escolhido ? escolhido.conteudo.replace(/\s+/g, ' ').trim() : ''
+  const resumo =
+    (modo === 'mapa' || padrao) && escolhido ? escolhido.conteudo.replace(/\s+/g, ' ').trim() : ''
+
+  // O cartão do Padrão fala de fios e pontes de quem foi tocado, ou do tamanho da ilha no Mapa.
+  const pontesDoEscolhido = escolhido
+    ? conexoes.filter((c) => c.cross && (c.aId === escolhido.id || c.bId === escolhido.id)).length
+    : 0
+  const ilhaDoEscolhido = livroDoEscolhido ? mapa.ilhas[livroDoEscolhido.id] : undefined
+  const rodapeDoCartao = escolhido
+    ? modo === 'mapa'
+      ? `Ilha de ${contar(Object.keys(ilhaDoEscolhido?.pontos ?? {}).length, 'neurônio', 'neurônios')}`
+      : `${contar(graus.get(escolhido.id) ?? 0, 'fio', 'fios')} · ${contar(pontesDoEscolhido, 'ponte', 'pontes')}`
+    : ''
+
+  // O seletor de modo: no Padrão é uma pílula no meio da barra de topo.
+  const seletorDeModo = (
+    <div role="group" aria-label="Como ver o palácio" className="pd-modo">
+      <button
+        type="button"
+        aria-pressed={modo === 'rede'}
+        onClick={() => {
+          trocarModo('rede')
+        }}
+      >
+        Rede
+      </button>
+      <button
+        type="button"
+        aria-pressed={modo === 'mapa'}
+        onClick={() => {
+          trocarModo('mapa')
+        }}
+      >
+        Mapa
+      </button>
+    </div>
+  )
 
   return (
     <div className="flex flex-col">
@@ -211,7 +254,7 @@ export default function Rede() {
             onMoverIlha={moverIlhaNoMapa}
             onMoverNeuronio={moverNeuronioNoMapa}
             controle={controle}
-            folgas={FOLGAS}
+            folgas={padrao ? FOLGAS_DO_PADRAO : FOLGAS}
           />
         ) : (
           <Tela
@@ -233,14 +276,14 @@ export default function Rede() {
             onSelecionarAnexo={escolherAnexo}
             onArrastarNeuronio={moverNeuronioNaRede}
             controle={controle}
-            folgas={FOLGAS}
+            folgas={padrao ? FOLGAS_DO_PADRAO : FOLGAS}
           />
         )}
       </div>
 
       <BarraDeTopo
         voltarPara="/"
-        titulo="Rede do palácio"
+        titulo={padrao ? seletorDeModo : 'Rede do palácio'}
         acoes={
           // `de=rede`: um resultado de neurônio volta para cá centralizado,
           // em vez de abrir a tela dele — é a Rede que pediu a busca.
@@ -254,37 +297,39 @@ export default function Rede() {
         }
       />
 
-      <div
-        role="group"
-        aria-label="Como ver o palácio"
-        className="relative z-10 flex gap-2 px-1 pt-3"
-      >
-        <button
-          type="button"
-          aria-pressed={modo === 'rede'}
-          onClick={() => {
-            trocarModo('rede')
-          }}
-          className="chip"
+      {!padrao && (
+        <div
+          role="group"
+          aria-label="Como ver o palácio"
+          className="relative z-10 flex gap-2 px-1 pt-3"
         >
-          <Share2 size={15} aria-hidden />
-          Rede
-        </button>
-        <button
-          type="button"
-          aria-pressed={modo === 'mapa'}
-          onClick={() => {
-            trocarModo('mapa')
-          }}
-          className="chip"
-        >
-          <IconeDoMapa size={15} aria-hidden />
-          Mapa
-        </button>
-      </div>
+          <button
+            type="button"
+            aria-pressed={modo === 'rede'}
+            onClick={() => {
+              trocarModo('rede')
+            }}
+            className="chip"
+          >
+            <Share2 size={15} aria-hidden />
+            Rede
+          </button>
+          <button
+            type="button"
+            aria-pressed={modo === 'mapa'}
+            onClick={() => {
+              trocarModo('mapa')
+            }}
+            className="chip"
+          >
+            <IconeDoMapa size={15} aria-hidden />
+            Mapa
+          </button>
+        </div>
+      )}
 
       {/* Deixa o toque passar: por baixo da contagem ainda é a rede. */}
-      {modo === 'mapa' ? (
+      {padrao ? null : modo === 'mapa' ? (
         <p className="text-poeira pointer-events-none relative z-10 px-1 pt-2 text-sm">
           {carregado
             ? `${contar(Object.keys(mapa.ilhas).length, 'ilha', 'ilhas')} · ${contar(noMapa, 'neurônio', 'neurônios')}`
@@ -305,7 +350,36 @@ export default function Rede() {
         </p>
       )}
 
-      {anexoEscolhido && (
+      {anexoEscolhido && padrao && (
+        <div className="pd-cartao-rede">
+          <div className="pd-cartao-rede-topo">
+            <div className="pd-cartao-rede-titulo texto-do-usuario">
+              {anexoEscolhido.legenda || 'Sem legenda'}
+            </div>
+            <div className="pd-pilula">
+              <span
+                className="marca-do-livro"
+                style={{
+                  background: pastaDoEscolhido?.cor ?? 'var(--linha)',
+                  width: 6,
+                  height: 14,
+                }}
+                aria-hidden
+              />
+              {pastaDoEscolhido?.titulo}
+            </div>
+          </div>
+          <div className="pd-cartao-rede-pe">
+            <span>{anexoEscolhido.midia.tipo === 'imagem' ? 'Imagem' : 'Link'}</span>
+            <Link to={`/anexo/${anexoEscolhido.id}`} className="pd-abrir">
+              Abrir
+              <ArrowRight size={16} aria-hidden />
+            </Link>
+          </div>
+        </div>
+      )}
+
+      {anexoEscolhido && !padrao && (
         <div className="cartao fixed inset-x-4 bottom-[calc(96px+env(safe-area-inset-bottom))] z-10 mx-auto flex max-w-xl items-center gap-3 py-3 pr-3 pl-4 lg:left-[calc(13rem+1rem)]">
           <span
             className="h-9 w-1 shrink-0 rounded-full"
@@ -328,7 +402,35 @@ export default function Rede() {
         </div>
       )}
 
-      {escolhido && (
+      {escolhido && padrao && (
+        <div className="pd-cartao-rede">
+          <div className="pd-cartao-rede-topo">
+            <div className="pd-cartao-rede-titulo texto-do-usuario">{escolhido.titulo}</div>
+            <div className="pd-pilula">
+              {livroDoEscolhido ? (
+                <span
+                  className="marca-do-livro"
+                  style={{ background: livroDoEscolhido.cor, width: 6, height: 14 }}
+                  aria-hidden
+                />
+              ) : (
+                <span className="pd-marca-pontilhada" aria-hidden />
+              )}
+              {livroDoEscolhido?.titulo ?? ROTULO_DO_PORTO}
+            </div>
+          </div>
+          {resumo && <p className="pd-cartao-rede-texto">{resumo}</p>}
+          <div className="pd-cartao-rede-pe">
+            <span>{rodapeDoCartao}</span>
+            <Link to={`/neuronio/${escolhido.id}`} className="pd-abrir">
+              Abrir
+              <ArrowRight size={16} aria-hidden />
+            </Link>
+          </div>
+        </div>
+      )}
+
+      {escolhido && !padrao && (
         <div className="cartao fixed inset-x-4 bottom-[calc(96px+env(safe-area-inset-bottom))] z-10 mx-auto flex max-w-xl items-center gap-3 py-3 pr-3 pl-4 lg:left-[calc(13rem+1rem)]">
           <span
             className={`w-1 shrink-0 rounded-full ${resumo ? 'self-stretch' : 'h-9'}`}
@@ -354,7 +456,7 @@ export default function Rede() {
 
       {/* No pé, à esquerda e na altura do botão de criar, que mora à direita —
           a mesma fileira da estante. */}
-      <div className="fixed bottom-[calc(24px+env(safe-area-inset-bottom))] left-4 z-10 flex h-14 items-center gap-3 lg:left-[calc(13rem+1rem)]">
+      <div className="pd-pe-da-rede fixed bottom-[calc(24px+env(safe-area-inset-bottom))] left-4 z-10 flex h-14 items-center gap-3 lg:left-[calc(13rem+1rem)]">
         <button
           type="button"
           aria-label="Enquadrar a rede"
@@ -363,7 +465,7 @@ export default function Rede() {
             controle.current?.enquadrar()
           }}
         >
-          <Maximize2 size={18} aria-hidden />
+          {padrao ? <Maximize size={19} aria-hidden /> : <Maximize2 size={18} aria-hidden />}
         </button>
         <button
           type="button"
@@ -417,32 +519,21 @@ export default function Rede() {
         rotulo="Filtros da rede"
         onFechar={fecharFolha}
       >
-        <div className="flex flex-col gap-6">
-          <section>
-            <h2 className="rotulo-de-secao">Mostrar</h2>
-            <div className="flex flex-wrap gap-2">
-              <button
-                type="button"
-                onClick={() => {
-                  setSoAsPontes((v) => !v)
-                }}
-                aria-pressed={soAsPontes}
-                className={botao({ tipo: 'secundario', tamanho: 'pequeno' })}
-              >
-                {/* O ícone acende na cor de ponte porque é o desenho da ponte —
-                    o botão em si continua sem ela. */}
-                <Waypoints
-                  size={16}
-                  aria-hidden
-                  className={soAsPontes ? 'text-ponte' : 'text-poeira'}
-                />
-                Só as pontes
-              </button>
+        {padrao ? (
+          <div className="flex flex-col">
+            <h2 className="pd-folha-titulo">Filtros</h2>
+            <h3 className="rotulo-de-secao pd-secao-da-folha">Mostrar</h3>
+            <div className="pd-linha-interruptor">
+              <div className="min-w-0 flex-1">
+                <p className="pd-linha-interruptor-titulo">Só as pontes</p>
+                <p className="pd-linha-interruptor-desc">
+                  Esconde as conexões de dentro de cada livro
+                </p>
+              </div>
+              <Interruptor ligado={soAsPontes} onMudar={setSoAsPontes} rotulo="Só as pontes" />
             </div>
-          </section>
 
-          <section>
-            <h2 className="rotulo-de-secao">Foco</h2>
+            <h3 className="rotulo-de-secao pd-secao-da-folha">Livro em foco</h3>
             <div className="flex flex-wrap gap-2">
               <button
                 type="button"
@@ -452,9 +543,8 @@ export default function Rede() {
                 aria-pressed={livroEmFoco === null}
                 className="chip shrink-0"
               >
-                Tudo
+                Todos
               </button>
-
               {livros.map((l) => (
                 <button
                   key={l.id}
@@ -465,17 +555,73 @@ export default function Rede() {
                   aria-pressed={livroEmFoco === l.id}
                   className="chip shrink-0"
                 >
-                  <span
-                    className="size-2 shrink-0 rounded-full"
-                    style={{ background: l.cor }}
-                    aria-hidden
-                  />
+                  <span className="pd-ponto-livro" style={{ background: l.cor }} aria-hidden />
                   {l.titulo}
                 </button>
               ))}
             </div>
-          </section>
-        </div>
+          </div>
+        ) : (
+          <div className="flex flex-col gap-6">
+            <section>
+              <h2 className="rotulo-de-secao">Mostrar</h2>
+              <div className="flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSoAsPontes((v) => !v)
+                  }}
+                  aria-pressed={soAsPontes}
+                  className={botao({ tipo: 'secundario', tamanho: 'pequeno' })}
+                >
+                  {/* O ícone acende na cor de ponte porque é o desenho da ponte —
+                    o botão em si continua sem ela. */}
+                  <Waypoints
+                    size={16}
+                    aria-hidden
+                    className={soAsPontes ? 'text-ponte' : 'text-poeira'}
+                  />
+                  Só as pontes
+                </button>
+              </div>
+            </section>
+
+            <section>
+              <h2 className="rotulo-de-secao">Foco</h2>
+              <div className="flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setLivroEmFoco(null)
+                  }}
+                  aria-pressed={livroEmFoco === null}
+                  className="chip shrink-0"
+                >
+                  Tudo
+                </button>
+
+                {livros.map((l) => (
+                  <button
+                    key={l.id}
+                    type="button"
+                    onClick={() => {
+                      setLivroEmFoco((atual) => (atual === l.id ? null : l.id))
+                    }}
+                    aria-pressed={livroEmFoco === l.id}
+                    className="chip shrink-0"
+                  >
+                    <span
+                      className="size-2 shrink-0 rounded-full"
+                      style={{ background: l.cor }}
+                      aria-hidden
+                    />
+                    {l.titulo}
+                  </button>
+                ))}
+              </div>
+            </section>
+          </div>
+        )}
       </Folha>
     </div>
   )

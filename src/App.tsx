@@ -57,7 +57,10 @@ export default function App() {
     <div className="min-h-dvh lg:pl-52">
       {progresso && <Progresso progresso={progresso} />}
 
-      <main className={`mx-auto w-full max-w-2xl ${horizontal} ${respiro}`}>
+      <main
+        className={`mx-auto w-full max-w-2xl ${horizontal} ${respiro}`}
+        data-estante={naEstante || undefined}
+      >
         <Outlet />
       </main>
 

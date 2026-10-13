@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom'
 
 import type { VizinhoDoNeuronio } from '@/features/estante/resumo'
+import { useTemaPadrao } from '@/hooks/useTemaPadrao'
 
 /**
  * A lista de fios de um neurônio. Compartilhada entre o livro aberto e a tela
@@ -11,6 +12,30 @@ import type { VizinhoDoNeuronio } from '@/features/estante/resumo'
  * segunda linha, porque é isso que faz "atravessa livros" querer dizer algo.
  */
 export function Fios({ lista }: { lista: readonly VizinhoDoNeuronio[] }) {
+  const padrao = useTemaPadrao()
+
+  // O Padrão (docs/estilos-visuais-locus.md, "Livro"): cada fio é uma caixa de campo com o nome, o
+  // livro e o percentual, e a ponte leva a etiqueta "ponte" — sem o traço desenhado do Clássico.
+  if (padrao && lista.length > 0) {
+    return (
+      <ul className="pd-fios-lista">
+        {lista.map((v) => (
+          <li key={v.conexao.id}>
+            <Link to={`/neuronio/${v.outroId}`} className="pd-fio">
+              <span className="min-w-0 flex-1">
+                <span className="pd-fio-nome">{v.outroTitulo}</span>
+                <span className="pd-fio-meta">
+                  {v.outroLivro} · {Math.round(v.conexao.score * 100)}%
+                </span>
+              </span>
+              {v.conexao.cross && <span className="pd-ponte">ponte</span>}
+            </Link>
+          </li>
+        ))}
+      </ul>
+    )
+  }
+
   if (lista.length === 0) {
     return <p className="text-poeira px-2 py-3 text-sm">Sem conexões ainda.</p>
   }

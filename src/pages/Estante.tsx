@@ -11,6 +11,7 @@ import { PaineisDaEstante } from '@/features/estante/Paineis'
 import { montarEstante, pontesEntreLivros } from '@/features/estante/resumo'
 import { usePainel } from '@/features/estante/usePainel'
 import { noPorto } from '@/features/porto/porto'
+import { useTemaPadrao } from '@/hooks/useTemaPadrao'
 import { useTravarRolagem } from '@/hooks/useTravarRolagem'
 import { contar } from '@/lib/plural'
 import { usePalacio } from '@/store/palacio'
@@ -26,6 +27,8 @@ const CHEGADA_MS = 900
  */
 export default function Estante() {
   useTravarRolagem()
+  // No Padrão a estante ganha um cabeçalho — "Estante" e a busca, como as outras telas.
+  const padrao = useTemaPadrao()
 
   const {
     livros,
@@ -134,6 +137,19 @@ export default function Estante() {
           Só abaixo de 1024 px: no desktop não existe dial para alinhar (a
           navegação é a coluna fixa — ver Dial.tsx). */}
       <div className="flex min-h-[calc(100dvh_-_24px_-_env(safe-area-inset-bottom))] flex-col lg:min-h-0">
+        {padrao && (
+          <header className="pd-estante-topo">
+            <h1>Estante</h1>
+            <Link
+              to="/busca"
+              aria-label="Buscar"
+              className={botao({ tipo: 'fantasma', tamanho: 'icone' })}
+            >
+              <Search size={22} aria-hidden />
+            </Link>
+          </header>
+        )}
+
         {pronto && (
           <Movel
             estante={estante}

@@ -1,8 +1,9 @@
-import { BookOpen, ChevronDown, ChevronRight, Search, Sunrise } from 'lucide-react'
+import { BookOpen, Check, ChevronDown, ChevronRight, Search, Sunrise } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { Link, useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 
 import { BarraDeTopo } from '@/components/BarraDeTopo'
+import { BlocoDeTitulo } from '@/components/BlocoDeTitulo'
 import { botao } from '@/components/botao'
 import { EtiquetaProcessando } from '@/components/EtiquetaProcessando'
 import {
@@ -18,6 +19,7 @@ import { ROTULO_DO_ESTADO, TITULO_DA_SECAO } from '@/features/executaveis/estado
 import { IconeDoEstado } from '@/features/executaveis/IconeDoEstado'
 import { FolhaDeEstado } from '@/features/executaveis/FolhaDeEstado'
 import { Fios } from '@/features/neuronio/Fios'
+import { useTemaPadrao } from '@/hooks/useTemaPadrao'
 import { contar } from '@/lib/plural'
 import { usePalacio } from '@/store/palacio'
 
@@ -45,6 +47,7 @@ import { usePalacio } from '@/store/palacio'
  */
 export default function Livro() {
   const { livroId } = useParams()
+  const padrao = useTemaPadrao()
   const { livros, neuronios, conexoes, carregado, definirEstado, tocar } = usePalacio()
   const [busca] = useSearchParams()
   const navegar = useNavigate()
@@ -113,9 +116,96 @@ export default function Livro() {
   const escolhidoParaEstado = livro.executavel ? meus.find((n) => n.id === estadoAberto) : undefined
 
   const dormindo = (n: NeuronioNaTela): boolean => estaAdormecida(n, livro, agora)
+  // No Padrão o livro executável abre com o bloco de título (rótulo, nome grande e resumo), e a
+  // barra de cima fica só com voltar e busca.
+  const comBloco = padrao && livro.executavel
+  const fazendo = meus.filter((n) => !dormindo(n) && estadoVisivel(n, livro) === 'fazendo').length
 
   function cartao(n: NeuronioNaTela, estado: EstadoDaIdeia | null, adormecida = false) {
     const aberto = abertos.has(n.id)
+
+    // O Padrão (docs/estilos-visuais-locus.md, "Livro" e "Livro executável"): cada neurônio é um
+    // cartão com o texto à esquerda e dois botões redondos à direita — a seta dos fios, solta, e
+    // a de abrir, num círculo de campo. Numa ideia executável a linha vira uma linha de lista,
+    // sem cartão, com o círculo do andamento à frente.
+    if (padrao) {
+      return (
+        <li key={n.id} className={estado ? 'pd-ideia' : 'pd-neuronio'}>
+          <div className={`pd-neuronio-linha ${adormecida ? 'opacity-60' : ''}`}>
+            {estado && (
+              <Link
+                to={{ search: `?estado=${n.id}` }}
+                aria-label={`Andamento de ${n.titulo}: ${ROTULO_DO_ESTADO[estado]}`}
+                className="pd-estado"
+                data-estado={estado}
+              >
+                {estado === 'feita' && <Check size={15} aria-hidden strokeWidth={2.5} />}
+              </Link>
+            )}
+            <button
+              type="button"
+              onClick={() => {
+                alternar(n.id)
+              }}
+              aria-expanded={aberto}
+              className="pd-neuronio-texto"
+            >
+              <span className="pd-neuronio-titulo texto-do-usuario">
+                {n.titulo}
+                {n.processando && <EtiquetaProcessando />}
+              </span>
+              {n.conteudo && <span className="pd-neuronio-previa">{n.conteudo}</span>}
+            </button>
+            {!estado && (
+              <button
+                type="button"
+                onClick={() => {
+                  alternar(n.id)
+                }}
+                aria-label={aberto ? 'Esconder os fios' : 'Mostrar os fios'}
+                aria-expanded={aberto}
+                className="pd-icone"
+              >
+                <ChevronDown
+                  size={18}
+                  aria-hidden
+                  className={`transition-transform ${aberto ? 'rotate-180' : ''}`}
+                />
+              </button>
+            )}
+            <Link
+              to={`/neuronio/${n.id}`}
+              aria-label={`Abrir ${n.titulo}`}
+              className={estado ? 'pd-icone' : 'pd-icone pd-icone--campo'}
+            >
+              <ChevronRight size={18} aria-hidden />
+            </Link>
+          </div>
+
+          {aberto && (
+            <div className="pd-fios">
+              <Fios lista={vizinhos.get(n.id) ?? []} />
+            </div>
+          )}
+
+          {adormecida && (
+            <div className="flex justify-end pt-2">
+              <button
+                type="button"
+                onClick={() => {
+                  void tocar(n.id)
+                }}
+                className={botao({ tipo: 'secundario', tamanho: 'pequeno' })}
+              >
+                <Sunrise size={15} aria-hidden />
+                Acordar
+              </button>
+            </div>
+          )}
+        </li>
+      )
+    }
+
     return (
       <li key={n.id} className="cartao">
         <div className={`flex items-stretch ${adormecida ? 'opacity-70' : ''}`}>
@@ -201,14 +291,18 @@ export default function Livro() {
       <BarraDeTopo
         voltarPara="/"
         titulo={
-          <>
-            <span
-              className="h-5 w-1 shrink-0 rounded-full"
-              style={{ background: livro.cor }}
-              aria-hidden
-            />
-            <span className="truncate">{livro.titulo}</span>
-          </>
+          comBloco ? (
+            ''
+          ) : (
+            <>
+              <span
+                className="marca-do-livro h-5 w-1 shrink-0 rounded-full"
+                style={{ background: livro.cor }}
+                aria-hidden
+              />
+              <span className="truncate">{livro.titulo}</span>
+            </>
+          )
         }
         acoes={
           <Link
@@ -223,8 +317,16 @@ export default function Livro() {
 
       {/* A barra de topo fica fora da animação de entrada: um ancestral animado
           vira a raiz do desfoque dela, e o que rola por baixo deixa de borrar. */}
-      <div className="animar-entrada flex flex-col pt-5">
-        <p className="text-poeira px-1 pb-4 text-sm">
+      <div className="animar-entrada pd-conteudo flex flex-col pt-5">
+        {comBloco && (
+          <BlocoDeTitulo
+            rotulo="Livro executável"
+            titulo={livro.titulo}
+            cor={livro.cor}
+            sub={`${contar(meus.length, 'neurônio', 'neurônios')}${fazendo > 0 ? ` · ${String(fazendo)} fazendo` : ''}`}
+          />
+        )}
+        <p className="pd-sub text-poeira px-1 pb-4 text-sm" hidden={comBloco}>
           {contar(meus.length, 'neurônio', 'neurônios')}
           {saindo > 0 && (
             <span className="text-ponte brilho-ponte-texto-sm">
@@ -259,9 +361,18 @@ export default function Livro() {
               return (
                 <section key={estado} aria-label={TITULO_DA_SECAO[estado]}>
                   <h2 className="rotulo-de-secao">
-                    {TITULO_DA_SECAO[estado]} · {String(daSecao.length)}
+                    {padrao ? (
+                      <>
+                        <span>{TITULO_DA_SECAO[estado]}</span>
+                        <span>{String(daSecao.length)}</span>
+                      </>
+                    ) : (
+                      `${TITULO_DA_SECAO[estado]} · ${String(daSecao.length)}`
+                    )}
                   </h2>
-                  <ul className="flex flex-col gap-3">{daSecao.map((n) => cartao(n, estado))}</ul>
+                  <ul className="pd-lista flex flex-col gap-3">
+                    {daSecao.map((n) => cartao(n, estado))}
+                  </ul>
                 </section>
               )
             })}
@@ -274,7 +385,11 @@ export default function Livro() {
                     setVerAdormecidas((v) => !v)
                   }}
                   aria-expanded={verAdormecidas}
-                  className="rotulo-de-secao flex min-h-11 w-full items-center gap-1.5 text-left"
+                  className={
+                    padrao
+                      ? 'pd-adormecidas'
+                      : 'rotulo-de-secao flex min-h-11 w-full items-center gap-1.5 text-left'
+                  }
                 >
                   Adormecidas · {String(meus.filter(dormindo).length)}
                   <ChevronDown
@@ -284,7 +399,7 @@ export default function Livro() {
                   />
                 </button>
                 {verAdormecidas && (
-                  <ul className="flex flex-col gap-3">
+                  <ul className="pd-lista flex flex-col gap-3">
                     {meus.filter(dormindo).map((n) => cartao(n, estadoVisivel(n, livro), true))}
                   </ul>
                 )}
@@ -292,7 +407,7 @@ export default function Livro() {
             )}
           </div>
         ) : (
-          <ul className="flex flex-col gap-3">{meus.map((n) => cartao(n, null))}</ul>
+          <ul className="pd-lista flex flex-col gap-3">{meus.map((n) => cartao(n, null))}</ul>
         )}
       </div>
 

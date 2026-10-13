@@ -2,6 +2,7 @@ import { ImagePlus, Link2, RefreshCw } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 
 import { botao } from '@/components/botao'
+import { useTemaPadrao } from '@/hooks/useTemaPadrao'
 import type { AnexoNaTela, TipoDeItem } from '@/core'
 import { escolherImagem, type ImagemEscolhida } from '@/services/native/midia'
 import type { NovoAnexo } from '@/store/palacio'
@@ -50,6 +51,9 @@ type ImagemComPrevia = ImagemEscolhida & { previa: string }
  */
 export function FormularioDeAnexo(props: Props) {
   const editando = props.modo === 'editar' ? props.anexo : null
+  const padrao = useTemaPadrao()
+  // No Padrão a imagem é a das pranchas (150 px), e cede ainda mais em tela baixa.
+  const alturaDaPrevia = padrao ? 'min(150px, 18dvh)' : ALTURA_DA_PREVIA
 
   const [tipo, setTipo] = useState<TipoDeItem>(
     editando?.midia.tipo ?? (props.modo === 'novo' ? props.tipoInicial : undefined) ?? 'link',
@@ -107,7 +111,7 @@ export function FormularioDeAnexo(props: Props) {
 
   return (
     <form
-      className="flex flex-1 flex-col gap-4"
+      className="pd-form-anexo flex flex-1 flex-col gap-4"
       onSubmit={(evento) => {
         evento.preventDefault()
         enviar()
@@ -117,7 +121,7 @@ export function FormularioDeAnexo(props: Props) {
       autoComplete="off"
     >
       {!editando && (
-        <div role="group" aria-label="O que guardar" className="flex gap-2">
+        <div role="group" aria-label="O que guardar" className="pd-tipo-item flex gap-2">
           <button
             type="button"
             aria-pressed={tipo === 'link'}
@@ -176,7 +180,7 @@ export function FormularioDeAnexo(props: Props) {
           <Miniatura
             anexo={editando}
             tamanho="inteira"
-            alturaMaxima={ALTURA_DA_PREVIA}
+            alturaMaxima={alturaDaPrevia}
             className="rounded-2xl"
           />
           <button
@@ -195,7 +199,7 @@ export function FormularioDeAnexo(props: Props) {
           <img
             src={escolhida.previa}
             alt="A imagem escolhida"
-            style={{ maxHeight: ALTURA_DA_PREVIA }}
+            style={{ maxHeight: alturaDaPrevia }}
             className="h-auto w-auto max-w-full self-center rounded-2xl"
           />
           <button
@@ -215,10 +219,10 @@ export function FormularioDeAnexo(props: Props) {
           onClick={() => {
             void escolher()
           }}
-          className="border-linha text-poeira active:bg-realce hover:bg-realce/60 flex h-[min(10rem,24dvh)] w-full flex-col items-center justify-center gap-2 rounded-2xl border border-dashed transition-colors"
+          className="pd-escolher-imagem border-linha text-poeira active:bg-realce hover:bg-realce/60 flex h-[min(10rem,24dvh)] w-full flex-col items-center justify-center gap-2 rounded-2xl border border-dashed transition-colors"
         >
           <ImagePlus size={26} aria-hidden />
-          <span className="text-sm">Escolher uma imagem</span>
+          <span className="text-sm">{padrao ? 'Escolher imagem' : 'Escolher uma imagem'}</span>
         </button>
       )}
 
@@ -234,6 +238,13 @@ export function FormularioDeAnexo(props: Props) {
           placeholder="Sobre o que é isto? Sem legenda, fica só na pasta."
           className="campo min-h-20 flex-1 resize-none p-4 leading-relaxed"
         />
+        {padrao && (
+          <span className="pd-dica">
+            {editando
+              ? 'Trocar a imagem não muda com o que o item combina.'
+              : 'Sem legenda, o item fica só na pasta.'}
+          </span>
+        )}
       </label>
 
       <div className="barra-de-acao mt-auto md:flex md:justify-end">

@@ -5,6 +5,7 @@ import { botao } from '@/components/botao'
 import { Folha } from '@/components/Folha'
 import type { Id, Livro } from '@/core'
 import { EscolhaDeLivro } from '@/features/neuronio/EscolhaDeLivro'
+import { useTemaPadrao } from '@/hooks/useTemaPadrao'
 
 import { NOME_SUGERIDO_DO_EXECUTAVEL } from './estados'
 
@@ -33,11 +34,16 @@ export function FolhaDeExecutaveis({
   onCriar,
   onFechar,
 }: Props) {
+  const padrao = useTemaPadrao()
   return (
     <Folha aberta={aberta} rotulo="Livro executável" onFechar={onFechar}>
       {executaveis.length > 0 ? (
         <>
-          <p className="text-poeira px-1 pb-3 text-sm">Em qual livro executável?</p>
+          {padrao ? (
+            <h2 className="pd-folha-titulo">Em qual livro executável?</h2>
+          ) : (
+            <p className="text-poeira px-1 pb-3 text-sm">Em qual livro executável?</p>
+          )}
           <EscolhaDeLivro livros={executaveis} escolhido={escolhido} onEscolher={onEscolher} />
         </>
       ) : (

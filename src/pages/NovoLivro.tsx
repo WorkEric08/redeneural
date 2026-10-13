@@ -112,7 +112,7 @@ export default function NovoLivro() {
     <div className="flex min-h-dvh flex-col">
       <BarraDeTopo voltarPara="/" icone="fechar" titulo={ehPasta ? 'Nova pasta' : 'Novo livro'} />
 
-      <div className="animar-entrada flex flex-1 flex-col pt-4">
+      <div className="animar-entrada pd-conteudo flex flex-1 flex-col pt-4">
         <FormularioDeLivro
           inicial={{
             titulo: '',

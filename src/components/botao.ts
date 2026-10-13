@@ -13,6 +13,9 @@
  * - `perigo`: apagar. Vermelho é, como a cor de ponte, cor de significado fora
  *   da paleta.
  *
+ * Cada botão leva também um nome estável (`btn btn-<tipo> btn-<tamanho>`): o tema Padrão
+ * (tema-padrao.css) o redesenha por aí, sem tocar nas classes do Clássico.
+ *
  * Os cantos dos dois tamanhos leem `--raio-botao` e `--raio-botao-pequeno`: o clássico não define
  * as variáveis e fica com 14 px e 10 px de sempre; o tema Padrão (tema-padrao.css) põe 14 px nos dois.
  *
@@ -49,5 +52,5 @@ export function botao({
   tamanho = 'normal',
   largo = false,
 }: OpcoesDoBotao = {}): string {
-  return `${BASE} ${TIPOS[tipo]} ${TAMANHOS[tamanho]}${largo ? ' w-full' : ''}`
+  return `btn btn-${tipo} btn-${tamanho} ${BASE} ${TIPOS[tipo]} ${TAMANHOS[tamanho]}${largo ? ' w-full' : ''}`
 }

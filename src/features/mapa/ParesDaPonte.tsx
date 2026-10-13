@@ -1,4 +1,7 @@
+import { ChevronRight } from 'lucide-react'
 import { Link } from 'react-router-dom'
+
+import { useTemaPadrao } from '@/hooks/useTemaPadrao'
 
 import type { Id, Livro, NeuronioNaTela } from '@/core'
 import { contar } from '@/lib/plural'
@@ -20,6 +23,7 @@ export function ParesDaPonte({ ponte, livros, neuronios }: Props) {
   const livroA = livros.find((l) => l.id === ponte.livroA)
   const livroB = livros.find((l) => l.id === ponte.livroB)
   const titulo = new Map(neuronios.map((n) => [n.id, n.titulo]))
+  const padrao = useTemaPadrao()
 
   return (
     <div className="flex flex-col gap-4">
@@ -41,6 +45,7 @@ export function ParesDaPonte({ ponte, livros, neuronios }: Props) {
             <span className="text-poeira font-dado shrink-0 text-xs tabular-nums">
               {Math.round(par.score * 100)}%
             </span>
+            {padrao && <ChevronRight size={16} aria-hidden className="text-poeira shrink-0" />}
           </li>
         ))}
       </ul>
@@ -63,7 +68,7 @@ function Lado({
       className="active:bg-realce hover:bg-realce/60 flex min-h-11 items-center gap-2.5 rounded-lg px-2 transition-colors"
     >
       <span
-        className="size-2 shrink-0 rounded-full"
+        className="pd-ponto-livro size-2 shrink-0 rounded-full"
         style={{ background: cor ?? 'var(--linha)' }}
         aria-hidden
       />
