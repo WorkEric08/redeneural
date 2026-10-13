@@ -326,6 +326,31 @@ html:root[data-tema^='padrao'] .movel-vao:last-child {
   }
 }
 
+/* A fileira é a do Clássico (`.movel-fila` em index.css) enquanto cabe. Quando a tela é baixa demais
+   para as prateleiras caberem inteiras, ela encolhe até caber — abaixo dos 92 px do Clássico, que
+   deixaria a estante passar por cima da linha de baixo (busca, contagem e o "+", que ficam
+   centralizados). A conta de caber: a tela menos o cabeçalho e a margem (64), a linha de baixo (56 + 24),
+   12 px de respiro entre as duas coisas e o ar e o vão dos cartões. */
+html:root[data-tema^='padrao'] .movel-fila {
+  height: clamp(
+    56px,
+    min(
+      calc(
+        (100dvh - var(--mv-fora) - env(safe-area-inset-bottom) - var(--mv-bordas)) /
+          var(--mv-prateleiras) - 8px
+      ),
+      calc(
+        (
+            100dvh - 156px - env(safe-area-inset-bottom) - var(--mv-prateleiras) *
+              (var(--pd-vao-ar) + var(--pd-vao-vao)) + var(--pd-vao-vao)
+          ) /
+          var(--mv-prateleiras)
+      )
+    ),
+    132px
+  );
+}
+
 /* A linha de baixo (busca e contagem): 13 px. */
 html:root[data-tema^='padrao'] main[data-estante] .text-xs {
   font-size: 0.8125rem;
