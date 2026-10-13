@@ -2440,3 +2440,26 @@ img {
     }
   }
 }
+
+/* Ajustes em tela baixa (320×568): tudo cabe sem rolar (CLAUDE.md, "mostrar tudo sem deslize
+   vertical"), e a página já reserva 112 px embaixo para o botão de criar. Com a seção "Tema"
+   a tela passou de 568 px, então só aqui, e só em tela baixa, as linhas apertam um pouco:
+   o alvo de toque continua de 44 px (os botões e a faixa), o que encolhe é o respiro. */
+@media (max-height: 640px) {
+  .ajustes-compacto .linha-de-lista {
+    min-height: 48px;
+    padding-block: 4px;
+  }
+
+  .ajustes-compacto .faixa-de-ajuste {
+    height: 32px;
+  }
+
+  .ajustes-compacto .rotulo-de-secao {
+    margin-bottom: 4px;
+  }
+
+  .ajustes-compacto dl > div {
+    padding-block: 6px;
+  }
+}

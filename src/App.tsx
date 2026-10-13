@@ -6,6 +6,7 @@ import { Aviso } from '@/components/Aviso'
 import { Dial } from '@/components/Dial'
 import { Navegacao } from '@/components/Navegacao'
 import { GuardarNoPorto } from '@/features/porto/GuardarNoPorto'
+import { aplicarTema } from '@/services/native/tema'
 import { usePalacio } from '@/store/palacio'
 
 /**
@@ -18,7 +19,12 @@ const SEM_BOTAO_DE_CRIAR = ['/novo', '/novo-livro', '/novo-anexo']
 /** O casco: emoldura a página da vez. O palácio é carregado em `main.tsx`, antes do React. */
 export default function App() {
   const progresso = usePalacio((s) => s.progresso)
+  const tema = usePalacio((s) => s.tema)
   const { pathname } = useLocation()
+  // O tema vale na página inteira (`<html data-tema>`). Antes de pintar, para a troca não piscar.
+  useLayoutEffect(() => {
+    aplicarTema(tema)
+  }, [tema])
   // Toda troca de tela começa do topo — nunca no meio ou no fim (pedido do
   // usuário, 17/09/2026, sem exceção até ele pedir uma). `useLayoutEffect`,
   // não `useEffect`: roda antes do navegador pintar, para não haver um

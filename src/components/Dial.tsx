@@ -1,5 +1,6 @@
 import { LibraryBig, Plus, Share2, SlidersHorizontal, X } from 'lucide-react'
 import {
+  Fragment,
   useCallback,
   useEffect,
   useRef,
@@ -8,6 +9,7 @@ import {
 } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 
+import { ehTemaPadrao } from '@/core'
 import { useMediaQuery } from '@/hooks/useMediaQuery'
 import {
   RAIO_EXTERNO,
@@ -18,6 +20,7 @@ import {
   setorEm,
   setores,
 } from '@/lib/dial'
+import { usePalacio } from '@/store/palacio'
 
 /**
  * O dial: o botão de criar que também é a navegação.
@@ -46,6 +49,9 @@ const DESTINOS = [
 /** Quanto o dedo precisa ficar parado até o anel abrir. */
 const ESPERA = 380
 
+/** No tema Padrão os ícones ficam soltos, um pouco mais longe do botão que as cunhas do anel. */
+const RAIO_DOS_ICONES = 112
+
 /** Onde a coluna de rótulos começa e como desce, a partir do centro do botão. */
 const PRIMEIRO_ROTULO = -118
 const PASSO_ROTULO = 44
@@ -68,6 +74,7 @@ export function Dial() {
   const navegar = useNavigate()
   const { pathname } = useLocation()
   const noDesktop = useMediaQuery('(min-width: 1024px)')
+  const padrao = usePalacio((s) => ehTemaPadrao(s.tema))
 
   const [fase, setFase] = useState<Fase>('fechado')
   const [ativo, setAtivo] = useState<number | null>(null)
@@ -151,66 +158,78 @@ export function Dial() {
       <div className="dial">
         {visivel && (
           <div className="dial-anel">
-            <svg viewBox="-150 -150 300 300" width="300" height="300" aria-hidden>
-              <defs>
-                <pattern
-                  id="dial-hachura"
-                  width="7"
-                  height="7"
-                  patternUnits="userSpaceOnUse"
-                  patternTransform="rotate(-45)"
-                >
-                  <rect width="7" height="7" className="dial-hachura-fundo" />
-                  <line x1="0" y1="0" x2="0" y2="7" className="dial-hachura-risco" />
-                </pattern>
-              </defs>
+            {padrao ? (
+              <DestinosEmArco
+                ativo={ativo}
+                aoEscolher={(para) => {
+                  fechar()
+                  void navegar(para)
+                }}
+              />
+            ) : (
+              <>
+                <svg viewBox="-150 -150 300 300" width="300" height="300" aria-hidden>
+                  <defs>
+                    <pattern
+                      id="dial-hachura"
+                      width="7"
+                      height="7"
+                      patternUnits="userSpaceOnUse"
+                      patternTransform="rotate(-45)"
+                    >
+                      <rect width="7" height="7" className="dial-hachura-fundo" />
+                      <line x1="0" y1="0" x2="0" y2="7" className="dial-hachura-risco" />
+                    </pattern>
+                  </defs>
 
-              {OPCOES.map((opcao, i) => (
-                <path
-                  key={opcao.para}
-                  d={caminhoDoSetor(opcao.setor)}
-                  className={i === ativo ? 'dial-setor dial-setor--ativo' : 'dial-setor'}
-                />
-              ))}
+                  {OPCOES.map((opcao, i) => (
+                    <path
+                      key={opcao.para}
+                      d={caminhoDoSetor(opcao.setor)}
+                      className={i === ativo ? 'dial-setor dial-setor--ativo' : 'dial-setor'}
+                    />
+                  ))}
 
-              {opcaoAtiva && (
-                <path
-                  className="dial-fio"
-                  d={caminhoDoFio(opcaoAtiva.setor, X_ROTULO, opcaoAtiva.rotuloY)}
-                />
-              )}
-            </svg>
+                  {opcaoAtiva && (
+                    <path
+                      className="dial-fio"
+                      d={caminhoDoFio(opcaoAtiva.setor, X_ROTULO, opcaoAtiva.rotuloY)}
+                    />
+                  )}
+                </svg>
 
-            {OPCOES.map((opcao, i) => {
-              const ponto = pontoNoArco(RAIO_MEIO, opcao.setor.meio)
+                {OPCOES.map((opcao, i) => {
+                  const ponto = pontoNoArco(RAIO_MEIO, opcao.setor.meio)
 
-              return (
-                <button
-                  key={opcao.para}
-                  type="button"
-                  onClick={() => {
-                    fechar()
-                    void navegar(opcao.para)
-                  }}
-                  style={{ left: px(ponto.x - 26), top: px(ponto.y - 26) }}
-                  className={i === ativo ? 'dial-cunha dial-cunha--ativa' : 'dial-cunha'}
-                  aria-label={opcao.rotulo}
-                >
-                  <opcao.Icone size={21} aria-hidden />
-                </button>
-              )
-            })}
+                  return (
+                    <button
+                      key={opcao.para}
+                      type="button"
+                      onClick={() => {
+                        fechar()
+                        void navegar(opcao.para)
+                      }}
+                      style={{ left: px(ponto.x - 26), top: px(ponto.y - 26) }}
+                      className={i === ativo ? 'dial-cunha dial-cunha--ativa' : 'dial-cunha'}
+                      aria-label={opcao.rotulo}
+                    >
+                      <opcao.Icone size={21} aria-hidden />
+                    </button>
+                  )
+                })}
 
-            {OPCOES.map((opcao, i) => (
-              <span
-                key={opcao.para}
-                style={{ right: px(-X_ROTULO), top: px(opcao.rotuloY) }}
-                className={i === ativo ? 'dial-rotulo dial-rotulo--ativo' : 'dial-rotulo'}
-                aria-hidden
-              >
-                {opcao.rotulo}
-              </span>
-            ))}
+                {OPCOES.map((opcao, i) => (
+                  <span
+                    key={opcao.para}
+                    style={{ right: px(-X_ROTULO), top: px(opcao.rotuloY) }}
+                    className={i === ativo ? 'dial-rotulo dial-rotulo--ativo' : 'dial-rotulo'}
+                    aria-hidden
+                  >
+                    {opcao.rotulo}
+                  </span>
+                ))}
+              </>
+            )}
           </div>
         )}
 
@@ -254,6 +273,54 @@ export function Dial() {
           )}
         </Link>
       </div>
+    </>
+  )
+}
+
+/**
+ * O tema Padrão: só os ícones, soltos em arco em volta do botão, sem anel. O nome aparece
+ * apenas no destino que está sob o dedo, à esquerda do ícone — o gesto é o mesmo (a mesma
+ * geometria de `lib/dial.ts`), só o desenho muda.
+ */
+function DestinosEmArco({
+  ativo,
+  aoEscolher,
+}: {
+  ativo: number | null
+  aoEscolher: (para: string) => void
+}) {
+  return (
+    <>
+      {OPCOES.map((opcao, i) => {
+        const ponto = pontoNoArco(RAIO_DOS_ICONES, opcao.setor.meio)
+        const sobODedo = i === ativo
+
+        return (
+          <Fragment key={opcao.para}>
+            <button
+              type="button"
+              onClick={() => {
+                aoEscolher(opcao.para)
+              }}
+              style={{ left: px(ponto.x - 26), top: px(ponto.y - 26) }}
+              className={sobODedo ? 'dial-icone dial-icone--ativo' : 'dial-icone'}
+              aria-label={opcao.rotulo}
+            >
+              <opcao.Icone size={22} aria-hidden />
+            </button>
+
+            {sobODedo && (
+              <span
+                className="dial-nome"
+                style={{ right: px(-(ponto.x - 38)), top: px(ponto.y) }}
+                aria-hidden
+              >
+                {opcao.rotulo}
+              </span>
+            )}
+          </Fragment>
+        )
+      })}
     </>
   )
 }

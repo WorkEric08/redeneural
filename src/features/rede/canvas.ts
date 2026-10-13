@@ -16,6 +16,20 @@ export function lerCor(el: HTMLElement, token: string): string {
 }
 
 /**
+ * A fonte dos títulos desenhados no canvas (nome de ilha, etiqueta do neurônio escolhido). O
+ * clássico usa a serifa do sistema e o versalete nos nomes de ilha, como as cartas de mapa; o
+ * tema Padrão (tema-padrao.css) define `--fonte-canvas-titulo` e desliga o versalete.
+ */
+export function lerFonteDoCanvas(el: HTMLElement): { fonteTitulo: string; versalete: boolean } {
+  const estilo = getComputedStyle(el)
+  return {
+    fonteTitulo:
+      estilo.getPropertyValue('--fonte-canvas-titulo').trim() || 'ui-serif, Georgia, serif',
+    versalete: estilo.getPropertyValue('--canvas-versalete').trim() !== 'nao',
+  }
+}
+
+/**
  * Repinta ao girar o celular ou mudar o tamanho da janela, e ao trocar de
  * tema. O canvas não tem cascata: as cores viraram pixels na última pintura e
  * ficam lá — `aoTrocarDeTema` é onde quem usa esquece as cores que leu, antes
@@ -55,8 +69,18 @@ export function useRepintarAoMudar(
     }
 
     consulta.addEventListener('change', trocou)
+
+    // O tema escolhido em Ajustes também troca as cores (`<html data-tema>`, ver
+    // services/native/tema.ts) — sem o sistema ter mudado nada.
+    const observador = new MutationObserver(trocou)
+    observador.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ['data-tema'],
+    })
+
     return () => {
       consulta.removeEventListener('change', trocou)
+      observador.disconnect()
     }
   }, [pintar, aoTrocarDeTema])
 }

@@ -19,6 +19,7 @@ import type {
   NeuronioNaTela,
   Ponto,
   ProgressoDoMotor,
+  Tema,
   ResultadoDeEscrita,
   Vaga,
 } from '@/core'
@@ -51,6 +52,7 @@ export interface RespostasDoMotor {
   definirIconesNosLivros: boolean
   definirModoDaBusca: ModoDaBusca
   definirModoDaRede: ModoDaRede
+  definirTema: Tema
   reorganizarMapa: MapaDoPalacio
   moverIlhaNoMapa: MapaDoPalacio
   moverNeuronioNoMapa: MapaDoPalacio
@@ -95,6 +97,7 @@ export type ParaMotor =
   | { req: number; tipo: 'definirIconesNosLivros'; ligado: boolean }
   | { req: number; tipo: 'definirModoDaBusca'; modo: ModoDaBusca }
   | { req: number; tipo: 'definirModoDaRede'; modo: ModoDaRede }
+  | { req: number; tipo: 'definirTema'; tema: Tema }
   | { req: number; tipo: 'reorganizarMapa' }
   | { req: number; tipo: 'moverIlhaNoMapa'; livroId: Id; centro: Ponto }
   | { req: number; tipo: 'moverNeuronioNoMapa'; id: Id; ponto: Ponto }

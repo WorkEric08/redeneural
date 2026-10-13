@@ -13,6 +13,9 @@
  * - `perigo`: apagar. Vermelho é, como a cor de ponte, cor de significado fora
  *   da paleta.
  *
+ * Os cantos dos dois tamanhos leem `--raio-botao` e `--raio-botao-pequeno`: o clássico não define
+ * as variáveis e fica com 14 px e 10 px de sempre; o tema Padrão (tema-padrao.css) põe 14 px nos dois.
+ *
  * O primário desabilitado vira realce com texto apagado, e não Platinum
  * translúcido: meio transparente sobre a sala ele virava um bloco cinza que
  * ainda parecia o botão mais importante da tela.
@@ -30,8 +33,8 @@ const TIPOS = {
 } as const
 
 const TAMANHOS = {
-  normal: 'h-12 rounded-xl px-5 text-[0.95rem]',
-  pequeno: 'h-11 rounded-lg px-3.5 text-sm',
+  normal: 'h-12 rounded-[var(--raio-botao,14px)] px-5 text-[0.95rem]',
+  pequeno: 'h-11 rounded-[var(--raio-botao-pequeno,10px)] px-3.5 text-sm',
   icone: 'size-11 rounded-full',
 } as const
 

@@ -40,6 +40,16 @@
       crossorigin
     />
     <script>
+      // O tema escolhido, antes do CSS pintar (ver services/native/tema.ts). Só as duas versões
+      // do Padrão ligam atributo; sem ele vale o clássico, como sempre foi.
+      try {
+        var tema = localStorage.getItem('locus-tema')
+        if (tema === 'padrao-claro' || tema === 'padrao-escuro') {
+          document.documentElement.dataset.tema = tema
+        }
+      } catch (e) {}
+    </script>
+    <script>
       // CLAUDE.md §10: capturar o evento antes do bundle React carregar.
       window.__deferredInstallPrompt = null
       window.addEventListener('beforeinstallprompt', (e) => {

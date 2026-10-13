@@ -1,5 +1,6 @@
 import type { ModoDaBusca } from '../domain/modoDaBusca'
 import type { ModoDaRede } from '../domain/modoDaRede'
+import type { Tema } from '../domain/tema'
 import type { EstiloDaLombada } from '../domain/paletaNoite'
 import type { MapaDoPalacio } from '../motor/mapa'
 import type { AnexoNaTela, NeuronioNaTela } from '../domain/tela'
@@ -160,6 +161,8 @@ export interface EstadoDoPalacio {
   modoDaBusca: ModoDaBusca
   /** O último modo da tela da Rede — constelação ou Mapa. */
   modoDaRede: ModoDaRede
+  /** O tema da interface: o clássico ou uma das duas versões do Padrão. */
+  tema: Tema
   /** O Mapa: ilhas por livro, gravadas (ver `core/motor/mapa.ts`). */
   mapa: MapaDoPalacio
   /**
@@ -293,6 +296,8 @@ export interface ConnectionEngine {
   definirModoDaBusca(modo: ModoDaBusca): Promise<ModoDaBusca>
   /** Grava o modo da tela da Rede que a pessoa acabou de escolher. */
   definirModoDaRede(modo: ModoDaRede): Promise<ModoDaRede>
+  /** Grava o tema da interface que a pessoa acabou de escolher. */
+  definirTema(tema: Tema): Promise<Tema>
   /**
    * Desenha o Mapa inteiro de novo, do zero. É a única coisa que reorganiza o
    * mapa todo — só quando a pessoa pede (Ajustes, com confirmação).

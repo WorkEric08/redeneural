@@ -15,7 +15,7 @@ import {
   vizinhancaDe,
   type NoArrastado,
 } from './layout'
-import { lerCor, useRepintarAoMudar } from './canvas'
+import { lerCor, lerFonteDoCanvas, useRepintarAoMudar } from './canvas'
 import { useCamera } from './useCamera'
 
 /**
@@ -136,6 +136,7 @@ function lerCores(el: HTMLElement): CoresDaRede {
     ouro: lerCor(el, '--ouro-gravado'),
     nevoa: lerCor(el, '--nevoa'),
     mistura: ehMistura(mistura) ? mistura : 'source-over',
+    fonteTitulo: lerFonteDoCanvas(el).fonteTitulo,
   }
 }
 

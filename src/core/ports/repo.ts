@@ -13,6 +13,7 @@ import type {
 } from '../domain/types'
 import type { ModoDaBusca } from '../domain/modoDaBusca'
 import type { ModoDaRede } from '../domain/modoDaRede'
+import type { Tema } from '../domain/tema'
 import type { MapaDoPalacio } from '../motor/mapa'
 import type { PerfilDoPalacio } from '../motor/grafo'
 import type { MarcaPerdida } from '../motor/incremental'
@@ -86,6 +87,9 @@ export interface PalacioRepo {
   /** O último modo da tela da Rede (constelação ou Mapa). `MODO_DA_REDE_PADRAO` se nunca escolheu. */
   getModoDaRede(): Promise<ModoDaRede>
   definirModoDaRede(modo: ModoDaRede): Promise<void>
+  /** O tema da interface. `TEMA_PADRAO` (o clássico) se nunca escolheu. */
+  getTema(): Promise<Tema>
+  definirTema(tema: Tema): Promise<void>
 
   listNeuronios(livroId?: Id): Promise<Neuronio[]>
   getNeuronio(id: Id): Promise<Neuronio | undefined>

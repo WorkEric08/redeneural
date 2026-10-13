@@ -125,6 +125,7 @@ async function estadoAtual(
     iconesNosLivros,
     modoDaBusca,
     modoDaRede,
+    tema,
     posicoesDaRede,
     mapa,
     acervo,
@@ -140,6 +141,7 @@ async function estadoAtual(
     repo.getIconesNosLivros(),
     repo.getModoDaBusca(),
     repo.getModoDaRede(),
+    repo.getTema(),
     repo.getPosicoesDaRede(),
     repo.getMapa(),
     acervoAtual(),
@@ -157,6 +159,7 @@ async function estadoAtual(
     iconesNosLivros,
     modoDaBusca,
     modoDaRede,
+    tema,
     posicoesDaRede,
     mapa,
     ...acervo,
@@ -971,6 +974,10 @@ async function responder(msg: ParaMotor): Promise<DoMotor> {
       case 'definirModoDaRede':
         await repo.definirModoDaRede(msg.modo)
         return { req: msg.req, ok: true, dados: await repo.getModoDaRede() }
+
+      case 'definirTema':
+        await repo.definirTema(msg.tema)
+        return { req: msg.req, ok: true, dados: await repo.getTema() }
 
       case 'moverIlhaNoMapa':
         return { req: msg.req, ok: true, dados: await moverIlhaNoMapa(msg.livroId, msg.centro) }

@@ -37,6 +37,8 @@ export interface CoresDaRede {
   /** A névoa das adormecidas. */
   nevoa: string
   mistura: GlobalCompositeOperation
+  /** A fonte do nome do neurônio escolhido (ver `lerFonteDoCanvas`). */
+  fonteTitulo: string
 }
 
 export interface Camera {
@@ -598,7 +600,7 @@ function desenharEtiqueta(
   const raio = raioNaTela(cena.graus.get(n.id) ?? 0)
 
   ctx.save()
-  ctx.font = '600 13px ui-serif, Georgia, serif'
+  ctx.font = `600 13px ${cena.cores.fonteTitulo}`
   ctx.textAlign = 'center'
   ctx.textBaseline = 'bottom'
 

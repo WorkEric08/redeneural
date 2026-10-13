@@ -10,7 +10,7 @@ import {
   type NeuronioNaTela,
   type Ponto,
 } from '@/core'
-import { lerCor, useRepintarAoMudar } from '@/features/rede/canvas'
+import { lerCor, lerFonteDoCanvas, useRepintarAoMudar } from '@/features/rede/canvas'
 import type { Camera } from '@/features/rede/desenhar'
 import { camaraParaEnquadrar, easeOutCubic, vizinhancaDe } from '@/features/rede/layout'
 import type { ControleDaTela, Folgas } from '@/features/rede/Tela'
@@ -109,6 +109,7 @@ function lerCoresDoMapa(el: HTMLElement): CoresDoMapa {
     fio: lerCor(el, '--rede-fio'),
     ouro: lerCor(el, '--ouro-gravado'),
     nevoa: lerCor(el, '--nevoa'),
+    ...lerFonteDoCanvas(el),
   }
 }
 

@@ -1,0 +1,429 @@
+/* ---------------------------------------------------------------------------
+ * O tema "Padrão" — a versão E da documentação de design (docs/estilos-visuais-locus.md).
+ *
+ * Interface neutra e familiar: cinza-claro ou preto, cartões arredondados, botões
+ * pretos ou brancos e a fonte Figtree. Em duas versões fixas, `padrao-claro` e
+ * `padrao-escuro` — elas NÃO seguem o sistema; quem segue é o clássico.
+ *
+ * Como funciona: `services/native/tema.ts` liga `<html data-tema="...">`. Sem o
+ * atributo (ou com `classico`), nada daqui vale e o app é o estilo Noite de sempre.
+ * Este arquivo só redefine os mesmos tokens do design system (`--sala`, `--parede`,
+ * `--papel`…) e ajusta o acabamento (cantos, traço, estante em cartões), então
+ * todas as telas, que já leem os tokens, mudam juntas.
+ *
+ * Especificidade: tudo começa por `html:root[data-tema…]`, que vale mais que o
+ * bloco do tema escuro do sistema (`:root:not(.claro)` dentro de `@media`) — o
+ * Padrão claro vence mesmo num aparelho em modo escuro. Fica fora de `@layer`,
+ * então também vence os componentes (`@layer components`) sem `!important`.
+ * ------------------------------------------------------------------------ */
+
+/* Figtree: uma fonte variável só, subset latino (20 KB), auto-hospedada como as outras. */
+@font-face {
+  font-family: 'Figtree';
+  src: url('/fontes/figtree-latin.woff2') format('woff2');
+  font-weight: 300 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* --- os tokens ------------------------------------------------------------ */
+
+/* Os valores de cada versão ficam em `--t-*`; o bloco de baixo os liga aos tokens que o app lê.
+   É por esse desvio que a estante (`.cores-de-antes`, que prende os próprios tokens) também
+   consegue seguir o tema. */
+html:root[data-tema='padrao-claro'] {
+  color-scheme: light;
+
+  --t-sala: #f3f3f5;
+  --t-parede: #ffffff;
+  --t-campo: #f1f1f4;
+  --t-realce: #ececf0;
+  --t-papel: #111113;
+  --t-poeira: #6e6e75;
+  --t-linha: #d9d9df;
+  --t-veu: rgb(17 17 19 / 0.42);
+
+  /* O acento da documentação (#2f6bff) dava 4,06:1 sobre a sala — abaixo do 4,5:1 do texto
+     pequeno ("N pontes"). Este tom é o mesmo azul, um pouco mais fundo: 4,58:1 e 5,07:1. */
+  --t-ponte: #2a63f0;
+  --t-ponte-luz: rgb(42 99 240 / 0.22);
+  --t-aviso-fundo: #111113;
+  --t-aviso-texto: #f5f5f7;
+  --t-destructive: #d92d20;
+
+  --t-rede-fio: #111113;
+  --t-rede-no: #111113;
+  --t-rede-mistura: multiply;
+  --t-nevoa: #ffffff;
+}
+
+html:root[data-tema='padrao-escuro'] {
+  color-scheme: dark;
+
+  --t-sala: #000000;
+  --t-parede: #1b1b1d;
+  --t-campo: #2a2a2e;
+  --t-realce: #2a2a2e;
+  --t-papel: #f5f5f7;
+  --t-poeira: #9a9aa2;
+  --t-linha: #48484d;
+  --t-veu: rgb(0 0 0 / 0.65);
+
+  /* #3f6fd8, da documentação, dava 3,67:1 sobre o cartão. Mais claro: 5,74:1 sobre a sala
+     e 4,70:1 sobre o cartão. */
+  --t-ponte: #5582e8;
+  --t-ponte-luz: rgb(85 130 232 / 0.3);
+  --t-aviso-fundo: #f5f5f7;
+  --t-aviso-texto: #111113;
+  --t-destructive: #ff6b61;
+
+  --t-rede-fio: #f5f5f7;
+  --t-rede-no: #f5f5f7;
+  --t-rede-mistura: lighter;
+  --t-nevoa: #8e8e96;
+}
+
+html:root[data-tema^='padrao'] {
+  --sala: var(--t-sala);
+  --parede: var(--t-parede);
+  --campo: var(--t-campo);
+  --realce: var(--t-realce);
+  --papel: var(--t-papel);
+  --poeira: var(--t-poeira);
+  --linha: var(--t-linha);
+  --veu: var(--t-veu);
+
+  --ponte: var(--t-ponte);
+  --ponte-luz: var(--t-ponte-luz);
+  --estante: var(--t-parede);
+  --sombra-cartao: none;
+  --aviso-fundo: var(--t-aviso-fundo);
+  --aviso-texto: var(--t-aviso-texto);
+  --destructive: var(--t-destructive);
+
+  --rede-fio: var(--t-rede-fio);
+  --rede-no: var(--t-rede-no);
+  --rede-mistura: var(--t-rede-mistura);
+  --nevoa: var(--t-nevoa);
+
+  --fonte-titulo: 'Figtree', ui-sans-serif, system-ui, 'Segoe UI', Roboto, sans-serif;
+  --fonte-texto: 'Figtree', ui-sans-serif, system-ui, 'Segoe UI', Roboto, sans-serif;
+
+  /* O canvas (Rede e Mapa) lê estas duas: nomes em Figtree, e o nome da ilha sem versalete. */
+  --fonte-canvas-titulo: 'Figtree', ui-sans-serif, system-ui, sans-serif;
+  --canvas-versalete: nao;
+
+  /* Cantos dos botões (ver components/botao.ts): no Padrão os dois tamanhos têm 14 px. */
+  --raio-botao: 14px;
+  --raio-botao-pequeno: 14px;
+}
+
+/* A estante e o que dela se copia (a lombada de amostra, o fantasma do arrasto) prendem as
+   próprias cores no clássico (`.cores-de-antes`: sempre azul-marinho escuro). No Padrão elas
+   seguem o tema, para a prateleira ser um cartão da mesma cor dos outros. */
+html:root[data-tema^='padrao'] .cores-de-antes {
+  --sala: var(--t-sala);
+  --parede: var(--t-parede);
+  --estante: var(--t-parede);
+  --papel: var(--t-papel);
+  --poeira: var(--t-poeira);
+  --linha: var(--t-linha);
+}
+
+/* --- base ----------------------------------------------------------------- */
+
+html:root[data-tema^='padrao'] body {
+  /* Sem o grão da parede lambrilhada: o Padrão é liso. */
+  background-image: none;
+}
+
+/* Traço de 1,75 px nos ícones (o do lucide é 2). O botão de criar tem o traço dele, grosso. */
+html:root[data-tema^='padrao'] svg.lucide {
+  stroke-width: 1.75;
+}
+
+html:root[data-tema^='padrao'] .dial-botao svg.lucide {
+  stroke-width: 2.25;
+}
+
+/* --- componentes ---------------------------------------------------------- */
+
+html:root[data-tema^='padrao'] .cartao {
+  border: 0;
+  border-radius: 18px;
+  box-shadow: none;
+}
+
+html:root[data-tema^='padrao'] .folha .cartao {
+  background: var(--campo);
+}
+
+html:root[data-tema^='padrao'] .rotulo-de-secao {
+  letter-spacing: 0.02em;
+  text-transform: none;
+  font-size: 0.8125rem;
+}
+
+/* Campos: fundo de campo, sem borda, canto de 14 px. */
+html:root[data-tema^='padrao'] .campo {
+  border: 1px solid transparent;
+  border-radius: 14px;
+  background: var(--campo);
+}
+
+html:root[data-tema^='padrao'] .campo:focus,
+html:root[data-tema^='padrao'] .campo:focus-visible {
+  border-color: color-mix(in oklab, var(--papel) 45%, transparent);
+  box-shadow: none;
+}
+
+html:root[data-tema^='padrao'] .folha .campo {
+  background: var(--campo);
+}
+
+/* Chips: escolhido é bloco cheio (preto no claro, branco no escuro). */
+html:root[data-tema^='padrao'] .chip {
+  border-radius: 12px;
+  border-color: var(--linha);
+  color: var(--papel);
+  font-weight: 500;
+}
+
+html:root[data-tema^='padrao'] .chip[aria-pressed='true'] {
+  border-color: var(--papel);
+  background: var(--papel);
+  color: var(--sala);
+  font-weight: 600;
+}
+
+/* Segmentado: trilho cinza com uma pílula clara por cima da opção escolhida. */
+html:root[data-tema^='padrao'] .segmentado {
+  overflow: visible;
+  padding: 3px;
+  border: 0;
+  border-radius: 22px;
+  background: var(--campo);
+}
+
+html:root[data-tema^='padrao'] .segmento {
+  height: 38px;
+  border-radius: 19px;
+  font-weight: 500;
+}
+
+html:root[data-tema^='padrao'] .segmento + .segmento {
+  border-left: 0;
+}
+
+html:root[data-tema^='padrao'] .segmento[aria-pressed='true'] {
+  background: var(--parede);
+  color: var(--papel);
+  font-weight: 600;
+  box-shadow: 0 1px 3px rgb(0 0 0 / 0.18);
+}
+
+/* Dentro de uma folha o segmentado são caixas separadas com contorno (o andamento da ideia,
+   como nos sheets desenhados): a escolhida fica cheia. */
+html:root[data-tema^='padrao'] .folha .segmentado {
+  gap: 8px;
+  padding: 0;
+  background: none;
+}
+
+html:root[data-tema^='padrao'] .folha .segmento {
+  height: 46px;
+  border: 1px solid var(--linha);
+  border-radius: 12px;
+  box-shadow: none;
+}
+
+html:root[data-tema^='padrao'] .folha .segmento[aria-pressed='true'] {
+  border-color: var(--papel);
+  background: var(--papel);
+  color: var(--sala);
+}
+
+/* Opção de escolha (livros do "Onde guardar?"): a escolhida é bloco cheio. */
+html:root[data-tema^='padrao'] .opcao {
+  border-radius: 12px;
+  background: transparent;
+  font-weight: 500;
+}
+
+html:root[data-tema^='padrao'] .opcao:active {
+  background: var(--realce);
+}
+
+html:root[data-tema^='padrao'] .opcao[aria-pressed='true'] {
+  border-color: var(--papel);
+  background: var(--papel);
+  color: var(--sala);
+  font-weight: 600;
+}
+
+/* Barra de topo: sem linha embaixo, só o desfoque. */
+html:root[data-tema^='padrao'] .barra-de-topo {
+  border-bottom: 0;
+  border-image: linear-gradient(
+      to top,
+      color-mix(in oklab, var(--sala) 88%, transparent),
+      color-mix(in oklab, var(--sala) 88%, transparent)
+    )
+    0 fill / 0 / 0 100vmax;
+}
+
+html:root[data-tema^='padrao'] .barra-de-topo-titulo {
+  font-weight: 600;
+}
+
+/* Alerta: faixa invertida (escura no claro, clara no escuro), canto de 16 px, com sombra. */
+html:root[data-tema^='padrao'] .aviso {
+  border-color: transparent;
+  border-radius: 16px;
+  color: var(--aviso-texto);
+  box-shadow: 0 6px 18px rgb(0 0 0 / 0.25);
+}
+
+/* Folha: canto de 26 px no topo, sem sombra de cima, alça de 40 × 5. */
+html:root[data-tema^='padrao'] .folha {
+  border-radius: 26px 26px 0 0;
+  box-shadow: none;
+}
+
+html:root[data-tema^='padrao'] .folha::backdrop {
+  background: var(--veu);
+}
+
+html:root[data-tema^='padrao'] .folha-alca-barra {
+  width: 40px;
+  height: 5px;
+}
+
+/* A faixa de ajuste: a bolinha ganha a borda da superfície. */
+html:root[data-tema^='padrao'] .faixa-de-ajuste::-webkit-slider-thumb {
+  border-color: var(--parede);
+}
+
+/* --- o botão de criar e o anel ------------------------------------------- */
+
+/* No Padrão o botão é liso: círculo cheio, com a sombra suave, e o fundo do anel é o véu do tema. */
+html:root[data-tema^='padrao'] .dial-veu {
+  background: var(--veu);
+  backdrop-filter: none;
+}
+
+html:root[data-tema^='padrao'] .dial-botao {
+  background: var(--papel);
+  box-shadow: 0 6px 18px rgb(0 0 0 / 0.25);
+  color: var(--sala);
+}
+
+html:root[data-tema^='padrao'] .dial-botao::before,
+html:root[data-tema^='padrao'] .dial-botao::after {
+  display: none;
+}
+
+html:root[data-tema^='padrao'] .dial-botao > svg {
+  filter: none;
+}
+
+html:root[data-tema^='padrao'] .dial-botao[data-aberto='true'] {
+  box-shadow: 0 6px 18px rgb(0 0 0 / 0.25);
+}
+
+/* Os destinos, soltos em arco: só o ícone, num círculo com a sombra. O nome só aparece no
+   que está sob o dedo, à esquerda dele (Dial.tsx). */
+.dial-icone {
+  position: absolute;
+  display: grid;
+  width: 52px;
+  height: 52px;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--parede);
+  color: var(--papel);
+  box-shadow: 0 6px 18px rgb(0 0 0 / 0.25);
+  transition:
+    background-color 120ms ease,
+    color 120ms ease,
+    transform 120ms ease;
+}
+
+.dial-icone--ativo {
+  background: var(--papel);
+  color: var(--sala);
+  transform: scale(1.1);
+}
+
+.dial-nome {
+  position: absolute;
+  display: flex;
+  height: 38px;
+  align-items: center;
+  padding-inline: 14px;
+  border: 1px solid var(--linha);
+  border-radius: 12px;
+  background: var(--parede);
+  color: var(--papel);
+  font-size: 0.9rem;
+  font-weight: 700;
+  white-space: nowrap;
+  transform: translateY(-50%);
+  box-shadow: 0 6px 18px rgb(0 0 0 / 0.25);
+  animation: dial-surgir 120ms ease-out both;
+}
+
+/* --- a estante: cada prateleira é um cartão ------------------------------- */
+
+/* A madeira sai — laterais, tampo, tábuas, base e a luz da sala. A lombada, que é objeto
+   escuro nos dois temas, continua igual; o que muda é o que há por baixo dela. */
+html:root[data-tema^='padrao'] .movel {
+  box-shadow: none;
+  border-radius: 0;
+  /* Sem tampo e sem base, a fileira ganha esse espaço. */
+  --mv-lateral: 8px;
+  --mv-projecao: 0px;
+  /* O respiro de 6 px entre o topo da tela e o primeiro cartão sai da altura das fileiras. */
+  --mv-fora: 150px;
+}
+
+html:root[data-tema^='padrao'] .movel[data-prateleiras] {
+  --mv-trilho: 0px;
+  --mv-base: 0px;
+}
+
+html:root[data-tema^='padrao'] .movel-cornija,
+html:root[data-tema^='padrao'] .movel-tabua,
+html:root[data-tema^='padrao'] .movel-pilastra,
+html:root[data-tema^='padrao'] .movel-base,
+html:root[data-tema^='padrao'] .movel-luar {
+  display: none;
+}
+
+/* O cartão da prateleira. A luz dos enfeites (abaixo de 50) escurece o cartão, como
+   escurecia o fundo da madeira: Movel.tsx escreve `--mv-sombra-do-fundo`. O vão de 8 px
+   entre os cartões ocupa o lugar da tábua (8 px), então a conta da altura não muda. */
+html:root[data-tema^='padrao'] .movel-corpo {
+  padding-top: 6px;
+  background: transparent;
+}
+
+html:root[data-tema^='padrao'] .movel-vao {
+  margin-bottom: 8px;
+  overflow: hidden;
+  border-radius: 18px;
+  background: color-mix(in srgb, var(--parede), #000 var(--mv-sombra-do-fundo, 0%));
+}
+
+html:root[data-tema^='padrao'] .movel-vao:last-child {
+  margin-bottom: 0;
+}
+
+/* --- o texto do neurônio -------------------------------------------------- */
+
+/* A leitura vai num cartão (o título, que também é `.texto-do-usuario`, fica solto). */
+html:root[data-tema^='padrao'] p.texto-do-usuario {
+  padding: 16px 18px;
+  border-radius: 18px;
+  background: var(--parede);
+}

@@ -43,6 +43,9 @@ export interface CoresDoMapa {
   ouro: string
   /** A névoa das adormecidas. */
   nevoa: string
+  /** A fonte dos nomes (ilha e neurônio escolhido) e se o nome da ilha é em versalete. */
+  fonteTitulo: string
+  versalete: boolean
 }
 
 export interface CenaDoMapa {
@@ -84,10 +87,11 @@ const RAIO_DA_NEVOA = 24
 /** Nomes de neurônio de perto: o bastante para orientar sem cobrir a ilha. */
 const MAX_NOMES_DE_NEURONIO = 40
 
-/** O nome da ilha em versalete, espaçado, como os nomes de terra nas cartas. */
-const FONTE_DA_ILHA = 'small-caps 600 14px ui-serif, Georgia, serif'
+/** O nome da ilha em versalete, espaçado, como os nomes de terra nas cartas (no clássico). */
+const fonteDaIlha = (c: CoresDoMapa): string =>
+  `${c.versalete ? 'small-caps ' : ''}600 14px ${c.fonteTitulo}`
 const ESPACO_DO_NOME = '0.06em'
-const FONTE_DA_CONTAGEM = 'italic 11px ui-serif, Georgia, serif'
+const fonteDaContagem = (c: CoresDoMapa): string => `italic 11px ${c.fonteTitulo}`
 const FONTE_DO_NEURONIO = '11px ui-sans-serif, system-ui, sans-serif'
 
 interface Caixa {
@@ -407,7 +411,7 @@ function desenharNomesDasIlhas(
     if (!aparece) continue
 
     const quantos = contar(Object.keys(ilha.pontos).length, 'neurônio', 'neurônios')
-    ctx.font = FONTE_DA_ILHA
+    ctx.font = fonteDaIlha(cena.cores)
     ctx.letterSpacing = ESPACO_DO_NOME
     const largo = Math.max(ctx.measureText(livro.titulo).width, 60)
     const x = Math.min(Math.max(centro.x, largo / 2 + 8), largura - largo / 2 - 8)
@@ -419,7 +423,7 @@ function desenharNomesDasIlhas(
     ctx.fillStyle = cena.cores.papel
     escreverComHalo(ctx, livro.titulo, x, topo - 20, cena.cores)
     ctx.letterSpacing = '0px'
-    ctx.font = FONTE_DA_CONTAGEM
+    ctx.font = fonteDaContagem(cena.cores)
     ctx.fillStyle = cena.cores.poeira
     escreverComHalo(ctx, quantos, x, topo - 6, cena.cores)
   }
@@ -565,7 +569,7 @@ function desenharEtiqueta(
   cores: CoresDoMapa,
 ): Caixa {
   ctx.save()
-  ctx.font = '600 13px ui-serif, Georgia, serif'
+  ctx.font = `600 13px ${cores.fonteTitulo}`
   ctx.textAlign = 'center'
   ctx.textBaseline = 'bottom'
   const largo = ctx.measureText(titulo).width

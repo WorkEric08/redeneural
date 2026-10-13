@@ -21,6 +21,7 @@ import type {
   Ponto,
   ProgressoDoMotor,
   ResultadoDeEscrita,
+  Tema,
   Vaga,
 } from '@/core'
 
@@ -153,6 +154,8 @@ export function criarWorkerEngine(): ConnectionEngine {
 
     definirModoDaRede: (modo: ModoDaRede): Promise<ModoDaRede> =>
       pedir<'definirModoDaRede'>({ tipo: 'definirModoDaRede', modo }),
+
+    definirTema: (tema: Tema): Promise<Tema> => pedir<'definirTema'>({ tipo: 'definirTema', tema }),
 
     reorganizarMapa: (): Promise<MapaDoPalacio> =>
       pedir<'reorganizarMapa'>({ tipo: 'reorganizarMapa' }),

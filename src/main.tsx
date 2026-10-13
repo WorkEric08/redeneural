@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client'
 import { RouterProvider } from 'react-router-dom'
 
 import '@/index.css'
+import '@/tema-padrao.css'
 import { router } from '@/router'
 import { pedirArmazenamentoDuravel } from '@/services/native/armazenamento'
 import { travarGestosDeNavegador } from '@/services/native/gestos'

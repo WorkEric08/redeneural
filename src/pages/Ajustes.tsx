@@ -11,6 +11,7 @@ import {
   INTENSIDADE_DA_LUZ_MINIMA,
   INTENSIDADE_DA_LUZ_PADRAO,
   MAXIMO_DE_PRATELEIRAS,
+  type Tema,
 } from '@/core'
 import { usePalacio } from '@/store/palacio'
 
@@ -38,6 +39,8 @@ export default function Ajustes() {
     definirIntensidadeDaLuzDoEnfeite,
     iconesNosLivros,
     definirIconesNosLivros,
+    tema,
+    definirTema,
   } = usePalacio()
 
   const semVetor = neuronios.filter((n) => n.processando).length
@@ -59,7 +62,7 @@ export default function Ajustes() {
         }
       />
 
-      <div className="animar-entrada flex flex-col gap-3 pt-5 md:gap-5 md:pt-6">
+      <div className="animar-entrada ajustes-compacto flex flex-col gap-3 pt-5 md:gap-5 md:pt-6 [@media(max-height:640px)]:gap-2 [@media(max-height:640px)]:pt-2">
         <section className="relative">
           {/* O selo fica por cima da borda do cartão e não ocupa lugar: um aviso que só existe
               às vezes não pode empurrar a tela para fora do que cabe. */}
@@ -79,6 +82,25 @@ export default function Ajustes() {
               rotulo={conexoes.length === 1 ? 'conexão' : 'conexões'}
             />
           </dl>
+        </section>
+
+        <section>
+          <h2 className="rotulo-de-secao">Tema</h2>
+          <div role="group" aria-label="Tema da interface" className="segmentado">
+            {OPCOES_DE_TEMA.map(({ valor, rotulo }) => (
+              <button
+                key={valor}
+                type="button"
+                aria-pressed={tema === valor}
+                className="segmento px-1 text-[0.78rem]"
+                onClick={() => {
+                  void definirTema(valor)
+                }}
+              >
+                {rotulo}
+              </button>
+            ))}
+          </div>
         </section>
 
         <section>
@@ -169,6 +191,13 @@ export default function Ajustes() {
     </div>
   )
 }
+
+/** Os temas, na ordem em que aparecem em Ajustes. O clássico é o de sempre (segue o sistema). */
+const OPCOES_DE_TEMA: readonly { valor: Tema; rotulo: string }[] = [
+  { valor: 'classico', rotulo: 'Clássico' },
+  { valor: 'padrao-claro', rotulo: 'Padrão claro' },
+  { valor: 'padrao-escuro', rotulo: 'Padrão escuro' },
+]
 
 /** O que o valor da luz quer dizer: 50 mostra a cor real, abaixo sombra, acima brilho. */
 function leituraDaLuz(valor: number): string {

@@ -5929,6 +5929,83 @@ Medido no Chrome (build de produção): antes a tela rolava **446 px em 320×568
   **Não visto em toque real num aparelho.** Em desktop a coluna continua estreita (`max-w-2xl`), com
   espaço vazio dos lados — igual às outras telas.
 
+## Temas: Clássico e Padrão (13/10/2026)
+
+Pedido do usuário: o visual de sempre passa a se chamar **Clássico**, Ajustes ganha uma seção
+para trocar de tema, e entra a versão **E · Padrão** da documentação de design
+(`docs/estilos-visuais-locus.md`) em claro e escuro. Três escolhas, e só: Clássico, Padrão claro,
+Padrão escuro. **O Clássico não mudou** (a seção "Tema" em Ajustes e o aperto de Ajustes em tela
+baixa, abaixo, são as únicas marcas dele).
+
+| Tema            | O que é                                                                                     |
+| --------------- | ------------------------------------------------------------------------------------------- |
+| `classico`      | O estilo Noite de sempre. **Segue o sistema** (claro ou escuro). É o padrão.                |
+| `padrao-claro`  | A versão E: cinza-claro `#f3f3f5`, cartões brancos, texto `#111113`, Figtree.               |
+| `padrao-escuro` | A versão E: preto, cartões `#1b1b1d`, texto `#f5f5f7`, Figtree. **Não** segue o sistema.    |
+
+### Como funciona
+
+- **A preferência** é `meta.preferencias.tema` (sem versão nova do Dexie, fora do backup), pelo mesmo
+  caminho das outras: `core/domain/tema.ts` (`Tema`, `temaOuPadrao`, `ehTemaPadrao`) → porta
+  `definirTema` → Worker → `DexieRepo.getTema/definirTema` → store (`tema`, `definirTema`, **otimista**:
+  a interface troca na hora e a gravação vem por trás).
+- **Na página:** `services/native/tema.ts` liga `<html data-tema="…">`; `App.tsx` o aplica num
+  `useLayoutEffect` sempre que o tema da store muda.
+- **Primeira pintura sem piscar:** o banco só responde depois de o CSS pintar. Por isso o tema também fica
+  espelhado em `localStorage` (`locus-tema`) e um script de uma linha no `index.html` o lê antes do CSS.
+  **É uma exceção consciente à regra de "nunca localStorage"**: o tema não é dado do palácio, o espelho é só
+  um atalho da primeira pintura, e o **banco vence** — se o aparelho apagar o espelho, o banco o devolve.
+- **O CSS:** `src/tema-padrao.css`, importado depois do `index.css`, fora de `@layer` (assim vence os
+  componentes sem `!important`). Os valores de cada versão ficam em `--t-*`, e um bloco comum os liga aos
+  tokens que o app já lê (`--sala`, `--parede`, `--papel`, `--poeira`, `--linha`, `--realce`, `--ponte`…) —
+  por isso todas as telas mudam juntas. Os seletores começam por `html:root[data-tema^='padrao']`, que vale
+  mais que o bloco escuro do sistema (`:root:not(.claro)` dentro de `@media`): o Padrão claro vence mesmo
+  num aparelho em modo escuro. `.cores-de-antes` (que prende as cores da estante no Clássico) também segue
+  o tema no Padrão.
+
+### O que o Padrão muda
+
+- **Fonte:** Figtree, **auto-hospedada** (`public/fontes/figtree-latin.woff2`, 20 KB, fonte variável 300–900,
+  subset latino, SIL OFL; entra no precache do PWA). Substitui Literata e Source Sans 3 só neste tema.
+- **Cantos e traço:** cartão 18, campo 14, chip 12, botão 14 (`botao.ts` lê `--raio-botao` e
+  `--raio-botao-pequeno`; sem as variáveis valem 14 e 10 px, como sempre), sheet 26, alerta 16; ícones a
+  1,75 px. Sem o grão do fundo e sem sombra nos cartões.
+- **Peças:** chip escolhido é bloco cheio; `.segmentado` vira trilho cinza com pílula (dentro de sheet, caixas
+  contornadas); `.opcao` escolhida cheia; barra de topo sem linha; alerta invertido com sombra; campo sem borda.
+- **Estante:** cada prateleira é um **cartão arredondado**; saem a madeira, o tampo, as tábuas, a base, as
+  laterais e a luz da sala. **A lombada é igual** (objeto escuro nos dois temas); a luz dos enfeites
+  (abaixo de 50) escurece o cartão. O vão de 8 px entre cartões ocupa o lugar da tábua, então a conta da
+  altura da fileira não muda.
+- **Botão de criar:** liso, círculo cheio com sombra suave. **O anel vira só ícones em arco** (a mesma
+  geometria de `lib/dial.ts`): segurar mostra os três ícones; o nome aparece **à esquerda do ícone sob o
+  dedo**, só dele (`DestinosEmArco` em `Dial.tsx`). O Clássico segue com o anel de cunhas.
+- **Rede e Mapa:** as cores vêm dos tokens; os nomes no canvas usam Figtree (`--fonte-canvas-titulo`) e o
+  nome da ilha deixa de ser versalete (`--canvas-versalete: nao`). O canvas repinta quando `data-tema` muda.
+- **Neurônio:** o texto lido vai num cartão.
+
+### Desvios da documentação, e por quê
+
+- **O acento (a ponte) ficou um pouco diferente do documento**, por contraste: `#2f6bff` dava 4,06:1 sobre a
+  sala clara e `#3f6fd8` dava 3,67:1 sobre o cartão escuro, ambos abaixo do 4,5:1 do texto pequeno ("N pontes").
+  No app: **`#2a63f0`** (4,58:1 sobre a sala; 5,07:1 sobre o cartão) e **`#5582e8`** (5,74:1 e 4,70:1).
+- **A ordem do arco** do botão de criar segue a do app (Estante, Rede, Ajustes, de cima para baixo), e não a do mockup.
+- **Ajustes ganhou a seção "Tema"** (um segmentado de três opções) e, para continuar cabendo sem rolar em
+  320 × 568, **só em tela baixa** (`max-height: 640px`) as linhas apertam o respiro (`.ajustes-compacto` em
+  `index.css`); os alvos de toque continuam de 44 px. Vale para os três temas.
+
+### Verificado
+
+Chrome (build de produção), 412 × 892, 320 × 568, 768 × 1024 e 1440 × 900, nos dois temas do Padrão e no
+Clássico: estante, livro, neurônio, escrever, Rede, Mapa, novo livro, Ajustes, sheets e o botão de criar
+(por toque: segurar, arrastar até o ícone, soltar navega). A troca persiste ao recarregar e sobrevive ao
+espelho apagado. Ajustes cabe sem rolar em 320 × 568, 360 × 640, 390 × 844 e 412 × 892. 735 testes, tipos e
+lint limpos. **Não verificado em aparelho de verdade, no PWA instalado nem com o teclado aberto.**
+
+### Fora daqui
+
+As versões A · Papel e D · Marca-texto da documentação **não** foram implementadas. O Padrão não tem
+modo "segue o sistema". A coluna de navegação do desktop ainda diz "Palácio Mental".
+
 ## Fases
 
 0. ✅ Esqueleto (Vite/React/TS/Tailwind/PWA/Capacitor)
@@ -5978,3 +6055,5 @@ Medido no Chrome (build de produção): antes a tela rolava **446 px em 320×568
     arrastar com as regras do livro (07/10/2026)
 28. ✅ O livro deitado e a pilha — o mesmo livro girado, empilhável por altura, nas quatro
     fases (08–09/10/2026)
+29. ✅ Temas: Clássico e Padrão (claro e escuro) — a versão E da documentação de design,
+    escolhida em Ajustes (13/10/2026)

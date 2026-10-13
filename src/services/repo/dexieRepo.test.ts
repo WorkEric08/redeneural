@@ -683,6 +683,33 @@ describe('modo da Rede', () => {
   })
 })
 
+describe('tema', () => {
+  it('"classico" por padrão, e devolve o último escolhido', async () => {
+    expect(await repo.getTema()).toBe('classico')
+    await repo.definirTema('padrao-escuro')
+    expect(await repo.getTema()).toBe('padrao-escuro')
+    await repo.definirTema('padrao-claro')
+    expect(await repo.getTema()).toBe('padrao-claro')
+  })
+
+  it('não apaga as outras preferências, e elas não o apagam', async () => {
+    await repo.definirTema('padrao-escuro')
+    await repo.definirModoDaRede('mapa')
+    await repo.definirIntensidadeDaLuz(30)
+    await repo.definirIconesNosLivros(false)
+    expect(await repo.getTema()).toBe('padrao-escuro')
+    expect(await repo.getModoDaRede()).toBe('mapa')
+    expect(await repo.getIntensidadeDaLuz()).toBe(30)
+    expect(await repo.getIconesNosLivros()).toBe(false)
+  })
+
+  it('um tema que não existe grava o clássico', async () => {
+    await repo.definirTema('padrao-escuro')
+    await repo.definirTema('noite' as never)
+    expect(await repo.getTema()).toBe('classico')
+  })
+})
+
 describe('mapa', () => {
   const ilha = (x: number) => ({ centro: { x, y: 0 }, raio: 80, pontos: { n1: { x: 3, y: -4 } } })
 

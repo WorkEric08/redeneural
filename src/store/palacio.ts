@@ -29,6 +29,7 @@ import {
   type MapaDoPalacio,
   type ModoDaBusca,
   type ModoDaRede,
+  type Tema,
   type NeuronioNaTela,
   type OrientacaoDoLivro,
   type Ponto,
@@ -39,6 +40,7 @@ import {
 } from '@/core'
 import { newId } from '@/lib/id'
 import { engine } from '@/services/engine/workerEngine'
+import { temaLembrado } from '@/services/native/tema'
 
 export interface NovoNeuronio {
   /** `null`: "Automático" ao criar (o Porto decide); ao editar, continua no porto. */
@@ -110,6 +112,8 @@ interface PalacioStore {
   modoDaBusca: ModoDaBusca
   /** O último modo da tela da Rede: a constelação ou o Mapa. */
   modoDaRede: ModoDaRede
+  /** O tema da interface. Começa no que o aparelho lembra (primeira pintura) e o banco confirma. */
+  tema: Tema
 
   carregado: boolean
   ocupado: boolean
@@ -189,6 +193,8 @@ interface PalacioStore {
   definirModoDaBusca: (modo: ModoDaBusca) => Promise<void>
   /** O mesmo, para a tela da Rede (constelação ou Mapa). */
   definirModoDaRede: (modo: ModoDaRede) => Promise<void>
+  /** Otimista: a interface troca de tema na hora, e a escolha fica gravada para a próxima vez. */
+  definirTema: (tema: Tema) => Promise<void>
   /** Desenha o Mapa inteiro de novo — só a pedido, em Ajustes. `false` se o motor não conseguiu. */
   reorganizarMapa: () => Promise<boolean>
   /**
@@ -263,6 +269,7 @@ export const usePalacio = create<PalacioStore>()((set, get) => {
     iconesNosLivros: ICONES_NOS_LIVROS_PADRAO,
     modoDaBusca: MODO_DA_BUSCA_PADRAO,
     modoDaRede: MODO_DA_REDE_PADRAO,
+    tema: temaLembrado(),
     carregado: false,
     ocupado: false,
     progresso: null,
@@ -723,6 +730,16 @@ export const usePalacio = create<PalacioStore>()((set, get) => {
         await engine.definirModoDaRede(modo)
       } catch (e) {
         // Como no modo da busca: a tela já trocou; só não fica lembrado.
+        set({ erro: mensagem(e) })
+      }
+    },
+
+    async definirTema(tema) {
+      set({ tema })
+      try {
+        await engine.definirTema(tema)
+      } catch (e) {
+        // Como no modo da Rede: a tela já trocou; só não fica lembrado.
         set({ erro: mensagem(e) })
       }
     },
