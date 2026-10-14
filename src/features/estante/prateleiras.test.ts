@@ -16,6 +16,7 @@ import {
   montarPrateleiras,
   type Lugar,
   type Prateleira,
+  escalaDaPilha,
 } from './prateleiras'
 import { LARGURAS } from './larguras'
 import type { LivroNaEstante } from './resumo'
@@ -584,5 +585,23 @@ describe('livros deitados e pilhas', () => {
       Math.round(((l.comprimentoLombada ?? 63) * 100) / 100)
     // Um lugar de pé (38) e um lugar de pilha (o mais comprido, 98), com 1 px de folga entre eles.
     expect(larguraDosLivrosDaPrateleira(livros, 0, extensao)).toBe(38 + 1 + 98)
+  })
+})
+
+describe('escalaDaPilha', () => {
+  it('uma pilha que cabe na fileira não encolhe', () => {
+    expect(escalaDaPilha([38, 38], 132)).toBe(1)
+    expect(escalaDaPilha([38, 38, 38], 132)).toBe(1) // 114 ≤ 98% de 132
+  })
+
+  it('a pilha cheia de 3 Normais encolhe na fileira mínima de 92 px, em proporção', () => {
+    const escala = escalaDaPilha([38, 38, 38], 92)
+    expect(escala).toBeCloseTo(90.16 / 114, 3)
+    expect(escala * 114).toBeLessThanOrEqual(90.2)
+  })
+
+  it('sem livro ou sem fileira não mexe em nada', () => {
+    expect(escalaDaPilha([], 92)).toBe(1)
+    expect(escalaDaPilha([38], 0)).toBe(1)
   })
 })

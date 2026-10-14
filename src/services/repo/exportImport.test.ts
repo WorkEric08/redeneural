@@ -814,7 +814,7 @@ describe('livros deitados e pilhas no backup', () => {
     const origem = repoVazio()
     await origem.upsertLivro(deitado('a', 5, 68, 0))
     const destino = repoVazio()
-    await destino.upsertLivro(deitado('meu', 5, 38, 0))
+    await destino.upsertLivro(deitado('meu', 5, 52, 0))
 
     await destino.importAll(await origem.exportAll())
 

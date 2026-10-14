@@ -1,5 +1,6 @@
 import {
   ALTURA_MAXIMA_DA_LOMBADA,
+  ALTURA_MAXIMA_ESCOLHIDA_DA_LOMBADA,
   ALTURA_MINIMA_DA_LOMBADA,
   chaveDoLugar,
   larguraDoLivroGravado,
@@ -132,6 +133,20 @@ export function extensaoDoLivro(item: LivroNaEstante, alturaDaFileira: number): 
     (alturaDaLombadaEmPercentual(item.livro.comprimentoLombada, item.altura) * alturaDaFileira) /
       100,
   )
+}
+
+/**
+ * Quanto uma pilha de livros deitados é desenhada menor para caber na fileira (1 = tamanho real).
+ * O limite da pilha é fixo, 3 livros Normais (114 px), e a fileira mais baixa mede 92 px — ou menos,
+ * no tema Padrão com muitas prateleiras —, então a pilha cheia passaria da prateleira de cima.
+ * Só o desenho encolhe, em proporção: as regras e os dados não mudam. O teto é a altura do livro
+ * de pé mais alto que se escolhe (98% da fileira).
+ */
+export function escalaDaPilha(espessuras: readonly number[], alturaDaFileira: number): number {
+  const total = espessuras.reduce((soma, e) => soma + e, 0)
+  if (total <= 0 || alturaDaFileira <= 0) return 1
+  const disponivel = (alturaDaFileira * ALTURA_MAXIMA_ESCOLHIDA_DA_LOMBADA) / 100
+  return Math.min(1, disponivel / total)
 }
 
 /** Livro ou pilha: o que a fileira nunca encolhe nem tira para os enfeites caberem. */

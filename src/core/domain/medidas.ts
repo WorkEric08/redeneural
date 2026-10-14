@@ -25,17 +25,21 @@ export const FILEIRA_MINIMA_PX = 92
  */
 export const ALTURA_MAXIMA_ESCOLHIDA_DA_LOMBADA = 98
 
+/** A espessura do livro de largura Normal, em px (`LARGURAS` em `features/estante/larguras.ts`). */
+const ESPESSURA_NORMAL_PX = 38
+/** Quantos livros Normais cabem numa pilha (pedido do usuário, 13/10/2026). */
+const NORMAIS_NA_PILHA = 3
+
 /**
- * Quanto uma pilha de livros deitados pode medir de altura, em px: a do livro de pé mais alto,
- * na fileira **mais baixa** que existe. Fixo, e não medido na tela, de propósito: uma pilha que
- * coubesse numa tela alta e passasse do teto numa baixa ficaria cortada pela prateleira de
- * cima ao trocar de aparelho (ou girar o celular), e as regras de empilhar precisam dar o
- * mesmo resultado na store e no repositório, que não medem tela nenhuma. Quem tem a fileira
- * mais alta só ganha folga.
+ * Quanto uma pilha de livros deitados pode medir de altura, em px: **3 livros Normais** (114 px)
+ * ou o que somar até isso — 1 Normal e 3 Finos (110), 2 Grossos (104), 1 Grande e 1 Normal (106).
+ * Era 90 px (o livro de pé mais alto na fileira mais baixa); como a fileira mínima é 92 px, uma
+ * pilha de 114 não cabe nela, e **o desenho da pilha encolhe** para caber (`escalaDaPilha`,
+ * `features/estante/prateleiras.ts`) — a regra e os dados não mudam. Fixo, e não medido na tela:
+ * as regras de empilhar precisam dar o mesmo resultado na store e no repositório, que não medem
+ * tela nenhuma.
  */
-export const ALTURA_UTIL_DA_PILHA_PX = Math.floor(
-  (FILEIRA_MINIMA_PX * ALTURA_MAXIMA_ESCOLHIDA_DA_LOMBADA) / 100,
-)
+export const ALTURA_UTIL_DA_PILHA_PX = ESPESSURA_NORMAL_PX * NORMAIS_NA_PILHA
 
 /**
  * A largura de um livro na fileira: a escolhida na mão, ou a da semente do id. Num livro

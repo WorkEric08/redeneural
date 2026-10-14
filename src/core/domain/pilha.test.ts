@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { ALTURA_UTIL_DA_PILHA_PX, FILEIRA_MINIMA_PX } from './medidas'
+import { ALTURA_UTIL_DA_PILHA_PX } from './medidas'
 import {
   alturaDaPilhaNoLugar,
   cabeNaPilha,
@@ -50,24 +50,24 @@ function onde(livros: readonly L[] | null): Record<string, [number, number, numb
 }
 
 describe('o limite de altura de uma pilha', () => {
-  it('é a do livro mais alto, na fileira mais baixa — igual em toda tela', () => {
-    // O "Enorme" (98%) sobre a fileira mínima de 92 px.
-    expect(FILEIRA_MINIMA_PX).toBe(92)
-    expect(ALTURA_UTIL_DA_PILHA_PX).toBe(90)
+  it('é a de 3 livros Normais (38 px cada) — igual em toda tela', () => {
+    expect(ALTURA_UTIL_DA_PILHA_PX).toBe(114)
   })
 
   it('cabe enquanto a soma das espessuras não passa dele', () => {
-    expect(cabeNaPilha([24, 24, 24])).toBe(true) // 72
-    expect(cabeNaPilha([24, 24, 38])).toBe(true) // 86
-    expect(cabeNaPilha([38, 52])).toBe(true) // 90, exatamente no limite
+    expect(cabeNaPilha([38, 38, 38])).toBe(true) // 114, exatamente no limite
+    expect(cabeNaPilha([38, 24, 24, 24])).toBe(true) // 1 Normal e 3 Finos: 110
+    expect(cabeNaPilha([52, 38, 24])).toBe(true) // 114
+    expect(cabeNaPilha([68, 38])).toBe(true) // 106
     expect(cabeNaPilha([68])).toBe(true)
   })
 
   it('não cabe quando passa, nem por um px', () => {
-    expect(cabeNaPilha([24, 24, 24, 24])).toBe(false) // 96
-    expect(cabeNaPilha([38, 38, 24])).toBe(false) // 100
-    expect(cabeNaPilha([68, 24])).toBe(false) // 92
-    expect(cabeNaPilha([52, 39])).toBe(false) // 91
+    expect(cabeNaPilha([38, 24, 24, 24, 24])).toBe(false) // 1 Normal e 4 Finos: 134
+    expect(cabeNaPilha([24, 24, 24, 24, 24])).toBe(false) // 120
+    expect(cabeNaPilha([38, 38, 38, 24])).toBe(false) // 138
+    expect(cabeNaPilha([68, 24, 24])).toBe(false) // 116
+    expect(cabeNaPilha([38, 38, 39])).toBe(false) // 115
   })
 })
 
@@ -89,8 +89,8 @@ describe('moverLivroNaEstante com pilhas', () => {
   })
 
   it('uma pilha sem altura de sobra não recebe: ela anda inteira até o buraco mais perto', () => {
-    const estante = [d('a', 3, 38, 0), d('b', 3, 38, 1), d('c', 4, 24), d('n', 9, 38)]
-    // 38 + 38 + 38 = 114 > 90: não sobe. A pilha de a e b vai para a direita, empurrando c.
+    const estante = [d('a', 3, 38, 0), d('b', 3, 38, 1), d('c', 4, 24), d('n', 9, 52)]
+    // 38 + 38 + 52 = 128 > 114: não sobe. A pilha de a e b vai para a direita, empurrando c.
     expect(onde(moverLivroNaEstante(estante, 'n', 0, 3))).toEqual({
       n: [0, 3, 0],
       a: [0, 4, 0],
@@ -167,9 +167,9 @@ describe('moverLivroNaEstante com pilhas', () => {
 
   it('sem buraco para empurrar a pilha, recusa e nada muda', () => {
     const cheia = Array.from({ length: LUGARES_POR_PRATELEIRA }, (_, i) =>
-      i === 3 ? d('a', 3, 38) : p(`x${String(i)}`, i),
+      i === 3 ? d('a', 3, 52) : p(`x${String(i)}`, i),
     )
-    // `a` está sozinho no 3; um deitado de 68 não sobe (38 + 68 > 90) e não há buraco.
+    // `a` está sozinho no 3; um deitado de 68 não sobe (52 + 68 > 114) e não há buraco.
     expect(moverLivroNaEstante([...cheia, d('n', 0, 68, 0, 1)], 'n', 0, 3)).toBeNull()
   })
 
@@ -220,7 +220,7 @@ describe('lugarParaChegar (livro vindo de um backup)', () => {
   })
 
   it('não cabe na pilha: vai para o buraco mais perto, sem empurrar', () => {
-    expect(lugarParaChegar([d('a', 5, 68, 0)], d('n', 5, 38))).toEqual({ ordem: 6, nivel: 0 })
+    expect(lugarParaChegar([d('a', 5, 68, 0)], d('n', 5, 52))).toEqual({ ordem: 6, nivel: 0 })
   })
 
   it('um livro de pé nunca sobe numa pilha', () => {
@@ -290,15 +290,15 @@ describe('mudar a espessura de um livro da pilha (editar)', () => {
   })
 
   it('escolher uma largura que estoura o teto da pilha é recusado', () => {
-    const antes = [d('a', 3, 38), d('b', 3, 38, 1)] // 76
-    const grossa = antes.map((l) => (l.id === 'b' ? { ...l, larguraLombada: 52 } : l)) // 90
-    const grande = antes.map((l) => (l.id === 'b' ? { ...l, larguraLombada: 68 } : l)) // 106
+    const antes = [d('a', 3, 52), d('b', 3, 38, 1)] // 90
+    const grossa = antes.map((l) => (l.id === 'b' ? { ...l, larguraLombada: 52 } : l)) // 104
+    const grande = antes.map((l) => (l.id === 'b' ? { ...l, larguraLombada: 68 } : l)) // 120
     expect(cabeNaPilhaDepoisDeMudar(antes, grossa, 0, 3)).toBe(true)
     expect(cabeNaPilhaDepoisDeMudar(antes, grande, 0, 3)).toBe(false)
   })
 
   it('uma pilha que já passava do teto pode ser mexida, desde que não piore', () => {
-    const antes = [d('a', 3, 52), d('b', 3, 52, 1)] // 104, de um dado antigo
+    const antes = [d('a', 3, 68), d('b', 3, 52, 1)] // 120, de um dado antigo
     const menor = antes.map((l) => (l.id === 'b' ? { ...l, larguraLombada: 38 } : l))
     const maior = antes.map((l) => (l.id === 'b' ? { ...l, larguraLombada: 68 } : l))
     expect(cabeNaPilhaDepoisDeMudar(antes, menor, 0, 3)).toBe(true)

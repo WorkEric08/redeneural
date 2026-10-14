@@ -19,6 +19,7 @@ import {
   extensaoDoLivro,
   LARGURA_MINIMA_DO_LIVRO,
   larguraDoLivroGravado,
+  escalaDaPilha,
   larguraDosLivrosDaPrateleira,
   montarPrateleiras,
   type Lugar,
@@ -274,12 +275,21 @@ export function Movel({
                     }
                     style={{ width: `${String(lugar.largura)}px` }}
                   >
-                    {lugar.itens.map((item) => (
+                    {lugar.itens.map((item, _, itens) => (
                       <Lombada
                         key={item.livro.id}
                         item={item}
                         lugar={lugar.indice}
-                        largura={larguraDoLivroGravado(item.livro)}
+                        largura={
+                          Math.round(
+                            larguraDoLivroGravado(item.livro) *
+                              escalaDaPilha(
+                                itens.map((i) => larguraDoLivroGravado(i.livro)),
+                                alturaDaFileira,
+                              ) *
+                              10,
+                          ) / 10
+                        }
                         estado={estadoDe(item.livro.id)}
                         alvo={false}
                         ponte={(pontesDoFoco?.get(item.livro.id) ?? 0) > 0}

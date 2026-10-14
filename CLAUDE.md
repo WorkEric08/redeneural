@@ -6067,6 +6067,19 @@ identificadores e dado gravado. Este arquivo, fora esta seção, ainda usa "neur
 como "pensamento". Na Padrão, a linha de baixo da estante não tem mais a busca (ela mora no cabeçalho) e a
 contagem pode ocupar duas linhas, terminando antes do botão de criar.
 
+## A pilha cabe 3 livros Normais (13/10/2026)
+
+Pedido do usuário: no máximo **3 livros de largura Normal** numa pilha, ou o que somar o mesmo — 1 Normal e
+3 Finos, 2 Grossos, 1 Grande e 1 Normal. **Isto revoga** o limite fixo de 90 px de "O livro deitado e a pilha".
+- **Regra em pixels** (escolha dele): `ALTURA_UTIL_DA_PILHA_PX` = 3 × 38 = **114 px**. O exemplo "1 Normal e
+  4 Finos" soma 134 px e **não** cabe; 1 Normal e 3 Finos (110 px) cabe. É a mesma conta na store, no repositório,
+  ao criar, editar e importar (`cabeNaPilha`, `cabeNaPilhaDepoisDeMudar`, `lugarParaChegar`).
+- **O desenho encolhe, não a regra:** a fileira mínima mede 92 px (menos no Padrão com muitas prateleiras) e
+  114 px não cabe nela. `escalaDaPilha` (`prateleiras.ts`) desenha a pilha inteira menor, em proporção, para
+  não passar de 98% da fileira (uma pilha cheia de Normais fica com ~30 px por livro em 320×568). Só no
+  desenho: a espessura gravada é a de sempre. **Custo:** ali um livro da pilha fica mais fino que a Fina.
+- Pilhas já gravadas com mais de 114 px seguem valendo; só não podem piorar.
+
 ## Fases
 
 0. ✅ Esqueleto (Vite/React/TS/Tailwind/PWA/Capacitor)

@@ -1732,7 +1732,7 @@ describe('pilhas de livros deitados', () => {
   it('sem altura de sobra, a pilha anda inteira e o novo toma o lugar', async () => {
     await repo.upsertLivro(deitado('a', 3, 38, 0))
     await repo.upsertLivro(deitado('b', 3, 38, 1))
-    await repo.upsertLivro(deitado('n', 9, 38))
+    await repo.upsertLivro(deitado('n', 9, 52))
 
     await repo.moverLivro('n', 0, 3)
 
