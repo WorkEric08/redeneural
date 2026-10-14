@@ -13,7 +13,6 @@ import type {
   Id,
   ImagemParaGuardar,
   MapaDoPalacio,
-  ModoDaBusca,
   ModoDaRede,
   NeuronioGuardado,
   NeuronioNaTela,
@@ -51,7 +50,6 @@ export interface RespostasDoMotor {
   definirIntensidadeDaLuz: number
   definirIntensidadeDaLuzDoEnfeite: number
   definirIconesNosLivros: boolean
-  definirModoDaBusca: ModoDaBusca
   definirModoDaRede: ModoDaRede
   definirTema: TemaEscolhido
   reorganizarMapa: MapaDoPalacio
@@ -64,7 +62,6 @@ export interface RespostasDoMotor {
   /** Os bytes vêm só aqui, a pedido — nunca junto do estado. */
   lerImagem: Uint8Array | null
   lerImagemDoResultado: Uint8Array | null
-  buscarPorSentido: Id[]
 }
 
 export type TipoDePedido = keyof RespostasDoMotor
@@ -103,7 +100,6 @@ export type ParaMotor =
   | { req: number; tipo: 'definirIntensidadeDaLuz'; valor: number }
   | { req: number; tipo: 'definirIntensidadeDaLuzDoEnfeite'; valor: number }
   | { req: number; tipo: 'definirIconesNosLivros'; ligado: boolean }
-  | { req: number; tipo: 'definirModoDaBusca'; modo: ModoDaBusca }
   | { req: number; tipo: 'definirModoDaRede'; modo: ModoDaRede }
   | { req: number; tipo: 'definirTema'; tema: TemaEscolhido }
   | { req: number; tipo: 'reorganizarMapa' }
@@ -115,7 +111,6 @@ export type ParaMotor =
   | { req: number; tipo: 'apagarAnexo'; anexoId: Id }
   | { req: number; tipo: 'lerImagem'; anexoId: Id; tamanho: 'miniatura' | 'inteira' }
   | { req: number; tipo: 'lerImagemDoResultado'; neuronioId: Id; tamanho: 'miniatura' | 'inteira' }
-  | { req: number; tipo: 'buscarPorSentido'; consulta: string }
 
 export type DoMotor =
   | { req: number; ok: true; dados: RespostasDoMotor[TipoDePedido] }

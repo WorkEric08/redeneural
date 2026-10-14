@@ -10,7 +10,6 @@ import {
   INTENSIDADE_DA_LUZ_PADRAO,
   MINIMO_DE_PRATELEIRAS,
   MAPA_VAZIO,
-  MODO_DA_BUSCA_PADRAO,
   MODO_DA_REDE_PADRAO,
   moverEnfeiteNaEstante,
   moverLivroNaEstante,
@@ -29,7 +28,6 @@ import {
   type ImagemParaGuardar,
   type Livro,
   type MapaDoPalacio,
-  type ModoDaBusca,
   type ModoDaRede,
   type TemaEscolhido,
   type NeuronioNaTela,
@@ -117,8 +115,6 @@ interface PalacioStore {
   intensidadeDaLuzDoEnfeite: number
   /** Se a lombada mostra o ícone da espécie (livro, executável, pasta) no pé. */
   iconesNosLivros: boolean
-  /** O último modo da busca que a pessoa escolheu. */
-  modoDaBusca: ModoDaBusca
   /** O último modo da tela da Rede: a constelação ou o Mapa. */
   modoDaRede: ModoDaRede
   /**
@@ -208,8 +204,6 @@ interface PalacioStore {
   definirIntensidadeDaLuzDoEnfeite: (valor: number) => Promise<void>
   /** Otimista: a estante já mostra ou esconde os ícones do pé na hora. */
   definirIconesNosLivros: (ligado: boolean) => Promise<void>
-  /** Otimista: a busca troca de modo na hora, e a escolha fica gravada para a próxima vez. */
-  definirModoDaBusca: (modo: ModoDaBusca) => Promise<void>
   /** O mesmo, para a tela da Rede (constelação ou Mapa). */
   definirModoDaRede: (modo: ModoDaRede) => Promise<void>
   /** Otimista: a interface troca de tema na hora, e a escolha fica gravada para a próxima vez. */
@@ -251,12 +245,6 @@ interface PalacioStore {
     neuronioId: string,
     tamanho: 'miniatura' | 'inteira',
   ) => Promise<Uint8Array | null>
-  /**
-   * Os ids dos pensamentos mais parecidos com a consulta, em ordem. Não é estado,
-   * como `lerImagem`: quem pergunta guarda a resposta. Falhar é com quem chamou
-   * — uma busca enquanto se digita não pode encher a tela de avisos de erro.
-   */
-  buscarPorSentido: (consulta: string) => Promise<string[]>
   /** Mostra um aviso flutuante, com ou sem botão. */
   avisar: (texto: string, acao?: AcaoDoAviso) => void
   /** O aviso flutuante some — pelo tempo ou pelo toque. */
@@ -286,7 +274,6 @@ export const usePalacio = create<PalacioStore>()((set, get) => {
     intensidadeDaLuz: INTENSIDADE_DA_LUZ_PADRAO,
     intensidadeDaLuzDoEnfeite: INTENSIDADE_DA_LUZ_PADRAO,
     iconesNosLivros: ICONES_NOS_LIVROS_PADRAO,
-    modoDaBusca: MODO_DA_BUSCA_PADRAO,
     modoDaRede: MODO_DA_REDE_PADRAO,
     tema: TEMA_PADRAO,
     carregado: false,
@@ -818,17 +805,6 @@ export const usePalacio = create<PalacioStore>()((set, get) => {
       }
     },
 
-    async definirModoDaBusca(modo) {
-      set({ modoDaBusca: modo })
-      try {
-        await engine.definirModoDaBusca(modo)
-      } catch (e) {
-        // Sem desfazer: a pessoa tocou no modo e a busca já está nele. Só
-        // não fica lembrado para a próxima vez — e isso ela precisa saber.
-        set({ erro: mensagem(e) })
-      }
-    },
-
     async criarAnexo(novo): Promise<string | null> {
       const id = newId()
       set({ ocupado: true, erro: null })
@@ -878,16 +854,6 @@ export const usePalacio = create<PalacioStore>()((set, get) => {
 
     lerImagemDoResultado(neuronioId, tamanho) {
       return engine.lerImagemDoResultado(neuronioId, tamanho)
-    },
-
-    async buscarPorSentido(consulta) {
-      try {
-        return await engine.buscarPorSentido(consulta)
-      } finally {
-        // Se foi a busca que carregou o modelo, o fio de progresso subiu por
-        // causa dela. Com uma escrita em curso o fio é dela, e fica.
-        if (!get().ocupado) set({ progresso: null })
-      }
     },
 
     async moverNeuronioNaRede(id, ponto) {

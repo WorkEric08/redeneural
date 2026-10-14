@@ -3941,6 +3941,8 @@ Decisões da Etapa 0 (respostas dele), que valem para a série toda:
 
 ### Busca por sentido (Atualização 1)
 
+> **Removida em 15/10/2026:** a Busca é só por palavra exata — ver "A busca é só por palavra exata". O que segue fica como registro (a calibração do e5 e o limite do modelo).
+
 `/busca` ganhou dois modos, num seletor de chips como o "Livro | Pasta":
 
 - **Por sentido** — para quem nunca escolheu. A frase passa pelo mesmo modelo,
@@ -6452,6 +6454,29 @@ livros fica mais claro" (13–14/10/2026) e o que dizia dos avisos de 2 s nascid
 - **Verificado** no Chrome (build de produção): mover um livro (arrastando, com a prévia) grava a ordem certa e **nenhum aviso**
   aparece. 830 testes (os 6 do Desfazer saíram), tipos e lint limpos.
 
+## A busca é só por palavra exata (15/10/2026)
+
+Pedido do usuário: na tela de Busca, sair o seletor "Por sentido | Palavra exata" e a busca passa a ser **só por palavra exata**.
+**Isto revoga** "Busca por sentido (Atualização 1)" e o que "Busca global (Fase 12)" dizia do modo lembrado.
+
+- **A tela** (`pages/Busca.tsx`): o campo, o aviso de "Escritos por último" (os 8 últimos pensamentos, com o campo vazio) e os
+  resultados de `buscar.ts` — livros pelo título, pensamentos pelo título ou pelo conteúdo inteiro, pedaço de palavra, sem acento e
+  sem caixa. O placeholder é "Título ou conteúdo…" e o "nada encontrado" não cita mais o outro modo. Vale nos dois temas.
+- **Saiu de ponta a ponta**, não só o botão (regra 7 do mestre): `buscarPorSentido` do núcleo (`core/motor/busca.ts`, com a régua de
+  3,5 desvios e o teto de 20 resultados) e o teste dele; a chamada pelo Worker (`buscarPorSentido` no protocolo, no motor, na fachada
+  `ConnectionEngine` e na store); o hook `useBuscaPorSentido`; `resultadosPorSentido` de `buscar.ts` e o `inicioDoTexto` que só ele
+  usava; e a **preferência** `modoDaBusca` (`ModoDaBusca`, `getModoDaBusca`/`definirModoDaBusca` do repositório e da store,
+  `modoDaBusca.ts` e o teste dele). Um `modoDaBusca` já gravado em `meta.preferencias` fica no banco sem uso e é ignorado — sem
+  migração, o documento de preferências nunca foi validado campo a campo.
+- **O que isto muda para o app:** a busca não chama mais o modelo. Antes, a primeira consulta por sentido podia carregar o e5 só para
+  buscar; agora a Busca é só leitura sobre o que a store já tem, funciona igual offline e **não baixa nem lê o modelo**. Quem escreve um
+  pensamento continua passando pelo e5 (conexões, Porto, despertar).
+- **Custo assumido:** some a forma de achar um pensamento **sem lembrar uma palavra dele** — "recomeçar" não acha mais um texto sobre
+  "Nova fase" e "Começar outra faculdade". O limite do modelo já era conhecido (ver a seção antiga), mas a busca por significado era a
+  única porta para isso. A Rede e o Mapa continuam agrupando por significado.
+- **Verificado** no Chrome (build de produção, 412×892, Padrão escuro e Clássico): sem os dois botões, "recurs" acha Recursão, o texto
+  sem resultado diz só "Nada encontrado". 813 testes (os de sentido saíram), tipos e lint limpos.
+
 ## Fases
 
 0. ✅ Esqueleto (Vite/React/TS/Tailwind/PWA/Capacitor)
@@ -6511,3 +6536,4 @@ livros fica mais claro" (13–14/10/2026) e o que dizia dos avisos de 2 s nascid
 34. ✅ Livros adormecidos testados com passagem de dias; tocar o andamento atual acorda e virar executável não adormece tudo (14/10/2026)
 35. ✅ Mobilidade da estante em três etapas: reordenar e inserir na pilha, soltar antes/depois de um livro e a prateleira que se reorganiza ao vivo (14/10/2026)
 36. ✅ O Desfazer de mover livros sai: os avisos "Livro movido"/"Movimento desfeito" e toda a infraestrutura dele (14/10/2026)
+37. ✅ A busca é só por palavra exata: o seletor de modos e a busca por sentido saem (15/10/2026)

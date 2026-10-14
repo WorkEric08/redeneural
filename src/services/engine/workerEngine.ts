@@ -14,7 +14,6 @@ import type {
   Id,
   ImagemParaGuardar,
   MapaDoPalacio,
-  ModoDaBusca,
   ModoDaRede,
   NeuronioGuardado,
   NeuronioNaTela,
@@ -161,9 +160,6 @@ export function criarWorkerEngine(): ConnectionEngine {
     definirIconesNosLivros: (ligado: boolean): Promise<boolean> =>
       pedir<'definirIconesNosLivros'>({ tipo: 'definirIconesNosLivros', ligado }),
 
-    definirModoDaBusca: (modo: ModoDaBusca): Promise<ModoDaBusca> =>
-      pedir<'definirModoDaBusca'>({ tipo: 'definirModoDaBusca', modo }),
-
     definirModoDaRede: (modo: ModoDaRede): Promise<ModoDaRede> =>
       pedir<'definirModoDaRede'>({ tipo: 'definirModoDaRede', modo }),
 
@@ -199,9 +195,6 @@ export function criarWorkerEngine(): ConnectionEngine {
       tamanho: 'miniatura' | 'inteira',
     ): Promise<Uint8Array | null> =>
       pedir<'lerImagemDoResultado'>({ tipo: 'lerImagemDoResultado', neuronioId, tamanho }),
-
-    buscarPorSentido: (consulta: string): Promise<Id[]> =>
-      pedir<'buscarPorSentido'>({ tipo: 'buscarPorSentido', consulta }),
 
     aoProgredir(ouvinte) {
       ouvintes.add(ouvinte)

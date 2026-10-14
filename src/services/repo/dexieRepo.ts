@@ -31,7 +31,6 @@ import {
   corMaisProxima,
   MAXIMO_DE_PRATELEIRAS,
   MINIMO_DE_PRATELEIRAS,
-  modoDaBuscaOuPadrao,
   modoDaRedeOuPadrao,
   temaEscolhidoOuPadrao,
   fundirMapas,
@@ -412,17 +411,6 @@ export function createDexieRepo(db: PalacioDB = defaultDb): PalacioRepo {
     async definirTema(tema) {
       await db.transaction('rw', db.meta, async () => {
         await db.meta.put(await preferenciasCom({ tema: temaEscolhidoOuPadrao(tema) }))
-      })
-    },
-
-    async getModoDaBusca() {
-      const gravado = (await db.meta.get('preferencias')) as PreferenciasGravadas | undefined
-      return modoDaBuscaOuPadrao(gravado?.modoDaBusca)
-    },
-
-    async definirModoDaBusca(modo) {
-      await db.transaction('rw', db.meta, async () => {
-        await db.meta.put(await preferenciasCom({ modoDaBusca: modoDaBuscaOuPadrao(modo) }))
       })
     },
 

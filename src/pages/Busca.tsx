@@ -1,12 +1,11 @@
-import { Search, Sparkles, WholeWord } from 'lucide-react'
+import { Search } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 
 import { BarraDeTopo } from '@/components/BarraDeTopo'
 import { EstadoVazio } from '@/components/EstadoVazio'
 import { useTemaPadrao } from '@/hooks/useTemaPadrao'
-import { buscar, resultadosPorSentido } from '@/features/busca/buscar'
-import { useBuscaPorSentido } from '@/features/busca/useBuscaPorSentido'
+import { buscar } from '@/features/busca/buscar'
 import { ROTULO_DO_PORTO } from '@/features/porto/porto'
 import { contar } from '@/lib/plural'
 import { usePalacio } from '@/store/palacio'
@@ -15,19 +14,10 @@ import { usePalacio } from '@/store/palacio'
 const RECENTES = 8
 
 /**
- * Busca no palácio inteiro, de dois jeitos (30/09/2026):
- *
- * - **Por sentido** — o padrão. A frase passa pelo mesmo modelo que lê os
- *   pensamentos, e voltam os que se parecem com ela mesmo sem dividir uma
- *   palavra (`buscarPorSentido`, no núcleo, dentro do Worker).
- * - **Palavra exata** — livros pelo título, pensamentos pelo título ou pelo
- *   conteúdo inteiro, sobre o que a store já tem em memória (`buscar.ts`). É a
- *   que garante achar um trecho do fim de um texto longo: o modelo só lê os
- *   primeiros 2500 caracteres.
- *
- * Abre no último modo que a pessoa escolheu (pedido do usuário, 30/09/2026) —
- * gravado como preferência do palácio, como a luz da estante. Quem nunca
- * escolheu começa em "Por sentido".
+ * Busca no palácio inteiro, **só por palavra exata** (15/10/2026): livros pelo
+ * título, pensamentos pelo título ou pelo conteúdo inteiro, sobre o que a store
+ * já tem em memória (`buscar.ts`). A busca por sentido — a frase passando pelo
+ * modelo — e o seletor entre os dois jeitos saíram a pedido do usuário.
  *
  * Com o campo vazio a tela não fica em branco: mostra os últimos pensamentos
  * escritos (17/09/2026). É a única tela do app que responde "o que eu escrevi
@@ -36,7 +26,7 @@ const RECENTES = 8
  * (ver `porMaisRecente` em dexieRepo.ts), então aqui é só recortar.
  */
 export default function Busca() {
-  const { livros, neuronios, modoDaBusca: modo, definirModoDaBusca } = usePalacio()
+  const { livros, neuronios } = usePalacio()
   const [consulta, setConsulta] = useState('')
   const padrao = useTemaPadrao()
 
@@ -47,13 +37,8 @@ export default function Busca() {
   const daRede = busca.get('de') === 'rede'
 
   const porPalavra = useMemo(
-    () => (modo === 'exata' ? buscar(consulta, livros, neuronios) : []),
-    [modo, consulta, livros, neuronios],
-  )
-  const sentido = useBuscaPorSentido(consulta, modo === 'sentido')
-  const porSentido = useMemo(
-    () => (sentido.ids ? resultadosPorSentido(sentido.ids, livros, neuronios) : []),
-    [sentido.ids, livros, neuronios],
+    () => buscar(consulta, livros, neuronios),
+    [consulta, livros, neuronios],
   )
 
   const recentes = useMemo(() => neuronios.slice(0, RECENTES), [neuronios])
@@ -77,7 +62,7 @@ export default function Busca() {
       autoCapitalize="off"
       spellCheck={false}
       enterKeyHint="search"
-      placeholder={modo === 'sentido' ? 'Descreva o que procura…' : 'Título ou conteúdo…'}
+      placeholder="Título ou conteúdo…"
       aria-label="Buscar no palácio"
     />
   )
@@ -115,36 +100,11 @@ export default function Busca() {
               autoCapitalize="off"
               spellCheck={false}
               enterKeyHint="search"
-              placeholder={modo === 'sentido' ? 'Descreva o que procura…' : 'Título ou conteúdo…'}
+              placeholder="Título ou conteúdo…"
               aria-label="Buscar no palácio"
               className="campo h-13 px-4 text-lg"
             />
           )}
-
-          <div role="group" aria-label="Como buscar" className="flex gap-2">
-            <button
-              type="button"
-              aria-pressed={modo === 'sentido'}
-              onClick={() => {
-                void definirModoDaBusca('sentido')
-              }}
-              className="chip"
-            >
-              {!padrao && <Sparkles size={15} aria-hidden />}
-              Por sentido
-            </button>
-            <button
-              type="button"
-              aria-pressed={modo === 'exata'}
-              onClick={() => {
-                void definirModoDaBusca('exata')
-              }}
-              className="chip"
-            >
-              {!padrao && <WholeWord size={15} aria-hidden />}
-              Palavra exata
-            </button>
-          </div>
         </div>
 
         {termo === '' ? (
@@ -181,57 +141,12 @@ export default function Busca() {
               </ul>
             </section>
           )
-        ) : modo === 'sentido' ? (
-          sentido.falhou ? (
-            <p className="text-poeira px-1 text-sm">
-              Não deu para buscar por sentido agora. A palavra exata continua funcionando.
-            </p>
-          ) : porSentido.length === 0 ? (
-            padrao && !sentido.procurando ? (
-              <EstadoVazio
-                icone={<Search size={28} aria-hidden />}
-                titulo="Nada encontrado"
-                texto="Tente outras palavras ou mude para “Palavra exata”."
-              />
-            ) : (
-              <p className="text-poeira px-1 text-sm" aria-live="polite">
-                {sentido.procurando ? 'Procurando…' : `Nada parecido com “${termo}”.`}
-              </p>
-            )
-          ) : (
-            // Enquanto a consulta nova não volta, a lista da anterior fica — mais
-            // apagada, em vez de piscar a cada tecla.
-            <div>
-              {padrao && (
-                <h2 className="rotulo-de-secao">
-                  <span>Resultados</span>
-                  <span>{contar(porSentido.length, 'pensamento', 'pensamentos')}</span>
-                </h2>
-              )}
-              <ul
-                aria-busy={sentido.procurando}
-                className={`${padrao ? 'pd-resultados' : 'cartao flex flex-col'} transition-opacity ${sentido.procurando ? 'opacity-60' : ''}`}
-              >
-                {porSentido.map((r) => (
-                  <LinhaDeNeuronio
-                    key={r.neuronio.id}
-                    para={destinoDo(r.neuronio.id)}
-                    titulo={r.neuronio.titulo}
-                    abaixo={`${r.livro?.titulo ?? ROTULO_DO_PORTO}${r.trecho ? ` · ${r.trecho}` : ''}`}
-                    cor={r.livro?.cor}
-                    conteudo={r.neuronio.conteudo}
-                    padrao={padrao}
-                  />
-                ))}
-              </ul>
-            </div>
-          )
         ) : porPalavra.length === 0 ? (
           padrao ? (
             <EstadoVazio
               icone={<Search size={28} aria-hidden />}
               titulo="Nada encontrado"
-              texto="Tente outras palavras ou mude para “Por sentido”."
+              texto="Tente outras palavras."
             />
           ) : (
             <p className="text-poeira px-1 text-sm">Nada encontrado para “{termo}”.</p>

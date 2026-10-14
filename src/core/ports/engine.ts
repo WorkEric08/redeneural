@@ -1,5 +1,4 @@
 import type { PontoDeSoltura } from '../domain/ordem'
-import type { ModoDaBusca } from '../domain/modoDaBusca'
 import type { ModoDaRede } from '../domain/modoDaRede'
 import type { TemaEscolhido } from '../domain/tema'
 import type { EstiloDaLombada } from '../domain/paletaNoite'
@@ -158,8 +157,6 @@ export interface EstadoDoPalacio {
   intensidadeDaLuzDoEnfeite: number
   /** Se a lombada mostra o ícone da espécie (livro, executável, pasta) no pé. */
   iconesNosLivros: boolean
-  /** O último modo da busca que a pessoa escolheu — a tela abre nele. */
-  modoDaBusca: ModoDaBusca
   /** O último modo da tela da Rede — constelação ou Mapa. */
   modoDaRede: ModoDaRede
   /** O tema da interface: o clássico ou uma das duas versões do Padrão. */
@@ -300,8 +297,6 @@ export interface ConnectionEngine {
   definirIntensidadeDaLuzDoEnfeite(valor: number): Promise<number>
   /** Liga ou desliga o ícone da espécie no pé das lombadas. */
   definirIconesNosLivros(ligado: boolean): Promise<boolean>
-  /** Grava o modo da busca que a pessoa acabou de escolher. */
-  definirModoDaBusca(modo: ModoDaBusca): Promise<ModoDaBusca>
   /** Grava o modo da tela da Rede que a pessoa acabou de escolher. */
   definirModoDaRede(modo: ModoDaRede): Promise<ModoDaRede>
   /** Grava o tema da interface que a pessoa acabou de escolher. */
@@ -345,15 +340,6 @@ export interface ConnectionEngine {
   lerImagem(anexoId: Id, tamanho: 'miniatura' | 'inteira'): Promise<Uint8Array | null>
   /** O mesmo para a imagem do resultado de uma ideia — `null` se ela não tem. */
   lerImagemDoResultado(neuronioId: Id, tamanho: 'miniatura' | 'inteira'): Promise<Uint8Array | null>
-  /**
-   * Os pensamentos mais parecidos com a consulta, do mais para o menos parecido
-   * (ver `buscarPorSentido`). Só ids: a tela já tem o resto.
-   *
-   * Num palácio que nunca foi lido devolve vazio sem carregar o modelo — sem
-   * perfil não há régua, e uma busca não pode baixar 129 MB. Pensamento ainda
-   * sem vetor fica de fora.
-   */
-  buscarPorSentido(consulta: string): Promise<Id[]>
   /** Devolve a função que cancela a inscrição. */
   aoProgredir(ouvinte: (p: ProgressoDoMotor) => void): () => void
 }

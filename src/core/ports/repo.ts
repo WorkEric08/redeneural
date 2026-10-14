@@ -12,7 +12,6 @@ import type {
   Vinculo,
 } from '../domain/types'
 import type { PontoDeSoltura } from '../domain/ordem'
-import type { ModoDaBusca } from '../domain/modoDaBusca'
 import type { ModoDaRede } from '../domain/modoDaRede'
 import type { TemaEscolhido } from '../domain/tema'
 import type { MapaDoPalacio } from '../motor/mapa'
@@ -83,9 +82,6 @@ export interface PalacioRepo {
   /** Se a lombada mostra o ícone da espécie no pé. Default `ICONES_NOS_LIVROS_PADRAO` (sim). */
   getIconesNosLivros(): Promise<boolean>
   definirIconesNosLivros(ligado: boolean): Promise<void>
-  /** O último modo da busca que a pessoa escolheu. `MODO_DA_BUSCA_PADRAO` se nunca escolheu. */
-  getModoDaBusca(): Promise<ModoDaBusca>
-  definirModoDaBusca(modo: ModoDaBusca): Promise<void>
   /** O último modo da tela da Rede (constelação ou Mapa). `MODO_DA_REDE_PADRAO` se nunca escolheu. */
   getModoDaRede(): Promise<ModoDaRede>
   definirModoDaRede(modo: ModoDaRede): Promise<void>
