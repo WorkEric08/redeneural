@@ -42,6 +42,7 @@ import {
   type TipoDeLivro,
   type Vaga,
   type Vinculo,
+  type PontoDeSoltura,
 } from '@/core'
 import { newId } from '@/lib/id'
 import { engine } from '@/services/engine/workerEngine'
@@ -188,7 +189,12 @@ interface PalacioStore {
   editarLivro: (id: string, mudancas: NovoLivro) => Promise<boolean>
   apagarLivro: (id: string) => Promise<boolean>
   /** Põe o livro no lugar `(prateleira, lugar)`, empurrando se já houver livro ali. */
-  moverLivro: (id: string, prateleira: number, lugar: number) => Promise<void>
+  moverLivro: (
+    id: string,
+    prateleira: number,
+    lugar: number,
+    ponto?: PontoDeSoltura,
+  ) => Promise<void>
   /**
    * Desfaz o último movimento de livro ou de enfeite, se a estante ainda é a que ele deixou: se a
    * pessoa mexeu em mais alguma coisa desde então, desfazer apagaria isso também, e o aviso diz que
@@ -587,7 +593,7 @@ export const usePalacio = create<PalacioStore>()((set, get) => {
         neuronios: virouExecutavel
           ? neuroniosAntes.map((n) => (n.livroId === id ? { ...n, ultimoToque: agora } : n))
           : neuroniosAntes,
-        vagas: vagasDepoisDeMover(vagasAntes, antes, virado, id),
+        vagas: vagasDepoisDeMover(vagasAntes, virado),
         enfeites: enfeitesSemLivroEmCima(enfeitesAntes, virado),
         livros: virado.map((l) =>
           l.id === id
@@ -638,10 +644,10 @@ export const usePalacio = create<PalacioStore>()((set, get) => {
       }
     },
 
-    async moverLivro(id, prateleira, lugar) {
+    async moverLivro(id, prateleira, lugar, ponto) {
       const { livros: antes, vagas: vagasAntes, enfeites: enfeitesAntes } = get()
       const fotoAntes = fotoDaEstante({ livros: antes, vagas: vagasAntes, enfeites: enfeitesAntes })
-      const depois = moverLivroNaEstante(antes, id, prateleira, lugar)
+      const depois = moverLivroNaEstante(antes, id, prateleira, lugar, ponto)
       if (!depois) {
         set({
           acaoDoAviso: null,
@@ -655,13 +661,13 @@ export const usePalacio = create<PalacioStore>()((set, get) => {
       // banco faria o livro voltar à origem e só depois pular — parece erro.
       set({
         livros: depois,
-        vagas: vagasDepoisDeMover(vagasAntes, antes, depois, id),
+        vagas: vagasDepoisDeMover(vagasAntes, depois),
         enfeites: enfeitesSemLivroEmCima(enfeitesAntes, depois),
         erro: null,
       })
 
       try {
-        const gravada = await engine.moverLivro(id, prateleira, lugar)
+        const gravada = await engine.moverLivro(id, prateleira, lugar, ponto)
         set(gravada)
         oferecerDesfazer(fotoAntes, gravada, 'Livro movido.')
       } catch (e) {

@@ -1,4 +1,4 @@
-import type { FotoDaEstante } from '../domain/ordem'
+import type { FotoDaEstante, PontoDeSoltura } from '../domain/ordem'
 import type { ModoDaBusca } from '../domain/modoDaBusca'
 import type { ModoDaRede } from '../domain/modoDaRede'
 import type { TemaEscolhido } from '../domain/tema'
@@ -267,9 +267,16 @@ export interface ConnectionEngine {
   /**
    * Põe um livro no lugar `(prateleira, lugar)`. Lugar sem livro: só ele se
    * move. Com livro: empurra até o buraco mais perto — a "bandeja de apps do
-   * Android". O lugar de onde saiu fica aberto.
+   * Android". O lugar de onde saiu fica aberto. `ponto` diz onde o dedo apontou: o andar de
+   * inserção numa pilha de
+   * deitados (0 embaixo; sem ela, o topo) — e, na própria pilha do livro, reordena.
    */
-  moverLivro(id: Id, prateleira: number, lugar: number): Promise<EstanteGravada>
+  moverLivro(
+    id: Id,
+    prateleira: number,
+    lugar: number,
+    ponto?: PontoDeSoltura,
+  ): Promise<EstanteGravada>
   /** Tira o enfeite de um lugar sem livro, deixando a madeira à mostra. */
   tirarEnfeite(prateleira: number, lugar: number): Promise<EstanteGravada>
   /** Põe um enfeite de volta num lugar aberto. */

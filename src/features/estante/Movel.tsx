@@ -1,12 +1,17 @@
-import { useEffect, useMemo, useRef, type CSSProperties } from 'react'
+import { Fragment, useEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
 
 import {
+  enfeitesSemLivroEmCima,
+  entraNaPilha,
   moverEnfeiteNaEstante,
   moverLivroNaEstante,
   type DadosDoEnfeite,
+  type LadoDoLivro,
+  type PontoDeSoltura,
   type EnfeiteGravado,
   type Id,
   type Vaga,
+  vagasDepoisDeMover,
 } from '@/core'
 
 import { Enfeite, FantasmaDoEnfeite } from './Enfeite'
@@ -25,8 +30,11 @@ import {
   type Lugar,
 } from './prateleiras'
 import type { LivroNaEstante } from './resumo'
+import { useAnimarMovimento } from './useAnimarMovimento'
 import { useMedidasDaFileira } from './useMedidasDaFileira'
 import {
+  mesmoAlvo,
+  pontoDoAlvo,
   useManipularLivros,
   type LugarDaEstante,
   type ManipulacaoDaLombada,
@@ -58,7 +66,7 @@ interface Props {
   onEspiar: (livroId: string) => void
   onAcoes: (livroId: string) => void
   /** Põe o livro no lugar `(prateleira, lugar)` — mesma assinatura da store. */
-  onMover: (livroId: string, prateleira: number, lugar: number) => void
+  onMover: (livroId: string, prateleira: number, lugar: number, ponto?: PontoDeSoltura) => void
   onNovo: (prateleira: number, lugar: number) => void
   /** O livro não cabe inteiro entre as laterais daquela prateleira: nada foi feito. */
   onSemEspaco: (prateleira: number) => void
@@ -70,6 +78,13 @@ interface Props {
     dados: DadosDoEnfeite,
   ) => void
 }
+
+/**
+ * Quanto o dedo precisa ficar sobre o mesmo ponto antes de a prateleira abrir lugar para o livro. Sem
+ * essa espera, atravessar a prateleira depressa faria cada livro dela pular de um lado para o outro
+ * a cada lugar cruzado.
+ */
+const ESPERA_DA_PREVIA_MS = 90
 
 function mesmoLugar(a: LugarDaEstante | null, prateleira: number, lugar: number): boolean {
   return a !== null && a.prateleira === prateleira && a.lugar === lugar
@@ -142,10 +157,15 @@ export function Movel({
   // As laterais são sólidas: um livro só vai (ou nasce) numa prateleira onde os
   // livros dela continuam cabendo inteiros. Os enfeites cedem espaço até a
   // largura mínima, então o que decide é a soma dos livros.
-  function podeMover(livroId: string, prateleira: number, lugar: number): boolean {
+  function podeMover(
+    livroId: string,
+    prateleira: number,
+    lugar: number,
+    ponto?: PontoDeSoltura,
+  ): boolean {
     if (larguraUtil === null) return true
     const livros = estante.map((e) => e.livro)
-    const depois = moverLivroNaEstante(livros, livroId, prateleira, lugar)
+    const depois = moverLivroNaEstante(livros, livroId, prateleira, lugar, ponto)
     if (!depois) return true // sem lugar livre: quem recusa é a store, com o aviso dela
     return cabeNaPrateleira(
       larguraDosLivrosDaPrateleira(livros, prateleira, extensaoDe),
@@ -187,11 +207,11 @@ export function Movel({
       onEspiar,
       onAcoes,
       onMover: (livroId, alvo) => {
-        if (!podeMover(livroId, alvo.prateleira, alvo.lugar)) {
+        if (!podeMover(livroId, alvo.prateleira, alvo.lugar, pontoDoAlvo(alvo))) {
           onSemEspaco(alvo.prateleira)
           return
         }
-        onMover(livroId, alvo.prateleira, alvo.lugar)
+        onMover(livroId, alvo.prateleira, alvo.lugar, pontoDoAlvo(alvo))
       },
       onTocarLugar: ({ prateleira, lugar }) => {
         if (!podeCriar(prateleira)) {
@@ -238,9 +258,17 @@ export function Movel({
     if (gesto.fase !== 'arrastando' || alvo === null) return false
     if (gesto.livroId !== null) {
       const livros = estante.map((e) => e.livro)
-      if (moverLivroNaEstante(livros, gesto.livroId, alvo.prateleira, alvo.lugar) === null)
+      if (
+        moverLivroNaEstante(
+          livros,
+          gesto.livroId,
+          alvo.prateleira,
+          alvo.lugar,
+          pontoDoAlvo(alvo),
+        ) === null
+      )
         return true
-      return !podeMover(gesto.livroId, alvo.prateleira, alvo.lugar)
+      return !podeMover(gesto.livroId, alvo.prateleira, alvo.lugar, pontoDoAlvo(alvo))
     }
     if (enfeiteNaMao && gesto.enfeite) {
       const dados = dadosDoEnfeite(enfeiteNaMao)
@@ -257,6 +285,99 @@ export function Movel({
     }
     return false
   })()
+
+  // A prévia ao vivo: o livro na mão já está no lugar onde cairia, e a prateleira que o recebe (e a de
+  // onde ele saiu) se reorganizam para isso — a mesma conta que a soltura vai gravar. Espera o dedo
+  // assentar (`ESPERA_DA_PREVIA_MS`) e não se faz quando o destino seria recusado.
+  const alvoDoLivro =
+    gesto.fase === 'arrastando' && gesto.livroId !== null && !recusado ? alvo : null
+  const [alvoDaPrevia, setAlvoDaPrevia] = useState<LugarDaEstante | null>(null)
+  useEffect(() => {
+    const espera = window.setTimeout(
+      () => {
+        setAlvoDaPrevia(alvoDoLivro)
+      },
+      alvoDoLivro === null ? 0 : ESPERA_DA_PREVIA_MS,
+    )
+    return () => {
+      window.clearTimeout(espera)
+    }
+  }, [alvoDoLivro])
+
+  const previa = useMemo(() => {
+    if (gesto.fase !== 'arrastando' || gesto.livroId === null || alvoDaPrevia === null) return null
+    const antes = estante.map((e) => e.livro)
+    const depois = moverLivroNaEstante(
+      antes,
+      gesto.livroId,
+      alvoDaPrevia.prateleira,
+      alvoDaPrevia.lugar,
+      pontoDoAlvo(alvoDaPrevia),
+    )
+    if (!depois) return null
+    const novos = new Map(depois.map((l) => [l.id, l]))
+    return {
+      estante: estante.map((e) => ({ ...e, livro: novos.get(e.livro.id) ?? e.livro })),
+      vagas: vagasDepoisDeMover(vagas, depois),
+      enfeites: enfeitesSemLivroEmCima(enfeites, depois),
+    }
+  }, [gesto.fase, gesto.livroId, alvoDaPrevia, estante, vagas, enfeites])
+
+  const prateleirasVistas = useMemo(
+    () =>
+      previa === null
+        ? prateleiras
+        : montarPrateleiras(
+            previa.estante,
+            previa.vagas,
+            quantidadeDePrateleiras,
+            larguraUtil ?? undefined,
+            previa.enfeites,
+            alturaDaFileira,
+          ),
+    [previa, prateleiras, quantidadeDePrateleiras, larguraUtil, alturaDaFileira],
+  )
+  useAnimarMovimento(movel, prateleirasVistas, gesto.fase === 'arrastando')
+
+  // Com a prévia no ar o livro já está onde vai cair: o anel, a barra do lado e a linha de inserção
+  // (que dizem "vai cair aqui" antes da prévia chegar) saem.
+  const previaNoAr = previa !== null && alvo !== null && mesmoAlvo(alvoDaPrevia, alvo)
+  const destaque = previaNoAr ? null : alvo
+
+  // Onde, numa pilha, o livro na mão entraria — para a linha de inserção. `antesDe` é o livro logo
+  // acima do ponto (ou `null`, o topo). Só quando soltar ali entra na pilha de fato (uma pilha
+  // cheia, ou um livro de pé, tomam o lugar e empurram) e muda algo (soltar no andar em que o livro
+  // já está é desistir).
+  function insercaoDaPilha(
+    prateleira: number,
+    lugar: Extract<Lugar, { tipo: 'pilha' }>,
+  ): { antesDe: string | null } | null {
+    if (gesto.fase !== 'arrastando' || gesto.livroId === null || destaque === null) return null
+    if (!mesmoLugar(destaque, prateleira, lugar.indice) || destaque.posicao === undefined)
+      return null
+    const livros = estante.map((e) => e.livro)
+    if (!entraNaPilha(livros, gesto.livroId, prateleira, lugar.indice, destaque.posicao))
+      return null
+    const meu = lugar.itens.findIndex((i) => i.livro.id === gesto.livroId)
+    if (meu >= 0 && destaque.posicao === meu) return null
+    const outros = lugar.itens.filter((i) => i.livro.id !== gesto.livroId)
+    return { antesDe: outros[destaque.posicao]?.livro.id ?? null }
+  }
+
+  // O lado em que o dedo está sobre uma pilha que **não** recebe o livro na mão (cheia, ou o livro é
+  // de pé): aí soltar é cair na fresta ao lado dela, e a barra mostra de que lado. Quando ela recebe,
+  // quem mostra é a linha de inserção.
+  function ladoDaPilha(
+    prateleira: number,
+    lugar: Extract<Lugar, { tipo: 'pilha' }>,
+  ): LadoDoLivro | undefined {
+    if (gesto.fase !== 'arrastando' || gesto.livroId === null || destaque === null) return undefined
+    if (!mesmoLugar(destaque, prateleira, lugar.indice)) return undefined
+    const livros = estante.map((e) => e.livro)
+    if (entraNaPilha(livros, gesto.livroId, prateleira, lugar.indice, destaque.posicao))
+      return undefined
+    return destaque.lado
+  }
 
   function estadoDe(livroId: string): EstadoDaLombada {
     if (abrindoId === livroId) return 'vazio'
@@ -284,7 +405,7 @@ export function Movel({
           } as CSSProperties
         }
       >
-        {prateleiras.map((p, prateleira) => (
+        {prateleirasVistas.map((p, prateleira) => (
           <div
             className="movel-vao"
             key={p.chave}
@@ -301,37 +422,45 @@ export function Movel({
                     className="pilha"
                     data-lugar={lugar.indice}
                     data-alvo={
-                      (mesmoLugar(alvo, prateleira, lugar.indice) &&
+                      (mesmoLugar(destaque, prateleira, lugar.indice) &&
                         !lugar.itens.some((i) => i.livro.id === gesto.livroId)) ||
                       undefined
                     }
+                    data-lado={ladoDaPilha(prateleira, lugar)}
                     style={{ width: `${String(lugar.largura)}px` }}
                   >
                     {lugar.itens.map((item, _, itens) => (
-                      <Lombada
-                        key={item.livro.id}
-                        item={item}
-                        lugar={lugar.indice}
-                        largura={
-                          Math.round(
-                            larguraDoLivroGravado(item.livro) *
-                              escalaDaPilha(
-                                itens.map((i) => larguraDoLivroGravado(i.livro)),
-                                alturaDaFileira,
-                              ) *
-                              10,
-                          ) / 10
-                        }
-                        estado={estadoDe(item.livro.id)}
-                        alvo={false}
-                        ponte={(pontesDoFoco?.get(item.livro.id) ?? 0) > 0}
-                        chegando={chegandoId === item.livro.id}
-                        intensidadeDaLuz={intensidadeDaLuz}
-                        iconesNosLivros={iconesNosLivros}
-                        alturaDaFileira={alturaDaFileira}
-                        manipular={manipular(item.livro.id)}
-                      />
+                      <Fragment key={item.livro.id}>
+                        {insercaoDaPilha(prateleira, lugar)?.antesDe === item.livro.id && (
+                          <span className="pilha-insercao" aria-hidden />
+                        )}
+                        <Lombada
+                          item={item}
+                          lugar={lugar.indice}
+                          largura={
+                            Math.round(
+                              larguraDoLivroGravado(item.livro) *
+                                escalaDaPilha(
+                                  itens.map((i) => larguraDoLivroGravado(i.livro)),
+                                  alturaDaFileira,
+                                ) *
+                                10,
+                            ) / 10
+                          }
+                          estado={estadoDe(item.livro.id)}
+                          alvo={false}
+                          ponte={(pontesDoFoco?.get(item.livro.id) ?? 0) > 0}
+                          chegando={chegandoId === item.livro.id}
+                          intensidadeDaLuz={intensidadeDaLuz}
+                          iconesNosLivros={iconesNosLivros}
+                          alturaDaFileira={alturaDaFileira}
+                          manipular={manipular(item.livro.id)}
+                        />
+                      </Fragment>
                     ))}
+                    {insercaoDaPilha(prateleira, lugar)?.antesDe === null && (
+                      <span className="pilha-insercao" aria-hidden />
+                    )}
                   </div>
                 ) : lugar.tipo === 'livro' ? (
                   <Lombada
@@ -341,8 +470,11 @@ export function Movel({
                     largura={lugar.largura}
                     estado={estadoDe(lugar.item.livro.id)}
                     alvo={
-                      mesmoLugar(alvo, prateleira, lugar.indice) &&
+                      mesmoLugar(destaque, prateleira, lugar.indice) &&
                       gesto.livroId !== lugar.item.livro.id
+                    }
+                    lado={
+                      mesmoLugar(destaque, prateleira, lugar.indice) ? destaque?.lado : undefined
                     }
                     ponte={(pontesDoFoco?.get(lugar.item.livro.id) ?? 0) > 0}
                     chegando={chegandoId === lugar.item.livro.id}
@@ -358,7 +490,7 @@ export function Movel({
                     prateleira={prateleira}
                     alturaDaFileira={alturaDaFileira}
                     intensidadeDaLuz={intensidadeDaLuzDoEnfeite}
-                    alvo={mesmoLugar(alvo, prateleira, lugar.indice)}
+                    alvo={mesmoLugar(destaque, prateleira, lugar.indice)}
                     realce={
                       mesmoLugar(lugarSegurado, prateleira, lugar.indice) ||
                       mesmoLugar(lugarEscolhido, prateleira, lugar.indice) ||

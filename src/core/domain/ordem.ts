@@ -109,6 +109,23 @@ function podeEmpilhar(movido: NoLugar, pilha: readonly NoLugar[]): boolean {
   )
 }
 
+/**
+ * De que lado do livro embaixo do dedo o livro na mão foi solto: na metade da esquerda ele entra
+ * **antes** (entre o vizinho da esquerda e esse livro), na da direita **depois**.
+ */
+export type LadoDoLivro = 'antes' | 'depois'
+
+/**
+ * O que o dedo apontou além do lugar: o andar de inserção numa pilha (`posicao`) e o lado de um livro
+ * (`lado`). Os dois são opcionais; sem eles, o livro toma o lugar (ou sobe no topo da pilha).
+ */
+export interface PontoDeSoltura {
+  /** Numa pilha de deitados: entre quais livros dela (0 embaixo; a quantidade deles, o topo). */
+  posicao?: number
+  /** Num lugar com livro (de pé, ou uma pilha que não o aceita): antes ou depois dele. */
+  lado?: LadoDoLivro
+}
+
 /** Onde um livro está: a única parte do livro que mover muda. */
 export interface PosicaoDoLivro {
   id: Id
@@ -233,19 +250,44 @@ function vagaMaisProxima(ocupados: ReadonlyMap<number, unknown>, alvo: number): 
   return null
 }
 
+/** Há lugar sem livro à direita de `de`? */
+function haVagaADireita(ocupados: ReadonlyMap<number, unknown>, de: number): boolean {
+  for (let i = de + 1; i < LUGARES_POR_PRATELEIRA; i += 1) if (!ocupados.has(i)) return true
+  return false
+}
+
 /**
- * Põe o livro no lugar pedido.
+ * Em que lugar o livro cai, dado o lado do livro `k` em que o dedo estava. Soltar na metade de um
+ * livro é soltar **na fresta** entre ele e o vizinho daquele lado:
  *
- * - Lugar livre (vazio, ou com enfeite — que é cenário, não objeto que ocupe):
- *   só o livro se move, ninguém mais anda.
- * - Lugar com outro livro: empurra a fila até o primeiro buraco à direita;
- *   sem buraco à direita, empurra para a esquerda. É a "bandeja de apps do
- *   Android", agora dentro de uma grade em vez de uma lista.
- * - Prateleira cheia de livros: `null` — e nada muda.
+ * - vizinho sem livro (vazio ou enfeite): o livro cai ali, encostado, e **ninguém anda**;
+ * - vizinho com livro: o livro toma o lugar de quem fica do lado de lá da fresta e a fila anda para
+ *   a direita (como sempre); sem buraco à direita, a fila anda para a esquerda e ele toma o outro
+ *   lugar da fresta — a ordem entre os dois livros é a mesma nos dois casos;
+ * - sem vizinho (ponta da prateleira): toma o próprio lugar.
  *
- * O lugar que o livro deixou **fica aberto**. Quem grava é que decide se ele
- * vira vaga à mostra (ver `DexieRepo.moverLivro`); aqui ninguém volta sozinho.
+ * Num lugar sem livro, ou sem lado, é o próprio lugar.
  */
+function lugarDaFresta(
+  ocupados: ReadonlyMap<number, unknown>,
+  k: number,
+  lado: LadoDoLivro | undefined,
+): number {
+  if (lado === undefined || !ocupados.has(k)) return k
+
+  if (lado === 'depois') {
+    const n = k + 1
+    if (n >= LUGARES_POR_PRATELEIRA) return k
+    if (!ocupados.has(n)) return n
+    return haVagaADireita(ocupados, n) ? n : k
+  }
+
+  const n = k - 1
+  if (n < 0) return k
+  if (!ocupados.has(n)) return n
+  return haVagaADireita(ocupados, k) ? k : n
+}
+
 /**
  * Quem anda para o lugar `alvo` ficar livre: a fila inteira até o buraco mais
  * perto, um lugar para o lado. Mapa vazio se o lugar já estava livre; `null` se
@@ -273,24 +315,89 @@ function empurrarParaAbrir(
   return novoLugar
 }
 
+/**
+ * Põe `movido` na pilha `pilha` (os outros livros do lugar, de baixo para cima) na posição
+ * `posicao`, e renumera os andares de todos: 0 é a base. A posição conta só os outros livros,
+ * então `pilha.length` é o topo.
+ */
+function reinserirNaPilha<T extends NoLugar>(
+  livros: readonly T[],
+  movido: T,
+  prateleira: number,
+  alvo: number,
+  pilha: readonly T[],
+  posicao: number,
+): T[] {
+  const indice = Math.min(Math.max(0, Math.trunc(posicao)), pilha.length)
+  const sequencia = [...pilha.slice(0, indice), movido, ...pilha.slice(indice)]
+  const andar = new Map(sequencia.map((l, i) => [l.id, i]))
+  return livros.map((l) => {
+    const nivel = andar.get(l.id)
+    return nivel === undefined ? l : { ...l, prateleira, ordem: alvo, nivel }
+  })
+}
+
+/** Os livros do lugar na ordem da pilha, de baixo para cima. */
+function idsDaPilha(livros: readonly NoLugar[], prateleira: number, ordem: number): Id[] {
+  return livros
+    .filter((l) => l.prateleira === prateleira && l.ordem === ordem)
+    .sort(daPilha)
+    .map((l) => l.id)
+}
+
+/**
+ * Põe o livro no lugar pedido. `ponto.posicao` só importa quando o destino é uma pilha de livros
+ * deitados e o livro movido é deitado: é o ponto de inserção entre os outros livros dela (0
+ * embaixo, a quantidade de livros no topo). Sem ela, o livro sobe para o topo — como sempre foi.
+ * `ponto.lado` só importa num lugar com livro que **não** recebe o movido: é a fresta antes ou
+ * depois dele (ver `lugarDaFresta`). Sem ele, o livro toma o lugar.
+ *
+ * - Lugar livre (vazio, ou com enfeite — que é cenário, não objeto que ocupe):
+ *   só o livro se move, ninguém mais anda.
+ * - Lugar com outro livro: empurra a fila até o primeiro buraco à direita;
+ *   sem buraco à direita, empurra para a esquerda. É a "bandeja de apps do
+ *   Android", agora dentro de uma grade em vez de uma lista.
+ * - Pilha de deitados que comporta o livro deitado: ele entra nela, na posição pedida (ou no topo),
+ *   e ninguém anda. **Na própria pilha** só reordena: nenhum livro sai do lugar, e a conta de altura
+ *   não se refaz (o conjunto é o mesmo, e pilhas já gravadas acima do teto seguem valendo).
+ * - Prateleira cheia de livros: `null` — e nada muda.
+ *
+ * O lugar que o livro deixou **fica sem livro e sem vaga**: volta a mostrar o enfeite do sorteio
+ * (ver `vagasDepoisDeMover`); ninguém volta sozinho para ele.
+ */
 export function moverLivroNaEstante<T extends NoLugar>(
   livros: readonly T[],
   id: Id,
   prateleiraDestino: number,
   lugar: number,
+  ponto: PontoDeSoltura = {},
 ): T[] | null {
+  const { posicao, lado } = ponto
   const movido = livros.find((l) => l.id === id)
   if (!movido) return [...livros]
 
   const alvo = dentro(lugar)
-  // Largar no próprio lugar não muda nada — nem leva o livro do meio da pilha para o topo.
-  if (movido.prateleira === prateleiraDestino && movido.ordem === alvo) return [...livros]
-
   const ocupados = ocupacao(livros, prateleiraDestino, id)
-
-  // Um livro deitado sobre uma pilha de deitados com altura de sobra sobe nela: ninguém anda.
   const pilha = ocupados.get(alvo)
+  const noProprioLugar = movido.prateleira === prateleiraDestino && movido.ordem === alvo
+
+  if (noProprioLugar) {
+    // Largar no próprio lugar não muda nada — nem leva o livro do meio da pilha para o topo — a
+    // não ser que a pessoa tenha apontado outro ponto da própria pilha: aí é reordenar.
+    if (posicao === undefined || !pilha || pilha.length === 0 || !deitado(movido)) {
+      return [...livros]
+    }
+    const depois = reinserirNaPilha(livros, movido, prateleiraDestino, alvo, pilha, posicao)
+    const antes = idsDaPilha(livros, prateleiraDestino, alvo)
+    const agora = idsDaPilha(depois, prateleiraDestino, alvo)
+    return antes.every((x, i) => x === agora[i]) ? [...livros] : depois
+  }
+
+  // Um livro deitado sobre uma pilha de deitados com altura de sobra entra nela: ninguém anda.
   if (pilha && podeEmpilhar(movido, pilha)) {
+    if (posicao !== undefined && posicao < pilha.length) {
+      return reinserirNaPilha(livros, movido, prateleiraDestino, alvo, pilha, posicao)
+    }
     const nivel = Math.max(...pilha.map((l) => l.nivel ?? 0)) + 1
     return livros.map((l) =>
       l.id === id ? { ...l, prateleira: prateleiraDestino, ordem: alvo, nivel } : l,
@@ -299,10 +406,11 @@ export function moverLivroNaEstante<T extends NoLugar>(
 
   // Senão o livro toma o lugar, e quem estava nele (um livro de pé, ou uma pilha cheia ou de
   // pé) anda inteiro até o buraco mais perto.
-  const novoLugar = empurrarParaAbrir(ocupados, alvo)
+  const ondeCai = lugarDaFresta(ocupados, alvo, lado)
+  const novoLugar = empurrarParaAbrir(ocupados, ondeCai)
   if (novoLugar === null) return null
 
-  novoLugar.set(id, alvo)
+  novoLugar.set(id, ondeCai)
 
   return livros.map((l) => {
     const destino = novoLugar.get(l.id)
@@ -313,6 +421,37 @@ export function moverLivroNaEstante<T extends NoLugar>(
       ordem: destino,
       nivel: l.id === id ? 0 : (l.nivel ?? 0),
     }
+  })
+}
+
+/**
+ * O livro, solto aí, **entra na pilha** que está no lugar (em vez de tomar o lugar e empurrar
+ * quem estava nele)? É o que a tela precisa para desenhar a linha de inserção só quando ela vale:
+ * uma pilha cheia, ou um livro de pé, não aceitam.
+ */
+export function entraNaPilha(
+  livros: readonly NoLugar[],
+  id: Id,
+  prateleira: number,
+  lugar: number,
+  posicao: number | undefined,
+): boolean {
+  const alvo = dentro(lugar)
+  const donos = ocupacao(livros, prateleira, id).get(alvo)
+  if (!donos || donos.length === 0) return false
+  const depois = moverLivroNaEstante(
+    livros,
+    id,
+    prateleira,
+    alvo,
+    posicao === undefined ? {} : { posicao },
+  )
+  if (!depois) return false
+  const movido = depois.find((l) => l.id === id)
+  if (movido?.prateleira !== prateleira || movido.ordem !== alvo) return false
+  return donos.every((d) => {
+    const agora = depois.find((l) => l.id === d.id)
+    return agora?.prateleira === prateleira && agora.ordem === alvo
   })
 }
 
@@ -367,26 +506,16 @@ export function mudarOrientacaoNaEstante<T extends NoLugar>(
 }
 
 /**
- * As vagas depois de `moverLivroNaEstante`: fecha a de todo lugar onde um
- * livro chegou, e abre a do lugar de onde o livro saiu — a não ser que o
- * empurrão tenha posto alguém nele.
+ * As vagas depois de `moverLivroNaEstante`: fecha a de todo lugar onde um livro chegou.
+ *
+ * **O lugar de onde o livro saiu não vira vaga** (14/10/2026): sem vaga gravada, o lugar volta a
+ * mostrar o enfeite que o sorteio dá a ele — e é o que a prévia ao vivo da estante já mostra enquanto
+ * o livro está na mão, então a soltura não muda a cara do lugar. Vaga só nasce de "tirar o enfeite"
+ * e de apagar um livro.
  */
-export function vagasDepoisDeMover(
-  vagas: readonly Vaga[],
-  antes: readonly NoLugar[],
-  depois: readonly NoLugar[],
-  id: Id,
-): Vaga[] {
+export function vagasDepoisDeMover(vagas: readonly Vaga[], depois: readonly NoLugar[]): Vaga[] {
   const ocupados = new Set(depois.map(chaveDoLugar))
-  const resultado = vagas.filter((v) => !ocupados.has(chaveDoLugar(v)))
-
-  const origem = antes.find((l) => l.id === id)
-  if (origem && !ocupados.has(chaveDoLugar(origem))) {
-    const jaAberta = resultado.some((v) => chaveDoLugar(v) === chaveDoLugar(origem))
-    if (!jaAberta) resultado.push({ prateleira: origem.prateleira, ordem: origem.ordem })
-  }
-
-  return resultado
+  return vagas.filter((v) => !ocupados.has(chaveDoLugar(v)))
 }
 
 /** O que a estante grava além dos livros: os lugares abertos e os enfeites definidos. */

@@ -5,6 +5,7 @@ import {
   alturaDaPilhaNoLugar,
   cabeNaPilha,
   cabeNaPilhaDepoisDeMudar,
+  entraNaPilha,
   LUGARES_POR_PRATELEIRA,
   lugarParaChegar,
   moverEnfeiteNaEstante,
@@ -145,15 +146,13 @@ describe('moverLivroNaEstante com pilhas', () => {
     const depois = moverLivroNaEstante(estante, 'b', 0, 8)
     expect(onde(depois)).toEqual({ a: [0, 3, 0], b: [0, 8, 0], c: [0, 3, 2] })
     // O lugar 3 continua tendo gente: nenhuma vaga abre embaixo da pilha.
-    expect(vagasDepoisDeMover([], estante, depois ?? [], 'b')).toEqual([])
+    expect(vagasDepoisDeMover([], depois ?? [])).toEqual([])
   })
 
-  it('tirar o último livro da pilha abre a vaga, como qualquer livro', () => {
+  it('tirar o último livro da pilha também não abre vaga: o lugar volta ao enfeite', () => {
     const estante = [d('a', 3)]
     const depois = moverLivroNaEstante(estante, 'a', 0, 8)
-    expect(vagasDepoisDeMover([], estante, depois ?? [], 'a')).toEqual([
-      { prateleira: 0, ordem: 3 },
-    ])
+    expect(vagasDepoisDeMover([], depois ?? [])).toEqual([])
   })
 
   it('a pilha só aceita quem está na mesma prateleira que ela', () => {
@@ -178,6 +177,153 @@ describe('moverLivroNaEstante com pilhas', () => {
     const copia = structuredClone(estante)
     moverLivroNaEstante(estante, 'n', 0, 3)
     expect(estante).toEqual(copia)
+  })
+})
+
+describe('reordenar e inserir no meio de uma pilha (posicao)', () => {
+  const pilha = () => [d('a', 3, 24, 0), d('b', 3, 24, 1), d('c', 3, 24, 2)]
+
+  it('o livro do topo pode virar o primeiro, na própria pilha', () => {
+    expect(onde(moverLivroNaEstante(pilha(), 'c', 0, 3, { posicao: 0 }))).toEqual({
+      c: [0, 3, 0],
+      a: [0, 3, 1],
+      b: [0, 3, 2],
+    })
+  })
+
+  it('o da base pode ir para o topo, e o do meio para a base', () => {
+    expect(onde(moverLivroNaEstante(pilha(), 'a', 0, 3, { posicao: 2 }))).toEqual({
+      b: [0, 3, 0],
+      c: [0, 3, 1],
+      a: [0, 3, 2],
+    })
+    expect(onde(moverLivroNaEstante(pilha(), 'b', 0, 3, { posicao: 0 }))).toEqual({
+      b: [0, 3, 0],
+      a: [0, 3, 1],
+      c: [0, 3, 2],
+    })
+  })
+
+  it('a posição conta só os outros livros: soltar onde o livro já está não muda nada', () => {
+    const antes = pilha()
+    expect(moverLivroNaEstante(antes, 'b', 0, 3, { posicao: 1 })).toEqual(antes)
+    expect(moverLivroNaEstante(antes, 'a', 0, 3, { posicao: 0 })).toEqual(antes)
+    expect(moverLivroNaEstante(antes, 'c', 0, 3, { posicao: 2 })).toEqual(antes)
+  })
+
+  it('sem posição, soltar no próprio lugar continua não mudando nada', () => {
+    const antes = pilha()
+    expect(moverLivroNaEstante(antes, 'a', 0, 3)).toEqual(antes)
+  })
+
+  it('reordenar não mexe em quem está em outro lugar', () => {
+    const estante = [...pilha(), p('x', 4), d('z', 9)]
+    const depois = onde(moverLivroNaEstante(estante, 'c', 0, 3, { posicao: 0 }))
+    expect(depois['x']).toEqual([0, 4, 0])
+    expect(depois['z']).toEqual([0, 9, 0])
+    expect(Object.values(depois).filter(([, ordem]) => ordem === 3)).toHaveLength(3)
+  })
+
+  it('reordena mesmo uma pilha gravada acima do teto, sem empurrar ninguém', () => {
+    const alta = [d('a', 3, 68, 0), d('b', 3, 68, 1)] // 136, de um dado antigo
+    expect(onde(moverLivroNaEstante(alta, 'b', 0, 3, { posicao: 0 }))).toEqual({
+      b: [0, 3, 0],
+      a: [0, 3, 1],
+    })
+  })
+
+  it('os andares com buraco (0, 2, 5) são renumerados em sequência', () => {
+    const buracos = [d('a', 3, 24, 0), d('b', 3, 24, 2), d('c', 3, 24, 5)]
+    expect(onde(moverLivroNaEstante(buracos, 'c', 0, 3, { posicao: 1 }))).toEqual({
+      a: [0, 3, 0],
+      c: [0, 3, 1],
+      b: [0, 3, 2],
+    })
+  })
+
+  it('um deitado de outro lugar entra no meio da pilha, e os de cima sobem um andar', () => {
+    const estante = [d('a', 3, 24, 0), d('b', 3, 24, 1), d('n', 9, 24)]
+    expect(onde(moverLivroNaEstante(estante, 'n', 0, 3, { posicao: 1 }))).toEqual({
+      a: [0, 3, 0],
+      n: [0, 3, 1],
+      b: [0, 3, 2],
+    })
+  })
+
+  it('entrar de outra prateleira também aceita o ponto de inserção', () => {
+    const estante = [d('a', 3, 24, 0), d('b', 3, 24, 1), d('n', 2, 24, 0, 1)]
+    expect(onde(moverLivroNaEstante(estante, 'n', 0, 3, { posicao: 0 }))).toEqual({
+      n: [0, 3, 0],
+      a: [0, 3, 1],
+      b: [0, 3, 2],
+    })
+  })
+
+  it('a posição no topo (ou além dele) é o que já era: sobe para o topo', () => {
+    const estante = [d('a', 3, 24, 0), d('b', 3, 24, 1), d('n', 9, 24)]
+    expect(onde(moverLivroNaEstante(estante, 'n', 0, 3, { posicao: 2 }))).toEqual({
+      a: [0, 3, 0],
+      b: [0, 3, 1],
+      n: [0, 3, 2],
+    })
+    expect(onde(moverLivroNaEstante(estante, 'n', 0, 3, { posicao: 99 }))['n']).toEqual([0, 3, 2])
+  })
+
+  it('a altura ainda vale para quem vem de fora: pilha cheia não recebe, por mais que se aponte', () => {
+    const cheia = [d('a', 3, 38, 0), d('b', 3, 38, 1), d('c', 3, 38, 2), d('n', 9, 38)]
+    const depois = onde(moverLivroNaEstante(cheia, 'n', 0, 3, { posicao: 1 }))
+    expect(depois['n']).toEqual([0, 3, 0]) // tomou o lugar
+    expect(depois['a']?.[1]).toBe(4) // e a pilha andou inteira
+  })
+
+  it('um livro de pé sobre uma pilha ignora a posição: toma o lugar e empurra a pilha', () => {
+    const estante = [d('a', 3, 24, 0), d('b', 3, 24, 1), p('x', 9)]
+    const depois = onde(moverLivroNaEstante(estante, 'x', 0, 3, { posicao: 1 }))
+    expect(depois['x']).toEqual([0, 3, 0])
+    expect(depois['a']?.[1]).toBe(4)
+    expect(depois['b']?.[1]).toBe(4)
+  })
+
+  it('posição fora do intervalo é limitada às pontas', () => {
+    expect(onde(moverLivroNaEstante(pilha(), 'b', 0, 3, { posicao: -5 }))['b']).toEqual([0, 3, 0])
+    expect(onde(moverLivroNaEstante(pilha(), 'b', 0, 3, { posicao: 40 }))['b']).toEqual([0, 3, 2])
+  })
+
+  it('uma pilha de um livro só (ele mesmo) não tem o que reordenar', () => {
+    const sozinho = [d('a', 3, 24, 0)]
+    expect(moverLivroNaEstante(sozinho, 'a', 0, 3, { posicao: 0 })).toEqual(sozinho)
+  })
+
+  it('não muta as entradas', () => {
+    const estante = pilha()
+    const copia = JSON.stringify(estante)
+    moverLivroNaEstante(estante, 'c', 0, 3, { posicao: 0 })
+    expect(JSON.stringify(estante)).toBe(copia)
+  })
+})
+
+describe('entraNaPilha (a linha de inserção só vale quando soltar entra de fato)', () => {
+  it('um deitado sobre uma pilha de deitados que o comporta', () => {
+    const estante = [d('a', 3, 24, 0), d('b', 3, 24, 1), d('n', 9, 24)]
+    expect(entraNaPilha(estante, 'n', 0, 3, 1)).toBe(true)
+  })
+
+  it('um livro da própria pilha, apontando outro ponto dela', () => {
+    const estante = [d('a', 3, 24, 0), d('b', 3, 24, 1), d('c', 3, 24, 2)]
+    expect(entraNaPilha(estante, 'c', 0, 3, 0)).toBe(true)
+  })
+
+  it('não numa pilha cheia, não um livro de pé, não um lugar sem pilha', () => {
+    const cheia = [d('a', 3, 38, 0), d('b', 3, 38, 1), d('c', 3, 38, 2), d('n', 9, 38)]
+    expect(entraNaPilha(cheia, 'n', 0, 3, 1)).toBe(false)
+    const dePe = [d('a', 3, 24, 0), d('b', 3, 24, 1), p('x', 9)]
+    expect(entraNaPilha(dePe, 'x', 0, 3, 1)).toBe(false)
+    expect(entraNaPilha(dePe, 'x', 0, 12, 0)).toBe(false)
+  })
+
+  it('não quando a altura estoura, mesmo apontando o ponto', () => {
+    const estante = [d('a', 3, 68, 0), d('n', 9, 68)] // 136: não cabe
+    expect(entraNaPilha(estante, 'n', 0, 3, 0)).toBe(false)
   })
 })
 

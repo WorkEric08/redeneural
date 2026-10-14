@@ -24,6 +24,7 @@ import type {
   ResultadoDeEscrita,
   TemaEscolhido,
   Vaga,
+  PontoDeSoltura,
 } from '@/core'
 
 import type { DoMotor, ParaMotor, RespostasDoMotor, TipoDePedido } from './protocolo'
@@ -118,8 +119,19 @@ export function criarWorkerEngine(): ConnectionEngine {
     apagarLivro: (livroId: Id): Promise<EstadoDoPalacio> =>
       pedir<'apagarLivro'>({ tipo: 'apagarLivro', livroId }),
 
-    moverLivro: (id: Id, prateleira: number, lugar: number): Promise<EstanteGravada> =>
-      pedir<'moverLivro'>({ tipo: 'moverLivro', id, prateleira, lugar }),
+    moverLivro: (
+      id: Id,
+      prateleira: number,
+      lugar: number,
+      ponto?: PontoDeSoltura,
+    ): Promise<EstanteGravada> =>
+      pedir<'moverLivro'>({
+        tipo: 'moverLivro',
+        id,
+        prateleira,
+        lugar,
+        ...(ponto === undefined ? {} : { ponto }),
+      }),
 
     tirarEnfeite: (prateleira: number, lugar: number): Promise<EstanteGravada> =>
       pedir<'tirarEnfeite'>({ tipo: 'tirarEnfeite', prateleira, lugar }),

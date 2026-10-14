@@ -23,6 +23,7 @@ import type {
   TemaEscolhido,
   ResultadoDeEscrita,
   Vaga,
+  PontoDeSoltura,
 } from '@/core'
 
 /**
@@ -88,7 +89,14 @@ export type ParaMotor =
   | { req: number; tipo: 'criarLivro'; input: CriarLivroInput }
   | { req: number; tipo: 'editarLivro'; input: EditarLivroInput }
   | { req: number; tipo: 'apagarLivro'; livroId: Id }
-  | { req: number; tipo: 'moverLivro'; id: Id; prateleira: number; lugar: number }
+  | {
+      req: number
+      tipo: 'moverLivro'
+      id: Id
+      prateleira: number
+      lugar: number
+      ponto?: PontoDeSoltura
+    }
   | { req: number; tipo: 'tirarEnfeite'; prateleira: number; lugar: number }
   | { req: number; tipo: 'porEnfeite'; prateleira: number; lugar: number }
   | { req: number; tipo: 'salvarEnfeite'; enfeite: EnfeiteGravado }

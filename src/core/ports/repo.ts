@@ -11,7 +11,7 @@ import type {
   Vaga,
   Vinculo,
 } from '../domain/types'
-import type { FotoDaEstante } from '../domain/ordem'
+import type { FotoDaEstante, PontoDeSoltura } from '../domain/ordem'
 import type { ModoDaBusca } from '../domain/modoDaBusca'
 import type { ModoDaRede } from '../domain/modoDaRede'
 import type { TemaEscolhido } from '../domain/tema'
@@ -41,9 +41,10 @@ export interface PalacioRepo {
   /**
    * Põe o livro no lugar `(prateleira, lugar)` com `moverLivroNaEstante`: livre,
    * só ele se move; ocupado, empurra até o buraco mais perto. O lugar de onde
-   * saiu vira vaga. Recusa (erro) numa prateleira cheia de livros.
+   * saiu vira vaga. Recusa (erro) numa prateleira cheia de livros. `ponto` escolhe o andar de
+   * inserção numa pilha de deitados (e reordena a pilha do próprio livro).
    */
-  moverLivro(id: Id, prateleira: number, lugar: number): Promise<void>
+  moverLivro(id: Id, prateleira: number, lugar: number, ponto?: PontoDeSoltura): Promise<void>
   /**
    * Devolve a estante a uma foto tirada antes de um movimento (o "Desfazer"): cada livro volta ao
    * lugar dele, e as vagas e os enfeites gravados viram os da foto. Um livro que deixou de existir

@@ -6326,6 +6326,112 @@ unidade), o aviso "Isso acordou…" (precisa do modelo de embedding) e toque rea
 
 801 testes (o de "tocar o andamento atual" agora confere o `onManter`), tipos e lint limpos.
 
+## Mobilidade da estante, etapa 1: reordenar dentro da pilha e inserir no meio (14/10/2026)
+
+Pedido do usuário: melhorar a mobilidade e a resposta da estante. Plano de três etapas, aprovado por ele com
+as respostas abaixo; **só a Etapa 1 está feita**.
+
+**O problema:** com uma pilha de 3 livros, o do topo não podia virar o primeiro. Duas causas: soltar no
+próprio lugar era ignorado (`moverLivroNaEstante` devolvia a estante igual), e o destino do gesto era só
+`{prateleira, lugar}`, sem andar — um deitado vindo de fora sempre entrava no topo.
+
+**Decisões do usuário (14/10/2026):** (1) na pilha, **uma linha de inserção** entre os livros, pela altura do
+dedo; (2) quando o livro sai do lugar durante o reflow ao vivo (Etapa 3), **entra um enfeite básico no lugar**
+dele — não um vão aberto nem a fila fechando; (3) ordem de entrega: Etapa 1, depois 2, depois 3.
+
+- **A regra** (`core/domain/ordem.ts`, pura, a mesma na store e no repositório): `moverLivroNaEstante` ganhou
+  `posicao?` — o ponto de inserção entre os **outros** livros da pilha (0 é a base, a quantidade deles é o
+  topo; o livro na mão não conta). Na **própria pilha** só reordena: ninguém sai do lugar, a conta de altura
+  não se refaz (o conjunto é o mesmo, e pilhas já gravadas acima do teto seguem valendo) e soltar onde o livro
+  já está não muda nada. Vindo **de fora**, o deitado entra no ponto pedido (sem `posicao`, no topo, como
+  sempre) e a altura ainda vale: pilha cheia não recebe, e o livro toma o lugar e empurra a pilha inteira. Um
+  livro de pé ignora `posicao`. Os andares da pilha são **renumerados em sequência** (0, 1, 2…) quando se insere
+  no meio ou reordena — o resto continua "lacunas não importam".
+- **`entraNaPilha`** (pura): diz se soltar ali entra de fato na pilha. É o que decide se a linha aparece (uma
+  pilha cheia ou um livro de pé não aceitam, então não há o que mostrar).
+- **O gesto:** `LugarDaEstante.posicao` (`useManipularLivros.ts`) sai da altura do dedo sobre a pilha: quantos
+  livros dela ficam **abaixo** do dedo, e o meio de cada livro é a fronteira. O alvo agora muda também quando só a
+  posição muda (`mesmoAlvo`). `posicao` viaja por `moverLivro` até o banco (store, porta, protocolo, Worker,
+  repositório). Mover enfeite não usa.
+- **A linha** (`.pilha-insercao`, um filho de largura e altura zero na pilha, antes do livro logo acima do ponto,
+  ou depois do último para o topo): uma linha de papel que passa **22 px de cada lado** da pilha, porque o livro
+  na mão (o fantasma, do tamanho da pilha) cobre o meio dela. Não ocupa altura: **nenhum livro se mexe** — mexer é
+  a Etapa 3. Fica vermelha quando o destino é recusado e **some** quando soltar ali não mudaria nada.
+- **Verificado** no Chrome (build de produção, mouse por CDP, 412×892): pilha de 3 deitados, o do topo levado para
+  baixo da base vira o primeiro (Programação, Psicologia, Música) e levado ao meio fica entre os dois; soltar no
+  mesmo andar não mostra linha nem muda nada. 822 testes (21 novos: regra, `entraNaPilha`, repositório), tipos e
+  lint limpos. **Não verificado em toque real** nem o Desfazer na tela (a foto dele já guarda o andar).
+- **Falta:** nada do plano de três etapas (ver a Etapa 3 abaixo).
+
+### Etapa 2: soltar antes ou depois de um livro (14/10/2026)
+
+Soltar um livro na **metade** de outro é soltar na **fresta** entre ele e o vizinho daquele lado, e não mais "tomar o lugar dele". A
+metade da esquerda é "antes", a da direita é "depois" (`LadoDoLivro`, `core/domain/ordem.ts`).
+
+- **O ponto de soltura virou um objeto**, `PontoDeSoltura { posicao?, lado? }` (o 5º argumento de `moverLivroNaEstante`, e `ponto`
+  em `moverLivro` da store, do motor e do repositório). A `posicao` da Etapa 1 foi para dentro dele.
+- **A regra** (`lugarDaFresta`, pura): lugar do vizinho **sem livro** (vazio ou enfeite) → o livro cai ali, encostado, e **ninguém
+  anda**. Vizinho **com** livro → o livro entra entre os dois e a fila de lá anda **para a direita** (como sempre); sem buraco à
+  direita, anda para a esquerda — **a ordem entre os dois livros é a mesma nos dois casos**. Na ponta da prateleira (sem vizinho) →
+  toma o próprio lugar. Sem `lado`, ou num lugar sem livro, nada mudou. Soltar na fresta que já é a do livro não muda nada.
+- **Pilha:** quando ela **recebe** o livro (deitado, com altura), vale a `posicao` da Etapa 1 e o lado é ignorado. Quando **não
+  recebe** (cheia, ou o livro é de pé), conta como um livro: o lado vale, e o livro cai na fresta ao lado dela.
+- **O gesto** (`alvoNaEstante`): o lado sai de o dedo estar na metade esquerda ou direita do lugar embaixo dele; só vale sobre livro
+  ou pilha, e o alvo muda também quando o lado muda (`mesmoAlvo`).
+- **A resposta na tela:** em vez do anel em volta do livro de destino (que dizia "toma o lugar dele"), uma **barra de papel na
+  borda do lado escolhido** — no livro de pé e na pilha que não recebe (`data-lado`, `.lombada--livro[data-alvo][data-lado]` e
+  `.pilha[data-alvo][data-lado]::before`). Recusado, volta o anel vermelho em volta. Os livros ainda **não se mexem** antes de
+  soltar: isso é a Etapa 3.
+- **Mudança de comportamento assumida:** soltar na metade da **esquerda** de um livro com o lugar da esquerda livre agora **não
+  empurra** o livro (antes, ele sempre ia para a direita). Soltar sem lado (por exemplo a Etapa 3 ainda não existindo para o
+  enfeite) é o de antes.
+- **Verificado** no Chrome (build de produção, mouse por CDP, 412×892): depois de Música com o 7 livre cai em 7 sem ninguém andar;
+  antes de Psicologia com o 4 livre cai em 4; depois de Psicologia com 4, 5 e 6 colados entra entre Psicologia e Música e Música
+  vai para 7; a barra aponta o lado certo nas duas metades. 836 testes (14 novos, de `lado`), tipos e lint limpos. **Não verificado
+  em toque real.**
+
+### Etapa 3: a prateleira se reorganiza ao vivo (14/10/2026)
+
+Enquanto um livro está na mão, a prateleira sob o dedo (e a de onde ele saiu) já se mostra **como vai ficar ao soltar**: os livros
+se afastam, o livro na mão aparece como um lugar aberto (o mesmo "vazio" de 20%) onde cairia, e o lugar que ele deixou volta a ser
+um enfeite.
+
+- **Decisão do usuário:** o lugar de onde o livro sai ganha **um enfeite básico**, não um vão. Vale também no resultado
+  **gravado**, para a soltura não mudar a cara do lugar: `vagasDepoisDeMover(vagas, depois)` agora só **fecha** as vagas onde um
+  livro chegou — **não abre mais a da origem** (mover um livro, uma pilha ou virar um livro pelo "Deitar/Levantar"). **Isto revoga**
+  "o lugar de onde o livro saiu vira vaga" de "A estante vira fileira de lugares". Vaga só nasce de "tirar o enfeite" (menu do lugar)
+  e de **apagar um livro**; um enfeite movido ainda deixa vaga atrás. Como vaga e enfeite têm a mesma largura, a fileira não anda.
+- **A prévia** (`Movel.tsx`): a conta é a da soltura — `moverLivroNaEstante` + `vagasDepoisDeMover` + `enfeitesSemLivroEmCima` —,
+  montada em `montarPrateleiras` num `prateleirasVistas` que só existe durante o arrasto. Só **depois de o dedo assentar 90 ms**
+  (`ESPERA_DA_PREVIA_MS`: atravessar a prateleira depressa não faz cada livro pular a cada lugar cruzado) e **nunca num destino
+  recusado** (aí fica o vermelho). O anel, a barra do lado e a linha de inserção das etapas 1 e 2 são o aviso "vai cair aqui" **antes**
+  da prévia chegar: com ela no ar (`previaNoAr`) saem. Soltar fora de qualquer prateleira, ou de volta no lugar de origem, devolve tudo.
+- **O movimento** (`useAnimarMovimento.ts`, FLIP): cada livro e cada enfeite parte de onde estava na tela e desliza (180 ms,
+  `translate` somado ao que o elemento já tem — o livro deitado se centra com um `translate` próprio — e só `translate`, que o
+  compositor cuida). Só anima com um livro na mão (e na pintura logo depois de soltar); em toda pintura as posições são
+  remedidas, para a animação nunca partir de uma posição velha; uma animação em curso é continuada de onde está.
+  `prefers-reduced-motion` pula direto.
+- **O gesto** (`useManipularLivros.ts`), duas mudanças que a prévia exigiu:
+  - **O alvo se mede numa foto da estante** (`capturarGeometria`, tirada quando o livro é erguido), e não no que está na tela
+    agora. Medir nos livros que se afastam faria o alvo mudar por causa do próprio afastamento — a prateleira tremeria. A foto
+    imita o `elementsFromPoint` de antes: o último vão que acerta vence (um livro alto sobe por cima da prateleira de cima).
+  - **O toque ouve a janela** (`ouvirJanela`), não o livro: a prévia move o livro no DOM (e de uma prateleira para outra, onde o
+    elemento é outro), e um elemento que muda de lugar perde a captura do ponteiro — o `pointerup` nunca chegaria nele. O lugar
+    sem livro e o enfeite seguem ouvindo o próprio elemento (não têm prévia). Como o `click` que fecha o gesto pode não vir (o
+    elemento mudou), `liberarOClique` libera o "engolir clique" depois de 80 ms: sem isso o próximo toque num livro seria engolido.
+- **Custo visto:** a prévia mostra **o resultado de verdade**, inclusive o que a largura faz. As larguras dos enfeites se ajustam ao
+  que a fileira precisa proteger (`ajustarALargura`): tirar o último livro de uma prateleira estreita deixa os enfeites antes dele
+  se alargarem, e tudo o que está à esquerda se desloca — num teste com os livros nos lugares 5, 6 e 12, Música foi 150 px para a
+  direita. É o que a soltura faria, e o movimento suave mostra o porquê; congelar a escala dos enfeites durante o arrasto faria a
+  prévia mentir. Se incomodar, o remédio é desenhar essa diferença sem animar, não escondê-la.
+- **Não tem prévia:** arrastar um **enfeite** (só o anel de destino) e o lugar sem livro. Só o livro na mão se reorganiza.
+- **Verificado** no Chrome (build de produção, 412×892), mouse e **toque por CDP**: depois da espera os livros se afastam e
+  animam; o livro na mão aparece entre Psicologia e Música; o lugar de origem mostra um enfeite; com o dedo de volta à origem tudo
+  volta; soltar deixa exatamente o que a prévia mostrava (Música no mesmo x) e grava a ordem certa, **sem nenhuma vaga**; arrastar
+  de uma prateleira para outra (o elemento é recriado) grava na prateleira certa, com mouse e com toque; reordenar uma pilha
+  mostra o livro na base já na prévia; o toque seguinte num livro ainda espia. 836 testes (os de vaga na origem foram trocados),
+  tipos e lint limpos. **Não verificado em aparelho de verdade.**
+
 ## Fases
 
 0. ✅ Esqueleto (Vite/React/TS/Tailwind/PWA/Capacitor)
@@ -6383,3 +6489,4 @@ unidade), o aviso "Isso acordou…" (precisa do modelo de embedding) e toque rea
 32. ✅ O círculo da ideia executável diz o andamento na Rede e no Mapa: cinza, cinza com brilho, amarelo (14/10/2026)
 33. ✅ O topo do livro sobrepõe a prateleira de cima: sinais do andamento e livro erguido aparecem inteiros (14/10/2026)
 34. ✅ Livros adormecidos testados com passagem de dias; tocar o andamento atual acorda e virar executável não adormece tudo (14/10/2026)
+35. ✅ Mobilidade da estante em três etapas: reordenar e inserir na pilha, soltar antes/depois de um livro e a prateleira que se reorganiza ao vivo (14/10/2026)

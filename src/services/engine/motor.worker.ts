@@ -62,6 +62,7 @@ import {
   type PontuarPar,
   type ProgressoDoMotor,
   type ResultadoDeEscrita,
+  type PontoDeSoltura,
 } from '@/core'
 import { seedPalacio } from '@/features/palacio/seed'
 import { criarTransformersEmbedding } from '@/services/inferencia/transformersEmbedding'
@@ -750,8 +751,13 @@ async function apagarLivro(id: Id): Promise<EstadoDoPalacio> {
   return tinhaNeuronios ? reprocessarTudo() : estadoAtual()
 }
 
-async function moverLivro(id: Id, prateleira: number, lugar: number): Promise<EstanteGravada> {
-  await repo.moverLivro(id, prateleira, lugar)
+async function moverLivro(
+  id: Id,
+  prateleira: number,
+  lugar: number,
+  ponto?: PontoDeSoltura,
+): Promise<EstanteGravada> {
+  await repo.moverLivro(id, prateleira, lugar, ponto)
   return estante()
 }
 
@@ -949,7 +955,7 @@ async function responder(msg: ParaMotor): Promise<DoMotor> {
         return {
           req: msg.req,
           ok: true,
-          dados: await moverLivro(msg.id, msg.prateleira, msg.lugar),
+          dados: await moverLivro(msg.id, msg.prateleira, msg.lugar, msg.ponto),
         }
 
       case 'tirarEnfeite':

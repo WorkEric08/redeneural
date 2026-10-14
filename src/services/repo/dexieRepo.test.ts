@@ -430,7 +430,7 @@ describe('ordem da estante', () => {
     expect(await repo.listVagas()).toEqual([])
   })
 
-  it('mover para outra prateleira não faz ninguém andar, e a origem vira vaga', async () => {
+  it('mover para outra prateleira não faz ninguém andar, e a origem volta ao enfeite (sem vaga)', async () => {
     await repo.upsertLivro(livro('a', 'a', 0, 0))
     await repo.upsertLivro(livro('b', 'b', 1, 0))
     await repo.upsertLivro(livro('x', 'x', 0, 2))
@@ -441,17 +441,18 @@ describe('ordem da estante', () => {
     expect(porId.get('a')).toEqual([5, 7])
     expect(porId.get('b')).toEqual([0, 1]) // o buraco que 'a' deixou continua lá
     expect(porId.get('x')).toEqual([2, 0])
-    expect(await repo.listVagas()).toEqual([{ prateleira: 0, ordem: 0 }])
+    expect(await repo.listVagas()).toEqual([])
   })
 
   it('chegar num lugar aberto fecha a vaga dele', async () => {
     await repo.upsertLivro(livro('a', 'a', 0, 0))
     await repo.upsertLivro(livro('b', 'b', 4, 0))
-    await repo.moverLivro('a', 0, 9) // abre o 0
+    await repo.deleteLivro('a') // apagar abre a vaga do 0
+    expect(await repo.listVagas()).toEqual([{ prateleira: 0, ordem: 0 }])
 
     await repo.moverLivro('b', 0, 0)
 
-    expect(await repo.listVagas()).toEqual([{ prateleira: 0, ordem: 4 }])
+    expect(await repo.listVagas()).toEqual([])
   })
 
   it('recusa mover para uma prateleira cheia de livros, sem mexer em nada', async () => {
@@ -1805,8 +1806,33 @@ describe('pilhas de livros deitados', () => {
     expect(await lugar('a')).toEqual([0, 3, 0])
     expect(await lugar('b')).toEqual([0, 3, 1])
     expect(await lugar('n')).toEqual([0, 3, 2])
-    // O lugar de origem de `n` abriu: era só dele.
-    expect(await repo.listVagas()).toEqual([{ prateleira: 0, ordem: 9 }])
+    // O lugar de origem de `n` não vira vaga: volta ao enfeite.
+    expect(await repo.listVagas()).toEqual([])
+  })
+
+  it('o livro do topo vira o primeiro da própria pilha (posicao), sem abrir vaga', async () => {
+    await repo.upsertLivro(deitado('a', 3, 24, 0))
+    await repo.upsertLivro(deitado('b', 3, 24, 1))
+    await repo.upsertLivro(deitado('c', 3, 24, 2))
+
+    await repo.moverLivro('c', 0, 3, { posicao: 0 })
+
+    expect(await lugar('c')).toEqual([0, 3, 0])
+    expect(await lugar('a')).toEqual([0, 3, 1])
+    expect(await lugar('b')).toEqual([0, 3, 2])
+    expect(await repo.listVagas()).toEqual([])
+  })
+
+  it('um deitado de outro lugar entra no meio da pilha (posicao) e os de cima sobem', async () => {
+    await repo.upsertLivro(deitado('a', 3, 24, 0))
+    await repo.upsertLivro(deitado('b', 3, 24, 1))
+    await repo.upsertLivro(deitado('n', 9, 24))
+
+    await repo.moverLivro('n', 0, 3, { posicao: 1 })
+
+    expect(await lugar('a')).toEqual([0, 3, 0])
+    expect(await lugar('n')).toEqual([0, 3, 1])
+    expect(await lugar('b')).toEqual([0, 3, 2])
   })
 
   it('sem altura de sobra, a pilha anda inteira e o novo toma o lugar', async () => {

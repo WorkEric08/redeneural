@@ -7,6 +7,8 @@ import {
   type PointerEvent as EventoDePonteiro,
 } from 'react'
 
+import type { LadoDoLivro, PontoDeSoltura } from '@/core'
+
 /**
  * O livro como objeto na mão — e os lugares da estante como onde ele cabe.
  *
@@ -43,6 +45,24 @@ export type FaseDoGesto = 'parado' | 'erguido' | 'arrastando'
 export interface LugarDaEstante {
   prateleira: number
   lugar: number
+  /**
+   * Só quando o dedo está sobre uma pilha: entre quais livros dela o livro na mão entraria
+   * (0 embaixo, a quantidade de livros no topo; o livro na mão não conta).
+   */
+  posicao?: number
+  /**
+   * Só quando o dedo está sobre um livro (ou uma pilha): em que metade dele, a da esquerda ou a da
+   * direita. É a fresta onde o livro na mão cai, se ele não entra no que está embaixo.
+   */
+  lado?: LadoDoLivro
+}
+
+/** O que o dedo apontou além do lugar, no formato que as regras da estante recebem. */
+export function pontoDoAlvo(alvo: LugarDaEstante): PontoDeSoltura {
+  return {
+    ...(alvo.posicao === undefined ? {} : { posicao: alvo.posicao }),
+    ...(alvo.lado === undefined ? {} : { lado: alvo.lado }),
+  }
 }
 
 export interface Gesto {
@@ -64,9 +84,14 @@ export interface Gesto {
 
 export interface ManipulacaoDaLombada {
   onPointerDown: (evento: EventoDePonteiro<HTMLElement>) => void
-  onPointerMove: (evento: EventoDePonteiro<HTMLElement>) => void
-  onPointerUp: (evento: EventoDePonteiro<HTMLElement>) => void
-  onPointerCancel: () => void
+  /**
+   * Só o lugar sem livro (e o enfeite) ouve o próprio elemento. O livro ouve a **janela** depois de
+   * tocado: a prévia da estante move o livro no DOM enquanto ele está na mão, e um elemento que
+   * muda de lugar (ou de prateleira) perde os eventos de ponteiro.
+   */
+  onPointerMove?: (evento: EventoDePonteiro<HTMLElement>) => void
+  onPointerUp?: (evento: EventoDePonteiro<HTMLElement>) => void
+  onPointerCancel?: () => void
   onClick: (evento: EventoDeMouse<HTMLElement>) => void
   onContextMenu: (evento: EventoDeMouse<HTMLElement>) => void
 }
@@ -92,7 +117,69 @@ interface Opcoes {
   onMoverEnfeite: (origem: LugarDaEstante, alvo: LugarDaEstante) => void
 }
 
+/** O que a janela e o React têm em comum de um evento de ponteiro. */
+interface Ponteiro {
+  pointerId: number
+  clientX: number
+  clientY: number
+}
+
 const PARADO: Gesto = { fase: 'parado', livroId: null, enfeite: null, alvo: null, origem: null }
+
+interface Caixa {
+  left: number
+  right: number
+  top: number
+  bottom: number
+}
+
+interface LugarCapturado {
+  lugar: number
+  caixa: Caixa
+  tipo: 'livro' | 'pilha' | 'vazio'
+  /** Numa pilha: o meio, na vertical, de cada livro dela. */
+  livros: { id: string; meio: number }[]
+}
+
+interface VaoCapturado {
+  prateleira: number
+  caixa: Caixa
+  lugares: LugarCapturado[]
+}
+
+/** Onde cada prateleira e cada lugar estavam na tela quando o livro saiu da estante. */
+type Geometria = VaoCapturado[]
+
+function caixaDe(elemento: Element): Caixa {
+  const r = elemento.getBoundingClientRect()
+  return { left: r.left, right: r.right, top: r.top, bottom: r.bottom }
+}
+
+/**
+ * Tira uma foto da geometria da estante. O alvo do dedo se mede **nela**, e não no que está na tela
+ * agora: com a prévia ao vivo os livros se afastam para abrir o lugar do que está na mão, e medir
+ * neles faria o alvo mudar por causa do próprio afastamento — a prateleira ficaria tremendo.
+ */
+function capturarGeometria(): Geometria {
+  return [...document.querySelectorAll<HTMLElement>('[data-prateleira]')].map((vao) => ({
+    prateleira: Number(vao.dataset['prateleira']),
+    caixa: caixaDe(vao),
+    lugares: [...vao.querySelectorAll<HTMLElement>('[data-lugar]')].map((el) => {
+      const pilha = el.classList.contains('pilha')
+      return {
+        lugar: Number(el.dataset['lugar']),
+        caixa: caixaDe(el),
+        tipo: pilha ? 'pilha' : el.hasAttribute('data-livro-id') ? 'livro' : 'vazio',
+        livros: pilha
+          ? [...el.querySelectorAll<HTMLElement>('[data-livro-id]')].map((livro) => {
+              const c = caixaDe(livro)
+              return { id: livro.dataset['livroId'] ?? '', meio: (c.top + c.bottom) / 2 }
+            })
+          : [],
+      }
+    }),
+  }))
+}
 
 /**
  * O lugar na coluna do dedo, dentro da prateleira em que ele está.
@@ -103,18 +190,25 @@ const PARADO: Gesto = { fase: 'parado', livroId: null, enfeite: null, alvo: null
  * — o vão que ele deixa (`data-estado='vazio'`) continua ali, e soltar nele é
  * desistir.
  */
-function alvoNaEstante(x: number, y: number): LugarDaEstante | null {
-  const vao = document
-    .elementsFromPoint(x, y)
-    .map((elemento) => elemento.closest<HTMLElement>('[data-prateleira]'))
-    .find((achado) => achado !== null)
+function alvoNaEstante(
+  x: number,
+  y: number,
+  livroNaMao: string | null,
+  geometria: Geometria,
+): LugarDaEstante | null {
+  const dentro = (c: Caixa): boolean => x >= c.left && x <= c.right && y >= c.top && y <= c.bottom
+
+  // A prateleira de baixo pinta por cima da de cima: um livro alto que sobe sobre a de cima é o que o
+  // dedo está tocando ali — o último que acerta vence.
+  const vao =
+    [...geometria].reverse().find((v) => v.lugares.some((l) => dentro(l.caixa))) ??
+    geometria.find((v) => dentro(v.caixa))
   if (!vao) return null
 
-  let perto: HTMLElement | null = null
+  let perto: LugarCapturado | null = null
   let distancia = Infinity
-  for (const lugar of vao.querySelectorAll<HTMLElement>('[data-lugar]')) {
-    const caixa = lugar.getBoundingClientRect()
-    const d = Math.max(caixa.left - x, x - caixa.right, 0)
+  for (const lugar of vao.lugares) {
+    const d = Math.max(lugar.caixa.left - x, x - lugar.caixa.right, 0)
     if (d < distancia) {
       perto = lugar
       distancia = d
@@ -123,11 +217,27 @@ function alvoNaEstante(x: number, y: number): LugarDaEstante | null {
   }
 
   if (!perto || distancia > FOLGA_DO_ALVO) return null
-  return { prateleira: Number(vao.dataset['prateleira']), lugar: Number(perto.dataset['lugar']) }
+  const alvo = { prateleira: vao.prateleira, lugar: perto.lugar }
+  if (perto.tipo === 'vazio') return alvo // sem livro, não tem lado: o livro toma o lugar
+
+  const lado: LadoDoLivro = x < (perto.caixa.left + perto.caixa.right) / 2 ? 'antes' : 'depois'
+  if (perto.tipo === 'pilha') {
+    // Em que ponto da pilha o dedo está: quantos livros dela ficam abaixo da linha do dedo — o andar
+    // em que o livro na mão entraria (0 é a base; a quantidade de livros, o topo). O meio de cada
+    // livro é a fronteira, e o livro na mão não conta, mesmo quando é da própria pilha.
+    const abaixo = perto.livros.filter((l) => l.id !== livroNaMao && l.meio > y).length
+    return { ...alvo, posicao: abaixo, lado }
+  }
+  return { ...alvo, lado }
 }
 
 function mesmoLugar(a: LugarDaEstante | null, b: LugarDaEstante | null): boolean {
   return a?.prateleira === b?.prateleira && a?.lugar === b?.lugar
+}
+
+/** O mesmo lugar **e** o mesmo ponto da pilha: é o que muda o que se desenha enquanto o livro anda. */
+export function mesmoAlvo(a: LugarDaEstante | null, b: LugarDaEstante | null): boolean {
+  return mesmoLugar(a, b) && a?.posicao === b?.posicao && a?.lado === b?.lado
 }
 
 export function useManipularLivros({
@@ -153,6 +263,10 @@ export function useManipularLivros({
   const fantasma = useRef<HTMLElement | null>(null)
   const deslocamento = useRef({ dx: 0, dy: 0 })
   const engoleOClique = useRef(false)
+  /** A foto da estante tirada quando o livro saiu dela: é nela que o alvo se mede. */
+  const geometria = useRef<Geometria | null>(null)
+  /** Tira os ouvintes da janela do toque em curso. */
+  const limparJanela = useRef<(() => void) | null>(null)
 
   const mudar = useCallback((proximo: Gesto) => {
     agora.current = proximo
@@ -165,6 +279,7 @@ export function useManipularLivros({
   }, [])
 
   useEffect(() => pararORelogio, [pararORelogio])
+  useEffect(() => () => limparJanela.current?.(), [])
 
   /**
    * O fantasma anda por `transform` direto no elemento, sem passar pelo React:
@@ -177,6 +292,95 @@ export function useManipularLivros({
     const { dx, dy } = deslocamento.current
     elemento.style.transform = `translate(${String(dx)}px, ${String(dy)}px)`
   }, [])
+
+  /** Depois de soltar, o `click` que fecha o gesto ainda vem; se ele não vier (o elemento mudou de lugar), libera. */
+  function liberarOClique(): void {
+    window.setTimeout(() => {
+      engoleOClique.current = false
+    }, 80)
+  }
+
+  function moverToque(evento: Ponteiro): void {
+    const t = toque.current
+    if (!t || evento.pointerId !== t.pointerId) return
+
+    const dx = evento.clientX - t.x0
+    const dy = evento.clientY - t.y0
+    const longe = Math.hypot(dx, dy) > TOLERANCIA
+    const fase = agora.current.fase
+
+    if (fase === 'parado') {
+      if (longe && !t.desistiu) {
+        t.desistiu = true
+        pararORelogio()
+        engoleOClique.current = true
+      }
+      return
+    }
+
+    deslocamento.current = { dx, dy }
+    if (fantasma.current) {
+      fantasma.current.style.transform = `translate(${String(dx)}px, ${String(dy)}px)`
+    }
+
+    if (fase === 'erguido' && !longe) return
+
+    geometria.current ??= capturarGeometria()
+    const alvo = alvoNaEstante(evento.clientX, evento.clientY, t.livroId, geometria.current)
+    if (fase !== 'arrastando' || !mesmoAlvo(alvo, agora.current.alvo)) {
+      mudar({ ...agora.current, fase: 'arrastando', alvo })
+    }
+  }
+
+  function soltarToque(evento: Ponteiro): void {
+    const t = toque.current
+    if (!t || evento.pointerId !== t.pointerId) return
+
+    pararORelogio()
+    const { fase, alvo } = agora.current
+    toque.current = null
+    limparJanela.current?.()
+    mudar(PARADO)
+    if (engoleOClique.current) liberarOClique()
+
+    if (fase === 'erguido') onAcoes(t.livroId)
+    else if (fase === 'arrastando' && alvo !== null) onMover(t.livroId, alvo)
+  }
+
+  function cancelarToque(): void {
+    pararORelogio()
+    toque.current = null
+    engoleOClique.current = false
+    limparJanela.current?.()
+    mudar(PARADO)
+  }
+
+  /**
+   * O toque em curso é ouvido pela **janela**, e não pelo livro: a prévia ao vivo move o livro na mão
+   * no DOM (e até de uma prateleira para outra, onde o elemento é outro), e um elemento que muda de
+   * lugar perde a captura do ponteiro — o `pointerup` nunca chegaria nele.
+   */
+  function ouvirJanela(): void {
+    limparJanela.current?.()
+    const aoMover = (e: PointerEvent): void => {
+      moverToque(e)
+    }
+    const aoSoltar = (e: PointerEvent): void => {
+      soltarToque(e)
+    }
+    const aoCancelar = (e: PointerEvent): void => {
+      if (toque.current?.pointerId === e.pointerId) cancelarToque()
+    }
+    window.addEventListener('pointermove', aoMover)
+    window.addEventListener('pointerup', aoSoltar)
+    window.addEventListener('pointercancel', aoCancelar)
+    limparJanela.current = () => {
+      window.removeEventListener('pointermove', aoMover)
+      window.removeEventListener('pointerup', aoSoltar)
+      window.removeEventListener('pointercancel', aoCancelar)
+      limparJanela.current = null
+    }
+  }
 
   function manipular(livroId: string): ManipulacaoDaLombada {
     return {
@@ -197,64 +401,15 @@ export function useManipularLivros({
           caixa,
           desistiu: false,
         }
+        ouvirJanela()
 
         pararORelogio()
         relogio.current = window.setTimeout(() => {
           relogio.current = null
           engoleOClique.current = true
+          geometria.current = capturarGeometria()
           mudar({ fase: 'erguido', livroId, enfeite: null, alvo: null, origem: caixa })
         }, ESPERA)
-      },
-
-      onPointerMove(evento) {
-        const t = toque.current
-        if (!t || evento.pointerId !== t.pointerId) return
-
-        const dx = evento.clientX - t.x0
-        const dy = evento.clientY - t.y0
-        const longe = Math.hypot(dx, dy) > TOLERANCIA
-        const fase = agora.current.fase
-
-        if (fase === 'parado') {
-          if (longe && !t.desistiu) {
-            t.desistiu = true
-            pararORelogio()
-            engoleOClique.current = true
-          }
-          return
-        }
-
-        deslocamento.current = { dx, dy }
-        if (fantasma.current) {
-          fantasma.current.style.transform = `translate(${String(dx)}px, ${String(dy)}px)`
-        }
-
-        if (fase === 'erguido' && !longe) return
-
-        const alvo = alvoNaEstante(evento.clientX, evento.clientY)
-        if (fase !== 'arrastando' || !mesmoLugar(alvo, agora.current.alvo)) {
-          mudar({ ...agora.current, fase: 'arrastando', alvo })
-        }
-      },
-
-      onPointerUp(evento) {
-        const t = toque.current
-        if (!t || evento.pointerId !== t.pointerId) return
-
-        pararORelogio()
-        const { fase, alvo } = agora.current
-        toque.current = null
-        mudar(PARADO)
-
-        if (fase === 'erguido') onAcoes(t.livroId)
-        else if (fase === 'arrastando' && alvo !== null) onMover(t.livroId, alvo)
-      },
-
-      onPointerCancel() {
-        pararORelogio()
-        toque.current = null
-        engoleOClique.current = false
-        mudar(PARADO)
       },
 
       onClick(evento) {
@@ -322,6 +477,7 @@ export function useManipularLivros({
           }
           // A coluna do lugar tem a altura da fileira; o fantasma parte só do enfeite.
           const caixa = (botao.querySelector('.lombada') ?? botao).getBoundingClientRect()
+          geometria.current = capturarGeometria()
           mudar({ fase: 'erguido', livroId: null, enfeite: alvo, alvo: null, origem: caixa })
         }, ESPERA)
       },
@@ -348,7 +504,8 @@ export function useManipularLivros({
         }
         if (agora.current.fase === 'erguido' && !longe) return
 
-        const destino = alvoNaEstante(evento.clientX, evento.clientY)
+        geometria.current ??= capturarGeometria()
+        const destino = alvoNaEstante(evento.clientX, evento.clientY, null, geometria.current)
         if (agora.current.fase !== 'arrastando' || !mesmoLugar(destino, agora.current.alvo)) {
           mudar({ ...agora.current, fase: 'arrastando', alvo: destino })
         }

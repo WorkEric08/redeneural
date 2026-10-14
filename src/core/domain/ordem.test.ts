@@ -140,29 +140,170 @@ describe('moverLivroNaEstante', () => {
   })
 })
 
-describe('vagasDepoisDeMover', () => {
-  it('abre a vaga de onde o livro saiu e fecha a de onde chegou', () => {
-    const antes = [l('a', 0, 1)]
-    const depois = [l('a', 0, 8)]
-    expect(vagasDepoisDeMover([{ prateleira: 0, ordem: 8 }], antes, depois, 'a')).toEqual([
-      { prateleira: 0, ordem: 1 },
-    ])
+describe('moverLivroNaEstante: soltar antes ou depois de um livro (lado)', () => {
+  const ultimo = LUGARES_POR_PRATELEIRA - 1
+
+  it('depois de um livro, com o lugar ao lado livre: o livro cai ali e ninguém anda', () => {
+    const estante = [l('b', 0, 3), l('c', 0, 6), l('n', 1, 0)]
+    expect(lugares(moverLivroNaEstante(estante, 'n', 0, 3, { lado: 'depois' }))).toEqual({
+      b: [0, 3],
+      n: [0, 4],
+      c: [0, 6],
+    })
   })
 
-  it('não abre vaga na origem que o empurrão ocupou', () => {
+  it('antes de um livro, com o lugar ao lado livre: o livro cai ali e ninguém anda', () => {
+    const estante = [l('b', 0, 3), l('c', 0, 6), l('n', 1, 0)]
+    expect(lugares(moverLivroNaEstante(estante, 'n', 0, 3, { lado: 'antes' }))).toEqual({
+      n: [0, 2],
+      b: [0, 3],
+      c: [0, 6],
+    })
+  })
+
+  it('depois de um livro com vizinho: ele entra entre os dois, e a fila do vizinho anda para a direita', () => {
+    const estante = [l('b', 0, 3), l('c', 0, 4), l('d', 0, 5), l('n', 1, 0)]
+    expect(lugares(moverLivroNaEstante(estante, 'n', 0, 3, { lado: 'depois' }))).toEqual({
+      b: [0, 3], // fica onde estava
+      n: [0, 4],
+      c: [0, 5],
+      d: [0, 6],
+    })
+  })
+
+  it('antes de um livro com vizinho: ele entra entre os dois, e quem estava no lugar anda para a direita', () => {
+    const estante = [l('a', 0, 2), l('b', 0, 3), l('c', 0, 4), l('n', 1, 0)]
+    expect(lugares(moverLivroNaEstante(estante, 'n', 0, 3, { lado: 'antes' }))).toEqual({
+      a: [0, 2],
+      n: [0, 3],
+      b: [0, 4],
+      c: [0, 5],
+    })
+  })
+
+  it('o buraco à direita absorve o empurrão, e depois dele ninguém anda', () => {
+    const estante = [l('b', 0, 3), l('c', 0, 4), l('e', 0, 7), l('n', 1, 0)]
+    expect(lugares(moverLivroNaEstante(estante, 'n', 0, 3, { lado: 'depois' }))).toEqual({
+      b: [0, 3],
+      n: [0, 4],
+      c: [0, 5],
+      e: [0, 7],
+    })
+  })
+
+  it('sem buraco à direita, a fila anda para a esquerda e a ordem entre os dois livros se mantém', () => {
+    // 23 livre; 24 e 25 ocupados: a fresta depois do 24 só abre empurrando o 24 para a esquerda
+    const estante = [l('b', 0, ultimo - 1), l('c', 0, ultimo), l('n', 1, 0)]
+    expect(lugares(moverLivroNaEstante(estante, 'n', 0, ultimo - 1, { lado: 'depois' }))).toEqual({
+      b: [0, ultimo - 2],
+      n: [0, ultimo - 1],
+      c: [0, ultimo], // c continua depois de n; b antes
+    })
+  })
+
+  it('antes, sem buraco à direita: a fila anda para a esquerda e a ordem se mantém', () => {
+    const estante = [l('b', 0, ultimo - 1), l('c', 0, ultimo), l('n', 1, 0)]
+    expect(lugares(moverLivroNaEstante(estante, 'n', 0, ultimo, { lado: 'antes' }))).toEqual({
+      b: [0, ultimo - 2],
+      n: [0, ultimo - 1],
+      c: [0, ultimo],
+    })
+  })
+
+  it('nas pontas da prateleira, toma o próprio lugar', () => {
+    const naBorda = [l('c', 0, ultimo), l('n', 1, 0)]
+    expect(lugares(moverLivroNaEstante(naBorda, 'n', 0, ultimo, { lado: 'depois' }))).toEqual({
+      c: [0, ultimo - 1],
+      n: [0, ultimo],
+    })
+    const noComeco = [l('c', 0, 0), l('n', 1, 0)]
+    expect(lugares(moverLivroNaEstante(noComeco, 'n', 0, 0, { lado: 'antes' }))).toEqual({
+      n: [0, 0],
+      c: [0, 1],
+    })
+  })
+
+  it('o lado não importa num lugar sem livro, nem sem lado: o livro toma o lugar, como sempre', () => {
+    const estante = [l('b', 0, 3), l('n', 1, 0)]
+    expect(lugares(moverLivroNaEstante(estante, 'n', 0, 9, { lado: 'depois' }))).toEqual({
+      b: [0, 3],
+      n: [0, 9],
+    })
+    expect(lugares(moverLivroNaEstante(estante, 'n', 0, 3))).toEqual({ b: [0, 4], n: [0, 3] })
+  })
+
+  it('soltar ao lado do vizinho que já está colado a ele não muda nada', () => {
+    const estante = [l('a', 0, 3), l('b', 0, 4)]
+    // o livro 'a' na metade esquerda de 'b': cairia no lugar 3, o que já é o dele
+    expect(lugares(moverLivroNaEstante(estante, 'a', 0, 4, { lado: 'antes' }))).toEqual({
+      a: [0, 3],
+      b: [0, 4],
+    })
+  })
+
+  it('prateleira sem nenhum lugar livre: recusa, qualquer que seja o lado', () => {
+    const cheia = Array.from({ length: LUGARES_POR_PRATELEIRA }, (_, i) => l(`x${String(i)}`, 0, i))
+    const estante = [...cheia, l('n', 1, 0)]
+    expect(moverLivroNaEstante(estante, 'n', 0, 5, { lado: 'depois' })).toBeNull()
+    expect(moverLivroNaEstante(estante, 'n', 0, 5, { lado: 'antes' })).toBeNull()
+  })
+
+  it('numa pilha que recebe o livro, a posição vale e o lado não', () => {
+    const estante: Array<L & { orientacao: 'deitado'; nivel: number; larguraLombada: number }> = [
+      { ...l('a', 0, 3), orientacao: 'deitado', nivel: 0, larguraLombada: 24 },
+      { ...l('b', 0, 3), orientacao: 'deitado', nivel: 1, larguraLombada: 24 },
+      { ...l('n', 0, 9), orientacao: 'deitado', nivel: 0, larguraLombada: 24 },
+    ]
+    const depois = moverLivroNaEstante(estante, 'n', 0, 3, { posicao: 1, lado: 'depois' })
+    expect(lugares(depois)).toEqual({ a: [0, 3], b: [0, 3], n: [0, 3] })
+    expect(depois?.find((x) => x.id === 'n')?.nivel).toBe(1)
+  })
+
+  it('uma pilha que não recebe (ou um livro de pé) conta como um livro: o lado vale', () => {
+    const estante: Array<
+      L & { orientacao: 'deitado' | 'em-pe'; nivel: number; larguraLombada: number }
+    > = [
+      { ...l('a', 0, 3), orientacao: 'deitado', nivel: 0, larguraLombada: 24 },
+      { ...l('b', 0, 3), orientacao: 'deitado', nivel: 1, larguraLombada: 24 },
+      { ...l('x', 0, 9), orientacao: 'em-pe', nivel: 0, larguraLombada: 24 },
+    ]
+    // um livro de pé não sobe na pilha: cai na fresta depois dela, e a pilha fica no lugar
+    expect(lugares(moverLivroNaEstante(estante, 'x', 0, 3, { lado: 'depois' }))).toEqual({
+      a: [0, 3],
+      b: [0, 3],
+      x: [0, 4],
+    })
+  })
+
+  it('não muta as entradas', () => {
+    const estante = [l('b', 0, 3), l('c', 0, 4), l('n', 1, 0)]
+    const copia = JSON.stringify(estante)
+    moverLivroNaEstante(estante, 'n', 0, 3, { lado: 'depois' })
+    expect(JSON.stringify(estante)).toBe(copia)
+  })
+})
+
+describe('vagasDepoisDeMover', () => {
+  it('fecha a vaga de onde o livro chegou, e a origem NÃO vira vaga (volta o enfeite)', () => {
+    const depois = [l('a', 0, 8)]
+    expect(vagasDepoisDeMover([{ prateleira: 0, ordem: 8 }], depois)).toEqual([])
+    // o lugar 1, de onde `a` saiu, não ganha vaga nenhuma
+    expect(vagasDepoisDeMover([], depois)).toEqual([])
+  })
+
+  it('o empurrão que ocupa um lugar com vaga também a fecha', () => {
     const antes = [l('a', 0, 3), l('b', 0, 4), l('c', 0, 5)]
     const depois = moverLivroNaEstante(antes, 'c', 0, 3)
-    expect(vagasDepoisDeMover([], antes, depois ?? [], 'c')).toEqual([])
+    expect(vagasDepoisDeMover([{ prateleira: 0, ordem: 5 }], depois ?? [])).toEqual([])
   })
 
-  it('mantém as vagas que ninguém tocou, sem duplicar a da origem', () => {
+  it('mantém as vagas que ninguém tocou', () => {
     const vagas = [
       { prateleira: 2, ordem: 0 },
       { prateleira: 0, ordem: 1 },
     ]
-    const antes = [l('a', 0, 1)]
     const depois = [l('a', 1, 0)]
-    expect(vagasDepoisDeMover(vagas, antes, depois, 'a')).toEqual(vagas)
+    expect(vagasDepoisDeMover(vagas, depois)).toEqual(vagas)
   })
 })
 

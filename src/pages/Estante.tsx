@@ -217,9 +217,9 @@ export default function Estante() {
             onAcoes={(livroId) => {
               abrir({ tipo: 'acoes', livroId })
             }}
-            onMover={(livroId, prateleira, lugar) => {
+            onMover={(livroId, prateleira, lugar, ponto) => {
               dispensarDica()
-              void moverLivro(livroId, prateleira, lugar)
+              void moverLivro(livroId, prateleira, lugar, ponto)
             }}
             onNovo={(prateleira, lugar) => {
               void navegar(`/novo-livro?prateleira=${String(prateleira)}&lugar=${String(lugar)}`)

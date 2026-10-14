@@ -210,13 +210,13 @@ export function createDexieRepo(db: PalacioDB = defaultDb): PalacioRepo {
       )
     },
 
-    async moverLivro(id, prateleira, lugar) {
+    async moverLivro(id, prateleira, lugar, ponto) {
       await db.transaction('rw', db.livros, db.vagas, db.enfeites, async () => {
         const todos = await db.livros.toArray()
         const movido = todos.find((l) => l.id === id)
         if (!movido) throw new Error(`moverLivro: livro ${id} não existe`)
 
-        const depois = moverLivroNaEstante(todos, id, prateleira, lugar)
+        const depois = moverLivroNaEstante(todos, id, prateleira, lugar, ponto)
         if (!depois) {
           throw new Error(`a prateleira ${String(prateleira + 1)} não tem lugar sem livro`)
         }
@@ -238,7 +238,7 @@ export function createDexieRepo(db: PalacioDB = defaultDb): PalacioRepo {
 
         // A mesma conta que a store faz para mostrar antes de o banco confirmar.
         // Vagas são poucas: regravar a tabela inteira é mais simples que um diff.
-        const vagas = vagasDepoisDeMover(await db.vagas.toArray(), todos, depois, id)
+        const vagas = vagasDepoisDeMover(await db.vagas.toArray(), depois)
         await db.vagas.clear()
         await db.vagas.bulkPut(vagas)
 
