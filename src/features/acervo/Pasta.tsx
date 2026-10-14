@@ -3,7 +3,6 @@ import { useMemo } from 'react'
 import { Link } from 'react-router-dom'
 
 import { BarraDeTopo } from '@/components/BarraDeTopo'
-import { BlocoDeTitulo } from '@/components/BlocoDeTitulo'
 import { botao } from '@/components/botao'
 import { EtiquetaProcessando } from '@/components/EtiquetaProcessando'
 import { restantesNaPasta, type AnexoNaTela, type Livro, type TipoDeItem } from '@/core'
@@ -55,18 +54,14 @@ export function Pasta({ livro }: { livro: Livro }) {
       <BarraDeTopo
         voltarPara="/"
         titulo={
-          padrao ? (
-            ''
-          ) : (
-            <>
-              <span
-                className="marca-do-livro h-5 w-1 shrink-0 rounded-full"
-                style={{ background: livro.cor }}
-                aria-hidden
-              />
-              <span className="truncate">{livro.titulo}</span>
-            </>
-          )
+          <>
+            <span
+              className="marca-do-livro h-5 w-1 shrink-0 rounded-full"
+              style={{ background: livro.cor }}
+              aria-hidden
+            />
+            <span className="truncate">{livro.titulo}</span>
+          </>
         }
         acoes={
           <Link
@@ -79,84 +74,81 @@ export function Pasta({ livro }: { livro: Livro }) {
         }
       />
 
-      <div className="animar-entrada pd-conteudo flex flex-col gap-6 pt-5">
-        {padrao && (
-          <BlocoDeTitulo
-            rotulo="Pasta"
-            titulo={livro.titulo}
-            cor={livro.cor}
-            sub={
-              meus.length === 0
-                ? 'Nada guardado ainda'
-                : `${contar(imagens.length, 'imagem', 'imagens')} · ${contar(links.length, 'link', 'links')}`
-            }
-          />
-        )}
-        <section aria-labelledby="pasta-imagens" className="flex flex-col">
-          <h2 id="pasta-imagens" className="rotulo-de-secao">
-            {padrao ? (
-              <>
-                <span>Imagens</span>
-                <span>
-                  cabem {restantes.imagem === 0 ? 'nenhuma' : `mais ${String(restantes.imagem)}`}
-                </span>
-              </>
-            ) : (
-              'Imagens'
-            )}
-          </h2>
-          <ul className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-4">
-            {imagens.map((a) => (
-              <li key={a.id}>
-                <CartaoDaImagem
-                  anexo={a}
-                  conceitos={conceitos.get(a.id) ?? []}
-                  aoSegurar={() => {
-                    segurar(a.id)
-                  }}
-                />
-              </li>
-            ))}
-            {restantes.imagem > 0 && (
-              <li>
-                <Adicionar livroId={livro.id} tipo="imagem" restantes={restantes.imagem} />
-              </li>
-            )}
-          </ul>
-        </section>
+      <div className="animar-entrada pd-conteudo flex flex-col pt-5">
+        {/* A mesma linha de contagem do livro comum, no mesmo lugar sob a barra. */}
+        <p className="pd-sub text-poeira px-1 pb-4 text-sm">
+          {meus.length === 0
+            ? 'Nada guardado ainda'
+            : `${contar(imagens.length, 'imagem', 'imagens')} · ${contar(links.length, 'link', 'links')}`}
+        </p>
 
-        <section aria-labelledby="pasta-links" className="flex flex-col">
-          <h2 id="pasta-links" className="rotulo-de-secao">
-            {padrao ? (
-              <>
-                <span>Links</span>
-                <span>
-                  cabem {restantes.link === 0 ? 'nenhum' : `mais ${String(restantes.link)}`}
-                </span>
-              </>
-            ) : (
-              'Links'
-            )}
-          </h2>
-          <ul className="flex flex-col gap-2">
-            {links.map((a) => (
-              <li key={a.id}>
-                <LinhaDoLink
-                  anexo={a}
-                  conceitos={conceitos.get(a.id) ?? []}
-                  aoSegurar={() => {
-                    segurar(a.id)
-                  }}
-                />
-              </li>
-            ))}
-            {restantes.link > 0 && (
-              <li>
-                <Adicionar livroId={livro.id} tipo="link" restantes={restantes.link} />
-              </li>
-            )}
-          </ul>
-        </section>
+        <div className="flex flex-col gap-6">
+          <section aria-labelledby="pasta-imagens" className="flex flex-col">
+            <h2 id="pasta-imagens" className="rotulo-de-secao">
+              {padrao ? (
+                <>
+                  <span>Imagens</span>
+                  <span>
+                    cabem {restantes.imagem === 0 ? 'nenhuma' : `mais ${String(restantes.imagem)}`}
+                  </span>
+                </>
+              ) : (
+                'Imagens'
+              )}
+            </h2>
+            <ul className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-4">
+              {imagens.map((a) => (
+                <li key={a.id}>
+                  <CartaoDaImagem
+                    anexo={a}
+                    conceitos={conceitos.get(a.id) ?? []}
+                    aoSegurar={() => {
+                      segurar(a.id)
+                    }}
+                  />
+                </li>
+              ))}
+              {restantes.imagem > 0 && (
+                <li>
+                  <Adicionar livroId={livro.id} tipo="imagem" restantes={restantes.imagem} />
+                </li>
+              )}
+            </ul>
+          </section>
+
+          <section aria-labelledby="pasta-links" className="flex flex-col">
+            <h2 id="pasta-links" className="rotulo-de-secao">
+              {padrao ? (
+                <>
+                  <span>Links</span>
+                  <span>
+                    cabem {restantes.link === 0 ? 'nenhum' : `mais ${String(restantes.link)}`}
+                  </span>
+                </>
+              ) : (
+                'Links'
+              )}
+            </h2>
+            <ul className="flex flex-col gap-2">
+              {links.map((a) => (
+                <li key={a.id}>
+                  <LinhaDoLink
+                    anexo={a}
+                    conceitos={conceitos.get(a.id) ?? []}
+                    aoSegurar={() => {
+                      segurar(a.id)
+                    }}
+                  />
+                </li>
+              ))}
+              {restantes.link > 0 && (
+                <li>
+                  <Adicionar livroId={livro.id} tipo="link" restantes={restantes.link} />
+                </li>
+              )}
+            </ul>
+          </section>
+        </div>
       </div>
 
       <AcoesDoItem

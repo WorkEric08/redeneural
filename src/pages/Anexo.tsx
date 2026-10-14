@@ -1,4 +1,4 @@
-import { ExternalLink, PencilLine, Trash2 } from 'lucide-react'
+import { ExternalLink, PencilLine, Search, Trash2 } from 'lucide-react'
 import { useCallback, useMemo, useState } from 'react'
 import { Link, useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 
@@ -14,7 +14,6 @@ import { VisorDeImagens } from '@/components/VisorDeImagens'
 import { Miniatura } from '@/features/acervo/Miniatura'
 import { useVisorNaUrl } from '@/hooks/useVisorNaUrl'
 import { conceitosPorAnexo, situacaoDoAnexo } from '@/features/acervo/resumo'
-import { TextoComLinks } from '@/features/neuronio/TextoComLinks'
 import { ROTULO_DO_PORTO } from '@/features/porto/porto'
 import { usePalacio } from '@/store/palacio'
 
@@ -148,6 +147,15 @@ export default function Anexo() {
         }
         acoes={
           <>
+            {!padrao && (
+              <Link
+                to="/busca"
+                aria-label="Busca global"
+                className={botao({ tipo: 'fantasma', tamanho: 'icone' })}
+              >
+                <Search size={20} aria-hidden />
+              </Link>
+            )}
             <Link
               to={`/anexo/${anexo.id}/editar`}
               aria-label="Editar"
@@ -185,8 +193,15 @@ export default function Anexo() {
             {pasta.titulo}
           </Link>
         )}
-        {padrao && (
+        {padrao ? (
           <h1 className="pd-neuronio-h1 texto-do-usuario">{anexo.legenda || 'Sem legenda'}</h1>
+        ) : (
+          // O mesmo cabeçalho da tela do pensamento: o título grande no alto, antes do conteúdo.
+          <header className="flex flex-col items-start gap-2.5 px-1">
+            <h1 className="texto-do-usuario font-titulo text-[1.75rem] leading-tight font-semibold tracking-tight text-balance">
+              {anexo.legenda || 'Sem legenda'}
+            </h1>
+          </header>
         )}
         <div className={padrao ? 'pd-neuronio-cartao pd-anexo-cartao' : 'contents'}>
           {anexo.midia.tipo === 'imagem' ? (
@@ -228,16 +243,6 @@ export default function Anexo() {
               </div>
             </div>
           )}
-
-          {!padrao &&
-            (anexo.legenda ? (
-              <TextoComLinks
-                texto={anexo.legenda}
-                className="texto-do-usuario px-1 text-[1.03rem] leading-[1.7] whitespace-pre-wrap"
-              />
-            ) : (
-              <p className="text-poeira px-1 text-sm italic">Sem legenda</p>
-            ))}
 
           <section>
             <h2 className="rotulo-de-secao">

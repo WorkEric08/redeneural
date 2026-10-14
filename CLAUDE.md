@@ -6559,6 +6559,33 @@ a recusa antes de soltar.
   barra horizontal de **largura igual** ao comprimento; recusa em 320 px com a barra vermelha e o aviso. 818 testes (5
   novos), tipos e lint limpos. **Não verificado em toque real.**
 
+## A pasta e o item seguem o layout do livro e do pensamento (15/10/2026)
+
+Pedido do usuário: o livro do tipo **anexos** (a pasta de acervo) deve ter o layout padronizado como o do livro comum —
+sobretudo o **título e onde ele fica** — e o mesmo vale ao entrar para ver uma imagem ou um link.
+
+- **A pasta aberta** (`features/acervo/Pasta.tsx`) é igual ao livro comum no que o livro comum define:
+  - **o título mora na barra de topo, nos dois temas**, com a marca de cor ao lado, no mesmo lugar (medido: mesmo x e y que
+    o do livro comum). Saiu o **bloco de título grande** do Padrão (`BlocoDeTitulo`, rótulo "Pasta"): o bloco é do livro
+    **executável**, o livro comum nunca o teve;
+  - **a linha de contagem** do livro comum (`.pd-sub`, sob a barra, no mesmo lugar, dos dois temas) agora existe na pasta, e
+    diz "1 imagem · 2 links" (ou "Nada guardado ainda"). Antes o Clássico não tinha linha nenhuma e o Padrão a escondia
+    dentro do bloco;
+  - o resto — as seções "Imagens" e "Links" com o "+" e o contador — não mudou, só ganhou o respiro do livro comum.
+- **A tela do item** (`pages/Anexo.tsx`) é igual à do pensamento: o **título grande no alto** (aqui, a legenda; "Sem legenda"
+  quando não tem), antes do conteúdo. No Padrão já era assim (etiqueta da pasta sob a barra + título); **no Clássico a
+  legenda era um parágrafo solto embaixo da imagem**, e agora é o mesmo cabeçalho da tela do pensamento. O Clássico também
+  ganhou a **lupa na barra** (Busca global), como o pensamento tem. O título da barra continua sendo a pasta, que leva a ela.
+- **Custo:** a legenda deixou de virar link tocável no Clássico (o parágrafo antigo usava `TextoComLinks`); o Padrão nunca fez
+  isso, e agora os dois temas são iguais.
+- **Não mudou, de propósito:** a lupa da pasta continua **global**. O Buscar local do livro filtra pensamentos, e uma pasta
+  não tem pensamentos; buscar nas legendas dos itens é uma decisão à parte. As grades de 2 colunas e as ações de segurar
+  (trocar, excluir) também ficam.
+- **Verificado** no Chrome (build de produção, 412×892, Padrão escuro e Clássico): título, marca e linha de contagem da
+  pasta no **mesmo x e y** do livro comum; item com título grande de 32 px (Padrão) e 28 px (Clássico), com e sem legenda;
+  sem rolagem lateral em 320 px. Tipos, lint e 818 testes limpos (sem teste novo: é composição de telas). **Não verificado em
+  toque real.**
+
 ## Fases
 
 0. ✅ Esqueleto (Vite/React/TS/Tailwind/PWA/Capacitor)
@@ -6623,3 +6650,4 @@ a recusa antes de soltar.
 39. ✅ "Palácio" vira "rede" nos textos da interface; o nome do produto fica (15/10/2026)
 40. ✅ O produto se chama Locus: "Palácio Mental" sai de toda parte; identificadores e id do app ficam (15/10/2026)
 41. ✅ A barra de soltura: sempre à mostra, do tamanho do livro na mão, vermelha quando recusa (15/10/2026)
+42. ✅ A pasta de acervo e o item seguem o layout do livro comum e do pensamento: título na barra, linha de contagem, título grande no item (15/10/2026)
