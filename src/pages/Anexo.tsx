@@ -126,25 +126,7 @@ export default function Anexo() {
     <div className="flex flex-col">
       <BarraDeTopo
         voltarPara={saida}
-        titulo={
-          padrao ? (
-            ''
-          ) : pasta ? (
-            <Link
-              to={`/livro/${pasta.id}`}
-              className="flex min-w-0 items-center gap-2.5 rounded-lg py-2 pr-2"
-            >
-              <span
-                className="marca-do-livro h-5 w-1 shrink-0 rounded-full"
-                style={{ background: pasta.cor }}
-                aria-hidden
-              />
-              <span className="truncate">{pasta.titulo}</span>
-            </Link>
-          ) : (
-            'Item'
-          )
-        }
+        titulo=""
         acoes={
           <>
             {!padrao && (
@@ -183,22 +165,12 @@ export default function Anexo() {
             : 'animar-entrada flex flex-col gap-6 pt-5'
         }
       >
-        {padrao && pasta && (
-          <Link to={`/livro/${pasta.id}`} className="pd-chip-livro">
-            <span
-              className="marca-do-livro"
-              style={{ background: pasta.cor, width: 7, height: 16 }}
-              aria-hidden
-            />
-            {pasta.titulo}
-          </Link>
-        )}
         {padrao ? (
           <h1 className="pd-neuronio-h1 texto-do-usuario">{anexo.legenda || 'Sem legenda'}</h1>
         ) : (
           // O mesmo cabeçalho da tela do pensamento: o título grande no alto, antes do conteúdo.
           <header className="flex flex-col items-start gap-2.5 px-1">
-            <h1 className="texto-do-usuario font-titulo text-[1.75rem] leading-tight font-semibold tracking-tight text-balance">
+            <h1 className="texto-do-usuario font-titulo text-[1.25rem] leading-snug font-semibold tracking-tight text-balance">
               {anexo.legenda || 'Sem legenda'}
             </h1>
           </header>

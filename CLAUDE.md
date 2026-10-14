@@ -6586,6 +6586,23 @@ sobretudo o **título e onde ele fica** — e o mesmo vale ao entrar para ver um
   sem rolagem lateral em 320 px. Tipos, lint e 818 testes limpos (sem teste novo: é composição de telas). **Não verificado em
   toque real.**
 
+## O item da pasta mostra só a legenda, em fonte menor (15/10/2026)
+
+Pedido do usuário: na tela que mostra a imagem ou o link, **não mostrar mais o nome do livro** — só a legenda (o título
+daquele item) —, e a fonte desse título **menor**. **Isto revisa** a seção anterior ("A pasta e o item seguem o layout…"), que
+mantinha o nome da pasta na barra (Clássico) e como etiqueta sob a barra (Padrão), como no pensamento.
+
+- **Sem o nome da pasta, em lugar nenhum da tela:** saíram o título da barra de topo (Clássico), que era um link para a pasta, e a
+  etiqueta `pd-chip-livro` (Padrão). A barra fica só com voltar e as ações (lupa no Clássico, editar, apagar). **Voltar continua
+  levando à pasta** (`voltarPara`), então a saída não se perdeu — só o nome. A tela do pensamento **não mudou** e segue mostrando o livro.
+- **O título é a legenda** (ou "Sem legenda"), e ficou menor: **20 px no Clássico** (era 28) e **22 px no Padrão** (era 32,
+  `.pd-anexo .pd-neuronio-h1` em `tema-padrao.css`, que vale só para o item, não para o pensamento). O título do pensamento
+  não mudou.
+- **Custo:** quem abre um item direto (um link guardado) não vê de que pasta ele é sem tocar em voltar. É o preço de tirar o nome.
+- **Verificado** no Chrome (build de produção, 412×892, Padrão escuro e Clássico, imagem e link): o nome da pasta não aparece
+  em nenhum ponto do texto da tela, o título é a legenda em 20 e 22 px, sem rolagem lateral em 320 px. Tipos, lint e 818 testes
+  limpos. **Não verificado em toque real.**
+
 ## Fases
 
 0. ✅ Esqueleto (Vite/React/TS/Tailwind/PWA/Capacitor)
@@ -6651,3 +6668,4 @@ sobretudo o **título e onde ele fica** — e o mesmo vale ao entrar para ver um
 40. ✅ O produto se chama Locus: "Palácio Mental" sai de toda parte; identificadores e id do app ficam (15/10/2026)
 41. ✅ A barra de soltura: sempre à mostra, do tamanho do livro na mão, vermelha quando recusa (15/10/2026)
 42. ✅ A pasta de acervo e o item seguem o layout do livro comum e do pensamento: título na barra, linha de contagem, título grande no item (15/10/2026)
+43. ✅ O item da pasta mostra só a legenda, em fonte menor, sem o nome do livro (15/10/2026)
