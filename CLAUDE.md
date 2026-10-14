@@ -4531,9 +4531,10 @@ volta a ser relevante. Decisões minhas, pela regra da série.
 
 #### O que se vê
 
-- **Tela do livro:** seção "Adormecidas · N", depois das outras, recolhida
-  (abre num toque). Cada ideia ali aparece esmaecida, com "Acordar". Mudar o
-  estado, ou abrir a ideia, também acorda.
+- **Tela do livro:** seção "Adormecidas · N" **no começo da tela e à mostra**; "Feitas" é a que
+  fica **recolhida** (abre num toque na seta). **Trocado em 14/10/2026** — antes as adormecidas ficavam no
+  fim e recolhidas, e as feitas à mostra. Cada ideia adormecida aparece esmaecida, com "Acordar". Mudar o
+  estado, ou abrir a ideia, também acorda. Ordem: Adormecidas, Fazendo, Para fazer, Feitas.
 - **Rede:** a adormecida ganha um chumaço de névoa, o ponto perde luz, e os
   fios dela ficam mais fracos. A feita **fica dourada** — o próprio ponto, em
   **ouro gravado**, sem anel em volta (a decisão da Etapa 0 era um anel; trocado em

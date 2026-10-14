@@ -661,8 +661,8 @@ html:root[data-tema^='padrao'] .rotulo-de-secao {
   font-size: 0.875rem;
 }
 
-/* "Adormecidas · 1": uma linha de 48 px sob um filete, com a seta à direita. */
-.pd-adormecidas {
+/* A seção recolhida ("Feitas · 3"): uma linha de 48 px sob um filete, com a seta à direita. */
+.pd-recolhida {
   display: flex;
   width: 100%;
   min-height: 48px;

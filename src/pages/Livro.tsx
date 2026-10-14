@@ -40,10 +40,12 @@ import { usePalacio } from '@/store/palacio'
  * painéis: o voltar fecha).
  *
  * As que ficaram paradas mais que os dias do livro moram numa seção à parte,
- * "Adormecidas", recolhida e só com a contagem — sem cobrança, sem cor de
- * alerta. Cada uma tem "Acordar", e mudar o estado ou abrir a ideia também
- * acorda. O relógio é o de quando a tela abriu: acordar uma ideia aqui a tira
- * da seção na hora, mesmo num livro de 0 dias.
+ * "Adormecidas", **no começo da tela e à mostra** — são as que pedem um olhar —,
+ * sem cobrança e sem cor de alerta. Cada uma tem "Acordar", e mudar o estado ou
+ * abrir a ideia também acorda. O relógio é o de quando a tela abriu: acordar
+ * uma ideia aqui a tira da seção na hora, mesmo num livro de 0 dias. Quem fica
+ * **recolhida**, só com a contagem, é "Feitas" (14/10/2026; antes era o
+ * contrário): o que já terminou abre num toque na seta.
  */
 export default function Livro() {
   const { livroId } = useParams()
@@ -65,7 +67,7 @@ export default function Livro() {
   const [abertos, setAbertos] = useState<ReadonlySet<string>>(new Set())
   // Calculado na hora de mostrar, com o relógio de quando a tela abriu.
   const [agora] = useState(() => new Date())
-  const [verAdormecidas, setVerAdormecidas] = useState(false)
+  const [verFeitas, setVerFeitas] = useState(false)
 
   function fecharEstado(): void {
     // O React Router chama de 'default' a primeira entrada da sessão.
@@ -120,6 +122,25 @@ export default function Livro() {
   // barra de cima fica só com voltar e busca.
   const comBloco = padrao && livro.executavel
   const fazendo = meus.filter((n) => !dormindo(n) && estadoVisivel(n, livro) === 'fazendo').length
+
+  const adormecidas = meus.filter(dormindo)
+  const feitas = meus.filter((n) => !dormindo(n) && estadoVisivel(n, livro) === 'feita')
+
+  /** O título de uma seção do livro executável: o nome e a contagem. */
+  function cabecalhoDaSecao(titulo: string, quantas: number) {
+    return (
+      <h2 className="rotulo-de-secao">
+        {padrao ? (
+          <>
+            <span>{titulo}</span>
+            <span>{String(quantas)}</span>
+          </>
+        ) : (
+          `${titulo} · ${String(quantas)}`
+        )}
+      </h2>
+    )
+  }
 
   function cartao(n: NeuronioNaTela, estado: EstadoDaIdeia | null, adormecida = false) {
     const aberto = abertos.has(n.id)
@@ -355,21 +376,21 @@ export default function Livro() {
           </div>
         ) : livro.executavel ? (
           <div className="flex flex-col gap-6">
-            {ESTADOS_DA_IDEIA.map((estado) => {
+            {adormecidas.length > 0 && (
+              <section aria-label="Adormecidas">
+                {cabecalhoDaSecao('Adormecidas', adormecidas.length)}
+                <ul className="pd-lista flex flex-col gap-3">
+                  {adormecidas.map((n) => cartao(n, estadoVisivel(n, livro), true))}
+                </ul>
+              </section>
+            )}
+
+            {ESTADOS_DA_IDEIA.filter((estado) => estado !== 'feita').map((estado) => {
               const daSecao = meus.filter((n) => !dormindo(n) && estadoVisivel(n, livro) === estado)
               if (daSecao.length === 0) return null
               return (
                 <section key={estado} aria-label={TITULO_DA_SECAO[estado]}>
-                  <h2 className="rotulo-de-secao">
-                    {padrao ? (
-                      <>
-                        <span>{TITULO_DA_SECAO[estado]}</span>
-                        <span>{String(daSecao.length)}</span>
-                      </>
-                    ) : (
-                      `${TITULO_DA_SECAO[estado]} · ${String(daSecao.length)}`
-                    )}
-                  </h2>
+                  {cabecalhoDaSecao(TITULO_DA_SECAO[estado], daSecao.length)}
                   <ul className="pd-lista flex flex-col gap-3">
                     {daSecao.map((n) => cartao(n, estado))}
                   </ul>
@@ -377,30 +398,30 @@ export default function Livro() {
               )
             })}
 
-            {meus.some(dormindo) && (
-              <section aria-label="Adormecidas">
+            {feitas.length > 0 && (
+              <section aria-label={TITULO_DA_SECAO.feita}>
                 <button
                   type="button"
                   onClick={() => {
-                    setVerAdormecidas((v) => !v)
+                    setVerFeitas((v) => !v)
                   }}
-                  aria-expanded={verAdormecidas}
+                  aria-expanded={verFeitas}
                   className={
                     padrao
-                      ? 'pd-adormecidas'
+                      ? 'pd-recolhida'
                       : 'rotulo-de-secao flex min-h-11 w-full items-center gap-1.5 text-left'
                   }
                 >
-                  Adormecidas · {String(meus.filter(dormindo).length)}
+                  {TITULO_DA_SECAO.feita} · {String(feitas.length)}
                   <ChevronDown
                     size={14}
                     aria-hidden
-                    className={`transition-transform ${verAdormecidas ? 'rotate-180' : ''}`}
+                    className={`transition-transform ${verFeitas ? 'rotate-180' : ''}`}
                   />
                 </button>
-                {verAdormecidas && (
+                {verFeitas && (
                   <ul className="pd-lista flex flex-col gap-3">
-                    {meus.filter(dormindo).map((n) => cartao(n, estadoVisivel(n, livro), true))}
+                    {feitas.map((n) => cartao(n, 'feita'))}
                   </ul>
                 )}
               </section>
