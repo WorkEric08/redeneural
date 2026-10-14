@@ -128,11 +128,6 @@ export function Lombada({
       {...manipular}
     >
       <span className="lombada-titulo">{item.livro.titulo}</span>
-      {item.livro.estilo === 'papel' && (
-        <span className="lombada-contagem" aria-hidden>
-          {ehPasta ? item.anexos : item.neuronios}
-        </span>
-      )}
 
       {ponte && <span className="lombada-ponto" aria-hidden />}
       {item.andamento === 'fazendo' && (

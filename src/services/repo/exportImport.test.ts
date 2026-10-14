@@ -674,14 +674,14 @@ describe('cor e forma da lombada no backup', () => {
   })
 
   // "Duas cores" e "Metade" saíram em 08/10/2026: um backup que as traz importa, e viram sólido.
-  it('backup com uma forma que saiu (duas-cores, metade) importa, e a forma vira sólido', async () => {
+  it('backup com uma forma que saiu (duas-cores, metade, papel) importa, e a forma vira sólido', async () => {
     const origem = await palacioPovoado()
     const snapshot = await origem.exportAll()
     const antigo = {
       ...snapshot,
       livros: snapshot.livros.map((l, i) => ({
         ...l,
-        estilo: i % 2 === 0 ? 'duas-cores' : 'metade',
+        estilo: (['duas-cores', 'metade', 'papel'] as const)[i % 3],
       })),
     }
 

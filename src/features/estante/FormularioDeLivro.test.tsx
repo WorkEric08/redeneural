@@ -43,10 +43,11 @@ describe('FormularioDeLivro: cor e forma', () => {
     }
   })
 
-  it('oferece as oito formas — sem "Duas cores" nem "Metade" —, com o sólido marcado num livro novo', () => {
+  it('oferece as sete formas — sem "Duas cores", "Metade" nem "Papel" —, com o sólido marcado num livro novo', () => {
     montar()
     const formas = screen.getByRole('radiogroup', { name: 'Forma' })
-    expect(formas.querySelectorAll('input[type=radio]')).toHaveLength(8)
+    expect(formas.querySelectorAll('input[type=radio]')).toHaveLength(7)
+    expect(screen.queryByRole('radio', { name: 'Papel' })).not.toBeInTheDocument()
     expect(screen.queryByRole('radio', { name: 'Duas cores' })).not.toBeInTheDocument()
     expect(screen.queryByRole('radio', { name: 'Metade' })).not.toBeInTheDocument()
     expect(screen.getByRole('radio', { name: 'Sólido' })).toBeChecked()
@@ -72,12 +73,12 @@ describe('FormularioDeLivro: cor e forma', () => {
       ...INICIAL,
       titulo: 'Música',
       cor: '#F1EEE6',
-      estilo: 'papel',
+      estilo: 'degrade',
     })
     const usuario = userEvent.setup()
 
     expect(screen.getByRole('radio', { name: 'Creme' })).toBeChecked()
-    expect(screen.getByRole('radio', { name: 'Papel' })).toBeChecked()
+    expect(screen.getByRole('radio', { name: 'Degradê' })).toBeChecked()
 
     await usuario.click(screen.getByRole('radio', { name: 'Bloco' }))
     await usuario.click(screen.getByRole('button', { name: 'Criar livro' }))

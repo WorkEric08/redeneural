@@ -1062,15 +1062,11 @@ img {
   }
 }
 
-/* O que não pode ficar de lado: o ícone do pé, a marca da feita e a contagem do papel giram de
-   volta, para ler em pé. A contagem tem a posição no `transform`, então gira dentro dele. */
+/* O que não pode ficar de lado: o ícone do pé e a marca da feita giram de
+   volta, para ler em pé. */
 .lombada--deitada .lombada-emblema svg,
 .lombada--deitada .lombada-feita svg {
   rotate: 90deg;
-}
-
-.lombada--deitada .lombada-contagem {
-  transform: translate(-50%, -50%) rotate(90deg);
 }
 
 /* O livro deitado na mão: a moldura é que anda com o dedo (`transform` escrito pelo arrasto) e o
@@ -1263,21 +1259,6 @@ img {
   writing-mode: vertical-rl;
 }
 
-/* A contagem de ideias, no pé do papel. */
-.lombada-contagem {
-  position: absolute;
-  top: 95%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  font-family: var(--fonte-titulo);
-  font-size: var(--fs-contagem);
-  font-variant-numeric: tabular-nums;
-  line-height: 1;
-  opacity: 0.6;
-  color: var(--fg);
-  pointer-events: none;
-}
-
 /* O ponto da ponte, a 7px do topo: só existe no livro que acende (data-ponte). */
 .lombada-ponto {
   position: absolute;
@@ -1370,12 +1351,6 @@ img {
   left: 50%;
   transform: translateX(-50%);
   color: color-mix(in srgb, var(--fg) 80%, transparent);
-}
-
-/* No papel o pé é da contagem: o ícone sobe para ficar logo acima dela (a reserva do título,
-   em lombadaNoite.ts, conta esses 6 px a mais). */
-.lombada[data-estilo='papel'] .lombada-emblema {
-  bottom: 13px;
 }
 
 /* ---------------------------------------------------------------------------

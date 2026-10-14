@@ -6,10 +6,11 @@ import { especieDoLivro, ICONES_NOS_LIVROS_PADRAO } from './icones'
 describe('estiloOuPadrao', () => {
   it('uma forma que existe fica como está', () => {
     expect(estiloOuPadrao('contorno')).toBe('contorno')
-    expect(estiloOuPadrao('papel')).toBe('papel')
+    expect(estiloOuPadrao('bloco')).toBe('bloco')
   })
 
-  it('as que saíram (duas-cores, metade) e o que não é forma viram sólido', () => {
+  it('as que saíram (duas-cores, metade, papel) e o que não é forma viram sólido', () => {
+    expect(estiloOuPadrao('papel')).toBe('solido')
     expect(estiloOuPadrao('duas-cores')).toBe('solido')
     expect(estiloOuPadrao('metade')).toBe('solido')
     expect(estiloOuPadrao(undefined)).toBe('solido')

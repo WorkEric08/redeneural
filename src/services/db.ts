@@ -371,6 +371,25 @@ export function createDb(name: string = DB_NAME): PalacioDB {
       })
     })
 
+  // v18 (13/10/2026): a forma "Papel" saiu. Quem a tinha — livro ou enfeite — vira sólido, com a cor
+  // que já tinha (o papel era sempre creme na tela, mas a cor gravada continuava a do livro).
+  db.version(18)
+    .stores({})
+    .upgrade(async (tx) => {
+      await tx
+        .table<Livro, string>('livros')
+        .toCollection()
+        .modify((l) => {
+          l.estilo = estiloOuPadrao(l.estilo)
+        })
+      await tx
+        .table<EnfeiteGravado, [number, number]>('enfeites')
+        .toCollection()
+        .modify((e) => {
+          e.estilo = estiloOuPadrao(e.estilo)
+        })
+    })
+
   return db
 }
 

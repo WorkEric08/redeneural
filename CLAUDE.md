@@ -6082,6 +6082,15 @@ Pedido do usuário: no máximo **3 livros de largura Normal** numa pilha, ou o q
   desenho: a espessura gravada é a de sempre. **Custo:** ali um livro da pilha fica mais fino que a Fina.
 - Pilhas já gravadas com mais de 114 px seguem valendo; só não podem piorar.
 
+## A forma "Papel" sai (13/10/2026)
+
+Pedido do usuário: a forma **Papel** (a lombada creme com a contagem de pensamentos no pé) saiu das opções
+de Forma, que passam a ser **sete**. Mesmo caminho de "Duas cores" e "Metade": Dexie **v18** põe sólido em
+livro e enfeite que a tinham (a cor gravada fica), e o backup mapeia `papel` para sólido
+(`ESTILOS_QUE_SAIRAM`). Saíram junto o que só ela usava: a contagem no pé da lombada (`.lombada-contagem`,
+`--fs-contagem`, a prop `contagem` do formulário) e a reserva maior do ícone (`reservaDoIcone` agora é uma só,
+20 px). O tom **Creme** continua na paleta de cores.
+
 ## Fases
 
 0. ✅ Esqueleto (Vite/React/TS/Tailwind/PWA/Capacitor)

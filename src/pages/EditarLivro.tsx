@@ -32,7 +32,7 @@ export default function EditarLivro() {
   } = usePalacio()
 
   const livro = livros.find((l) => l.id === livroId)
-  // O que a estante sabe do livro: a altura automática e a contagem do papel saem
+  // O que a estante sabe do livro: a altura automática sai
   // daqui, para a amostra ser a lombada que vai para a prateleira.
   const estante = useMemo(
     () => montarEstante(livros, neuronios, conexoes, anexos),
@@ -69,7 +69,6 @@ export default function EditarLivro() {
           tipoFixo={livro.tipo}
           livroId={livro.id}
           alturaAutomatica={naEstante?.altura}
-          contagem={livro.tipo === 'acervo' ? naEstante?.anexos : naEstante?.neuronios}
           prateleiras={quantidadeDePrateleiras}
           rotuloDeEnvio="Salvar"
           ocupado={ocupado}

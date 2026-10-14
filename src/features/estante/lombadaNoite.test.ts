@@ -80,10 +80,8 @@ describe('tamanho do título', () => {
 })
 
 describe('o ícone do pé', () => {
-  it('reserva 20 px do pé (7 de base, 11 do ícone, 2 de folga) — e 26 no papel, acima da contagem', () => {
-    expect(reservaDoIcone('solido')).toBe(20)
-    expect(reservaDoIcone('contorno')).toBe(20)
-    expect(reservaDoIcone('papel')).toBe(26)
+  it('reserva 20 px do pé (7 de base, 11 do ícone, 2 de folga)', () => {
+    expect(reservaDoIcone()).toBe(20)
   })
 })
 
@@ -119,11 +117,6 @@ describe('geometriaDaLombada', () => {
     const branco = geometriaDaLombada({ ...base, intensidadeDaLuz: 100, peca: 'enfeite' })
       .style as Record<string, string>
     expect(branco['--cor-na-luz']).toContain('#fff 18%')
-  })
-
-  it('o papel é sempre creme, com texto escuro, qualquer que seja a cor', () => {
-    const { style } = geometriaDaLombada({ ...base, estilo: 'papel', cor: '#12204F' })
-    expect(style).toMatchObject({ '--cor': CREME, '--fg': TEXTO_ESCURO, '--cor-na-luz': CREME })
   })
 
   it('o degradê e o bloco invertem em livro claro', () => {
@@ -222,7 +215,7 @@ describe('geometriaDaLombada', () => {
           .style as Record<string, string>
         const fim = parseFloat(style['--zt-topo']!) + parseFloat(style['--zt-altura']!)
         // o fim da zona (em % de H = px, com H = 100) fica acima da reserva do ícone
-        expect(fim).toBeLessThanOrEqual(100 - reservaDoIcone(estilo) + 0.1)
+        expect(fim).toBeLessThanOrEqual(100 - reservaDoIcone() + 0.1)
       }
     }
   })

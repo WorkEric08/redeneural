@@ -114,14 +114,12 @@ interface Props {
   /**
    * O que a amostra precisa para ser a lombada que vai para a estante, e não uma
    * parecida: o livro (a largura automática sai do id dele), quanto ele guarda (a
-   * altura automática e a contagem do papel) e quantas prateleiras o móvel tem (a
+   * altura automática) e quantas prateleiras o móvel tem (a
    * fileira se mede por elas). Num livro novo, nada disso existe ainda.
    */
   livroId?: string | undefined
   /** 0..1, como `LivroNaEstante.altura`. Livro novo: 0. */
   alturaAutomatica?: number | undefined
-  /** O que o papel mostra no pé: pensamentos, ou itens numa pasta. Livro novo: 0. */
-  contagem?: number | undefined
   prateleiras?: number | undefined
   onEnviar: (dados: NovoLivro) => void
 }
@@ -151,7 +149,6 @@ export function FormularioDeLivro({
   acabamentoDoEnfeite,
   livroId,
   alturaAutomatica = 0,
-  contagem = 0,
   prateleiras = 4,
   onEnviar,
 }: Props) {
@@ -260,11 +257,6 @@ export function FormularioDeLivro({
     >
       <span className="lombada-titulo">{tituloDaAmostra}</span>
       {acabamentoDoEnfeite?.douradoEm === estilo && <span className="lombada-filetes" />}
-      {estilo === 'papel' && !enfeite && (
-        <span className="lombada-contagem" aria-hidden>
-          {contagem}
-        </span>
-      )}
       {icone && !geo.semIcone && (
         <EmblemaDaLombada chave={ehPasta ? 'pasta' : (emblema ?? especie)} />
       )}

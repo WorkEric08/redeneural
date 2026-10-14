@@ -29,14 +29,12 @@ const BRILHO_DO_ENFEITE_MAXIMO = 18
 const SOMBRA_MAXIMA_DO_FUNDO = 70
 
 /**
- * O ícone do pé (a espécie do livro) ocupa 11 px, a 7 px da base — ou a 13 px no papel, que
- * sobe para ficar acima da contagem. O título termina 2 px acima dele: o espaço é **reservado**,
+ * O ícone do pé (a espécie do livro) ocupa 11 px, a 7 px da base. O título termina 2 px acima dele: o espaço é **reservado**,
  * e o título é que cede (08/10/2026; antes o ícone só aparecia se o título, já medido, deixasse
  * lugar, e com um título de verdade quase nunca deixava).
  */
 const ICONE_PX = 11
 const BASE_DO_ICONE_PX = 7
-const BASE_DO_ICONE_NO_PAPEL_PX = 13
 const FOLGA_DO_ICONE_PX = 2
 
 /**
@@ -131,7 +129,6 @@ const ZONAS: Record<EstiloDaLombada, Zona> = {
   ponto: { topo: 22.5, fundo: 92.5, x: 50 },
   fio: { topo: 13.8, fundo: 86.3, x: 50 },
   degrade: { topo: 12.5, fundo: 87.5, x: 50 },
-  papel: { topo: 12.5, fundo: 84.4, x: 50 },
   bloco: { topo: 15.6, fundo: 84.4, x: 50 },
 }
 
@@ -163,9 +160,8 @@ export function pisoDoTitulo(fileira: number | undefined): number {
 }
 
 /** Quantos px do pé a lombada reserva para o ícone, de baixo para cima. */
-export function reservaDoIcone(estilo: EstiloDaLombada): number {
-  const base = estilo === 'papel' ? BASE_DO_ICONE_NO_PAPEL_PX : BASE_DO_ICONE_PX
-  return base + ICONE_PX + FOLGA_DO_ICONE_PX
+export function reservaDoIcone(): number {
+  return BASE_DO_ICONE_PX + ICONE_PX + FOLGA_DO_ICONE_PX
 }
 
 interface Entrada {
@@ -200,11 +196,8 @@ function arredondar(valor: number): number {
 
 /** Tudo o que a lombada precisa para se desenhar, num objeto de variáveis CSS. */
 export function geometriaDaLombada(e: Entrada): GeometriaDaLombada {
-  const papel = e.estilo === 'papel'
-  // O papel é sempre creme, qualquer que seja a cor guardada: ela continua
-  // valendo na Rede e no Mapa.
-  const cor = papel ? CREME : e.cor
-  const fg = papel ? TEXTO_ESCURO : corDoTexto(cor)
+  const cor = e.cor
+  const fg = corDoTexto(cor)
   const clara = ehCorClara(cor)
 
   const caracteres = [...e.titulo].length
@@ -213,7 +206,7 @@ export function geometriaDaLombada(e: Entrada): GeometriaDaLombada {
   // abaixo do piso de 9 px o título fica minúsculo e o que não cabe vira reticências.
   const piso = pisoDoTitulo(e.alturaDaFileira)
   const fundoComIcone = e.icone
-    ? Math.min(zona.fundo, ((e.altura - reservaDoIcone(e.estilo)) / e.altura) * 100)
+    ? Math.min(zona.fundo, ((e.altura - reservaDoIcone()) / e.altura) * 100)
     : zona.fundo
   const zonaDe = (fundo: number): number => Math.max(fundo - zona.topo, (piso / e.altura) * 100)
   let alturaDaZona = zonaDe(fundoComIcone)
@@ -239,7 +232,6 @@ export function geometriaDaLombada(e: Entrada): GeometriaDaLombada {
     '--oposto': clara ? '#fff' : '#000',
     '--degrade-alvo': clara ? '#fff' : '#000',
     '--fs': `${String(fonte)}px`,
-    '--fs-contagem': `${String(Math.round(0.22 * e.largura * 10) / 10)}px`,
     '--zt-topo': `${String(zona.topo)}%`,
     '--zt-altura': `${String(Math.round(alturaDaZona * 10) / 10)}%`,
     '--zt-x': `${String(zona.x)}%`,

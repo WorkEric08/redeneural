@@ -60,8 +60,9 @@ describe('ehCorDaPaleta', () => {
 })
 
 describe('formas da lombada', () => {
-  it('são as oito (sem "duas-cores" nem "metade"), com o sólido primeiro', () => {
-    expect(ESTILOS_DA_LOMBADA).toHaveLength(8)
+  it('são as sete (sem "duas-cores", "metade" nem "papel"), com o sólido primeiro', () => {
+    expect(ESTILOS_DA_LOMBADA).toHaveLength(7)
+    expect(ehEstiloDaLombada('papel')).toBe(false)
     expect(ehEstiloDaLombada('duas-cores')).toBe(false)
     expect(ehEstiloDaLombada('metade')).toBe(false)
     expect(ESTILOS_DA_LOMBADA[0]).toBe('solido')

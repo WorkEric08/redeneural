@@ -36,7 +36,6 @@ export const ESTILOS_DA_LOMBADA = [
   'ponto',
   'fio',
   'degrade',
-  'papel',
   'bloco',
 ] as const
 
@@ -48,12 +47,12 @@ export function ehEstiloDaLombada(valor: unknown): valor is EstiloDaLombada {
   return ESTILOS_DA_LOMBADA.some((e) => e === valor)
 }
 
-/** As formas que saíram em 08/10/2026. Um backup antigo pode trazê-las; vale como sólido. */
-export const ESTILOS_QUE_SAIRAM: readonly string[] = ['duas-cores', 'metade']
+/** As formas que saíram (08/10/2026 e 13/10/2026). Um backup antigo pode trazê-las; vale como sólido. */
+export const ESTILOS_QUE_SAIRAM: readonly string[] = ['duas-cores', 'metade', 'papel']
 
 /**
  * Uma forma que existe, ou `ESTILO_PADRAO`. Livros e enfeites gravados (ou num backup) com uma
- * das formas que saíram — "duas-cores" e "metade" — viram sólidos em vez de ficar sem desenho.
+ * das formas que saíram — "duas-cores", "metade" e "papel" — viram sólidos em vez de ficar sem desenho.
  */
 export function estiloOuPadrao(valor: unknown): EstiloDaLombada {
   return ehEstiloDaLombada(valor) ? valor : ESTILO_PADRAO

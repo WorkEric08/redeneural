@@ -8,7 +8,6 @@ const ROTULOS: Record<EstiloDaLombada, string> = {
   ponto: 'Ponto',
   fio: 'Fio',
   degrade: 'Degradê',
-  papel: 'Papel',
   bloco: 'Bloco',
 }
 

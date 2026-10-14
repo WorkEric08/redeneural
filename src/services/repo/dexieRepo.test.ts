@@ -1229,8 +1229,8 @@ describe('migração para a v12', () => {
 
 describe('cor e forma da lombada', () => {
   it('grava e devolve a forma escolhida', async () => {
-    await repo.upsertLivro({ ...livro('l1', 'Psicologia'), estilo: 'papel', cor: '#F1EEE6' })
-    expect(await repo.getLivro('l1')).toMatchObject({ estilo: 'papel', cor: '#F1EEE6' })
+    await repo.upsertLivro({ ...livro('l1', 'Psicologia'), estilo: 'bloco', cor: '#F1EEE6' })
+    expect(await repo.getLivro('l1')).toMatchObject({ estilo: 'bloco', cor: '#F1EEE6' })
   })
 
   it('recusa uma cor fora da paleta Noite', async () => {
@@ -1581,6 +1581,72 @@ describe('migração para a v16', () => {
       ['a', 'solido'],
       ['b', 'solido'],
       ['c', 'contorno'],
+    ])
+    const [e] = await migrado.listEnfeites()
+    expect(e).toMatchObject({ estilo: 'solido', larguraLombada: 38, cor: '#1B2A6B' })
+  })
+})
+
+describe('migração para a v18', () => {
+  // Em 13/10/2026 a forma "Papel" saiu: quem a tinha vira sólido, com a cor que já tinha.
+  it('livro e enfeite em papel viram sólidos, e o resto não muda', async () => {
+    const nome = `palacio-migracao-v18-${String(nth)}`
+
+    const antigo = new Dexie(nome)
+    antigo.version(1).stores({
+      livros: 'id, createdAt',
+      neuronios: 'id, livroId, updatedAt',
+      conexoes: 'id, aId, bId, updatedAt',
+    })
+    antigo.version(2).stores({ meta: 'chave' })
+    antigo.version(3).stores({ livros: 'id, createdAt, ordem' })
+    antigo.version(4).stores({ livros: 'id, createdAt, ordem, prateleira' })
+    antigo.version(5).stores({ etiquetas: 'prateleira' })
+    antigo.version(9).stores({ vagas: '[prateleira+ordem], prateleira' })
+    antigo.version(10).stores({
+      anexos: 'id, livroId, updatedAt',
+      arquivos: 'anexoId',
+      vinculos: 'id, anexoId, conceitoId',
+    })
+    antigo.version(13).stores({ enfeites: '[prateleira+ordem], prateleira' })
+    antigo.version(14).stores({ resultados: 'neuronioId' })
+    const livro = (id: string, estilo: string, ordem: number) => ({
+      id,
+      tipo: 'conceitos',
+      titulo: id,
+      cor: '#F1EEE6',
+      estilo,
+      prateleira: 0,
+      ordem,
+      emblema: null,
+      larguraLombada: null,
+      comprimentoLombada: null,
+      executavel: false,
+      orientacao: 'em-pe',
+      nivel: 0,
+      diasParaAdormecer: 30,
+      createdAt: T0,
+    })
+    await antigo.table('livros').bulkPut([livro('a', 'papel', 0), livro('b', 'contorno', 1)])
+    await antigo.table('enfeites').bulkPut([
+      {
+        prateleira: 0,
+        ordem: 5,
+        cor: '#1B2A6B',
+        estilo: 'papel',
+        larguraLombada: 38,
+        comprimentoLombada: 80,
+        dourado: true,
+        detalheEscuro: false,
+      },
+    ])
+    antigo.close()
+
+    const migrado = createDexieRepo(createDb(nome))
+    const livros = await migrado.listLivros()
+    expect(livros.map((l) => [l.id, l.estilo, l.cor])).toEqual([
+      ['a', 'solido', '#F1EEE6'],
+      ['b', 'contorno', '#F1EEE6'],
     ])
     const [e] = await migrado.listEnfeites()
     expect(e).toMatchObject({ estilo: 'solido', larguraLombada: 38, cor: '#1B2A6B' })
