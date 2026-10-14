@@ -245,9 +245,7 @@ export function FormularioDeLivro({
   // mesma zona e o mesmo corpo (`geo`). Sem corte, todas as letras valem.
   const textoDoNome = titulo.trim()
   const recuoDoNome = titulo.length - titulo.trimStart().length
-  const zonaDoTituloPx =
-    (parseFloat(String((geo.style as Record<string, string>)['--zt-altura'])) / 100) *
-    (deitado ? extensaoDaAmostra : alturaDaAmostra)
+  const zonaDoTituloPx = parseFloat(String((geo.style as Record<string, string>)['--titulo-px']))
   const letrasNoCampo =
     recuoDoNome +
     letrasVisiveis(
@@ -274,9 +272,11 @@ export function FormularioDeLivro({
         height: `${String(deitado ? extensaoDaAmostra : alturaDaAmostra)}px`,
       }}
     >
-      <span className="lombada-titulo">{tituloDaAmostra}</span>
+      <span className="lombada-conteudo">
+        <span className="lombada-titulo">{tituloDaAmostra}</span>
+        {icone && <EmblemaDaLombada chave={ehPasta ? 'pasta' : (emblema ?? especie)} />}
+      </span>
       {acabamentoDoEnfeite?.douradoEm === estilo && <span className="lombada-filetes" />}
-      {icone && <EmblemaDaLombada chave={ehPasta ? 'pasta' : (emblema ?? especie)} />}
     </span>
   )
 

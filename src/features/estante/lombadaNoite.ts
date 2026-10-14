@@ -29,15 +29,17 @@ const BRILHO_DO_ENFEITE_MAXIMO = 18
 const SOMBRA_MAXIMA_DO_FUNDO = 70
 
 /**
- * O ícone do pé (a espécie do livro) ocupa 11 px, a 7 px da base. O título termina 2 px acima dele: o espaço é **reservado**,
- * e o título é que cede (08/10/2026; antes o ícone só aparecia se o título, já medido, deixasse
- * lugar, e com um título de verdade quase nunca deixava).
+ * O ícone (a espécie do livro) tem 11 px e vai **logo abaixo das letras**, no mesmo grupo que o título,
+ * com 7 px de folga do pé. O espaço dele é reservado, e o título é que cede (08/10/2026; antes o ícone
+ * só aparecia se o título, já medido, deixasse lugar, e com um título de verdade quase nunca deixava).
  */
 const ICONE_PX = 11
 /** Numa fileira baixa o ícone encolhe até isto, e não some. */
 const MINIMO_DO_ICONE_PX = 6
+/** O espaço entre as letras e o ícone, e o dele numa fileira baixa. */
+const INTERVALO_DO_ICONE_PX = 3
+const INTERVALO_APERTADO_PX = 2
 const BASE_DO_ICONE_PX = 7
-const FOLGA_DO_ICONE_PX = 2
 
 /**
  * O menor corpo do título (08/10/2026; era 9 px): abaixo disso ele deixa de ser legível. A
@@ -161,9 +163,31 @@ export function pisoDoTitulo(fileira: number | undefined): number {
   )
 }
 
-/** Quantos px do pé a lombada reserva para o ícone, de baixo para cima. */
-export function reservaDoIcone(): number {
-  return BASE_DO_ICONE_PX + ICONE_PX + FOLGA_DO_ICONE_PX
+/**
+ * Até onde o grupo título + ícone pode descer, em px a partir do topo da lombada. Sem ícone é o fim da
+ * zona do título de sempre. Com ícone, o limite de cada forma: o pé (7 px de folga, ou 2 numa fileira
+ * baixa) na maioria; acima da linha de baixo do fio (92,5%) e da moldura do contorno (96,25%); e
+ * dentro do bloco (até 84,4%), que é onde o detalhe dessa forma mora.
+ */
+function baixoDoGrupo(
+  estilo: EstiloDaLombada,
+  altura: number,
+  icone: boolean,
+  apertado: boolean,
+): number {
+  const zona = ZONAS[estilo]
+  if (!icone) return (zona.fundo / 100) * altura
+  const folga = apertado ? 2 : BASE_DO_ICONE_PX
+  switch (estilo) {
+    case 'contorno':
+      return 0.9625 * altura - folga / 2 - 1
+    case 'fio':
+      return 0.925 * altura - folga / 2 - 1
+    case 'bloco':
+      return 0.844 * altura
+    default:
+      return altura - folga
+  }
 }
 
 interface Entrada {
@@ -202,31 +226,35 @@ export function geometriaDaLombada(e: Entrada): GeometriaDaLombada {
 
   const caracteres = [...e.titulo].length
   const zona = ZONAS[e.estilo]
-  // Com ícone, o fim da zona do título sobe para ficar acima dele — sem passar do começo dela:
-  // abaixo do piso de 9 px o título fica minúsculo e o que não cabe vira reticências.
   const piso = pisoDoTitulo(e.alturaDaFileira)
-  const fundoComIcone = e.icone
-    ? Math.min(zona.fundo, ((e.altura - reservaDoIcone()) / e.altura) * 100)
-    : zona.fundo
-  const zonaDe = (fundo: number): number => Math.max(fundo - zona.topo, (piso / e.altura) * 100)
-  let alturaDaZona = zonaDe(fundoComIcone)
-  let fonte = tamanhoDoTitulo(e.largura, (alturaDaZona / 100) * e.altura, caracteres, piso)
-  // O ícone do pé aparece **sempre** (a não ser que Ajustes o desligue). Numa fileira baixa o título
-  // que não cabe com ele ganha a zona sem a reserva do ícone — é o que deixa a mesma quantidade de
-  // letras da tela grande — e o ícone encolhe para caber na faixa que sobra embaixo da zona, em vez de
-  // sumir. Na fileira de referência nada muda.
+  const topoPx = (zona.topo / 100) * e.altura
+
+  // Título e ícone são **um grupo só**, centrado na faixa livre da forma (13/10/2026): o ícone vem logo
+  // abaixo das letras, e não colado no pé. A faixa vai do começo da zona do título até o limite de
+  // baixo da forma (`baixoDoGrupo`) — que respeita os detalhes dela: a linha do fio, a moldura do
+  // contorno, o bloco. O título pode ocupar o que sobra depois do ícone; o que não cabe vira reticências.
   let iconePx = ICONE_PX
-  let iconeBase = BASE_DO_ICONE_PX
-  if (e.icone && piso < MINIMO_DO_TITULO) {
-    const livre = (alturaDaZona / 100) * e.altura
-    if (livre / (Math.max(1, caracteres) * AVANCO_DO_CARACTERE) < piso) {
-      alturaDaZona = zonaDe(zona.fundo)
-      fonte = tamanhoDoTitulo(e.largura, (alturaDaZona / 100) * e.altura, caracteres, piso)
-      const faixa = ((100 - zona.fundo) / 100) * e.altura
-      iconePx = Math.min(ICONE_PX, Math.max(MINIMO_DO_ICONE_PX, Math.floor(faixa - 2)))
-      iconeBase = Math.max(1, Math.floor((faixa - iconePx) / 2))
-    }
+  let intervalo = INTERVALO_DO_ICONE_PX
+  let baixoPx = baixoDoGrupo(e.estilo, e.altura, Boolean(e.icone), false)
+  const espacoDoTitulo = (): number =>
+    Math.max(piso, baixoPx - topoPx - (e.icone ? intervalo + iconePx : 0))
+  let titulo = espacoDoTitulo()
+  let fonte = tamanhoDoTitulo(e.largura, titulo, caracteres, piso)
+  // Numa fileira baixa (piso menor que o de referência) o título que não cabe com o ícone inteiro
+  // aperta o grupo: o ícone encolhe (de 11 até 6 px) e desce para perto do pé, e o título ganha esse
+  // espaço — é o que deixa a mesma quantidade de letras da tela grande, sem o ícone sumir.
+  if (
+    e.icone &&
+    piso < MINIMO_DO_TITULO &&
+    titulo / (Math.max(1, caracteres) * AVANCO_DO_CARACTERE) < piso
+  ) {
+    iconePx = MINIMO_DO_ICONE_PX
+    intervalo = INTERVALO_APERTADO_PX
+    baixoPx = baixoDoGrupo(e.estilo, e.altura, true, true)
+    titulo = espacoDoTitulo()
+    fonte = tamanhoDoTitulo(e.largura, titulo, caracteres, piso)
   }
+  const alturaDoGrupo = Math.max(baixoPx - topoPx, titulo + (e.icone ? intervalo + iconePx : 0))
 
   const style = {
     '--cor': cor,
@@ -237,10 +265,11 @@ export function geometriaDaLombada(e: Entrada): GeometriaDaLombada {
     '--degrade-alvo': clara ? '#fff' : '#000',
     '--fs': `${String(fonte)}px`,
     '--zt-topo': `${String(zona.topo)}%`,
-    '--zt-altura': `${String(Math.round(alturaDaZona * 10) / 10)}%`,
+    '--zt-altura': `${String(Math.round((alturaDoGrupo / e.altura) * 1000) / 10)}%`,
+    '--titulo-px': `${String(Math.round(titulo * 10) / 10)}px`,
     '--zt-x': `${String(zona.x)}%`,
     '--icone-px': `${String(iconePx)}px`,
-    '--icone-base': `${String(iconeBase)}px`,
+    '--icone-intervalo': `${String(intervalo)}px`,
     // Os sinais de andamento (Fazendo, Feita) são proporcionais a H, com piso em px.
     '--faixa-fazendo': `${String(arredondar(Math.max(2, 0.0125 * e.altura)))}px`,
     '--ponto-fazendo': `${String(arredondar(2 * Math.max(2.2, 0.016 * e.altura)))}px`,

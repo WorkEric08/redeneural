@@ -1259,6 +1259,30 @@ img {
   writing-mode: vertical-rl;
 }
 
+/* O título e o ícone são um grupo só: uma coluna centrada na faixa livre da forma (`--zt-topo` e
+   `--zt-altura`, de `geometriaDaLombada`, que respeita os detalhes de cada forma). O título cede o espaço
+   do ícone — o que não cabe vira reticências — e o ícone fica sempre logo abaixo das letras. */
+.lombada-conteudo {
+  position: absolute;
+  top: var(--zt-topo);
+  left: var(--zt-x);
+  display: flex;
+  height: var(--zt-altura);
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--icone-intervalo, 3px);
+  transform: translateX(-50%);
+}
+
+.lombada-conteudo > .lombada-titulo {
+  position: static;
+  height: auto;
+  min-height: 0;
+  flex: 0 1 auto;
+  transform: none;
+}
+
 /* O ponto da ponte, a 7px do topo: só existe no livro que acende (data-ponte). */
 .lombada-ponto {
   position: absolute;
@@ -1351,11 +1375,10 @@ img {
 /* O emblema — um ícone extra opcional (Fase 16), no pé da lombada. Na cor do
    texto, para ler também no Creme; nunca azul-claro, que é só da ponte. */
 .lombada-emblema {
-  position: absolute;
-  /* O ícone é sempre desenhado; numa fileira baixa a lombada encolhe os dois valores (lombadaNoite.ts). */
-  bottom: var(--icone-base, 7px);
-  left: 50%;
-  transform: translateX(-50%);
+  display: grid;
+  flex: none;
+  place-items: center;
+  /* Na cor do texto, no mesmo grupo que ele (ver `.lombada-conteudo`): logo abaixo das letras. */
   color: color-mix(in srgb, var(--fg) 80%, transparent);
 }
 

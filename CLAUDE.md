@@ -6108,6 +6108,25 @@ cortaria com reticências aparecem **apagadas** no próprio campo (`CampoDoNome.
 - Vale nos dois temas (no Padrão, o `.pd-nome span` virou `.pd-nome > span`, senão pegava a camada). O campo
   segue na fonte do tema; só a conta do corte usa a da lombada.
 
+## Título e ícone são um grupo centrado, e respeitam a Forma (13/10/2026)
+
+Pedido do usuário: o ícone ainda parecia faltar com certos títulos, e ele quis o título **e** o ícone
+centralizados juntos, levando em conta os detalhes de cada Forma. Isto **revoga** o ícone preso ao pé (7 px da base).
+- **Um grupo só** (`.lombada-conteudo`, uma coluna flex centrada): o título e, logo abaixo (3 px), o ícone — a
+  espécie do livro, o emblema antigo ou o clipe da pasta. Título curto: o grupo todo fica no centro da faixa
+  livre; título longo: o título cede o espaço do ícone e vira reticências, e o ícone fica sempre visível.
+- **A faixa livre é a de cada Forma** (`ZONAS` e `baixoDoGrupo`, `lombadaNoite.ts`): começa onde a zona do título
+  já começava (abaixo da faixa, do ponto, da linha do fio) e termina **acima** do que mora embaixo — a linha de
+  baixo do fio (92,5%), a moldura do contorno (96,25%) —, **dentro do bloco** (até 84,4%) ou 7 px antes do pé. Antes
+  o ícone ficava no pé e cruzava a linha do fio.
+- **Fileira baixa:** o grupo aperta (ícone de 11 para até 6 px, intervalo de 2 px, 2 px de folga do pé) só quando o
+  título não cabe; o ícone nunca some (só em Ajustes, ou na lombada "Feita", onde o pé é do disco).
+- **Variáveis CSS novas:** `--titulo-px` (o espaço do título, que o campo de nome usa para o corte) e
+  `--icone-intervalo`; saíram `--icone-base` e `reservaDoIcone`.
+- **Custo, medido:** a quantidade de letras mudou em até 1–2 em alguns casos — Enorme em tela grande 14 → 13;
+  Normal em tela pequena 11 → 9–10; Curto 8 → 7 —, porque o ícone agora tem lugar próprio no grupo. No Bloco o
+  grupo fica inteiro dentro do bloco, então ali cabem menos letras que antes.
+
 ## Fases
 
 0. ✅ Esqueleto (Vite/React/TS/Tailwind/PWA/Capacitor)

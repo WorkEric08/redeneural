@@ -127,7 +127,17 @@ export function Lombada({
       aria-haspopup="dialog"
       {...manipular}
     >
-      <span className="lombada-titulo">{item.livro.titulo}</span>
+      {/* O título e o ícone são um grupo só, centrado na faixa livre da forma (ver `geometriaDaLombada`):
+          o ícone — a espécie do livro, ou o emblema que a pessoa escolheu antes de 14/09/2026, ou o clipe
+          da pasta — vem logo abaixo das letras e aparece com título de qualquer tamanho. */}
+      <span className="lombada-conteudo">
+        <span className="lombada-titulo">{item.livro.titulo}</span>
+        {icone && (
+          <EmblemaDaLombada
+            chave={ehPasta ? 'pasta' : (item.livro.emblema ?? especieDoLivro(item.livro))}
+          />
+        )}
+      </span>
 
       {ponte && <span className="lombada-ponto" aria-hidden />}
       {item.andamento === 'fazendo' && (
@@ -142,13 +152,6 @@ export function Lombada({
             <path d="M2.2 5.3 4.3 7.4 7.9 2.8" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
         </span>
-      )}
-      {/* Um emblema que a pessoa escolheu (antes de 14/09/2026) vale mais que o ícone da espécie;
-          a pasta mostra sempre o clipe. O espaço do pé é reservado em `geometriaDaLombada`. */}
-      {icone && (
-        <EmblemaDaLombada
-          chave={ehPasta ? 'pasta' : (item.livro.emblema ?? especieDoLivro(item.livro))}
-        />
       )}
       {item.andamento === 'adormecido' && <span className="lombada-nevoa" aria-hidden />}
     </button>
