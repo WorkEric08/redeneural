@@ -6477,6 +6477,32 @@ Pedido do usuário: na tela de Busca, sair o seletor "Por sentido | Palavra exat
 - **Verificado** no Chrome (build de produção, 412×892, Padrão escuro e Clássico): sem os dois botões, "recurs" acha Recursão, o texto
   sem resultado diz só "Nada encontrado". 813 testes (os de sentido saíram), tipos e lint limpos.
 
+## Busca global e Buscar local (15/10/2026)
+
+Pedido do usuário: a busca da estante e da Rede se chama **Busca global** e continua como está; a lupa de
+dentro dos livros e dos livros executáveis passa a ser o **Buscar local**, que procura **só nos pensamentos
+daquele livro**.
+
+- **Uma tela, dois escopos** (`pages/Busca.tsx`, sem tela nova): `/busca` é a global; `/busca?livro=<id>` é a local.
+  O escopo vem da URL, como os outros painéis do app, então o voltar do Android e o recarregar mantêm o escopo.
+- **O que a local faz diferente:** filtra os pensamentos por `livroId` antes de buscar (a conta é a mesma `buscar.ts`,
+  palavra exata, sem acento e sem caixa), **não lista livros**, e nos resultados mostra só o trecho (o nome do livro seria
+  redundante). Com o campo vazio mostra os últimos pensamentos **do livro** (até 8), e o vazio diz "Este livro ainda não
+  tem pensamentos.". O voltar leva ao livro (`/livro/<id>`).
+- **Nomes:** o título da barra (Clássico) é "Busca global" ou "Buscar local"; o `aria-label` das lupas é "Busca global"
+  (estante, Rede, Porto, Ajustes, pensamento, pasta e o livro que não existe mais) ou "Buscar local" (dentro do livro,
+  comum ou executável); o do campo é "Buscar no palácio" ou "Buscar neste livro". O placeholder local é "Buscar neste
+  livro…", porque no Padrão o campo ocupa a barra e é o único lugar que diz o escopo.
+- **Pasta de acervo continua global**: ela guarda links e imagens, não pensamentos, então a local nunca acharia nada ali.
+  Se pedirem busca dentro da pasta, é outra decisão (buscaria a legenda dos itens).
+- **Um `?livro=` de livro apagado** não cai na global: dá "Nada encontrado" (o escopo é o id, não o livro).
+- **Verificado** no Chrome (build de produção, 412×892, Padrão escuro e Clássico): a lupa da estante abre `/busca` e a do
+  livro (comum e executável) abre `/busca?livro=<id>`; sem digitar a local lista só os 3 pensamentos de Programação; com
+  "a" a global traz livros e pensamentos de vários livros e a local só os do livro; "Neuro" (de Psicologia) não aparece na
+  local e aparece na global; o voltar cai no livro abrindo direto ou vindo dele; tocar num resultado abre o pensamento; sem
+  rolagem lateral em 320 px. 813 testes (sem teste novo: o filtro é um `filter` por id sobre o `buscar` já testado),
+  tipos e lint limpos. **Não verificado em toque real.**
+
 ## Fases
 
 0. ✅ Esqueleto (Vite/React/TS/Tailwind/PWA/Capacitor)
@@ -6537,3 +6563,4 @@ Pedido do usuário: na tela de Busca, sair o seletor "Por sentido | Palavra exat
 35. ✅ Mobilidade da estante em três etapas: reordenar e inserir na pilha, soltar antes/depois de um livro e a prateleira que se reorganiza ao vivo (14/10/2026)
 36. ✅ O Desfazer de mover livros sai: os avisos "Livro movido"/"Movimento desfeito" e toda a infraestrutura dele (14/10/2026)
 37. ✅ A busca é só por palavra exata: o seletor de modos e a busca por sentido saem (15/10/2026)
+38. ✅ Busca global (estante e Rede) e Buscar local (dentro do livro, só os pensamentos dele) (15/10/2026)

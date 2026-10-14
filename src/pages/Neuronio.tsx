@@ -118,7 +118,7 @@ export default function Neuronio() {
           acoes={
             <Link
               to="/busca"
-              aria-label="Buscar"
+              aria-label="Busca global"
               className={botao({ tipo: 'fantasma', tamanho: 'icone' })}
             >
               <Search size={20} aria-hidden />
@@ -223,7 +223,7 @@ export default function Neuronio() {
       {!padrao && (
         <Link
           to="/busca"
-          aria-label="Buscar"
+          aria-label="Busca global"
           className={botao({ tipo: 'fantasma', tamanho: 'icone' })}
         >
           <Search size={20} aria-hidden />

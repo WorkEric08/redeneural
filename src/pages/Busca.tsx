@@ -14,10 +14,16 @@ import { usePalacio } from '@/store/palacio'
 const RECENTES = 8
 
 /**
- * Busca no palácio inteiro, **só por palavra exata** (15/10/2026): livros pelo
- * título, pensamentos pelo título ou pelo conteúdo inteiro, sobre o que a store
- * já tem em memória (`buscar.ts`). A busca por sentido — a frase passando pelo
- * modelo — e o seletor entre os dois jeitos saíram a pedido do usuário.
+ * Busca **só por palavra exata** (15/10/2026), sobre o que a store já tem em
+ * memória (`buscar.ts`). A busca por sentido — a frase passando pelo modelo — e
+ * o seletor entre os dois jeitos saíram a pedido do usuário.
+ *
+ * Tem dois escopos (15/10/2026), escolhidos por quem abre a tela:
+ * - **Busca global** (`/busca`) — o palácio inteiro: livros pelo título,
+ *   pensamentos pelo título ou pelo conteúdo inteiro. Abre da estante, da Rede e
+ *   das telas que não são de um livro.
+ * - **Buscar local** (`/busca?livro=<id>`) — só os pensamentos daquele livro, que
+ *   abre da lupa de dentro do livro (comum ou executável). Não lista livros.
  *
  * Com o campo vazio a tela não fica em branco: mostra os últimos pensamentos
  * escritos (17/09/2026). É a única tela do app que responde "o que eu escrevi
@@ -35,19 +41,27 @@ export default function Busca() {
   // o resto da busca é o mesmo de sempre.
   const [busca] = useSearchParams()
   const daRede = busca.get('de') === 'rede'
-
-  const porPalavra = useMemo(
-    () => buscar(consulta, livros, neuronios),
-    [consulta, livros, neuronios],
+  // Escopo local: só os pensamentos do livro de onde a lupa foi tocada.
+  const livroLocal = busca.get('livro')
+  const local = livroLocal !== null
+  const doEscopo = useMemo(
+    () => (local ? neuronios.filter((n) => n.livroId === livroLocal) : neuronios),
+    [local, livroLocal, neuronios],
   )
 
-  const recentes = useMemo(() => neuronios.slice(0, RECENTES), [neuronios])
+  const porPalavra = useMemo(
+    () => buscar(consulta, local ? [] : livros, doEscopo),
+    [consulta, local, livros, doEscopo],
+  )
+
+  const recentes = useMemo(() => doEscopo.slice(0, RECENTES), [doEscopo])
   const livroPorId = useMemo(() => new Map(livros.map((l) => [l.id, l])), [livros])
 
   /** Quem veio da Rede volta para lá com a câmera no pensamento, não para a ficha. */
   const destinoDo = (id: string): string => (daRede ? `/rede?centralizar=${id}` : `/neuronio/${id}`)
 
   const termo = consulta.trim()
+  const rotuloDoCampo = local ? 'Buscar neste livro' : 'Buscar no palácio'
 
   const campo = (
     <input
@@ -62,23 +76,25 @@ export default function Busca() {
       autoCapitalize="off"
       spellCheck={false}
       enterKeyHint="search"
-      placeholder="Título ou conteúdo…"
-      aria-label="Buscar no palácio"
+      placeholder={local ? 'Buscar neste livro…' : 'Título ou conteúdo…'}
+      aria-label={rotuloDoCampo}
     />
   )
 
   return (
     <div className="flex flex-col">
       <BarraDeTopo
-        voltarPara="/"
+        voltarPara={local ? `/livro/${livroLocal}` : '/'}
         titulo={
           padrao ? (
             <label className="pd-busca-campo">
               <Search size={18} aria-hidden />
               {campo}
             </label>
+          ) : local ? (
+            'Buscar local'
           ) : (
-            'Buscar'
+            'Busca global'
           )
         }
       />
@@ -100,8 +116,8 @@ export default function Busca() {
               autoCapitalize="off"
               spellCheck={false}
               enterKeyHint="search"
-              placeholder="Título ou conteúdo…"
-              aria-label="Buscar no palácio"
+              placeholder={local ? 'Buscar neste livro…' : 'Título ou conteúdo…'}
+              aria-label={rotuloDoCampo}
               className="campo h-13 px-4 text-lg"
             />
           )}
@@ -110,7 +126,9 @@ export default function Busca() {
         {termo === '' ? (
           recentes.length === 0 ? (
             <p className="text-poeira px-1 text-sm">
-              Busca em livros e pensamentos, pelo título ou pelo conteúdo.
+              {local
+                ? 'Este livro ainda não tem pensamentos.'
+                : 'Busca em livros e pensamentos, pelo título ou pelo conteúdo.'}
             </p>
           ) : (
             <section>
@@ -131,7 +149,11 @@ export default function Busca() {
                     para={destinoDo(n.id)}
                     titulo={n.titulo}
                     abaixo={
-                      n.livroId === null ? ROTULO_DO_PORTO : livroPorId.get(n.livroId)?.titulo
+                      local
+                        ? undefined
+                        : n.livroId === null
+                          ? ROTULO_DO_PORTO
+                          : livroPorId.get(n.livroId)?.titulo
                     }
                     cor={n.livroId === null ? undefined : livroPorId.get(n.livroId)?.cor}
                     conteudo={n.conteudo}
@@ -176,7 +198,11 @@ export default function Busca() {
                   key={`neuronio-${r.neuronio.id}`}
                   para={destinoDo(r.neuronio.id)}
                   titulo={r.neuronio.titulo}
-                  abaixo={`${r.livro?.titulo ?? ROTULO_DO_PORTO}${r.trecho ? ` · ${r.trecho}` : ''}`}
+                  abaixo={
+                    local
+                      ? r.trecho
+                      : `${r.livro?.titulo ?? ROTULO_DO_PORTO}${r.trecho ? ` · ${r.trecho}` : ''}`
+                  }
                   cor={r.livro?.cor}
                   conteudo={r.neuronio.conteudo}
                   padrao={padrao}

@@ -186,7 +186,7 @@ export default function Estante() {
             <h1>Estante</h1>
             <Link
               to="/busca"
-              aria-label="Buscar"
+              aria-label="Busca global"
               className={botao({ tipo: 'fantasma', tamanho: 'icone' })}
             >
               <Search size={22} aria-hidden />
@@ -246,7 +246,7 @@ export default function Estante() {
           {!padrao && (
             <Link
               to="/busca"
-              aria-label="Buscar"
+              aria-label="Busca global"
               className={botao({ tipo: 'fantasma', tamanho: 'icone' })}
             >
               <Search size={20} aria-hidden />

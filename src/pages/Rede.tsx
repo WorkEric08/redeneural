@@ -293,7 +293,7 @@ export default function Rede() {
           // em vez de abrir a tela dele — é a Rede que pediu a busca.
           <Link
             to="/busca?de=rede"
-            aria-label="Buscar"
+            aria-label="Busca global"
             className={botao({ tipo: 'fantasma', tamanho: 'icone' })}
           >
             <Search size={20} aria-hidden />
