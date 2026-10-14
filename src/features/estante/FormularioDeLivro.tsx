@@ -28,11 +28,13 @@ import {
 import { espacoParaMeiaOpcao, haMaisADireita } from '@/lib/faixa'
 import type { NovoLivro } from '@/store/palacio'
 
+import { CampoDoNome } from './CampoDoNome'
 import { COMPRIMENTOS } from './comprimentos'
 import { EmblemaDaLombada } from './EmblemaDaLombada'
 import { FORMAS } from './formas'
 import { LARGURAS } from './larguras'
 import { geometriaDaLombada, type Peca } from './lombadaNoite'
+import { letrasVisiveis } from './tituloVisivel'
 import { PANOS } from './panos'
 import {
   ALTURA_MAXIMA_DA_LOMBADA,
@@ -239,6 +241,23 @@ export function FormularioDeLivro({
     alturaDaFileira,
   })
 
+  // O campo de nome mostra o que a lombada vai cortar: a mesma conta das reticências dela, sobre a
+  // mesma zona e o mesmo corpo (`geo`). Sem corte, todas as letras valem.
+  const textoDoNome = titulo.trim()
+  const recuoDoNome = titulo.length - titulo.trimStart().length
+  const zonaDoTituloPx =
+    (parseFloat(String((geo.style as Record<string, string>)['--zt-altura'])) / 100) *
+    (deitado ? extensaoDaAmostra : alturaDaAmostra)
+  const letrasNoCampo =
+    recuoDoNome +
+    letrasVisiveis(
+      textoDoNome,
+      parseFloat(String((geo.style as Record<string, string>)['--fs'])),
+      zonaDoTituloPx,
+    )
+  const placeholderDoNome =
+    tipo?.valor === 'acervo' ? 'Vídeos, referências, fotos…' : 'Uma área do que você sabe'
+
   const amostra = (
     <span
       aria-hidden
@@ -257,9 +276,7 @@ export function FormularioDeLivro({
     >
       <span className="lombada-titulo">{tituloDaAmostra}</span>
       {acabamentoDoEnfeite?.douradoEm === estilo && <span className="lombada-filetes" />}
-      {icone && (
-        <EmblemaDaLombada chave={ehPasta ? 'pasta' : (emblema ?? especie)} />
-      )}
+      {icone && <EmblemaDaLombada chave={ehPasta ? 'pasta' : (emblema ?? especie)} />}
     </span>
   )
 
@@ -388,20 +405,11 @@ export function FormularioDeLivro({
           {!enfeite && (
             <label className="pd-nome">
               <span>Nome</span>
-              <input
-                aria-label="Nome"
-                value={titulo}
-                onChange={(evento) => {
-                  setTitulo(evento.target.value)
-                }}
-                maxLength={120}
-                autoComplete="off"
-                enterKeyHint="done"
-                placeholder={
-                  tipo?.valor === 'acervo'
-                    ? 'Vídeos, referências, fotos…'
-                    : 'Uma área do que você sabe'
-                }
+              <CampoDoNome
+                valor={titulo}
+                aoMudar={setTitulo}
+                visiveis={letrasNoCampo}
+                placeholder={placeholderDoNome}
               />
             </label>
           )}
@@ -683,20 +691,11 @@ export function FormularioDeLivro({
               {/* Em tela muito baixa (320×568) o rótulo cede o lugar: o placeholder e o
                   `aria-label` já dizem o que o campo é, e o formulário executável só cabe assim. */}
               <span className="rotulo-de-secao mb-1 [@media(max-height:600px)]:hidden">Nome</span>
-              <input
-                aria-label="Nome"
-                value={titulo}
-                onChange={(evento) => {
-                  setTitulo(evento.target.value)
-                }}
-                maxLength={120}
-                autoComplete="off"
-                enterKeyHint="done"
-                placeholder={
-                  tipo?.valor === 'acervo'
-                    ? 'Vídeos, referências, fotos…'
-                    : 'Uma área do que você sabe'
-                }
+              <CampoDoNome
+                valor={titulo}
+                aoMudar={setTitulo}
+                visiveis={letrasNoCampo}
+                placeholder={placeholderDoNome}
                 className="campo font-titulo h-11 px-4 text-lg"
               />
             </label>

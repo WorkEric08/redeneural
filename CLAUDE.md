@@ -6093,6 +6093,21 @@ livro e enfeite que a tinham (a cor gravada fica), e o backup mapeia `papel` par
 `--fs-contagem`, a prop `contagem` do formulário) e a reserva maior do ícone (`reservaDoIcone` agora é uma só,
 20 px). O tom **Creme** continua na paleta de cores.
 
+## O campo de nome mostra o que a lombada corta (13/10/2026)
+
+Pedido do usuário: no formulário de livro, o campo do título dá a noção real de como ele fica na lombada,
+com a **mesma lógica** da estante. As letras que cabem na zona do título aparecem normais; as que a lombada
+cortaria com reticências aparecem **apagadas** no próprio campo (`CampoDoNome.tsx`).
+- **A conta é a das reticências da lombada** (`letrasVisiveis`, `tituloVisivel.ts`): caixa alta, Source Sans 3
+  600, 0,06em de espaçamento, medida no canvas, sobre a mesma zona e o mesmo corpo que `geometriaDaLombada`
+  já calculou para a amostra (então vale a fileira medida, o comprimento, a forma e o piso proporcional).
+  Muda ao digitar, ao trocar o comprimento ou a forma. Sem canvas (testes), cada letra vale 0,6 do corpo.
+- **Como é feito:** o texto do `<input>` fica transparente e uma camada por cima, que copia a fonte, o recuo e a
+  rolagem dele, desenha as duas partes; cursor, seleção e teclado continuam sendo os do input. O campo guarda
+  o título inteiro (até 120 letras): só a lombada corta, o campo apenas mostra o corte.
+- Vale nos dois temas (no Padrão, o `.pd-nome span` virou `.pd-nome > span`, senão pegava a camada). O campo
+  segue na fonte do tema; só a conta do corte usa a da lombada.
+
 ## Fases
 
 0. ✅ Esqueleto (Vite/React/TS/Tailwind/PWA/Capacitor)

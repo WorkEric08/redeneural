@@ -2444,3 +2444,33 @@ img {
     padding-block: 6px;
   }
 }
+
+/* O campo de nome do livro mostra o que a lombada corta (CampoDoNome.tsx): o texto do input fica
+   transparente e uma camada por cima desenha o que aparece e, apagado, o que ficaria de fora. */
+.campo-do-nome {
+  position: relative;
+  display: block;
+}
+
+.campo-do-nome input.campo-do-nome-entrada {
+  color: transparent;
+  caret-color: var(--papel);
+}
+
+.campo-do-nome-camada {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  overflow: hidden;
+  color: var(--papel);
+  pointer-events: none;
+}
+
+.campo-do-nome-texto {
+  white-space: pre;
+}
+
+.campo-do-nome-cortado {
+  opacity: 0.35;
+}
