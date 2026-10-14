@@ -554,7 +554,7 @@ export function Tela({
     <canvas
       ref={canvasRef}
       className="bg-sala h-full w-full touch-none"
-      aria-label={`Rede do palácio: ${String(cena.neuronios.length)} pensamentos e ${String(cena.conexoes.length)} conexões`}
+      aria-label={`Rede: ${String(cena.neuronios.length)} pensamentos e ${String(cena.conexoes.length)} conexões`}
       {...gestos}
     />
   )

@@ -6503,6 +6503,14 @@ daquele livro**.
   rolagem lateral em 320 px. 813 testes (sem teste novo: o filtro é um `filter` por id sobre o `buscar` já testado),
   tipos e lint limpos. **Não verificado em toque real.**
 
+## "Palácio" vira "rede" nos textos da interface (15/10/2026)
+
+Pedido do usuário: trocar "Palácio" por "Rede". Perguntei o escopo e ele escolheu **só os textos da interface**: as frases que a pessoa lê e os rótulos de acessibilidade (`aria-label`) passaram a dizer **a rede** — "Buscar na rede", "Abrindo a rede…", "Como ver a rede", "Mapa da rede", "Rede:" (a Rede, no leitor de tela), "Nada na rede se parece…", "a rede escolhe pelo sentido", "a rede refaz as conexões", "Quando a rede não achar/souber…" (Porto) —, e o título da barra da tela da Rede (Clássico) é só "Rede".
+
+- **Ficou como estava:** o nome do produto "Palácio Mental" (barra lateral do desktop, `appName` do Capacitor, descrição do PWA e do `index.html`, README), os identificadores de código (`usePalacio`, `PalacioRepo`, `PerfilDoPalacio`…), os comentários, as descrições de teste e este arquivo, que segue usando "palácio" nos registros antigos: leia como "rede" **só quando for texto de tela**.
+- **Se quiser trocar também o nome do app** ("Rede Mental"), é decisão à parte: mexe em manifest, Capacitor e README.
+- **Verificado:** tipos, lint e os 813 testes limpos (nenhum teste dependia dessas frases). Texto apenas, **não visto no navegador**.
+
 ## Fases
 
 0. ✅ Esqueleto (Vite/React/TS/Tailwind/PWA/Capacitor)
@@ -6564,3 +6572,4 @@ daquele livro**.
 36. ✅ O Desfazer de mover livros sai: os avisos "Livro movido"/"Movimento desfeito" e toda a infraestrutura dele (14/10/2026)
 37. ✅ A busca é só por palavra exata: o seletor de modos e a busca por sentido saem (15/10/2026)
 38. ✅ Busca global (estante e Rede) e Buscar local (dentro do livro, só os pensamentos dele) (15/10/2026)
+39. ✅ "Palácio" vira "rede" nos textos da interface; o nome do produto fica (15/10/2026)

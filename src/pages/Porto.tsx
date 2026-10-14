@@ -63,7 +63,7 @@ export default function Porto() {
             <EstadoVazio
               icone={<Check size={28} aria-hidden />}
               titulo="Tudo guardado"
-              texto="Quando o palácio não achar um livro para um pensamento, ele espera aqui."
+              texto="Quando a rede não achar um livro para um pensamento, ele espera aqui."
             />
           ) : (
             <div className="cartao flex flex-col items-center gap-4 px-6 py-10 text-center">
@@ -73,7 +73,7 @@ export default function Porto() {
               <div className="flex flex-col gap-1">
                 <p className="font-titulo text-lg font-semibold">Nada no porto</p>
                 <p className="text-poeira text-sm">
-                  Quando o palácio não souber onde guardar um pensamento, ele espera aqui.
+                  Quando a rede não souber onde guardar um pensamento, ele espera aqui.
                 </p>
               </div>
             </div>

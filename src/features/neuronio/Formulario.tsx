@@ -255,7 +255,7 @@ export function Formulario({
                   <span className="min-w-0 flex-1">
                     <span className="block truncate">Automático</span>
                     <span className="text-poeira block truncate text-xs">
-                      O palácio escolhe pelo sentido
+                      A rede escolhe pelo sentido
                     </span>
                   </span>
                   {livroId === null && (

@@ -277,7 +277,7 @@ export default function Estante() {
             <p className="text-poeira pd-contagem min-w-0 flex-1 truncate text-xs">
               {carregado
                 ? `${contar(livros.length, 'livro', 'livros')} · ${contar(neuronios.length, 'pensamento', 'pensamentos')} · ${contar(conexoes.length, 'conexão', 'conexões')}`
-                : 'Abrindo o palácio…'}
+                : 'Abrindo a rede…'}
             </p>
           )}
         </div>

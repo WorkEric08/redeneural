@@ -26,7 +26,7 @@ interface EstadoDaConfirmacao {
 const EXPLICACAO: Record<'sem-legenda' | 'solto', string> = {
   'sem-legenda': 'Sem legenda, este item fica só na pasta — não aparece na Rede.',
   solto:
-    'Nada no palácio se parece com a legenda ainda. Fica só na pasta até aparecer um conceito parecido.',
+    'Nada na rede se parece com a legenda ainda. Fica só na pasta até aparecer um conceito parecido.',
 }
 
 /**

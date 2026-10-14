@@ -514,7 +514,7 @@ export function TelaDoMapa({
     <canvas
       ref={canvasRef}
       className="bg-sala h-full w-full touch-none"
-      aria-label={`Mapa do palácio: ${String(Object.keys(mapa.ilhas).length)} ilhas`}
+      aria-label={`Mapa da rede: ${String(Object.keys(mapa.ilhas).length)} ilhas`}
       {...gestos}
     />
   )

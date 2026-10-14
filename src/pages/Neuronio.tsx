@@ -552,7 +552,7 @@ export default function Neuronio() {
           titulo={`Apagar “${neuronio.titulo}”?`}
           explicacao={
             fios > 0
-              ? `${fios === 1 ? 'O fio que sai dele vai' : `Os ${String(fios)} fios que saem dele vão`} junto, e o palácio refaz as conexões de quem fica. Não dá para desfazer.`
+              ? `${fios === 1 ? 'O fio que sai dele vai' : `Os ${String(fios)} fios que saem dele vão`} junto, e a rede refaz as conexões de quem fica. Não dá para desfazer.`
               : 'Ele ainda não tem fios. Não dá para desfazer.'
           }
           rotulo="Apagar"

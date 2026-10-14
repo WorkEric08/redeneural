@@ -396,7 +396,7 @@ function Apagar({
         ? 'Os links e as imagens vão junto. Nenhum conceito muda. Não dá para desfazer.'
         : 'A pasta está vazia. Não dá para desfazer.'
       : quantos > 0
-        ? `Os fios que saem ${quantos === 1 ? 'dele' : 'deles'} vão junto, e o palácio refaz as conexões. Não dá para desfazer.`
+        ? `Os fios que saem ${quantos === 1 ? 'dele' : 'deles'} vão junto, e a rede refaz as conexões. Não dá para desfazer.`
         : 'O livro está vazio. Não dá para desfazer.'
 
   return (

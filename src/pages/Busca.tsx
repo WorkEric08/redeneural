@@ -61,7 +61,7 @@ export default function Busca() {
   const destinoDo = (id: string): string => (daRede ? `/rede?centralizar=${id}` : `/neuronio/${id}`)
 
   const termo = consulta.trim()
-  const rotuloDoCampo = local ? 'Buscar neste livro' : 'Buscar no palácio'
+  const rotuloDoCampo = local ? 'Buscar neste livro' : 'Buscar na rede'
 
   const campo = (
     <input

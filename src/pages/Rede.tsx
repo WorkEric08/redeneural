@@ -209,7 +209,7 @@ export default function Rede() {
 
   // O seletor de modo: no Padrão é uma pílula no meio da barra de topo.
   const seletorDeModo = (
-    <div role="group" aria-label="Como ver o palácio" className="pd-modo">
+    <div role="group" aria-label="Como ver a rede" className="pd-modo">
       <button
         type="button"
         aria-pressed={modo === 'rede'}
@@ -287,7 +287,7 @@ export default function Rede() {
 
       <BarraDeTopo
         voltarPara="/"
-        titulo={padrao ? seletorDeModo : 'Rede do palácio'}
+        titulo={padrao ? seletorDeModo : 'Rede'}
         acoes={
           // `de=rede`: um resultado de pensamento volta para cá centralizado,
           // em vez de abrir a tela dele — é a Rede que pediu a busca.
@@ -304,7 +304,7 @@ export default function Rede() {
       {!padrao && (
         <div
           role="group"
-          aria-label="Como ver o palácio"
+          aria-label="Como ver a rede"
           className="relative z-10 flex gap-2 px-1 pt-3"
         >
           <button
