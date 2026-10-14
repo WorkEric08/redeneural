@@ -144,10 +144,10 @@ export default function Rede() {
   const posicoes = useMemo(() => new Map(Object.entries(posicoesDaRede)), [posicoesDaRede])
   const graus = useMemo(() => grausDoMapa(conexoes), [conexoes])
   const satelites = useMemo(() => satelitesDaCena(anexos, vinculos), [anexos, vinculos])
-  // As adormecidas e as feitas dos livros executáveis — com o relógio de quando
-  // a tela abriu, como na tela do livro.
+  // O andamento das ideias dos livros executáveis (adormecidas, feitas, fazendo, para fazer) — com o
+  // relógio de quando a tela abriu, como na tela do livro.
   const [agora] = useState(() => new Date())
-  const { adormecidas, feitas } = useMemo(
+  const { adormecidas, feitas, fazendo, paraFazer } = useMemo(
     () => marcasDoAndamento(neuronios, livros, agora),
     [neuronios, livros, agora],
   )
@@ -248,6 +248,8 @@ export default function Rede() {
             todasAsPontes={todasAsPontes}
             adormecidas={adormecidas}
             feitas={feitas}
+            fazendo={fazendo}
+            paraFazer={paraFazer}
             selecionado={selecionado}
             onSelecionar={escolherNeuronio}
             onTocarPonte={abrirPonte}
@@ -271,6 +273,8 @@ export default function Rede() {
               anexoSelecionado,
               adormecidas,
               feitas,
+              fazendo,
+              paraFazer,
             }}
             onSelecionar={escolherNeuronio}
             onSelecionarAnexo={escolherAnexo}

@@ -26,7 +26,8 @@ import { controleDoArco, espessuraDaPonte, pontesVisiveis, type PonteAgrupada } 
  *    por cima ficam as conexões dele, uma por uma, até nos outros livros.
  *
  * Nos livros executáveis, as ideias adormecidas ficam debaixo de uma névoa na
- * ilha — de qualquer distância —, e as feitas são pontos dourados.
+ * ilha — de qualquer distância — e o círculo de cada ideia diz o andamento: cinza para fazer,
+ * cinza com um leve brilho amarelo fazendo, dourado feita.
  *
  * Aqui não há estado nem `useEffect` — é uma função que recebe a cena e pinta.
  */
@@ -41,6 +42,8 @@ export interface CoresDoMapa {
   fio: string
   /** O ponto das ideias feitas — o ouro gravado das lombadas, nunca o da ponte. */
   ouro: string
+  /** O círculo da ideia "para fazer", e a base do "fazendo". */
+  cinza: string
   /** A névoa das adormecidas. */
   nevoa: string
   /** A fonte dos nomes (ilha e pensamento escolhido) e se o nome da ilha é em versalete. */
@@ -71,6 +74,10 @@ export interface CenaDoMapa {
   adormecidas: ReadonlySet<Id>
   /** Ideias feitas dos livros executáveis: pontos dourados. */
   feitas: ReadonlySet<Id>
+  /** Ideias em andamento (acordadas): pontos cinza com um leve brilho amarelo. */
+  fazendo: ReadonlySet<Id>
+  /** Ideias para fazer: pontos cinza. */
+  paraFazer: ReadonlySet<Id>
   /** A ilha que a pessoa está segurando: desenhada erguida, por cima das outras. */
   erguida: Id | null
   /**
@@ -187,16 +194,25 @@ export function desenharMapa(
   for (const ilha of Object.values(cena.mapa.ilhas)) {
     const acordadas: Ponto[] = []
     const dormentes: Ponto[] = []
+    const cinzas: Ponto[] = []
+    const cinzasDormentes: Ponto[] = []
+    const emAndamento: Ponto[] = []
     const feitas: Ponto[] = []
     for (const [id, p] of Object.entries(ilha.pontos)) {
       const ponto = { x: ilha.centro.x + p.x, y: ilha.centro.y + p.y }
-      if (cena.adormecidas.has(id)) dormentes.push(ponto)
-      else if (cena.feitas.has(id)) feitas.push(ponto)
-      else acordadas.push(ponto)
+      const dorme = cena.adormecidas.has(id)
+      if (cena.feitas.has(id)) feitas.push(ponto)
+      else if (cena.fazendo.has(id)) emAndamento.push(ponto)
+      else if (cena.paraFazer.has(id)) (dorme ? cinzasDormentes : cinzas).push(ponto)
+      else (dorme ? dormentes : acordadas).push(ponto)
     }
     const raioPx = cores.padrao ? RAIO_DO_PONTO_PADRAO_PX : RAIO_DO_PONTO_PX
+    desenharBrilhos(ctx, emAndamento, cores.ouro, 1, px)
     desenharPontos(ctx, acordadas, cores.no, 1, px, raioPx)
     desenharPontos(ctx, dormentes, cores.no, DORMENTE, px, raioPx)
+    desenharPontos(ctx, cinzas, cores.cinza, 1, px, raioPx)
+    desenharPontos(ctx, cinzasDormentes, cores.cinza, DORMENTE, px, raioPx)
+    desenharPontos(ctx, emAndamento, cores.cinza, 1, px, raioPx)
     desenharPontos(ctx, feitas, cores.ouro, 1, px, raioPx)
   }
   ctx.restore()
@@ -352,7 +368,27 @@ function desenharTrilhas(
   ctx.globalAlpha = 1
 }
 
-/** Os pontos, da cor que se pede: a do nó (o claro da noite, a tinta do dia) ou o ouro das feitas. */
+/** O raio do leve brilho amarelo de uma ideia em andamento, em px de tela, e o quanto ele aparece. */
+const RAIO_DO_BRILHO_PX = 8
+const PRESENCA_DO_BRILHO = 0.5
+
+/** O brilho de quem está em andamento: vem antes do ponto, que fica cinza por cima dele. */
+function desenharBrilhos(
+  ctx: CanvasRenderingContext2D,
+  pontos: readonly Ponto[],
+  cor: string,
+  presenca: number,
+  px: number,
+): void {
+  if (pontos.length === 0) return
+  const brilho = spriteDeNevoa(cor)
+  const r = RAIO_DO_BRILHO_PX * px
+  ctx.globalAlpha = PRESENCA_DO_BRILHO * presenca
+  for (const p of pontos) ctx.drawImage(brilho, p.x - r, p.y - r, 2 * r, 2 * r)
+  ctx.globalAlpha = 1
+}
+
+/** Os pontos, da cor que se pede: a do nó (o claro da noite, a tinta do dia), o ouro das feitas ou o cinza das ideias. */
 function desenharPontos(
   ctx: CanvasRenderingContext2D,
   pontos: readonly Ponto[],
@@ -559,10 +595,15 @@ function desenharVizinhanca(
   for (const id of vizinhanca) {
     const p = cena.absolutos.get(id)
     if (!finito(p)) continue
+    if (cena.fazendo.has(id)) desenharBrilhos(ctx, [p], cores.ouro, 1, px)
     desenharPontos(
       ctx,
       [p],
-      cena.feitas.has(id) ? cores.ouro : cores.no,
+      cena.feitas.has(id)
+        ? cores.ouro
+        : cena.fazendo.has(id) || cena.paraFazer.has(id)
+          ? cores.cinza
+          : cores.no,
       1,
       px,
       cores.padrao ? RAIO_DO_PONTO_PADRAO_PX : RAIO_DO_PONTO_PX,

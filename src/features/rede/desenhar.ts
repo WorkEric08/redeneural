@@ -34,6 +34,8 @@ export interface CoresDaRede {
   no: string
   /** O ponto das ideias feitas — o ouro gravado das lombadas, nunca o da ponte. */
   ouro: string
+  /** O círculo da ideia "para fazer", e a base do "fazendo". */
+  cinza: string
   /** A névoa das adormecidas. */
   nevoa: string
   mistura: GlobalCompositeOperation
@@ -77,6 +79,10 @@ export interface Cena {
   adormecidas: ReadonlySet<Id>
   /** Ideias feitas dos livros executáveis: o próprio ponto fica dourado. */
   feitas: ReadonlySet<Id>
+  /** Ideias em andamento (acordadas): círculo cinza com um leve brilho amarelo. */
+  fazendo: ReadonlySet<Id>
+  /** Ideias para fazer: círculo cinza. */
+  paraFazer: ReadonlySet<Id>
   cores: CoresDaRede
 }
 
@@ -85,6 +91,9 @@ const APAGADO = 0.12
 const DORMENTE = 0.35
 /** O raio do chumaço de névoa em volta de uma adormecida, em px de tela. */
 const RAIO_DA_NEVOA_PX = 13
+/** O leve brilho amarelo em volta de uma ideia em andamento, em px de tela, e o quanto ele aparece. */
+const RAIO_DO_BRILHO_PX = 8
+const PRESENCA_DO_BRILHO = 0.5
 /** O anel da ideia feita, a esta distância do ponto, em px de tela. */
 
 /**
@@ -378,7 +387,7 @@ function desenharNeuronios(
   const corDoLivro = new Map(cena.livros.map((l) => [l.id, l.cor]))
   const grupos = new Map<
     string,
-    { cor: string | undefined; escurecer: number; feita: boolean; pontos: [Ponto, number][] }
+    { cor: string | undefined; escurecer: number; tinta: string; pontos: [Ponto, number][] }
   >()
 
   // A névoa vem antes do ponto: ele fica dentro dela, não por cima de um borrão.
@@ -395,23 +404,46 @@ function desenharNeuronios(
     ctx.globalAlpha = 1
   }
 
+  // O brilho de quem está em andamento também vem antes do ponto, e some junto com o que apaga.
+  if (cena.fazendo.size > 0) {
+    const brilho = spriteDeNevoa(cena.cores.ouro)
+    const r = RAIO_DO_BRILHO_PX * px
+    for (const n of cena.neuronios) {
+      if (!cena.fazendo.has(n.id)) continue
+      const p = cena.posicoes.get(n.id)
+      if (!finito(p)) continue
+      ctx.globalAlpha = PRESENCA_DO_BRILHO * (apagado(n) ? APAGADO : 1)
+      ctx.drawImage(brilho, p.x - r, p.y - r, 2 * r, 2 * r)
+    }
+    ctx.globalAlpha = 1
+  }
+
   for (const n of cena.neuronios) {
     const p = cena.posicoes.get(n.id)
     if (!finito(p)) continue
     const longe = apagado(n)
     const dorme = cena.adormecidas.has(n.id)
-    const feita = cena.feitas.has(n.id)
-    const chave = `${n.livroId}:${String(longe)}:${String(dorme)}:${String(feita)}`
+    // A tinta do ponto diz o andamento: o amarelo da feita, o cinza de quem é para fazer ou está
+    // fazendo, e a de sempre para o resto.
+    const tinta = cena.feitas.has(n.id)
+      ? cena.cores.ouro
+      : cena.fazendo.has(n.id) || cena.paraFazer.has(n.id)
+        ? cena.cores.cinza
+        : cena.cores.no
+    const chave = `${n.livroId}:${String(longe)}:${String(dorme)}:${tinta}`
     const raio = raioNaTela(cena.graus.get(n.id) ?? 0, cena.cores.padrao) * px
     const grupo = grupos.get(chave)
     if (grupo) grupo.pontos.push([p, raio])
     else {
       // No porto não há livro, então não há o toque da cor de livro nenhum.
       // No Padrão os pontos são só tinta: as pranchas não levam o toque da cor do livro.
+      // A ideia executável também não leva o toque da cor do livro: a tinta dela é o andamento.
       const cor =
-        n.livroId === null || feita || cena.cores.padrao ? undefined : corDoLivro.get(n.livroId)
+        n.livroId === null || tinta !== cena.cores.no || cena.cores.padrao
+          ? undefined
+          : corDoLivro.get(n.livroId)
       const escurecer = (longe ? (cena.cores.padrao ? 0.3 : APAGADO) : 1) * (dorme ? DORMENTE : 1)
-      grupos.set(chave, { cor, escurecer, feita, pontos: [[p, raio]] })
+      grupos.set(chave, { cor, escurecer, tinta, pontos: [[p, raio]] })
     }
   }
 
@@ -424,10 +456,10 @@ function desenharNeuronios(
     ctx.fill()
   }
 
-  for (const { cor, escurecer, feita, pontos } of grupos.values()) {
+  for (const { cor, escurecer, tinta, pontos } of grupos.values()) {
     // Sem halo em volta do ponto: num aglomerado denso os halos se somavam em
     // manchas, e a constelação deixava de ser pontos.
-    ctx.fillStyle = feita ? cena.cores.ouro : cena.cores.no
+    ctx.fillStyle = tinta
     ctx.globalAlpha = escurecer
     circulos(pontos, 1)
 

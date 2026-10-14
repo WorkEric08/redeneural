@@ -123,6 +123,9 @@
   --rede-fio: oklch(0.42 0.07 262);
   --rede-no: oklch(0.3 0.045 262);
   --rede-mistura: multiply;
+  /* O círculo da ideia executável "para fazer" (e a base do "fazendo") na Rede e no Mapa: um cinza
+     médio que se lê na sala escura e na clara. */
+  --ideia-cinza: oklch(0.62 0.012 262);
   /* A névoa das ideias adormecidas (Rede e Mapa): sempre clareia, como névoa
      de verdade — de dia é quase branca; à noite, um azul-acinzentado claro. */
   --nevoa: oklch(0.99 0.004 262);

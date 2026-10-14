@@ -6238,6 +6238,28 @@ desligado. Em Ajustes → Tema sobram só **Padrão claro** e **Padrão escuro**
   por ~2,0 s. 794 testes (novos: o critério do título com 20 grafias que ligam e 10 que não, `temaEmUso`, a preferência
   gravada), tipos e lint limpos. **Não verificado em toque real.**
 
+## O círculo da ideia executável diz o andamento, na Rede e no Mapa (14/10/2026)
+
+Pedido do usuário: nos dois modos da tela da Rede, o círculo de uma ideia de livro executável passa a mostrar o
+andamento. **Para fazer**: um círculo **cinza**. **Fazendo**: o círculo cinza com um **leve brilho amarelo**.
+**Feita**: o **amarelo cheio**, como já era.
+
+- **A regra** é `marcasDoAndamento` (`features/executaveis/andamento.ts`), que devolve quatro grupos: `feitas`,
+  `fazendo` (só as **acordadas** em andamento), `paraFazer` e `adormecidas`. Uma ideia de livro que **não** é
+  executável não entra em nenhum e continua o ponto de sempre. Uma ideia **sem estado** num livro que acabou de
+  virar executável conta como "para fazer", como na tela do livro.
+- **Adormecida:** continua na névoa e **continua cinza** se estava para fazer; se estava fazendo, **perde o brilho**
+  (o mesmo que o livro faz com o ponto dourado). Uma ideia feita nunca dorme.
+- **O cinza** é o token `--ideia-cinza` (`oklch(0.62 0.012 262)`, um só para os três temas): lê-se na sala escura e na
+  clara. O brilho é o `spriteDeNevoa` do ouro gravado, a 8 px de raio e 50% de presença, desenhado **antes** do ponto
+  (que fica cinza por cima) e apagando junto com o resto quando o foco está noutro livro. A ideia executável **não leva
+  o toque da cor do livro** por cima: a tinta dela é o andamento.
+- **Onde:** `desenhar.ts` (Rede) e `desenharMapa.ts` (Mapa, incluindo os vizinhos do pensamento tocado). O Mapa só desenha
+  o brilho **antes** dos pontos de cada ilha, então ele nunca cobre um ponto vizinho.
+- **Verificado** no Chrome (build de produção, 412×892): Rede nos dois temas Padrão e Mapa no escuro, com ideias
+  em cada andamento, uma adormecida e pensamentos comuns. 801 testes (3 novos, de `marcasDoAndamento`), tipos e lint
+  limpos. **Não verificado em toque real**, nem no Clássico (o desenho é o mesmo; só a tinta do ponto comum muda de tema).
+
 ## Fases
 
 0. ✅ Esqueleto (Vite/React/TS/Tailwind/PWA/Capacitor)
@@ -6292,3 +6314,4 @@ desligado. Em Ajustes → Tema sobram só **Padrão claro** e **Padrão escuro**
 30. ✅ Mover livros: Desfazer, destino recusado visível, Deitar/Levantar pelo menu e a dica de arrastar
     (14/10/2026)
 31. ✅ O tema Clássico vira easter egg: liga com um livro chamado "Clássico"/"Tema clássico" (14/10/2026)
+32. ✅ O círculo da ideia executável diz o andamento na Rede e no Mapa: cinza, cinza com brilho, amarelo (14/10/2026)
