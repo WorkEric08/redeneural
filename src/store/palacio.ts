@@ -63,7 +63,7 @@ export interface NovoLivro {
   diasParaAdormecer: number
 }
 
-/** O neurônio que acabou de nascer, e as ideias adormecidas que ele acordou. */
+/** O pensamento que acabou de nascer, e as ideias adormecidas que ele acordou. */
 export interface NeuronioCriado {
   neuronio: NeuronioNaTela
   acordadas: { id: string; titulo: string }[]
@@ -97,7 +97,7 @@ interface PalacioStore {
   vagas: Vaga[]
   /** Os enfeites que a pessoa definiu ou moveu; o resto é sorteado pelo lugar. */
   enfeites: EnfeiteGravado[]
-  /** Onde a Rede organizou cada neurônio da última vez, por significado. */
+  /** Onde a Rede organizou cada pensamento da última vez, por significado. */
   posicoesDaRede: Record<string, Ponto>
   /** O Mapa: ilhas por livro, gravadas. */
   mapa: MapaDoPalacio
@@ -125,7 +125,7 @@ interface PalacioStore {
 
   carregar: () => Promise<void>
   /**
-   * Devolve o neurônio já com o livro final — num "Automático", o que o Porto
+   * Devolve o pensamento já com o livro final — num "Automático", o que o Porto
    * escolheu, ou `null` se ele ficou no porto — ou null se o motor não conseguiu.
    */
   criarNeuronio: (novo: NovoNeuronio) => Promise<NeuronioCriado | null>
@@ -133,7 +133,7 @@ interface PalacioStore {
   /** `false` se o motor não conseguiu — quem confirmou fica onde está e lê o erro. */
   apagarNeuronio: (id: string) => Promise<boolean>
   /**
-   * Põe o neurônio num livro de conceitos, sem reler o texto. `livroId` `null` é "Automático":
+   * Põe o pensamento num livro de conceitos, sem reler o texto. `livroId` `null` é "Automático":
    * o motor escolhe pelo texto, fora dos executáveis. `false` se o motor não conseguiu.
    */
   guardarNeuronio: (id: string, livroId: string | null) => Promise<boolean>
@@ -198,13 +198,13 @@ interface PalacioStore {
   /** Desenha o Mapa inteiro de novo — só a pedido, em Ajustes. `false` se o motor não conseguiu. */
   reorganizarMapa: () => Promise<boolean>
   /**
-   * A pessoa soltou uma ilha (ou um neurônio) no Mapa. Devolve o mapa como
+   * A pessoa soltou uma ilha (ou um pensamento) no Mapa. Devolve o mapa como
    * ficou — a tela anima a chegada até lá — ou null se o motor não conseguiu.
    */
   moverIlhaNoMapa: (livroId: string, centro: Ponto) => Promise<MapaDoPalacio | null>
   moverNeuronioNoMapa: (id: string, ponto: Ponto) => Promise<MapaDoPalacio | null>
   /**
-   * Solta um neurônio arrastado no ponto novo. Devolve o layout reagindo a
+   * Solta um pensamento arrastado no ponto novo. Devolve o layout reagindo a
    * ele na hora — a tela anima o assentamento com o resultado, sem esperar
    * o próximo render para saber onde a vizinhança parou.
    */
@@ -233,7 +233,7 @@ interface PalacioStore {
     tamanho: 'miniatura' | 'inteira',
   ) => Promise<Uint8Array | null>
   /**
-   * Os ids dos neurônios mais parecidos com a consulta, em ordem. Não é estado,
+   * Os ids dos pensamentos mais parecidos com a consulta, em ordem. Não é estado,
    * como `lerImagem`: quem pergunta guarda a resposta. Falhar é com quem chamou
    * — uma busca enquanto se digita não pode encher a tela de avisos de erro.
    */
@@ -295,7 +295,7 @@ export const usePalacio = create<PalacioStore>()((set, get) => {
       const id = newId()
       const agora = new Date()
 
-      // Otimista: o neurônio aparece antes de o modelo dizer qualquer coisa.
+      // Otimista: o pensamento aparece antes de o modelo dizer qualquer coisa.
       // O id vem daqui de propósito — é o que dispensa correlacionar depois.
       const livro = get().livros.find((l) => l.id === novo.livroId)
       const provisorio: NeuronioNaTela = {
@@ -315,7 +315,7 @@ export const usePalacio = create<PalacioStore>()((set, get) => {
 
       // No topo, não no fim: a lista é "o mais recente primeiro" (ver
       // `porMaisRecente` no dexieRepo), e o otimismo tem que nascer já no
-      // lugar onde o motor vai devolvê-lo — senão o neurônio aparece no fim e
+      // lugar onde o motor vai devolvê-lo — senão o pensamento aparece no fim e
       // salta para o topo quando a inferência termina.
       set((s) => ({ neuronios: [provisorio, ...s.neuronios], ocupado: true, erro: null }))
 
@@ -399,7 +399,7 @@ export const usePalacio = create<PalacioStore>()((set, get) => {
     },
 
     async guardarNeuronio(id, livroId): Promise<boolean> {
-      // Otimista: o neurônio já aparece no livro; a ponte chega com o motor.
+      // Otimista: o pensamento já aparece no livro; a ponte chega com o motor.
       const anterior = get().neuronios.find((n) => n.id === id)
       const livro = get().livros.find((l) => l.id === livroId)
       // "Automático" (`null`) não sabe o destino até o motor ler o texto.
@@ -491,7 +491,7 @@ export const usePalacio = create<PalacioStore>()((set, get) => {
       }
       const provisorio = novoLivro(input, new Date(), ordem)
 
-      // Otimista, como o neurônio: o livro já está na prateleira quando o painel
+      // Otimista, como o pensamento: o livro já está na prateleira quando o painel
       // fecha, em vez de aparecer um instante depois.
       set({
         livros: [...antes, provisorio],

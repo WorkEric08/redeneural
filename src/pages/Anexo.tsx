@@ -31,10 +31,10 @@ const EXPLICACAO: Record<'sem-legenda' | 'solto', string> = {
 
 /**
  * Um item de uma pasta: a imagem inteira ou o link, a legenda, e os conceitos
- * que ele escolheu — cada um levando à tela do neurônio.
+ * que ele escolheu — cada um levando à tela do pensamento.
  *
  * Apagar pergunta numa folha que mora na URL (`?apagar=1`), como na tela do
- * neurônio, e pelo mesmo motivo: voltar fecha a pergunta. Apagar um anexo não
+ * pensamento, e pelo mesmo motivo: voltar fecha a pergunta. Apagar um anexo não
  * reprocessa nada — nenhum conceito dependia dele.
  */
 export default function Anexo() {
@@ -62,7 +62,7 @@ export default function Anexo() {
   const carregarDoVisor = useCallback((id: string) => lerImagem(id, 'inteira'), [lerImagem])
 
   // O apagado continua desenhado o instante entre o motor responder e a
-  // navegação sair daqui, como na tela do neurônio.
+  // navegação sair daqui, como na tela do pensamento.
   const [apagando, setApagando] = useState<AnexoNaTela | null>(null)
   const anexo =
     anexos.find((a) => a.id === anexoId) ?? (apagando?.id === anexoId ? apagando : undefined)
@@ -117,7 +117,7 @@ export default function Anexo() {
         return
       }
       // Tira a pergunta e a tela do apagado do histórico de uma vez — o mesmo
-      // da tela do neurônio.
+      // da tela do pensamento.
       if (veioDeAlgumLugar) void navegar(-2)
       else void navegar(saida, { replace: true })
     })

@@ -111,7 +111,7 @@ export function OpcoesDoMapa({ todasAsPontes, onAlternarPontes, escondidas }: Pr
             <div className="min-w-0 flex-1">
               <p className="text-sm">Trilha</p>
               <p className="text-poeira text-xs leading-relaxed">
-                Conexão entre neurônios do mesmo livro. Aparece de perto.
+                Conexão entre pensamentos do mesmo livro. Aparece de perto.
               </p>
             </div>
           </li>

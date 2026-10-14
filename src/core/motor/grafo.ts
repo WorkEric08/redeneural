@@ -5,7 +5,7 @@ import { OPCOES_PADRAO, type OpcoesMotor } from './config'
 import { escalaEmbedding, fundir } from './fusao'
 import { centralizar, centroide, produtoInterno } from './vetores'
 
-/** O que o motor precisa saber de um neurônio. Nada além disso. */
+/** O que o motor precisa saber de um pensamento. Nada além disso. */
 export interface NoDoGrafo {
   id: Id
   /** `null` é o porto: sem livro, nenhuma conexão dele é ponte. */
@@ -43,7 +43,7 @@ export const SEM_RERANK: PontuarPar = () => Promise.resolve(null)
 // --- conversões -------------------------------------------------------------
 
 /**
- * Ponte é a conexão entre dois livros **de verdade**. Um neurônio no porto
+ * Ponte é a conexão entre dois livros **de verdade**. Um pensamento no porto
  * (sem livro) ainda não está em lugar nenhum: as conexões dele viram ponte, ou
  * não, quando ele ganhar um livro.
  */
@@ -52,7 +52,7 @@ export function ehPonte(livroA: Id | null, livroB: Id | null): boolean {
 }
 
 /**
- * Texto canônico de um neurônio.
+ * Texto canônico de um pensamento.
  *
  * O prefixo que o e5 exige NÃO entra aqui: ele é detalhe daquele modelo e mora
  * no adapter de embedding, não no algoritmo.
@@ -63,7 +63,7 @@ export function textoDoNeuronio(n: Pick<Neuronio, 'titulo' | 'conteudo'>): strin
   return conteudo ? `${titulo}. ${conteudo}` : titulo
 }
 
-/** `null` para neurônio ainda sem embedding — ele fica de fora do grafo. */
+/** `null` para pensamento ainda sem embedding — ele fica de fora do grafo. */
 export function neuronioParaNo(n: Neuronio): NoDoGrafo | null {
   if (!n.embedding) return null
   return { id: n.id, livroId: n.livroId, texto: textoDoNeuronio(n), embedding: n.embedding }
@@ -143,7 +143,7 @@ export function perfilDoPalacio(
  * perderia a diferença entre uma conexão boa e uma excepcional.
  *
  * Por que derivado e não constante: o spike da Fase 3 mediu cosseno centralizado
- * máximo de 0,070 num palácio de 9 neurônios, contra o 0,45 fixo que o plano
+ * máximo de 0,070 num palácio de 9 pensamentos, contra o 0,45 fixo que o plano
  * previa — o voto do embedding saía zerado. E o valor certo depende do tamanho
  * do corpus, porque o centroide se afasta dos vetores conforme eles aumentam.
  *
@@ -310,7 +310,7 @@ function montarArestas(
  * O grafo inteiro, exato.
  *
  * `perfil` é parâmetro de propósito: passar o perfil do último reprocessamento é
- * o que faz valer a promessa "adicionar um neurônio não mexe nas conexões dos
+ * o que faz valer a promessa "adicionar um pensamento não mexe nas conexões dos
  * outros". Se o centroide fosse recalculado a cada inserção, todo vetor
  * centralizado mudaria um pouco e o grafo inteiro tremeria.
  */

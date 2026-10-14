@@ -75,7 +75,7 @@ export default function Ajustes() {
             <Numero valor={livros.length} rotulo={livros.length === 1 ? 'livro' : 'livros'} />
             <Numero
               valor={neuronios.length}
-              rotulo={neuronios.length === 1 ? 'neurônio' : 'neurônios'}
+              rotulo={neuronios.length === 1 ? 'pensamento' : 'pensamentos'}
             />
             <Numero
               valor={conexoes.length}

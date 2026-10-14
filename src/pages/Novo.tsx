@@ -8,17 +8,17 @@ import { FolhaGuardarEm } from '@/features/porto/FolhaGuardarEm'
 import { usePalacio } from '@/store/palacio'
 
 /**
- * Criar um neurônio. Ao terminar, leva para a Rede — não para a tela do
- * neurônio (pedido do usuário, 17/09/2026): é lá que o app mostra, com uma
+ * Criar um pensamento. Ao terminar, leva para a Rede — não para a tela do
+ * pensamento (pedido do usuário, 17/09/2026): é lá que o app mostra, com uma
  * animação, com quem o que acabou de nascer conversa (ver `revelar` em
  * Tela.tsx). `criarNeuronio` só resolve depois de o Worker terminar a
  * inferência inteira (embedding, conexões e posição já gravados), então a
- * Rede nunca abre com o neurônio "no meio do processamento".
+ * Rede nunca abre com o pensamento "no meio do processamento".
  *
  * Pelo "+", o livro começa em "Automático": o motor guarda no livro que os mais
  * parecidos apontam — sempre num livro (07/10/2026) — e o aviso oferece "Mudar".
  * Só sem nenhum livro que possa recebê-lo (de conceitos e não executável) o
- * neurônio fica no porto e a pergunta "Onde guardar?" abre aqui mesmo, por cima do
+ * pensamento fica no porto e a pergunta "Onde guardar?" abre aqui mesmo, por cima do
  * que a pessoa acabou de escrever. Responder guarda e segue para a Rede; fechar
  * segue para a Rede com ele no porto.
  */
@@ -34,12 +34,12 @@ export default function Novo() {
   const pedido = busca.get('livro')
   const livroSugerido = deConceitos.some((l) => l.id === pedido) ? (pedido ?? undefined) : undefined
 
-  // O neurônio que acabou de nascer no porto, esperando a resposta.
+  // O pensamento que acabou de nascer no porto, esperando a resposta.
   const pendenteId = busca.get('guardar')
   const pendente = neuronios.find((n) => n.id === pendenteId)
 
   // Sair da tela sem responder (o voltar do Android, que a leva inteira do
-  // histórico) deixa o neurônio no porto — e isso precisa ser dito.
+  // histórico) deixa o pensamento no porto — e isso precisa ser dito.
   const semResposta = useRef<string | null>(null)
   useEffect(() => {
     semResposta.current = pendenteId
@@ -70,7 +70,7 @@ export default function Novo() {
         automatico
         executar={{ onCriarLivro: criarLivroExecutavel }}
         ocupado={ocupado}
-        rotuloDeEnvio="Criar neurônio"
+        rotuloDeEnvio="Criar pensamento"
         voltarPara="/"
         onEnviar={(dados) => {
           void criarNeuronio(dados).then((resultado) => {
@@ -94,7 +94,7 @@ export default function Novo() {
               return
             }
             // No porto: a pergunta toma o lugar desta entrada no histórico, e
-            // o voltar sai da tela de escrever inteira — o neurônio já existe.
+            // o voltar sai da tela de escrever inteira — o pensamento já existe.
             setBusca({ guardar: criado.id }, { replace: true })
           })
         }}

@@ -134,7 +134,7 @@ async function lerAmbiente(): Promise<Ambiente> {
 
 const TEXTOS_CURTOS = SEED_NEURONIOS.map(textoDoNeuronio)
 
-/** Um neurônio de verdade pode ser bem maior que os do seed. */
+/** Um pensamento de verdade pode ser bem maior que os do seed. */
 const TEXTOS_LONGOS = TEXTOS_CURTOS.map((t) => [t, t, t, t, t].join(' '))
 
 function ciclo(fonte: readonly string[], quantos: number): string[] {
@@ -249,7 +249,7 @@ async function medirReranker(
 }
 
 /**
- * Roda o núcleo da Fase 2 com os modelos da Fase 4 sobre os neurônios do seed.
+ * Roda o núcleo da Fase 2 com os modelos da Fase 4 sobre os pensamentos do seed.
  *
  * É a única parte do spike que responde "as conexões prestam?" — e, de quebra,
  * prova que o núcleo puro e os providers encaixam antes de escrever a Fase 4.
@@ -358,7 +358,7 @@ async function rodar(opcoes: OpcoesSpike): Promise<ResultadoSpike> {
     cenario: {
       criarNeuronioMs,
       tamanhoPalacio: opcoes.tamanhoPalacio,
-      // Reprocessar tudo: um embedding por neurônio e um par por candidato.
+      // Reprocessar tudo: um embedding por pensamento e um par por candidato.
       reprocessarTudoMs:
         opcoes.tamanhoPalacio * msEmbedding +
         ((opcoes.tamanhoPalacio * OPCOES_PADRAO.candK) / 2) * msPar,

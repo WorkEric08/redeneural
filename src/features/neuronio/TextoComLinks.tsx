@@ -8,7 +8,7 @@ interface Props {
 }
 
 /**
- * O texto de um neurônio, com toda URL (`http://`/`https://`) virando link
+ * O texto de um pensamento, com toda URL (`http://`/`https://`) virando link
  * de verdade — pedido do usuário, 17/09/2026, para abrir algo como um vídeo
  * do YouTube colado no meio do texto sem sair copiando e colando na mão.
  *

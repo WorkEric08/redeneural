@@ -26,7 +26,7 @@ const MAPA: MapaDoPalacio = {
 describe('pontosAbsolutos e neuronioNoMapaEm', () => {
   const absolutos = pontosAbsolutos(MAPA)
 
-  it('o lugar no mundo é o centro da ilha mais o lugar do neurônio nela', () => {
+  it('o lugar no mundo é o centro da ilha mais o lugar do pensamento nela', () => {
     expect(absolutos.get('a')).toEqual({ x: 110, y: -5 })
     expect(absolutos.get('c')).toEqual({ x: -300, y: 50 })
   })

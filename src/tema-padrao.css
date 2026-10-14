@@ -351,7 +351,16 @@ html:root[data-tema^='padrao'] .movel-fila {
   );
 }
 
-/* A linha de baixo (busca e contagem): 13 px. */
+/* A linha de baixo (porto e contagem): 13 px. A contagem pode ocupar duas linhas e termina antes do
+   botão de criar, em vez de ficar por baixo dele. */
+html:root[data-tema^='padrao'] .pd-contagem {
+  padding-right: 68px;
+  line-height: 1.3;
+  overflow: visible;
+  text-overflow: clip;
+  white-space: normal;
+}
+
 html:root[data-tema^='padrao'] main[data-estante] .text-xs {
   font-size: 0.8125rem;
 }
@@ -425,7 +434,7 @@ html:root[data-tema^='padrao'] .dial-botao[data-aberto='true'] {
   animation: dial-surgir 120ms ease-out both;
 }
 
-/* --- o livro: neurônios em cartões, e ideias em linhas ---------------------- */
+/* --- o livro: pensamentos em cartões, e ideias em linhas ---------------------- */
 
 /* A lista: 10 px entre os cartões. */
 html:root[data-tema^='padrao'] .pd-neuronio {
@@ -583,7 +592,7 @@ html:root[data-tema^='padrao'] .pd-ideia:last-child {
   color: #ffffff;
 }
 
-/* O resumo sob a barra ("3 neurônios · 2 pontes") e o respiro de cima: 6 px sob a barra, 14 px
+/* O resumo sob a barra ("3 pensamentos · 2 pontes") e o respiro de cima: 6 px sob a barra, 14 px
    até a lista, 10 px entre os cartões. */
 html:root[data-tema^='padrao'] .pd-conteudo {
   padding-top: 6px;
@@ -667,7 +676,7 @@ html:root[data-tema^='padrao'] .pd-sub .text-ponte {
   text-shadow: none;
 }
 
-/* --- o neurônio ------------------------------------------------------------- */
+/* --- o pensamento ------------------------------------------------------------- */
 
 .pd-neuronio-pagina {
   padding: 6px 4px 0;
@@ -1561,7 +1570,7 @@ html:root[data-tema^='padrao'] .pd-miniatura-do-menu {
   border-radius: 16px;
 }
 
-/* As ações e os neurônios espiados: linhas de 56 px entre dois filetes. */
+/* As ações e os pensamentos espiados: linhas de 56 px entre dois filetes. */
 html:root[data-tema^='padrao'] .folha .cartao {
   overflow: visible;
   border-width: 1px 0;

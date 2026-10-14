@@ -3,7 +3,7 @@ import type { CriarNeuronioInput } from '../ports/engine'
 import type { Neuronio } from './types'
 
 /**
- * Monta o neurônio que será persistido antes de a inferência começar.
+ * Monta o pensamento que será persistido antes de a inferência começar.
  *
  * `embedding: null` de propósito: o texto do usuário é gravado primeiro, e o
  * vetor chega depois. Se o Worker morrer no meio, o que se perde é o cálculo,

@@ -7,11 +7,11 @@ import { centralizar, normalizar, produtoInterno } from './vetores'
 
 /**
  * O Mapa: o palácio como arquipélago. Cada livro de conceitos é uma ilha, e
- * cada neurônio, um ponto dentro dela.
+ * cada pensamento, um ponto dentro dela.
  *
  * A promessa é a da memória espacial: o mapa é **sempre o mesmo** entre uma
  * abertura e outra, e crescer não remexe o que já estava lá. Por isso tudo é
- * gravado, e o que muda depois é encaixe — um neurônio novo entra perto dos
+ * gravado, e o que muda depois é encaixe — um pensamento novo entra perto dos
  * parecidos sem mover ninguém, uma ilha nova entra perto da mais parecida, e
  * uma ilha que cresceu e encostou noutra anda o mínimo, sozinha. Refazer o mapa
  * inteiro (`mapaCompleto`) só na primeira vez, ou quando a pessoa pede.
@@ -23,7 +23,7 @@ import { centralizar, normalizar, produtoInterno } from './vetores'
 export interface IlhaDoMapa {
   centro: Ponto
   raio: number
-  /** Cada neurônio relativo ao centro da ilha: mover a ilha leva os pontos junto. */
+  /** Cada pensamento relativo ao centro da ilha: mover a ilha leva os pontos junto. */
   pontos: Record<Id, Ponto>
 }
 
@@ -34,14 +34,14 @@ export interface MapaDoPalacio {
 
 export const MAPA_VAZIO: MapaDoPalacio = { ilhas: {} }
 
-/** O que o mapa precisa saber de um neurônio. Só os de livro de conceitos — o porto fica fora. */
+/** O que o mapa precisa saber de um pensamento. Só os de livro de conceitos — o porto fica fora. */
 export interface NoDoMapa {
   id: Id
   livroId: Id
   embedding: Float32Array | null
 }
 
-/** A ilha de um livro de poucos neurônios ainda tem tamanho de ilha. */
+/** A ilha de um livro de poucos pensamentos ainda tem tamanho de ilha. */
 export const RAIO_MINIMO_DA_ILHA = 70
 /** A área cresce com a quantidade: o raio, com a raiz dela. */
 export const RAIO_POR_RAIZ = 34
@@ -55,9 +55,9 @@ export const FOLGA_ENTRE_ILHAS = 46
 /**
  * Espaço que cada ilha guarda em volta de si para crescer sem encostar: ao
  * dispor ou encaixar ilhas, o raio conta 25% a mais. Sem isto as ilhas
- * nasciam no limite do mar entre elas, e quase todo neurônio novo fazia a sua
+ * nasciam no limite do mar entre elas, e quase todo pensamento novo fazia a sua
  * ilha andar — o contrário da memória espacial. Com a reserva, uma ilha cresce
- * ~56% em neurônios antes de precisar se mexer.
+ * ~56% em pensamentos antes de precisar se mexer.
  */
 export const RESERVA_DE_CRESCIMENTO = 0.25
 
@@ -213,7 +213,7 @@ function afastarPontos(pontos: Map<Id, Ponto>, fixos: ReadonlySet<Id> = new Set(
 
 /**
  * Os pontos de uma ilha desenhada do zero: a redução para 2D dos vetores do
- * livro, espalhada para caber na ilha. Com poucos neurônios (ou sem vetor), a
+ * livro, espalhada para caber na ilha. Com poucos pensamentos (ou sem vetor), a
  * espiral de girassol em ordem de id.
  */
 export function pontosDaIlha(
@@ -413,7 +413,7 @@ export function mapaCompleto(
 // --- crescer sem remexer -----------------------------------------------------
 
 /**
- * O lugar de um neurônio novo numa ilha que já existe: a média dos três mais
+ * O lugar de um pensamento novo numa ilha que já existe: a média dos três mais
  * parecidos dali (pesada pela parecença), um passo para o lado decidido pela
  * semente, e — se cair colado em alguém — a espiral para fora até achar vão.
  * Ninguém mais se mexe.
@@ -527,7 +527,7 @@ function encaixarIlha(
 /**
  * Uma ilha que cresceu e encostou noutra anda o mínimo para fora — ela só, as
  * outras ficam. E vai para onde volta a ter a reserva: senão encostaria de
- * novo no próximo neurônio, e andaria a cada um.
+ * novo no próximo pensamento, e andaria a cada um.
  */
 function afastarIlhaQueCresceu(
   livroId: Id,
@@ -570,7 +570,7 @@ function lugarLivreMaisPerto(
 }
 
 /**
- * O mapa já tem lugar para todo neurônio e nenhuma ilha de sobra? Então `atualizarMapa` não
+ * O mapa já tem lugar para todo pensamento e nenhuma ilha de sobra? Então `atualizarMapa` não
  * teria o que mudar, e quem abre o palácio pode pular a conta (centro de cada livro, encaixe) e a
  * gravação: abrir o app não precisa reescrever, todas as vezes, o que já está escrito.
  */
@@ -595,7 +595,7 @@ export function mapaEmDia(
  * - quem saiu (apagado, ou mudou de livro) some do ponto onde estava — ninguém
  *   mais anda;
  * - quem chegou entra perto dos parecidos da ilha (`encaixarPonto`);
- * - livro que ganhou o primeiro neurônio vira ilha perto da mais parecida;
+ * - livro que ganhou o primeiro pensamento vira ilha perto da mais parecida;
  * - livro que ficou vazio, ou deixou de existir, perde a ilha;
  * - a ilha que cresceu e encostou noutra anda — só ela.
  *
@@ -639,7 +639,7 @@ export function atualizarMapa(
     if (raio > antiga.raio + 1e-6) cresceram.push(livroId)
   }
 
-  // Livros que ganharam o primeiro neurônio: ilha nova, perto da mais parecida.
+  // Livros que ganharam o primeiro pensamento: ilha nova, perto da mais parecida.
   for (const [livroId, membros] of [...grupos].sort((a, b) => comparar(a[0], b[0]))) {
     if (ilhas[livroId]) continue
     const { pontos, raio } = pontosDaIlha(membros, centroide)
@@ -659,7 +659,7 @@ export function atualizarMapa(
 
 /**
  * A pessoa arrastou uma ilha (02/10/2026): ela fica onde foi solta, com todos
- * os neurônios dela, e só ela se mexe. Solta em cima de outra, anda o mínimo
+ * os pensamentos dela, e só ela se mexe. Solta em cima de outra, anda o mínimo
  * até ter o mar inteiro em volta — sem a reserva de crescimento: quem decidiu
  * o lugar foi a pessoa, e ele é respeitado o mais perto possível.
  */
@@ -673,7 +673,7 @@ export function moverIlha(mapa: MapaDoPalacio, livroId: Id, centro: Ponto): Mapa
 }
 
 /**
- * A pessoa arrastou um neurônio dentro da ilha dele (02/10/2026). Ele não sai
+ * A pessoa arrastou um pensamento dentro da ilha dele (02/10/2026). Ele não sai
  * dela: solto fora, fica na beira de dentro (`raio − MARGEM_DA_COSTA`). Solto
  * colado noutro, dá um passo para o lado até achar vão, ainda dentro da ilha.
  * Ninguém mais se mexe, e a ilha não muda de tamanho.
@@ -719,7 +719,7 @@ export function moverPontoNoMapa(mapa: MapaDoPalacio, neuronioId: Id, ponto: Pon
   }
 }
 
-/** Onde o neurônio está no mundo do Mapa — `undefined` se ele não está em ilha nenhuma. */
+/** Onde o pensamento está no mundo do Mapa — `undefined` se ele não está em ilha nenhuma. */
 export function pontoNoMapa(mapa: MapaDoPalacio, neuronioId: Id): Ponto | undefined {
   for (const ilha of Object.values(mapa.ilhas)) {
     const p = ilha.pontos[neuronioId]

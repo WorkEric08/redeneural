@@ -17,7 +17,7 @@ export default function Editar() {
       <div className="flex flex-col">
         <BarraDeTopo voltarPara="/" icone="fechar" titulo="Editar" />
         <p className="text-poeira pt-6 text-sm">
-          {carregado ? 'Este neurônio não existe mais.' : 'Abrindo…'}
+          {carregado ? 'Este pensamento não existe mais.' : 'Abrindo…'}
         </p>
       </div>
     )
@@ -39,9 +39,9 @@ export default function Editar() {
       onEnviar={(dados) => {
         void editarNeuronio(neuronio.id, dados).then((deuCerto) => {
           if (!deuCerto) return
-          // A tela do neurônio já está logo atrás no histórico: voltar para
+          // A tela do pensamento já está logo atrás no histórico: voltar para
           // ela, e não empilhar outra igual — senão o voltar seguinte
-          // mostraria o mesmo neurônio duas vezes.
+          // mostraria o mesmo pensamento duas vezes.
           if (key === 'default') void navegar(`/neuronio/${neuronio.id}`, { replace: true })
           else void navegar(-1)
         })

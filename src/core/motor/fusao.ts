@@ -8,7 +8,7 @@ export function sigmoid(x: number): number {
  * Escala **fixa**, não min/max do conjunto.
  *
  * Se o intervalo fosse normalizado pelo mínimo e máximo observados, adicionar um
- * neurônio reembaralharia o score de todos os outros. Com divisor constante, o
+ * pensamento reembaralharia o score de todos os outros. Com divisor constante, o
  * score de um par só muda quando aquele par muda.
  */
 export function escalaEmbedding(cos: number, escalaEmb: number): number {

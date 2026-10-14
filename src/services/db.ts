@@ -84,7 +84,7 @@ export interface PosicoesDaRedeGravadas {
 }
 
 /**
- * O Mapa (01/10/2026): ilhas por livro e o lugar de cada neurônio nelas. Ao
+ * O Mapa (01/10/2026): ilhas por livro e o lugar de cada pensamento nelas. Ao
  * contrário das posições da Rede, entra no backup — é memória espacial, não
  * derivado que se recalcula na chegada.
  */
@@ -99,7 +99,7 @@ export type MetaGravada =
 /** Os bytes de uma imagem do acervo, numa tabela à parte da do anexo. */
 export type ArquivoGravado = ArquivoDoAnexo & { anexoId: Id }
 
-/** Os bytes da imagem do resultado de uma ideia (07/10/2026), à parte do neurônio pelo mesmo motivo. */
+/** Os bytes da imagem do resultado de uma ideia (07/10/2026), à parte do pensamento pelo mesmo motivo. */
 export type ResultadoGravado = ArquivoDoAnexo & { neuronioId: Id }
 
 export type PalacioDB = Dexie & {
@@ -120,7 +120,7 @@ export type PalacioDB = Dexie & {
 
 /**
  * `embedding` é gravado como Float32Array puro: o structured clone do IndexedDB
- * guarda o buffer binário, não um array JSON. ~1.5KB por neurônio em vez de ~8KB,
+ * guarda o buffer binário, não um array JSON. ~1.5KB por pensamento em vez de ~8KB,
  * e o mesmo BLOB migra direto para SQLite depois.
  *
  * `cross` não é indexado de propósito — booleano não é chave válida em IndexedDB.
@@ -214,7 +214,7 @@ export function createDb(name: string = DB_NAME): PalacioDB {
 
   // v8 (14/09/2026): comprimento da lombada, opcional. Mesmo padrão da v6/v7
   // — não é indexado, então só o dado precisa de um valor (`null` =
-  // automático, a quantidade de neurônios continua decidindo) pra quem já
+  // automático, a quantidade de pensamentos continua decidindo) pra quem já
   // existia.
   db.version(8)
     .stores({})
@@ -313,7 +313,7 @@ export function createDb(name: string = DB_NAME): PalacioDB {
   })
 
   // v14 (07/10/2026): a imagem do resultado de uma ideia feita. Os bytes numa tabela
-  // à parte (listar neurônios nunca arrasta imagem); todo neurônio que já existia
+  // à parte (listar pensamentos nunca arrasta imagem); todo pensamento que já existia
   // fica sem imagem.
   db.version(14)
     .stores({ resultados: 'neuronioId' })

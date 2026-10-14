@@ -4,8 +4,8 @@ import type { VizinhoDoNeuronio } from '@/features/estante/resumo'
 import { useTemaPadrao } from '@/hooks/useTemaPadrao'
 
 /**
- * A lista de fios de um neurônio. Compartilhada entre o livro aberto e a tela
- * do próprio neurônio — é a mesma informação, e ela tem uma forma só.
+ * A lista de fios de um pensamento. Compartilhada entre o livro aberto e a tela
+ * do próprio pensamento — é a mesma informação, e ela tem uma forma só.
  *
  * Cada fio é uma linha de toque inteira (44 px), não só o nome: o dedo não
  * precisa acertar a palavra. A ponte leva o nome do livro do outro lado numa

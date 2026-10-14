@@ -33,12 +33,12 @@ const CAIXA_DO_ANDAMENTO = 'w-32'
 
 /** O que a confirmação guarda no histórico para saber como sair depois de apagar. */
 interface EstadoDaConfirmacao {
-  /** A tela do neurônio tem uma tela antes dela dentro do app. */
+  /** A tela do pensamento tem uma tela antes dela dentro do app. */
   temDeOndeVeio: boolean
 }
 
 /**
- * Um neurônio e o que ele encontrou.
+ * Um pensamento e o que ele encontrou.
  *
  * O aviso de "conectou com…" morou aqui até 17/09/2026 — quem entrega esse
  * momento agora é a Rede, com uma animação (ver `revelar` em Tela.tsx e
@@ -114,7 +114,7 @@ export default function Neuronio() {
       <div className="flex flex-col">
         <BarraDeTopo
           voltarPara="/"
-          titulo="Neurônio"
+          titulo="Pensamento"
           acoes={
             <Link
               to="/busca"
@@ -126,7 +126,7 @@ export default function Neuronio() {
           }
         />
         <p className="text-poeira pt-6 text-sm">
-          {carregado ? 'Este neurônio não existe mais.' : 'Abrindo…'}
+          {carregado ? 'Este pensamento não existe mais.' : 'Abrindo…'}
         </p>
       </div>
     )
@@ -211,7 +211,7 @@ export default function Neuronio() {
         return
       }
       // Tira a pergunta e a tela do apagado do histórico de uma vez: voltar
-      // depois disso não pode cair num neurônio que não existe mais. Sem tela
+      // depois disso não pode cair num pensamento que não existe mais. Sem tela
       // anterior dentro do app, o livro dele é o lugar óbvio.
       if (veioDeAlgumLugar) void navegar(-2)
       else void navegar(saida, { replace: true })
@@ -280,7 +280,7 @@ export default function Neuronio() {
               <span className="truncate">{ROTULO_DO_PORTO}</span>
             </Link>
           ) : (
-            'Neurônio'
+            'Pensamento'
           )
         }
         acoes={acoesDaBarra}
@@ -375,7 +375,7 @@ export default function Neuronio() {
                   Tornar executável
                 </button>
                 {neuronio.livroId === null && (
-                  <p className="pd-nota">Sem livro, o neurônio ainda não entra nas pontes.</p>
+                  <p className="pd-nota">Sem livro, o pensamento ainda não entra nas pontes.</p>
                 )}
               </div>
             )}

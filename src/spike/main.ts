@@ -153,12 +153,12 @@ function render(r: ResultadoSpike, memoria: ReturnType<typeof pararAmostragem>):
   partes.push(
     tabela('O que isso significa no uso', [
       [
-        `Criar um neurônio (1 embedding + ${OPCOES_SPIKE_PADRAO.paresReranker > 0 ? 6 : 0} pares)`,
+        `Criar um pensamento (1 embedding + ${OPCOES_SPIKE_PADRAO.paresReranker > 0 ? 6 : 0} pares)`,
         ms(c.criarNeuronioMs),
         classe(c.criarNeuronioMs, 1000, 4000),
       ],
       [
-        `Reprocessar ${c.tamanhoPalacio} neurônios`,
+        `Reprocessar ${c.tamanhoPalacio} pensamentos`,
         ms(c.reprocessarTudoMs),
         classe(c.reprocessarTudoMs, 30000, 180000),
       ],

@@ -24,7 +24,7 @@ const DURACAO_COM_ACAO_MS = 6000
  * inerte), mas o tempo continua correndo.
  *
  * Pode ter um botão (01/10/2026): o "Mudar" depois de o Porto escolher o livro
- * de um neurônio. O botão é um link para uma busca na tela atual, e não uma
+ * de um pensamento. O botão é um link para uma busca na tela atual, e não uma
  * função — o aviso sobrevive à tela que o pediu.
  */
 export function Aviso() {

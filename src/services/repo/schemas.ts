@@ -104,7 +104,7 @@ export const resultadoSchema = z.object({
 
 export const neuronioSchema = z.object({
   id,
-  // `null` é o porto: o neurônio esperando a pessoa escolher o livro.
+  // `null` é o porto: o pensamento esperando a pessoa escolher o livro.
   livroId: id.nullable(),
   titulo: z.string().trim().min(1).max(200),
   conteudo: z.string().max(20_000),
@@ -137,7 +137,7 @@ export const conexaoSchema = z
     message: 'conexão precisa estar em ordem canônica (aId < bId)',
     path: ['aId'],
   })
-  .refine((c) => c.aId !== c.bId, { message: 'conexão não pode ligar um neurônio a si mesmo' })
+  .refine((c) => c.aId !== c.bId, { message: 'conexão não pode ligar um pensamento a si mesmo' })
 
 const midiaSchema = z.discriminatedUnion('tipo', [
   z.object({ tipo: z.literal('link'), url: urlDeLink }),

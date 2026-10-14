@@ -4,7 +4,7 @@ import type { Id, Livro, NeuronioNaTela } from '@/core'
  * Busca no palácio inteiro — em memória, sobre o que a store já tem.
  *
  * Puro e fora dos componentes (CLAUDE.md regra 9). Sem índice nem lib de
- * busca: um palácio pessoal tem no máximo algumas centenas de neurônios, e
+ * busca: um palácio pessoal tem no máximo algumas centenas de pensamentos, e
  * `includes` sobre isso é instantâneo — qualquer coisa mais esperta seria
  * abstração sem caso de uso.
  */
@@ -17,7 +17,7 @@ export interface ResultadoDeLivro {
 export interface ResultadoDeNeuronio {
   tipo: 'neuronio'
   neuronio: NeuronioNaTela
-  /** `undefined` para um neurônio no porto, ainda sem livro. */
+  /** `undefined` para um pensamento no porto, ainda sem livro. */
   livro: Livro | undefined
   /** Pedaço do conteúdo em volta do termo, só quando foi ele que bateu. */
   trecho: string | undefined
@@ -92,7 +92,7 @@ function inicioDoTexto(texto: string): string | undefined {
 /**
  * As linhas da busca por sentido, na ordem que o motor devolveu.
  *
- * O trecho é o começo do texto: cada neurônio tem um vetor só, então não há
+ * O trecho é o começo do texto: cada pensamento tem um vetor só, então não há
  * como saber que parte dele pareceu com a consulta. Um id que a tela não tem
  * mais — apagado enquanto a resposta vinha — fica de fora.
  */

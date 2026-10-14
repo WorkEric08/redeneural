@@ -261,7 +261,7 @@ describe('balanco', () => {
     expect(balanco('a', 1234)).toEqual(balanco('a', 1234))
   })
 
-  it('dois neurônios não balançam em cardume — fases diferentes no mesmo instante', () => {
+  it('dois pensamentos não balançam em cardume — fases diferentes no mesmo instante', () => {
     const a = balanco('a', 1000)
     const b = balanco('outro-bem-diferente', 1000)
     expect(a).not.toEqual(b)

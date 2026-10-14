@@ -80,13 +80,13 @@ describe('buscar', () => {
     expect(resultado).toEqual([{ tipo: 'livro', livro: LIVROS[1] }])
   })
 
-  it('acha neurônio pelo título', () => {
+  it('acha pensamento pelo título', () => {
     const resultado = buscar('improvisação', [], NEURONIOS)
     expect(resultado).toHaveLength(1)
     expect(resultado[0]).toMatchObject({ tipo: 'neuronio', neuronio: NEURONIOS[1] })
   })
 
-  it('acha neurônio pelo conteúdo, mesmo sem bater no título', () => {
+  it('acha pensamento pelo conteúdo, mesmo sem bater no título', () => {
     const resultado = buscar('restrições combinadas', [], NEURONIOS)
     expect(resultado).toHaveLength(1)
     expect(resultado[0]).toMatchObject({ tipo: 'neuronio', neuronio: NEURONIOS[1] })
@@ -98,7 +98,7 @@ describe('buscar', () => {
     expect((resultado[0] as { neuronio: NeuronioNaTela }).neuronio.id).toBe('n1')
   })
 
-  it('traz o livro do neurônio junto', () => {
+  it('traz o livro do pensamento junto', () => {
     const [resultado] = buscar('improvisação', LIVROS, NEURONIOS)
     expect(resultado).toMatchObject({ tipo: 'neuronio', livro: LIVROS[1] })
   })
@@ -122,7 +122,7 @@ describe('buscar', () => {
     expect((porConteudo as { trecho?: string }).trecho).toContain('restrições')
   })
 
-  it('sem nenhum livro nem neurônio batendo, devolve lista vazia', () => {
+  it('sem nenhum livro nem pensamento batendo, devolve lista vazia', () => {
     expect(buscar('fantasma', LIVROS, NEURONIOS)).toEqual([])
   })
 })

@@ -120,7 +120,7 @@ interface Props {
   livroId?: string | undefined
   /** 0..1, como `LivroNaEstante.altura`. Livro novo: 0. */
   alturaAutomatica?: number | undefined
-  /** O que o papel mostra no pé: neurônios, ou itens numa pasta. Livro novo: 0. */
+  /** O que o papel mostra no pé: pensamentos, ou itens numa pasta. Livro novo: 0. */
   contagem?: number | undefined
   prateleiras?: number | undefined
   onEnviar: (dados: NovoLivro) => void
@@ -128,7 +128,7 @@ interface Props {
 
 /**
  * Nome, cor, forma e medidas de um livro — o mesmo formulário para criar e para editar, como o
- * do neurônio.
+ * do pensamento.
  *
  * A amostra ao lado é a lombada como ela vai ficar na estante (forma, cor,
  * largura, comprimento e emblema; sem estado), sob a mesma luz de Ajustes.
@@ -137,7 +137,7 @@ interface Props {
  *
  * Sempre tela cheia (pedido do usuário, 17/09/2026 — antes editar era uma
  * folha, com um "Cancelar" ao lado do enviar): sair é o "fechar" da barra de
- * topo, como o formulário de neurônio.
+ * topo, como o formulário de pensamento.
  */
 export function FormularioDeLivro({
   inicial,

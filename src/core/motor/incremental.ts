@@ -80,7 +80,7 @@ export interface ResultadoIncremental {
 }
 
 /**
- * Recalcula só a vizinhança de um neurônio — o caminho de criar e editar.
+ * Recalcula só a vizinhança de um pensamento — o caminho de criar e editar.
  *
  * Custa uma passada de cosseno sobre todos os nós e algumas chamadas do
  * reranker, contra `N * candK` chamadas do grafo inteiro.
@@ -104,7 +104,7 @@ export async function recalcularVizinhanca(
   opcoes: OpcoesMotor = OPCOES_PADRAO,
 ): Promise<ResultadoIncremental> {
   const alvoIdx = nos.findIndex((n) => n.id === alvoId)
-  if (alvoIdx === -1) throw new Error(`neurônio ${alvoId} não está na lista de nós`)
+  if (alvoIdx === -1) throw new Error(`pensamento ${alvoId} não está na lista de nós`)
   if (nos.length < 2) return { arestas: [], marcasPerdidas: [] }
 
   const centrados = nos.map((no) => centralizar(no.embedding, perfil.centroide))

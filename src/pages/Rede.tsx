@@ -41,7 +41,7 @@ const FOLGAS_DO_PADRAO: Folgas = { topo: 84, base: 112, lados: 28 }
 /**
  * A rede do palácio, em tela cheia, de dois jeitos (01/10/2026): a
  * **constelação** (por significado) e o **Mapa** (por livro, em ilhas). Abre no
- * último modo usado — na primeira vez, a constelação —, e o neurônio tocado
+ * último modo usado — na primeira vez, a constelação —, e o pensamento tocado
  * continua tocado ao trocar: o Mapa abre centrado nele.
  *
  * Espelha exatamente o grafo do motor — nada é filtrado ou inventado aqui. Os
@@ -81,7 +81,7 @@ export default function Rede() {
   const filtrosAbertos = busca.get('filtros') === '1'
   const chaveDaPonteAberta = busca.get('ponte')
   const [centralizarId] = useState<string | null>(() => busca.get('centralizar'))
-  // O neurônio recém-criado (`Novo.tsx` manda para cá em vez de para a tela
+  // O pensamento recém-criado (`Novo.tsx` manda para cá em vez de para a tela
   // dele — pedido do usuário, 17/09/2026): ver `revelar` em Tela.tsx.
   const [novoId] = useState<string | null>(() => busca.get('novo'))
 
@@ -114,7 +114,7 @@ export default function Rede() {
     void definirModoDaRede(novo)
   }
 
-  // Trocou de modo com um neurônio tocado: a tela nova abre centrada nele. Roda
+  // Trocou de modo com um pensamento tocado: a tela nova abre centrada nele. Roda
   // depois do enquadramento da tela que acabou de montar (efeito de filho comita
   // antes do do pai).
   const centrarNoEscolhido = useEffectEvent(() => {
@@ -165,7 +165,7 @@ export default function Rede() {
     [navegar],
   )
 
-  // Leva a câmera até o neurônio que a busca escolheu. Roda depois do
+  // Leva a câmera até o pensamento que a busca escolheu. Roda depois do
   // enquadramento inicial da Tela (efeito de filho comita antes do efeito do
   // pai), então sobrescreve a câmera corretamente. Só a câmera, e não a
   // seleção: essa já nasceu certa lá em cima, sem depender de um efeito.
@@ -174,7 +174,7 @@ export default function Rede() {
     controle.current?.focar(centralizarId)
   }, [centralizarId])
 
-  // O neurônio recém-criado: mesma ordem de motivos do efeito acima — a Tela
+  // O pensamento recém-criado: mesma ordem de motivos do efeito acima — a Tela
   // já monta enquadrando tudo sozinha, e é sobre essa câmera que a revelação
   // parte quando aproxima até ele (e seleciona, se tiver vizinho).
   useEffect(() => {
@@ -203,7 +203,7 @@ export default function Rede() {
   const ilhaDoEscolhido = livroDoEscolhido ? mapa.ilhas[livroDoEscolhido.id] : undefined
   const rodapeDoCartao = escolhido
     ? modo === 'mapa'
-      ? `Ilha de ${contar(Object.keys(ilhaDoEscolhido?.pontos ?? {}).length, 'neurônio', 'neurônios')}`
+      ? `Ilha de ${contar(Object.keys(ilhaDoEscolhido?.pontos ?? {}).length, 'pensamento', 'pensamentos')}`
       : `${contar(graus.get(escolhido.id) ?? 0, 'fio', 'fios')} · ${contar(pontesDoEscolhido, 'ponte', 'pontes')}`
     : ''
 
@@ -285,7 +285,7 @@ export default function Rede() {
         voltarPara="/"
         titulo={padrao ? seletorDeModo : 'Rede do palácio'}
         acoes={
-          // `de=rede`: um resultado de neurônio volta para cá centralizado,
+          // `de=rede`: um resultado de pensamento volta para cá centralizado,
           // em vez de abrir a tela dele — é a Rede que pediu a busca.
           <Link
             to="/busca?de=rede"
@@ -332,13 +332,13 @@ export default function Rede() {
       {padrao ? null : modo === 'mapa' ? (
         <p className="text-poeira pointer-events-none relative z-10 px-1 pt-2 text-sm">
           {carregado
-            ? `${contar(Object.keys(mapa.ilhas).length, 'ilha', 'ilhas')} · ${contar(noMapa, 'neurônio', 'neurônios')}`
+            ? `${contar(Object.keys(mapa.ilhas).length, 'ilha', 'ilhas')} · ${contar(noMapa, 'pensamento', 'pensamentos')}`
             : 'Abrindo…'}
         </p>
       ) : (
         <p className="text-poeira pointer-events-none relative z-10 px-1 pt-2 text-sm">
           {carregado
-            ? `${contar(neuronios.length, 'neurônio', 'neurônios')} · ${contar(conexoes.length, 'conexão', 'conexões')} · `
+            ? `${contar(neuronios.length, 'pensamento', 'pensamentos')} · ${contar(conexoes.length, 'conexão', 'conexões')} · `
             : 'Abrindo…'}
           {carregado && (
             <span className="text-ponte brilho-ponte-texto-sm">

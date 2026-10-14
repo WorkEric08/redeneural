@@ -9,8 +9,8 @@ import type { RerankProvider } from '@/core'
  *   guardá-los (`cache.put` falha com `UnknownError` num arquivo de 267 MB, mesmo
  *   com 3 GB de quota livre). Voltariam da rede a cada início a frio, o que quebra
  *   o offline-first.
- * - 270 ms por par num desktop de 12 núcleos: criar um neurônio saía de 45 ms para
- *   1,68 s, e reprocessar 300 neurônios de 13,5 s para 4,4 min.
+ * - 270 ms por par num desktop de 12 núcleos: criar um pensamento saía de 45 ms para
+ *   1,68 s, e reprocessar 300 pensamentos de 13,5 s para 4,4 min.
  * - A qualidade não compensou: acertou `Forma e repetição ↔ Recursão` (0,97) e
  *   descartou `Cache ↔ Memória de trabalho` (0,08 sobre um embedding de 0,53).
  *

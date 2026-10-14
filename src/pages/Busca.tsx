@@ -11,16 +11,16 @@ import { ROTULO_DO_PORTO } from '@/features/porto/porto'
 import { contar } from '@/lib/plural'
 import { usePalacio } from '@/store/palacio'
 
-/** Quantos neurônios recentes a tela mostra antes de alguém digitar. */
+/** Quantos pensamentos recentes a tela mostra antes de alguém digitar. */
 const RECENTES = 8
 
 /**
  * Busca no palácio inteiro, de dois jeitos (30/09/2026):
  *
  * - **Por sentido** — o padrão. A frase passa pelo mesmo modelo que lê os
- *   neurônios, e voltam os que se parecem com ela mesmo sem dividir uma
+ *   pensamentos, e voltam os que se parecem com ela mesmo sem dividir uma
  *   palavra (`buscarPorSentido`, no núcleo, dentro do Worker).
- * - **Palavra exata** — livros pelo título, neurônios pelo título ou pelo
+ * - **Palavra exata** — livros pelo título, pensamentos pelo título ou pelo
  *   conteúdo inteiro, sobre o que a store já tem em memória (`buscar.ts`). É a
  *   que garante achar um trecho do fim de um texto longo: o modelo só lê os
  *   primeiros 2500 caracteres.
@@ -29,7 +29,7 @@ const RECENTES = 8
  * gravado como preferência do palácio, como a luz da estante. Quem nunca
  * escolheu começa em "Por sentido".
  *
- * Com o campo vazio a tela não fica em branco: mostra os últimos neurônios
+ * Com o campo vazio a tela não fica em branco: mostra os últimos pensamentos
  * escritos (17/09/2026). É a única tela do app que responde "o que eu escrevi
  * por último" — a estante é por assunto, a Rede é por significado, e o livro
  * só mostra o que está dentro dele. A lista já chega ordenada do repositório
@@ -41,7 +41,7 @@ export default function Busca() {
   const padrao = useTemaPadrao()
 
   // Quem abriu a busca a partir da Rede quer voltar pra lá com a câmera no
-  // neurônio, não abrir a tela dele — o link do resultado muda de destino,
+  // pensamento, não abrir a tela dele — o link do resultado muda de destino,
   // o resto da busca é o mesmo de sempre.
   const [busca] = useSearchParams()
   const daRede = busca.get('de') === 'rede'
@@ -59,7 +59,7 @@ export default function Busca() {
   const recentes = useMemo(() => neuronios.slice(0, RECENTES), [neuronios])
   const livroPorId = useMemo(() => new Map(livros.map((l) => [l.id, l])), [livros])
 
-  /** Quem veio da Rede volta para lá com a câmera no neurônio, não para a ficha. */
+  /** Quem veio da Rede volta para lá com a câmera no pensamento, não para a ficha. */
   const destinoDo = (id: string): string => (daRede ? `/rede?centralizar=${id}` : `/neuronio/${id}`)
 
   const termo = consulta.trim()
@@ -150,7 +150,7 @@ export default function Busca() {
         {termo === '' ? (
           recentes.length === 0 ? (
             <p className="text-poeira px-1 text-sm">
-              Busca em livros e neurônios, pelo título ou pelo conteúdo.
+              Busca em livros e pensamentos, pelo título ou pelo conteúdo.
             </p>
           ) : (
             <section>
@@ -158,7 +158,7 @@ export default function Busca() {
                 {padrao ? (
                   <>
                     <span>Escritos por último</span>
-                    <span>{contar(recentes.length, 'neurônio', 'neurônios')}</span>
+                    <span>{contar(recentes.length, 'pensamento', 'pensamentos')}</span>
                   </>
                 ) : (
                   'Escritos por último'
@@ -205,7 +205,7 @@ export default function Busca() {
               {padrao && (
                 <h2 className="rotulo-de-secao">
                   <span>Resultados</span>
-                  <span>{contar(porSentido.length, 'neurônio', 'neurônios')}</span>
+                  <span>{contar(porSentido.length, 'pensamento', 'pensamentos')}</span>
                 </h2>
               )}
               <ul

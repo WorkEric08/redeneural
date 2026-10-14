@@ -79,7 +79,7 @@ const LIVROS: Livro[] = [
   },
 ]
 
-/** Os nós do motor viram neurônios de verdade, com vetor e tudo. */
+/** Os nós do motor viram pensamentos de verdade, com vetor e tudo. */
 const NEURONIOS: Neuronio[] = PALACIO.map((n) => ({
   id: n.id,
   livroId: n.livroId,
@@ -159,7 +159,7 @@ function ordenar<T extends { id: string }>(xs: T[]): T[] {
 }
 
 describe('exportar num navegador e importar noutro', () => {
-  it('não perde livro, neurônio, vetor nem conexão', async () => {
+  it('não perde livro, pensamento, vetor nem conexão', async () => {
     const origem = await palacioPovoado()
     const snapshot = await origem.exportAll()
 

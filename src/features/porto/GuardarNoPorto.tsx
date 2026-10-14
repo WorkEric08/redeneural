@@ -9,7 +9,7 @@ import { FolhaGuardarEm } from './FolhaGuardarEm'
  * A pergunta "Onde guardar?" em qualquer tela, aberta por `?guardar=<id>` na
  * URL — como os outros painéis do app, o voltar do Android fecha a folha antes
  * de sair da tela. É o que o "Mudar" do aviso, a lista do porto e a tela do
- * neurônio abrem.
+ * pensamento abrem.
  *
  * A tela de escrever (`/novo`) tem a própria: lá, responder ou fechar também
  * leva para a Rede, e isso é dela.
@@ -44,7 +44,7 @@ export function GuardarNoPorto() {
       livros={deConceitos}
       onEscolher={(livroId) => {
         if (!neuronio) return
-        // Otimista: a folha fecha e o neurônio já aparece no livro.
+        // Otimista: a folha fecha e o pensamento já aparece no livro.
         void guardarNeuronio(neuronio.id, livroId)
         fechar()
       }}

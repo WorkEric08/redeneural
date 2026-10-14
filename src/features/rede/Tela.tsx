@@ -28,7 +28,7 @@ import { useCamera } from './useCamera'
  *
  * **Isso mudou em 17/09/2026, como teste do usuário:** agora há um laço
  * contínuo, só enquanto esta tela está montada (começa ao abrir, para ao
- * sair — nunca em segundo plano), para o "balanço" leve dos neurônios (ver
+ * sair — nunca em segundo plano), para o "balanço" leve dos pensamentos (ver
  * `balanco`, em `layout.ts`, e o `useEffect` mais abaixo). É a primeira
  * exceção de verdade a "sem laço de animação" — as outras (assentamento,
  * deslize, revelação) são todas limitadas no tempo e param sozinhas; esta
@@ -49,7 +49,7 @@ const RAIO_DO_TOQUE = 22
  *  usuário, 16/09/2026, era 1.9): dois ou três toques seguidos, não um só,
  *  fazem o trabalho de aproximar de verdade. */
 const ZOOM_DO_DUPLO_TOQUE = 1.5
-/** Para onde a busca e o duplo toque num neurônio levam a câmera — o mesmo
+/** Para onde a busca e o duplo toque num pensamento levam a câmera — o mesmo
  *  valor do limiar único de `ESCALA_MINIMA_DOS_ROTULOS` em `desenhar.ts`, para
  *  focar sempre revelar todos os nomes de uma vez (nunca alguns antes de
  *  outros). Reduzido de 2.4 para 2.2 (pedido do usuário, 16/09/2026): o pulo
@@ -60,7 +60,7 @@ const ESCALA_DE_FOCO = 2.2
 const DURACAO_DO_ASSENTAMENTO = 900
 
 /**
- * A revelação de um neurônio recém-criado (pedido do usuário, 17/09/2026):
+ * A revelação de um pensamento recém-criado (pedido do usuário, 17/09/2026):
  * a Tela já enquadra tudo sozinha ao montar (ver o efeito de `assinatura`
  * mais abaixo) — a pausa é só para esse "palácio inteiro" ter tempo de ser
  * visto antes de a câmera aproximar. Ver `revelar`.
@@ -72,7 +72,7 @@ const DURACAO_DA_REVELACAO = 850
 const ESCALA_MAXIMA_DA_REVELACAO = 3.2
 
 /**
- * O quanto o balanço desloca cada neurônio, em pixels de **tela** — não de
+ * O quanto o balanço desloca cada pensamento, em pixels de **tela** — não de
  * mundo. Dividido pela escala da câmera na hora de pintar (ver `pintar`),
  * então "leve" quer dizer a mesma coisa em qualquer zoom, do mesmo jeito que
  * o próprio ponto já é desenhado em tamanho de tela (`raioNaTela`).
@@ -81,10 +81,10 @@ const AMPLITUDE_DO_BALANCO_PX = 2.5
 
 export interface ControleDaTela {
   enquadrar: () => void
-  /** Centraliza a câmera num neurônio, aproximando até `ESCALA_DE_FOCO` — nunca afasta. */
+  /** Centraliza a câmera num pensamento, aproximando até `ESCALA_DE_FOCO` — nunca afasta. */
   focar: (id: Id) => void
   /**
-   * A câmera, já enquadrando tudo, aproxima até este neurônio — e se ele tiver
+   * A câmera, já enquadrando tudo, aproxima até este pensamento — e se ele tiver
    * algum vizinho, seleciona ao chegar (acendendo o fio que acabou de nascer).
    * Sem vizinho nenhum, só centraliza: selecionar um nó sem ninguém ligado
    * apagaria o resto do palácio à toa (ver `vizinhancaDe`).
@@ -102,10 +102,10 @@ export interface Folgas {
 interface Props {
   cena: Omit<Cena, 'cores'>
   onSelecionar: (id: string | null) => void
-  /** Tocar um satélite (um item de pasta) escolhe ele, e não o neurônio colado nele. */
+  /** Tocar um satélite (um item de pasta) escolhe ele, e não o pensamento colado nele. */
   onSelecionarAnexo: (id: Id) => void
   /**
-   * Solta um neurônio arrastado no ponto novo (mundo). Devolve o layout já
+   * Solta um pensamento arrastado no ponto novo (mundo). Devolve o layout já
    * reagindo a ele — a tela anima o assentamento sozinha com o resultado, sem
    * esperar a store re-renderizar para saber onde a vizinhança parou.
    */
@@ -158,13 +158,13 @@ export function Tela({
   const camera = useRef<Camera>({ x: 0, y: 0, escala: 1 })
   const cores = useRef<CoresDaRede | null>(null)
   const cenaRef = useRef(cena)
-  /** A pausa entre montar enquadrando tudo e a câmera aproximar do neurônio
+  /** A pausa entre montar enquadrando tudo e a câmera aproximar do pensamento
    *  revelado — ver `revelar`. Um `setTimeout`, não um `rAF`: não pinta nada
    *  enquanto espera. */
   const pausaDaRevelacao = useRef<number | null>(null)
   const revelacaoEmAndamento = useRef<{ cancelado: boolean } | null>(null)
 
-  /** O neurônio sob o dedo desde o toque, se o toque começou em cima de um —
+  /** O pensamento sob o dedo desde o toque, se o toque começou em cima de um —
    *  `null` enquanto o gesto é (ou ainda pode virar) arrastar a câmera. */
   const noArrastado = useRef<({ mundoInicial: Ponto } & NoArrastado) | null>(null)
   /** As posições que o desenho usa em vez das da cena, enquanto um nó está
@@ -239,7 +239,7 @@ export function Tela({
   }, [pintar, folgas])
 
   /**
-   * Centraliza num neurônio, sem afastar se a câmera já estiver mais perto —
+   * Centraliza num pensamento, sem afastar se a câmera já estiver mais perto —
    * dar zoom out para focar seria o oposto do que "focar" promete. Sem efeito
    * se a posição ainda não chegou (mesmo padrão do resto: um desenho
    * incompleto nunca quebra, só fica quieto).
@@ -324,8 +324,8 @@ export function Tela({
 
   /**
    * A câmera e o dedo (`useCamera`, o mesmo do Mapa). O que é só da Rede entra
-   * pelos ganchos: tocar num neurônio pode virar arrastá-lo, e o toque escolhe
-   * entre neurônio e satélite.
+   * pelos ganchos: tocar num pensamento pode virar arrastá-lo, e o toque escolhe
+   * entre pensamento e satélite.
    */
   const { gestos, aplicarZoom, animarCamera } = useCamera({
     canvasRef,
@@ -340,7 +340,7 @@ export function Tela({
         pausaDaRevelacao.current = null
       }
     },
-    // Em cima de um neurônio, o gesto pode virar arrastar o nó. Um satélite não
+    // Em cima de um pensamento, o gesto pode virar arrastar o nó. Um satélite não
     // se arrasta: tocar nele nunca vira arrastar o dono.
     aoDescer(mundo) {
       const tocado = alvoDoToque(mundo)
@@ -402,7 +402,7 @@ export function Tela({
   })
 
   /**
-   * O neurônio que acabou de nascer: a câmera já está enquadrando o palácio
+   * O pensamento que acabou de nascer: a câmera já está enquadrando o palácio
    * inteiro (a Tela enquadra sozinha ao montar), então espera um instante
    * para isso ser visto, aproxima até ele — e até seus vizinhos, se houver
    * algum, para o fio que acabou de nascer caber no quadro — e seleciona ao
@@ -520,7 +520,7 @@ export function Tela({
   }, [pintar])
 
   /**
-   * O que está debaixo do dedo: um neurônio, um satélite, ou nada. O satélite
+   * O que está debaixo do dedo: um pensamento, um satélite, ou nada. O satélite
    * orbita colado no dono (11-16 px de tela, dentro do mesmo alvo de toque de
    * 22 px), então o toque fica com o mais perto dos dois.
    */
@@ -552,7 +552,7 @@ export function Tela({
     <canvas
       ref={canvasRef}
       className="bg-sala h-full w-full touch-none"
-      aria-label={`Rede do palácio: ${String(cena.neuronios.length)} neurônios e ${String(cena.conexoes.length)} conexões`}
+      aria-label={`Rede do palácio: ${String(cena.neuronios.length)} pensamentos e ${String(cena.conexoes.length)} conexões`}
       {...gestos}
     />
   )

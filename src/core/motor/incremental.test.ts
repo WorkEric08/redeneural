@@ -22,7 +22,7 @@ import {
 
 const T0 = new Date('2026-01-01T12:00:00.000Z')
 
-/** Estado derivado do último reprocessamento — congelado enquanto neurônios entram. */
+/** Estado derivado do último reprocessamento — congelado enquanto pensamentos entram. */
 const PERFIL = perfilDoPalacio(PALACIO)
 
 function comoConexoes(arestas: readonly ArestaCalculada[]): Conexao[] {
@@ -42,7 +42,7 @@ interface Comparacao {
 }
 
 /**
- * Roda os dois caminhos sobre o mesmo cenário: chegar um neurônio novo pelo
+ * Roda os dois caminhos sobre o mesmo cenário: chegar um pensamento novo pelo
  * caminho incremental tem que dar exatamente o mesmo grafo que reprocessar tudo.
  */
 async function comparar(alvo: NoDoGrafo, pontuar: PontuarPar = SEM_RERANK): Promise<Comparacao> {
@@ -157,7 +157,7 @@ describe('recalcularVizinhanca', () => {
     )
   })
 
-  it('o neurônio novo nunca nasce órfão', async () => {
+  it('o pensamento novo nunca nasce órfão', async () => {
     const solto = no('mus-solto', 'mus', { 15: 1 })
     const { resultado } = await comparar(solto)
 
@@ -165,7 +165,7 @@ describe('recalcularVizinhanca', () => {
     expect(resultado.arestas.every((a) => a.aId === solto.id || a.bId === solto.id)).toBe(true)
   })
 
-  it('neurônio novo no porto não faz ponte, e dá o mesmo grafo que reprocessar tudo', async () => {
+  it('pensamento novo no porto não faz ponte, e dá o mesmo grafo que reprocessar tudo', async () => {
     // Parece com a dupla de programação, mas ainda não tem livro.
     const noPorto: NoDoGrafo = { ...no('sem-livro', 'x', { 9: 1, 10: 0.1 }), livroId: null }
     const { resultado, aplicado, completo } = await comparar(noPorto)
@@ -235,7 +235,7 @@ describe('recalcularVizinhanca', () => {
     }
   })
 
-  it('reprocessar um neurônio que não mudou não mexe em nada', async () => {
+  it('reprocessar um pensamento que não mudou não mexe em nada', async () => {
     const completoAntes = await construirGrafo(PALACIO, SEM_RERANK, OPCOES_PADRAO, PERFIL)
     const estado = estadoDosVizinhos(comoConexoes(completoAntes))
     const alvo = PALACIO.find((n) => n.id === 'mus-iso')!

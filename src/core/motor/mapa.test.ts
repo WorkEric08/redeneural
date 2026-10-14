@@ -17,7 +17,7 @@ import {
   type NoDoMapa,
 } from './mapa'
 
-/** Um neurônio do livro, com um vetor perto do eixo do assunto. */
+/** Um pensamento do livro, com um vetor perto do eixo do assunto. */
 function no(id: string, livroId: string, eixo: number, desvio: number, outro = eixo + 1): NoDoMapa {
   return { id, livroId, embedding: vetor({ [eixo]: 1, [outro]: desvio }) }
 }
@@ -63,7 +63,7 @@ function dentroDaCosta(mapa: MapaDoPalacio): void {
 describe('mapaCompleto', () => {
   const MAPA = mapaCompleto(palacio(), LIVROS, null)
 
-  it('uma ilha por livro de conceitos, cada neurônio na ilha do seu livro', () => {
+  it('uma ilha por livro de conceitos, cada pensamento na ilha do seu livro', () => {
     expect(Object.keys(MAPA.ilhas).sort()).toEqual(['mus', 'prog', 'psi'])
     expect(Object.keys(MAPA.ilhas.psi!.pontos)).toHaveLength(7)
     expect(Object.keys(MAPA.ilhas.prog!.pontos).every((id) => id.startsWith('prog'))).toBe(true)
@@ -101,14 +101,14 @@ describe('mapaCompleto', () => {
     expect(mapaCompleto([...palacio()].reverse(), LIVROS, null)).toEqual(MAPA)
   })
 
-  it('livro com menos de cinco neurônios, ou sem vetor, ainda vira ilha', () => {
+  it('livro com menos de cinco pensamentos, ou sem vetor, ainda vira ilha', () => {
     const pequeno = [no('a', 'x', 0, 0.1), { id: 'b', livroId: 'x', embedding: null }]
     const mapa = mapaCompleto(pequeno, new Set(['x']), null)
     expect(Object.keys(mapa.ilhas.x!.pontos).sort()).toEqual(['a', 'b'])
     dentroDaCosta(mapa)
   })
 
-  it('pontoNoMapa soma o centro da ilha ao lugar do neurônio nela', () => {
+  it('pontoNoMapa soma o centro da ilha ao lugar do pensamento nela', () => {
     const ilha = MAPA.ilhas.psi!
     const p = ilha.pontos['psi-0']!
     expect(pontoNoMapa(MAPA, 'psi-0')).toEqual({ x: ilha.centro.x + p.x, y: ilha.centro.y + p.y })
@@ -127,7 +127,7 @@ describe('atualizarMapa', () => {
     expect(atualizarMapa(ANTES, palacio(), LIVROS, null)).toEqual(ANTES)
   })
 
-  it('um neurônio novo entra perto dos parecidos e não mexe em mais ninguém', () => {
+  it('um pensamento novo entra perto dos parecidos e não mexe em mais ninguém', () => {
     const novo = no('psi-novo', 'psi', 0, 0.05, 1)
     const depois = atualizarMapa(ANTES, [...palacio(), novo], LIVROS, null)
 
@@ -146,7 +146,7 @@ describe('atualizarMapa', () => {
     dentroDaCosta(depois)
   })
 
-  it('um livro que ganha o primeiro neurônio vira ilha perto da mais parecida, sem mover as outras', () => {
+  it('um livro que ganha o primeiro pensamento vira ilha perto da mais parecida, sem mover as outras', () => {
     const novos = [0, 1, 2].map((i) => no(`arte-${String(i)}`, 'arte', 9, 0.1 * i, 13))
     const livros = new Set([...LIVROS, 'arte'])
     const depois = atualizarMapa(ANTES, [...palacio(), ...novos], livros, null)
@@ -189,7 +189,7 @@ describe('atualizarMapa', () => {
         b: { ...b, centro: { x: a.raio + b.raio + FOLGA_ENTRE_ILHAS + 1, y: 0 } },
       },
     }
-    // "a" ganha 40 neurônios: o raio cresce muito além do que cabia.
+    // "a" ganha 40 pensamentos: o raio cresce muito além do que cabia.
     const muitos = Array.from({ length: 40 }, (_, i) =>
       no(`a-${String(i + 1)}`, 'a', 0, 0.02 * i, 1 + (i % 5)),
     )
@@ -233,7 +233,7 @@ describe('a mão da pessoa', () => {
   const distancia = (p: { x: number; y: number }, q: { x: number; y: number }): number =>
     Math.hypot(p.x - q.x, p.y - q.y)
 
-  it('a ilha solta no mar fica exatamente ali, com os neurônios dela', () => {
+  it('a ilha solta no mar fica exatamente ali, com os pensamentos dela', () => {
     const depois = moverIlha(MAPA, 'b', { x: 0, y: 400 })
     expect(depois.ilhas.b?.centro).toEqual({ x: 0, y: 400 })
     expect(depois.ilhas.b?.pontos).toEqual(MAPA.ilhas.b?.pontos)
@@ -251,7 +251,7 @@ describe('a mão da pessoa', () => {
     expect(depois.ilhas.a).toEqual(MAPA.ilhas.a)
   })
 
-  it('o neurônio vai para onde foi solto, dentro da ilha dele', () => {
+  it('o pensamento vai para onde foi solto, dentro da ilha dele', () => {
     const depois = moverPontoNoMapa(MAPA, 'a2', { x: -30, y: 20 })
     expect(depois.ilhas.a?.pontos.a2).toEqual({ x: -30, y: 20 })
     expect(depois.ilhas.a?.pontos.a1).toEqual({ x: 0, y: 0 })
@@ -271,7 +271,7 @@ describe('a mão da pessoa', () => {
     expect(Math.hypot(p.x, p.y)).toBeLessThanOrEqual(80 - MARGEM_DA_COSTA + 1e-6)
   })
 
-  it('ilha ou neurônio que não existe deixa o mapa como estava', () => {
+  it('ilha ou pensamento que não existe deixa o mapa como estava', () => {
     expect(moverIlha(MAPA, 'nenhuma', { x: 1, y: 1 })).toBe(MAPA)
     expect(moverPontoNoMapa(MAPA, 'nenhum', { x: 1, y: 1 })).toBe(MAPA)
   })
@@ -285,19 +285,19 @@ describe('mapaEmDia', () => {
     expect(atualizarMapa(ANTES, palacio(), LIVROS, null)).toEqual(ANTES)
   })
 
-  it('sem mapa, ou com neurônio sem lugar, não está em dia', () => {
+  it('sem mapa, ou com pensamento sem lugar, não está em dia', () => {
     expect(mapaEmDia(MAPA_VAZIO, palacio(), LIVROS)).toBe(false)
     const novo = no('psi-novo', 'psi', 0, 0.05, 1)
     expect(mapaEmDia(ANTES, [...palacio(), novo], LIVROS)).toBe(false)
   })
 
-  it('ilha de um livro que esvaziou, ou neurônio que saiu, não está em dia', () => {
+  it('ilha de um livro que esvaziou, ou pensamento que saiu, não está em dia', () => {
     const [, ...semUm] = palacio()
     expect(mapaEmDia(ANTES, semUm, LIVROS)).toBe(false)
     expect(mapaEmDia(ANTES, palacio(), new Set([...LIVROS].slice(1)))).toBe(false)
   })
 
-  it('palácio sem neurônio e sem ilha também está em dia', () => {
+  it('palácio sem pensamento e sem ilha também está em dia', () => {
     expect(mapaEmDia(MAPA_VAZIO, [], LIVROS)).toBe(true)
   })
 })

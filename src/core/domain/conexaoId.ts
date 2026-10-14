@@ -14,7 +14,7 @@ export function ordenarPar(x: Id, y: Id): [Id, Id] {
   return x < y ? [x, y] : [y, x]
 }
 
-/** True se a aresta toca o neurônio informado. */
+/** True se a aresta toca o pensamento informado. */
 export function tocaNeuronio(c: Conexao, neuronioId: Id): boolean {
   return c.aId === neuronioId || c.bId === neuronioId
 }

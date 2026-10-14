@@ -70,8 +70,8 @@ import {
  * saía na ordem da chave primária — um uuid v4, ou seja, ordem nenhuma.
  *
  * Por `createdAt`, e não pelo `updatedAt` que é indexado: corrigir um typo não
- * pode fazer o neurônio pular para o topo do livro. O id desempata para dois
- * neurônios criados no mesmo milissegundo não trocarem de lugar entre sessões
+ * pode fazer o pensamento pular para o topo do livro. O id desempata para dois
+ * pensamentos criados no mesmo milissegundo não trocarem de lugar entre sessões
  * — a mesma promessa de "a mobília não anda" que a estante e a Rede já fazem.
  * Vale igual para os anexos de uma pasta.
  */
@@ -542,7 +542,7 @@ export function createDexieRepo(db: PalacioDB = defaultDb): PalacioRepo {
       const forasteira = validadas.find((c) => c.aId !== neuronioId && c.bId !== neuronioId)
       if (forasteira) {
         throw new Error(
-          `replaceConexoesDe(${neuronioId}) recebeu a aresta ${forasteira.id}, que não toca esse neurônio`,
+          `replaceConexoesDe(${neuronioId}) recebeu a aresta ${forasteira.id}, que não toca esse pensamento`,
         )
       }
 
@@ -725,11 +725,11 @@ export function createDexieRepo(db: PalacioDB = defaultDb): PalacioRepo {
       const conexoes = parsed.conexoes.map(conexaoFromSnapshot)
 
       const livroIds = new Set(livros.map((l) => l.id))
-      // No porto (sem livro) não é órfão: é um neurônio esperando escolha.
+      // No porto (sem livro) não é órfão: é um pensamento esperando escolha.
       const orfao = neuronios.find((n) => n.livroId !== null && !livroIds.has(n.livroId))
       if (orfao) {
         throw new Error(
-          `snapshot inválido: neurônio ${orfao.id} aponta para o livro inexistente ${orfao.livroId}`,
+          `snapshot inválido: pensamento ${orfao.id} aponta para o livro inexistente ${orfao.livroId}`,
         )
       }
 
@@ -737,7 +737,7 @@ export function createDexieRepo(db: PalacioDB = defaultDb): PalacioRepo {
       const solta = conexoes.find((c) => !neuronioIds.has(c.aId) || !neuronioIds.has(c.bId))
       if (solta) {
         throw new Error(
-          `snapshot inválido: conexão ${solta.id} aponta para um neurônio inexistente`,
+          `snapshot inválido: conexão ${solta.id} aponta para um pensamento inexistente`,
         )
       }
 

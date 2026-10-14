@@ -31,15 +31,15 @@ import { ponteEm, pontesVisiveis, type PonteAgrupada } from './pontes'
  * A tela do Mapa: o canvas do arquipélago, com a mesma câmera e o mesmo dedo
  * da Rede (`useCamera`). Sem laço de animação: pinta quando algo muda, e só.
  *
- * A mão da pessoa (02/10/2026): o neurônio se arrasta como na Rede — o dedo
+ * A mão da pessoa (02/10/2026): o pensamento se arrasta como na Rede — o dedo
  * desce nele e leva —, mas não sai da ilha dele. A ilha, que é grande e onde o
  * dedo também navega, se **segura** primeiro (como o livro na estante) e aí
- * anda, com todos os neurônios. Enquanto está na mão, o lugar dela é só da
+ * anda, com todos os pensamentos. Enquanto está na mão, o lugar dela é só da
  * tela; ao soltar, o núcleo decide o lugar final (`moverIlha`,
  * `moverPontoNoMapa`) e ela desliza até lá. Nada mais se mexe.
  *
  * Cumpre o mesmo `ControleDaTela` da Rede: a página trata os dois modos igual
- * (a busca centraliza, o neurônio recém-criado é revelado).
+ * (a busca centraliza, o pensamento recém-criado é revelado).
  */
 
 /** As ilhas são grandes: de perto, uma ocupa a tela; de longe, o arquipélago todo cabe. */
@@ -64,7 +64,7 @@ const ALTURA_DO_NOME_DA_ILHA = 40
 /** O deslizar do lugar onde o dedo soltou até o lugar que o núcleo decidiu. */
 const DURACAO_DO_POUSO = 260
 
-/** Uma ilha ou um neurônio na mão da pessoa — `agora` é onde está, no mundo. */
+/** Uma ilha ou um pensamento na mão da pessoa — `agora` é onde está, no mundo. */
 type NaMao =
   | { tipo: 'neuronio'; id: Id; livroId: Id; origem: Ponto; dedo: Ponto; agora: Ponto }
   | { tipo: 'ilha'; livroId: Id; origem: Ponto; dedo: Ponto; agora: Ponto }
@@ -132,7 +132,7 @@ interface Props {
   onTocarPonte: (ponte: PonteAgrupada) => void
   /** Soltou uma ilha: o mapa como ficou, ou `null` se o motor não conseguiu. */
   onMoverIlha: (livroId: Id, centro: Ponto) => Promise<MapaDoPalacio | null>
-  /** Soltou um neurônio: idem. */
+  /** Soltou um pensamento: idem. */
   onMoverNeuronio: (id: Id, ponto: Ponto) => Promise<MapaDoPalacio | null>
   controle?: RefObject<ControleDaTela | null>
   /** Estável entre renders (constante de módulo): enquadrar depende dela. */
@@ -229,7 +229,7 @@ export function TelaDoMapa({
     pintar()
   }, [enquadramento, pintar])
 
-  /** A câmera centrada no neurônio, sem afastar se já estiver mais perto. */
+  /** A câmera centrada no pensamento, sem afastar se já estiver mais perto. */
   const cameraEm = useCallback(
     (id: Id): Camera | null => {
       const p = cenaRef.current.absolutos.get(id)
@@ -266,7 +266,7 @@ export function TelaDoMapa({
       }
     },
     aoDescer(mundo) {
-      // O neurônio se pega na hora, como na Rede — mas só de perto: na visão
+      // O pensamento se pega na hora, como na Rede — mas só de perto: na visão
       // inicial o dedo navega, e segurar a ilha é que a move.
       if (camera.current.escala < ESCALA_DE_PERTO) return false
       const tocado = pontoTocavelEm(mundo)
@@ -322,7 +322,7 @@ export function TelaDoMapa({
     aoSoltarTomado(_mundo, arrastou) {
       const mao = naMao.current
       if (!mao) return
-      // Sem arrastar: o neurônio vira um toque (segue para `aoTocar`), e a ilha
+      // Sem arrastar: o pensamento vira um toque (segue para `aoTocar`), e a ilha
       // segurada volta para o mesmo lugar.
       if (!arrastou) {
         naMao.current = null
@@ -464,7 +464,7 @@ export function TelaDoMapa({
     if (alvo) levarAte(alvo, DURACAO_DA_APROXIMACAO)
   }, [enquadramento, levarAte])
 
-  /** O neurônio que acabou de nascer: a câmera vai até ele, e ele fica tocado. */
+  /** O pensamento que acabou de nascer: a câmera vai até ele, e ele fica tocado. */
   const revelar = useCallback(
     (id: Id) => {
       const alvo = cameraEm(id)

@@ -63,7 +63,7 @@ function neuronio(
   return {
     id,
     livroId,
-    titulo: `neurônio ${id}`,
+    titulo: `pensamento ${id}`,
     conteudo: 'conteúdo de teste',
     embedding,
     estado: null,
@@ -126,7 +126,7 @@ describe('DexieRepo', () => {
     ).rejects.toThrow()
   })
 
-  it('filtra neurônios por livro', async () => {
+  it('filtra pensamentos por livro', async () => {
     await repo.upsertLivro(livro('l1', 'Psicologia'))
     await repo.upsertLivro(livro('l2', 'Música'))
     await repo.upsertNeuronio(neuronio('n1', 'l1'))
@@ -136,7 +136,7 @@ describe('DexieRepo', () => {
     expect(await repo.listNeuronios()).toHaveLength(2)
   })
 
-  it('lista neurônios do mais recente para o mais antigo, não na ordem do uuid', async () => {
+  it('lista pensamentos do mais recente para o mais antigo, não na ordem do uuid', async () => {
     await repo.upsertLivro(livro('l1', 'Psicologia'))
     // Fora de ordem de propósito, e com ids cuja ordem alfabética contraria a
     // cronológica: sem ordenação, a lista sairia na ordem da chave primária.
@@ -159,7 +159,7 @@ describe('DexieRepo', () => {
     expect((await repo.listNeuronios()).map((n) => n.id)).toEqual(['b', 'a'])
   })
 
-  it('dois neurônios do mesmo instante não trocam de lugar entre leituras', async () => {
+  it('dois pensamentos do mesmo instante não trocam de lugar entre leituras', async () => {
     await repo.upsertLivro(livro('l1', 'Psicologia'))
     const mesmoInstante = new Date('2026-02-01')
     await repo.upsertNeuronio({ ...neuronio('z', 'l1'), createdAt: mesmoInstante })
@@ -184,7 +184,7 @@ describe('DexieRepo', () => {
     ])
   })
 
-  it('apagar um neurônio leva junto as arestas que o tocavam', async () => {
+  it('apagar um pensamento leva junto as arestas que o tocavam', async () => {
     await repo.upsertLivro(livro('l1', 'Psicologia'))
     for (const id of ['n1', 'n2', 'n3']) await repo.upsertNeuronio(neuronio(id, 'l1'))
     await repo.replaceConexoesDe('n2', [conexao('n1', 'n2'), conexao('n2', 'n3')])
@@ -195,7 +195,7 @@ describe('DexieRepo', () => {
     expect(await repo.listConexoes()).toHaveLength(0)
   })
 
-  it('apagar um livro cascateia para neurônios e arestas', async () => {
+  it('apagar um livro cascateia para pensamentos e arestas', async () => {
     await repo.upsertLivro(livro('l1', 'Psicologia'))
     await repo.upsertLivro(livro('l2', 'Música'))
     await repo.upsertNeuronio(neuronio('n1', 'l1'))
@@ -210,7 +210,7 @@ describe('DexieRepo', () => {
     expect(await repo.listConexoes()).toHaveLength(0)
   })
 
-  it('replaceConexoesDe troca só a vizinhança daquele neurônio', async () => {
+  it('replaceConexoesDe troca só a vizinhança daquele pensamento', async () => {
     await repo.upsertLivro(livro('l1', 'Psicologia'))
     for (const id of ['n1', 'n2', 'n3', 'n4']) await repo.upsertNeuronio(neuronio(id, 'l1'))
 
@@ -298,7 +298,7 @@ describe('DexieRepo', () => {
     expect(await repo.getPerfil()).toBeUndefined()
   })
 
-  it('recusa aresta que não toca o neurônio informado', async () => {
+  it('recusa aresta que não toca o pensamento informado', async () => {
     await expect(repo.replaceConexoesDe('n1', [conexao('n2', 'n3')])).rejects.toThrow(/não toca/)
   })
 
@@ -329,7 +329,7 @@ describe('DexieRepo', () => {
     expect((await outro.listConexoes())[0]?.cross).toBe(true)
   })
 
-  it('recusa snapshot com neurônio apontando para livro inexistente', async () => {
+  it('recusa snapshot com pensamento apontando para livro inexistente', async () => {
     const snapshot = await repo.exportAll()
     snapshot.neuronios.push({
       id: 'n9',
@@ -346,7 +346,7 @@ describe('DexieRepo', () => {
 })
 
 describe('porto', () => {
-  it('guarda e lista um neurônio sem livro', async () => {
+  it('guarda e lista um pensamento sem livro', async () => {
     await repo.upsertNeuronio(neuronio('n1', null))
     const [lido] = await repo.listNeuronios()
     expect(lido?.livroId).toBeNull()
@@ -361,7 +361,7 @@ describe('porto', () => {
     expect((await repo.listNeuronios()).map((n) => n.id)).toEqual(['n2'])
   })
 
-  it('o backup leva e traz o neurônio no porto, e ele não conta como órfão', async () => {
+  it('o backup leva e traz o pensamento no porto, e ele não conta como órfão', async () => {
     await repo.upsertLivro(livro('l1', 'Psicologia'))
     await repo.upsertNeuronio(neuronio('n1', 'l1'))
     await repo.upsertNeuronio(neuronio('n2', null))
@@ -1408,18 +1408,18 @@ describe('a imagem do resultado de uma ideia', () => {
     await repo.upsertLivro({ ...livro('l1', 'Ideias'), executavel: true })
   })
 
-  it('grava a imagem com o neurônio, e os bytes saem à parte da lista de neurônios', async () => {
+  it('grava a imagem com o pensamento, e os bytes saem à parte da lista de pensamentos', async () => {
     await repo.upsertNeuronio(feita(), bytes)
 
     expect((await repo.getNeuronio('n1'))?.resultadoImagem).toEqual(imagem)
     expect(await repo.getResultado('n1')).toEqual(bytes)
-    // Listar neurônios nunca arrasta os bytes.
+    // Listar pensamentos nunca arrasta os bytes.
     expect(JSON.stringify(Object.keys((await repo.listNeuronios())[0] ?? {}))).not.toMatch(
       /miniatura/,
     )
   })
 
-  it('regravar o neurônio sem os bytes mantém a imagem; com bytes novos, troca', async () => {
+  it('regravar o pensamento sem os bytes mantém a imagem; com bytes novos, troca', async () => {
     await repo.upsertNeuronio(feita(), bytes)
     await repo.upsertNeuronio({ ...feita(), titulo: 'outro título' })
     expect(await repo.getResultado('n1')).toEqual(bytes)
@@ -1448,7 +1448,7 @@ describe('a imagem do resultado de uma ideia', () => {
     expect(await repo.getResultado('n1')).toBeUndefined()
   })
 
-  it('apagar o neurônio apaga a imagem, e apagar o livro apaga a de todas as ideias dele', async () => {
+  it('apagar o pensamento apaga a imagem, e apagar o livro apaga a de todas as ideias dele', async () => {
     await repo.upsertNeuronio(feita('n1'), bytes)
     await repo.deleteNeuronio('n1')
     expect(await repo.getResultado('n1')).toBeUndefined()

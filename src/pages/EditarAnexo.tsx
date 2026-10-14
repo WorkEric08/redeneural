@@ -50,7 +50,7 @@ export default function EditarAnexo() {
             void editarAnexo(anexo.id, legenda, url, imagem).then((deuCerto) => {
               if (!deuCerto) return
               // A tela do item já está logo atrás: voltar para ela, e não
-              // empilhar outra igual — o mesmo do editar neurônio.
+              // empilhar outra igual — o mesmo do editar pensamento.
               if (key === 'default') void navegar(`/anexo/${anexo.id}`, { replace: true })
               else void navegar(-1)
             })

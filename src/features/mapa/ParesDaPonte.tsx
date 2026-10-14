@@ -15,8 +15,8 @@ interface Props {
 }
 
 /**
- * O que uma ponte do Mapa junta: os pares de neurônios, um de cada livro, do
- * mais parecido para o menos. Cada nome abre o neurônio — a ponte agrupada é
+ * O que uma ponte do Mapa junta: os pares de pensamentos, um de cada livro, do
+ * mais parecido para o menos. Cada nome abre o pensamento — a ponte agrupada é
  * o resumo, e aqui está o que ela resume.
  */
 export function ParesDaPonte({ ponte, livros, neuronios }: Props) {

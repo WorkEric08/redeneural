@@ -526,7 +526,7 @@ describe('livros deitados e pilhas', () => {
     expect(na(132)).toBe(95)
   })
 
-  it('sem comprimento escolhido, a altura automática (neurônios) decide', () => {
+  it('sem comprimento escolhido, a altura automática (pensamentos) decide', () => {
     const item = deitado('a', 3, 0, 24, null)
     const [p] = pilhas(montarPrateleiras([item], [], 1, undefined, [], 100)[0]!)
     // altura automática 0,5 → 63 + 0,5 × 30,5 = 78,25% de 100 px.

@@ -196,14 +196,17 @@ export default function Estante() {
               (Dial) mora fixo no canto inferior direito, e um botão
               colocado depois de um `flex-1` acaba empurrado até lá —
               ficaria atrás dele, inalcançável. */}
-          <Link
-            to="/busca"
-            aria-label="Buscar"
-            className={botao({ tipo: 'fantasma', tamanho: 'icone' })}
-          >
-            <Search size={20} aria-hidden />
-          </Link>
-          {/* Só existe enquanto algum neurônio espera livro: é o único lugar da
+          {/* No Padrão a busca mora no cabeçalho, e a linha de baixo começa pelas quantidades. */}
+          {!padrao && (
+            <Link
+              to="/busca"
+              aria-label="Buscar"
+              className={botao({ tipo: 'fantasma', tamanho: 'icone' })}
+            >
+              <Search size={20} aria-hidden />
+            </Link>
+          )}
+          {/* Só existe enquanto algum pensamento espera livro: é o único lugar da
               estante de onde se vê que o porto não está vazio. */}
           {esperandoNoPorto > 0 && (
             <Link to="/porto" className={botao({ tipo: 'secundario', tamanho: 'pequeno' })}>
@@ -211,9 +214,9 @@ export default function Estante() {
               {String(esperandoNoPorto)} no porto
             </Link>
           )}
-          <p className="text-poeira min-w-0 flex-1 truncate text-xs">
+          <p className="text-poeira pd-contagem min-w-0 flex-1 truncate text-xs">
             {carregado
-              ? `${contar(livros.length, 'livro', 'livros')} · ${contar(neuronios.length, 'neurônio', 'neurônios')} · ${contar(conexoes.length, 'conexão', 'conexões')}`
+              ? `${contar(livros.length, 'livro', 'livros')} · ${contar(neuronios.length, 'pensamento', 'pensamentos')} · ${contar(conexoes.length, 'conexão', 'conexões')}`
               : 'Abrindo o palácio…'}
           </p>
         </div>

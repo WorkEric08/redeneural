@@ -45,7 +45,7 @@ describe('livroAutomatico', () => {
     expect(livroAutomatico(alvo, nos, perfil, TODOS)).toBe('psi')
   })
 
-  it('palácio pequeno: com poucos neurônios o mais parecido já decide', () => {
+  it('palácio pequeno: com poucos pensamentos o mais parecido já decide', () => {
     const pequeno = PALACIO.slice(0, 2)
     expect(livroAutomatico(novo({ 0: 1 }), pequeno, perfilDoPalacio(pequeno), TODOS)).toBe('psi')
   })
@@ -57,11 +57,11 @@ describe('livroAutomatico', () => {
     expect(livroAutomatico(novo({ 4: 1, 5: 0.1 }), dois, perfil, TODOS)).toBe('prog')
   })
 
-  it('palácio sem neurônio nenhum para votar: o primeiro livro da estante', () => {
+  it('palácio sem pensamento nenhum para votar: o primeiro livro da estante', () => {
     expect(livroAutomatico(novo({ 0: 1 }), [], PERFIL, ['mus', 'psi'])).toBe('mus')
   })
 
-  it('o próprio neurônio não vota em si mesmo', () => {
+  it('o próprio pensamento não vota em si mesmo', () => {
     const comEle = [...PALACIO, { ...novo({ 8: 1 }), livroId: 'mus' }]
     expect(livroAutomatico(novo({ 4: 1, 5: 0.1 }), comEle, PERFIL, TODOS)).toBe('prog')
   })
@@ -73,7 +73,7 @@ describe('livroAutomatico', () => {
     expect(escolhido).not.toBe('prog')
   })
 
-  it('neurônio no porto não vota', () => {
+  it('pensamento no porto não vota', () => {
     const comPorto = PALACIO.map((n) => (n.livroId === 'prog' ? { ...n, livroId: null } : n))
     const escolhido = livroAutomatico(novo({ 4: 1, 5: 0.1 }), comPorto, PERFIL, TODOS)
     expect(escolhido).not.toBeNull()

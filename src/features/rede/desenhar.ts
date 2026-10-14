@@ -37,7 +37,7 @@ export interface CoresDaRede {
   /** A névoa das adormecidas. */
   nevoa: string
   mistura: GlobalCompositeOperation
-  /** A fonte do nome do neurônio escolhido (ver `lerFonteDoCanvas`). */
+  /** A fonte do nome do pensamento escolhido (ver `lerFonteDoCanvas`). */
   fonteTitulo: string
   /** O tema Padrão: pontos de tinta sem o toque do livro, o alvo no escolhido e etiquetas em retângulo. */
   padrao: boolean
@@ -57,7 +57,7 @@ export interface Camera {
 }
 
 export interface Cena {
-  /** Onde cada neurônio está — organizado por significado, gravado (`@/core/motor/redeLayout`). */
+  /** Onde cada pensamento está — organizado por significado, gravado (`@/core/motor/redeLayout`). */
   posicoes: ReadonlyMap<Id, Ponto>
   livros: readonly Livro[]
   neuronios: readonly NeuronioNaTela[]
@@ -67,7 +67,7 @@ export interface Cena {
   livroEmFoco: Id | null
   /** Só as pontes: some com tudo que não atravessa livro. */
   soAsPontes: boolean
-  /** Tocar um neurônio acende ele e a vizinhança dele; o resto apaga. */
+  /** Tocar um pensamento acende ele e a vizinhança dele; o resto apaga. */
   selecionado: Id | null
   /** Os itens das pastas de acervo que se prenderam a algum conceito. */
   satelites: readonly SateliteDaCena[]
@@ -95,7 +95,7 @@ const RAIO_DA_NEVOA_PX = 13
 const FAIXAS = 6
 
 /**
- * O raio de um neurônio **em pixels de tela**, e não do mundo: numa
+ * O raio de um pensamento **em pixels de tela**, e não do mundo: numa
  * constelação o ponto continua ponto quando você aproxima. O hub cresce um
  * pouco — o motor já o faz crescer —, mas nunca vira bola.
  */
@@ -126,7 +126,7 @@ function montarChecagens(cena: Cena) {
   const doAnexo = tocado ? new Set<Id>([tocado.donoId, ...tocado.outrosIds]) : null
   const livroDe = new Map(cena.neuronios.map((n) => [n.id, n.livroId]))
 
-  // Um neurônio no porto não é de livro nenhum: com um livro em foco, apaga.
+  // Um pensamento no porto não é de livro nenhum: com um livro em foco, apaga.
   const apagadoPeloLivro = (livroId: Id | null | undefined): boolean =>
     cena.livroEmFoco !== null && cena.livroEmFoco !== livroId
 
@@ -527,8 +527,8 @@ function desenharSatelites(
     }
   }
 
-  // O mesmo tratamento do ponto de neurônio: o claro da noite (ou a tinta do
-  // dia), com o toque da cor da pasta por cima, como o neurônio tem o do livro.
+  // O mesmo tratamento do ponto de pensamento: o claro da noite (ou a tinta do
+  // dia), com o toque da cor da pasta por cima, como o pensamento tem o do livro.
   for (const { s, p, escurecer } of desenhados) {
     forma(s, p)
     ctx.fillStyle = cena.cores.no
@@ -558,10 +558,10 @@ function desenharSatelites(
 const FONTE_DO_ROTULO = 7
 /**
  * Zoom mínimo para os nomes aparecerem — um limiar só, igual para todo
- * neurônio (pedido do usuário, 16/09/2026: antes um hub aparecia bem antes de
+ * pensamento (pedido do usuário, 16/09/2026: antes um hub aparecia bem antes de
  * uma folha, porque o limiar caía com o grau; agora todos cruzam a mesma
  * linha na mesma pintura). O mesmo valor de `ESCALA_DE_FOCO` em `Tela.tsx` —
- * focar um neurônio (busca ou duplo toque) já tem que chegar aqui.
+ * focar um pensamento (busca ou duplo toque) já tem que chegar aqui.
  */
 const ESCALA_MINIMA_DOS_ROTULOS = ESCALA_QUE_REVELA
 /** Não sobrecarrega a pintura, mesmo num aglomerado com centenas de nós à mostra. */
@@ -628,7 +628,7 @@ function desenharRotulosAmbiente(
 
 /**
  * A etiqueta do selecionado é desenhada fora da câmera, em pixels de tela: nome
- * de neurônio não pode encolher junto com o zoom.
+ * de pensamento não pode encolher junto com o zoom.
  */
 function desenharEtiqueta(
   ctx: CanvasRenderingContext2D,

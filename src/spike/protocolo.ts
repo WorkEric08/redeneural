@@ -82,7 +82,7 @@ export interface Ambiente {
 }
 
 export interface Cenario {
-  /** Criar um neurônio: 1 embedding + candK pares no reranker. */
+  /** Criar um pensamento: 1 embedding + candK pares no reranker. */
   criarNeuronioMs: number
   /** Reprocessar tudo num palácio deste tamanho. */
   tamanhoPalacio: number
@@ -96,7 +96,7 @@ export interface Memoria {
 }
 
 /**
- * O grafo que os modelos de verdade produzem sobre os neurônios do seed.
+ * O grafo que os modelos de verdade produzem sobre os pensamentos do seed.
  *
  * Velocidade não decide sozinha: se as conexões forem ruins, o reranker não vale
  * o custo nem que fosse instantâneo. Isto roda o núcleo da Fase 2 com os

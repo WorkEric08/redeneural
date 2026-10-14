@@ -1,5 +1,5 @@
 /**
- * O neurônio que ainda espera o modelo. Um ponto que pulsa, e não só a palavra:
+ * O pensamento que ainda espera o modelo. Um ponto que pulsa, e não só a palavra:
  * "processando" parado no meio de uma lista lê como estado permanente.
  *
  * Contorno, e não fundo de realce: Silver Lake Blue sobre o realce dá 3,3:1 à

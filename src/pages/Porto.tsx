@@ -13,7 +13,7 @@ import { contar } from '@/lib/plural'
 import { usePalacio } from '@/store/palacio'
 
 /**
- * O porto: os neurônios que o palácio não soube onde guardar, esperando a
+ * O porto: os pensamentos que o palácio não soube onde guardar, esperando a
  * pessoa escolher. Nenhum se perde — só não tem livro ainda. "Guardar em…"
  * abre a mesma pergunta da tela de escrever (`?guardar=`, ver GuardarNoPorto).
  */
@@ -49,10 +49,10 @@ export default function Porto() {
               carregado && esperando.length > 0
                 ? contar(
                     esperando.length,
-                    'neurônio esperando um livro',
-                    'neurônios esperando um livro',
+                    'pensamento esperando um livro',
+                    'pensamentos esperando um livro',
                   )
-                : 'Nenhum neurônio esperando'
+                : 'Nenhum pensamento esperando'
             }
           />
         )}
@@ -63,7 +63,7 @@ export default function Porto() {
             <EstadoVazio
               icone={<Check size={28} aria-hidden />}
               titulo="Tudo guardado"
-              texto="Quando o palácio não achar um livro para um neurônio, ele espera aqui."
+              texto="Quando o palácio não achar um livro para um pensamento, ele espera aqui."
             />
           ) : (
             <div className="cartao flex flex-col items-center gap-4 px-6 py-10 text-center">
@@ -73,7 +73,7 @@ export default function Porto() {
               <div className="flex flex-col gap-1">
                 <p className="font-titulo text-lg font-semibold">Nada no porto</p>
                 <p className="text-poeira text-sm">
-                  Quando o palácio não souber onde guardar um neurônio, ele espera aqui.
+                  Quando o palácio não souber onde guardar um pensamento, ele espera aqui.
                 </p>
               </div>
             </div>
@@ -82,7 +82,11 @@ export default function Porto() {
           <>
             {!padrao && (
               <p className="text-poeira px-1 pb-4 text-sm">
-                {contar(esperando.length, 'neurônio esperando livro', 'neurônios esperando livro')}
+                {contar(
+                  esperando.length,
+                  'pensamento esperando livro',
+                  'pensamentos esperando livro',
+                )}
               </p>
             )}
             {padrao && (

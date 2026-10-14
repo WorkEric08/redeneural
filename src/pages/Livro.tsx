@@ -24,13 +24,13 @@ import { contar } from '@/lib/plural'
 import { usePalacio } from '@/store/palacio'
 
 /**
- * Um livro aberto: os neurônios dele e os fios que saem de cada um.
+ * Um livro aberto: os pensamentos dele e os fios que saem de cada um.
  *
- * Cada neurônio é um cartão com duas setas, de dois toques diferentes:
+ * Cada pensamento é um cartão com duas setas, de dois toques diferentes:
  * `ChevronDown` expande os fios ali mesmo (ficam escondidos até o toque —
  * pedido do usuário, 17/09/2026; antes ficavam sempre abertos, e uma lista
- * de 10+ fios por neurônio engolia a tela), e `ChevronRight`, sempre visível,
- * abre a tela cheia do neurônio — é como se lê o texto inteiro, não só a
+ * de 10+ fios por pensamento engolia a tela), e `ChevronRight`, sempre visível,
+ * abre a tela cheia do pensamento — é como se lê o texto inteiro, não só a
  * prévia de duas linhas daqui. O fio de ponte leva o nome do livro do outro
  * lado: sem isso, "atravessa livros" não quer dizer nada para quem está lendo.
  *
@@ -61,7 +61,7 @@ export default function Livro() {
     [neuronios, livros, conexoes],
   )
   // Cada cartão abre e fecha por conta própria — ver os fios de dois
-  // neurônios ao mesmo tempo, comparando, é um uso legítimo desta tela.
+  // pensamentos ao mesmo tempo, comparando, é um uso legítimo desta tela.
   const [abertos, setAbertos] = useState<ReadonlySet<string>>(new Set())
   // Calculado na hora de mostrar, com o relógio de quando a tela abriu.
   const [agora] = useState(() => new Date())
@@ -105,7 +105,7 @@ export default function Livro() {
     )
   }
 
-  // Uma pasta de acervo abre como galeria, não como lista de neurônios.
+  // Uma pasta de acervo abre como galeria, não como lista de pensamentos.
   if (livro.tipo === 'acervo') return <Pasta livro={livro} />
 
   const saindo = meus.reduce(
@@ -124,7 +124,7 @@ export default function Livro() {
   function cartao(n: NeuronioNaTela, estado: EstadoDaIdeia | null, adormecida = false) {
     const aberto = abertos.has(n.id)
 
-    // O Padrão (docs/estilos-visuais-locus.md, "Livro" e "Livro executável"): cada neurônio é um
+    // O Padrão (docs/estilos-visuais-locus.md, "Livro" e "Livro executável"): cada pensamento é um
     // cartão com o texto à esquerda e dois botões redondos à direita — a seta dos fios, solta, e
     // a de abrir, num círculo de campo. Numa ideia executável a linha vira uma linha de lista,
     // sem cartão, com o círculo do andamento à frente.
@@ -250,7 +250,7 @@ export default function Livro() {
 
           {/* A segunda seta, sempre à mostra — não escondida atrás
                 de expandir: é o caminho direto para ler o texto
-                inteiro na tela do neurônio (pedido do usuário,
+                inteiro na tela do pensamento (pedido do usuário,
                 17/09/2026). Alvo de toque à parte do botão de
                 expandir, para os dois gestos não disputarem o dedo. */}
           <Link
@@ -323,11 +323,11 @@ export default function Livro() {
             rotulo="Livro executável"
             titulo={livro.titulo}
             cor={livro.cor}
-            sub={`${contar(meus.length, 'neurônio', 'neurônios')}${fazendo > 0 ? ` · ${String(fazendo)} fazendo` : ''}`}
+            sub={`${contar(meus.length, 'pensamento', 'pensamentos')}${fazendo > 0 ? ` · ${String(fazendo)} fazendo` : ''}`}
           />
         )}
         <p className="pd-sub text-poeira px-1 pb-4 text-sm" hidden={comBloco}>
-          {contar(meus.length, 'neurônio', 'neurônios')}
+          {contar(meus.length, 'pensamento', 'pensamentos')}
           {saindo > 0 && (
             <span className="text-ponte brilho-ponte-texto-sm">
               {' '}
@@ -346,11 +346,11 @@ export default function Livro() {
               <p className="text-poeira text-sm">
                 {livro.executavel
                   ? 'Toda ideia que você escrever aqui começa em “Para fazer”.'
-                  : 'Todo conceito que você escrever aqui vira um neurônio.'}
+                  : 'Todo conceito que você escrever aqui vira um pensamento.'}
               </p>
             </div>
             <Link to={`/novo?livro=${livro.id}`} className={botao({ tipo: 'primario' })}>
-              Escrever o primeiro neurônio
+              Escrever o primeiro pensamento
             </Link>
           </div>
         ) : livro.executavel ? (

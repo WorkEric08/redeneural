@@ -4,7 +4,7 @@ import type { NoDoGrafo, PerfilDoPalacio } from './grafo'
 import { centralizar, produtoInterno } from './vetores'
 
 /**
- * Quantos desvios-padrão acima do **fundo** do palácio um neurônio precisa
+ * Quantos desvios-padrão acima do **fundo** do palácio um pensamento precisa
  * ficar, para aquela consulta, para entrar no resultado.
  *
  * Relativo à consulta, e não um cosseno fixo, porque um cosseno fixo não
@@ -18,7 +18,7 @@ import { centralizar, produtoInterno } from './vetores'
  * fica perto do pelotão.
  *
  * 3,5 é onde as cinco consultas sem resposta pararam de devolver qualquer
- * coisa, tanto no seed (9 neurônios) quanto nas 33 notas, mantendo o primeiro
+ * coisa, tanto no seed (9 pensamentos) quanto nas 33 notas, mantendo o primeiro
  * colocado de quase toda consulta com resposta.
  */
 export const DESTAQUE_MINIMO_DA_BUSCA = 3.5
@@ -29,7 +29,7 @@ export const MAXIMO_DE_RESULTADOS_DA_BUSCA = 20
  * A régua do destaque é medida só sobre os 80% menos parecidos com a consulta.
  *
  * Medida sobre o palácio inteiro, um assunto que ocupa uma fatia grande dele
- * puxaria a média e o desvio para cima — e justamente os neurônios desse
+ * puxaria a média e o desvio para cima — e justamente os pensamentos desse
  * assunto deixariam de se destacar: com 2 de 10 batendo, nenhum passava de 2
  * desvios. Os 80% de baixo são o "fundo": o que a consulta certamente não é.
  */
@@ -63,7 +63,7 @@ function passaDoDestaque(cossenos: readonly number[]): (cos: number) => boolean 
 }
 
 /**
- * Os neurônios mais parecidos com a consulta, do mais para o menos parecido.
+ * Os pensamentos mais parecidos com a consulta, do mais para o menos parecido.
  *
  * Ordena pelo cosseno centralizado no perfil congelado — a mesma régua das
  * conexões; o cosseno bruto dá ~0,9 para qualquer par e não ordena nada — e

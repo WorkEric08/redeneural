@@ -16,7 +16,7 @@ export function lerCor(el: HTMLElement, token: string): string {
 }
 
 /**
- * A fonte dos títulos desenhados no canvas (nome de ilha, etiqueta do neurônio escolhido). O
+ * A fonte dos títulos desenhados no canvas (nome de ilha, etiqueta do pensamento escolhido). O
  * clássico usa a serifa do sistema e o versalete nos nomes de ilha, como as cartas de mapa; o
  * tema Padrão (tema-padrao.css) define `--fonte-canvas-titulo` e desliga o versalete.
  */

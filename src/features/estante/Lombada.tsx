@@ -54,7 +54,7 @@ interface Props {
 /**
  * Um livro visto de fora.
  *
- * Por padrão a altura vem da quantidade de neurônios — é a única coisa que a
+ * Por padrão a altura vem da quantidade de pensamentos — é a única coisa que a
  * estante conta sem você abrir nada. `Livro.comprimentoLombada` deixa
  * escolher a altura na mão, abrindo mão desse sinal para aquele livro (ver o
  * comentário em `core/domain/types.ts`). A forma (`Livro.estilo`) e o texto
@@ -123,7 +123,7 @@ export function Lombada({
       aria-label={
         ehPasta
           ? `${item.livro.titulo}, pasta com ${contar(item.anexos, 'item', 'itens')}`
-          : `${item.livro.titulo}, ${contar(item.neuronios, 'neurônio', 'neurônios')}${LEGENDA_DO_ANDAMENTO[item.andamento ?? 'nenhum']}`
+          : `${item.livro.titulo}, ${contar(item.neuronios, 'pensamento', 'pensamentos')}${LEGENDA_DO_ANDAMENTO[item.andamento ?? 'nenhum']}`
       }
       aria-haspopup="dialog"
       {...manipular}

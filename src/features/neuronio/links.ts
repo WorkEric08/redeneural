@@ -1,5 +1,5 @@
 /**
- * Divide o texto de um neurônio em trechos comuns e URLs, para a tela de
+ * Divide o texto de um pensamento em trechos comuns e URLs, para a tela de
  * leitura poder desenhar as URLs como link sem o `conteudo` deixar de ser
  * `string` pura: nada é gravado de volta no texto, só a exibição reconhece o
  * que já está lá.

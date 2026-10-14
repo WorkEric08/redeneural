@@ -16,7 +16,7 @@ interface Props {
 
 /**
  * Os livros de uma folha de escolha: ponto da cor, nome e o `Check` no
- * escolhido. É a mesma no formulário de neurônio e na pergunta do porto — a
+ * escolhido. É a mesma no formulário de pensamento e na pergunta do porto — a
  * pergunta "em que livro?" tem um desenho só no app.
  *
  * Em duas colunas de opções compactas (e não uma lista de linhas altas): com

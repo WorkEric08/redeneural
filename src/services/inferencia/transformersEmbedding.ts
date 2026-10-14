@@ -21,7 +21,7 @@ const PREFIXO = 'query: '
 /**
  * Truncamento simples.
  *
- * Neurônios viraram texto livre e potencialmente longo (um roteiro, um
+ * Pensamentos viraram texto livre e potencialmente longo (um roteiro, um
  * pensamento desenvolvido), mas o e5 tem um limite prático de ~512 tokens e
  * corta o final em silêncio se deixarmos passar disso. Em vez de chunking
  * (fatiar e combinar embeddings — fica para depois, só se sentirmos ideia de
@@ -97,7 +97,7 @@ type Extrator = Awaited<ReturnType<typeof pipeline<'feature-extraction'>>>
 export function criarTransformersEmbedding(opcoes: OpcoesEmbedding = {}): EmbeddingProvider {
   let carregando: Promise<Extrator> | null = null
   // Uma inferência por vez. O Worker atende mensagens em paralelo, e desde a
-  // busca por sentido uma consulta pode chegar enquanto um neurônio está sendo
+  // busca por sentido uma consulta pode chegar enquanto um pensamento está sendo
   // lido — duas chamadas simultâneas na mesma sessão ONNX não são seguras.
   let fila: Promise<unknown> = Promise.resolve()
 

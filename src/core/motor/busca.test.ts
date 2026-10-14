@@ -11,7 +11,7 @@ describe('buscarPorSentido', () => {
     expect(buscarPorSentido(vetor({ 9: 1 }), [], PERFIL)).toEqual([])
   })
 
-  it('acha os neurônios do assunto, do mais para o menos parecido', () => {
+  it('acha os pensamentos do assunto, do mais para o menos parecido', () => {
     // 2 de 10: medido contra o palácio inteiro, o próprio assunto inflaria a
     // régua e nenhum dos dois se destacaria — é o caso que o fundo resolve.
     const achados = buscarPorSentido(vetor({ 9: 1, 10: 0.25 }), PALACIO, PERFIL)
@@ -24,7 +24,7 @@ describe('buscarPorSentido', () => {
   })
 
   it('quem não se destaca do resto do palácio fica de fora', () => {
-    // Parece um pouco com a estrela inteira — nenhum neurônio dela se destaca.
+    // Parece um pouco com a estrela inteira — nenhum pensamento dela se destaca.
     const achados = buscarPorSentido(vetor({ 0: 1 }), PALACIO, PERFIL)
     expect(achados).not.toContain('mus-iso')
     expect(achados).not.toContain('prog-p1')
@@ -45,7 +45,7 @@ describe('buscarPorSentido', () => {
   })
 
   it(`nunca devolve mais que ${String(MAXIMO_DE_RESULTADOS_DA_BUSCA)}`, () => {
-    // 30 neurônios do assunto entre 200: todos se destacam, só 20 voltam.
+    // 30 pensamentos do assunto entre 200: todos se destacam, só 20 voltam.
     const assunto = Array.from({ length: 30 }, (_, i) =>
       no(`a${String(i).padStart(2, '0')}`, 'l', { 0: 1, [1 + (i % 3)]: 0.05 * (i + 1) }),
     )

@@ -56,7 +56,7 @@ function neuronio(id: string, livroId: string): Neuronio {
   return {
     id,
     livroId,
-    titulo: `neurônio ${id}`,
+    titulo: `pensamento ${id}`,
     conteudo: '',
     embedding: null,
     estado: null,
@@ -195,7 +195,7 @@ describe('acervo no repositório', () => {
     expect((await repo.listVinculos()).map((v) => v.id)).toEqual(['a1::n2'])
   })
 
-  it('apagar um livro de conceitos solta os anexos presos aos neurônios dele', async () => {
+  it('apagar um livro de conceitos solta os anexos presos aos pensamentos dele', async () => {
     await repo.upsertAnexo(anexo('a1', 'p1'))
     await repo.replaceTodosVinculos([vinculo('a1', 'n1')])
 

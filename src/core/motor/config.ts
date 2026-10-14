@@ -7,7 +7,7 @@ export interface OpcoesMotor {
    *
    * O divisor em si (`PerfilDoPalacio.escalaEmb`) é derivado do corpus, não fixo:
    * o spike da Fase 3 mediu cosseno centralizado máximo de 0,070 num palácio de
-   * 9 neurônios, contra o 0,45 constante que o plano previa. Com o divisor errado
+   * 9 pensamentos, contra o 0,45 constante que o plano previa. Com o divisor errado
    * todo score sai perto de zero. Este piso só existe para evitar divisão por
    * ~zero num palácio recém-nascido.
    */

@@ -1,7 +1,7 @@
 /**
  * Os painéis da estante moram na URL, e não em estado local.
  *
- * É a mesma regra que fez criar e editar neurônio virarem rotas (ver
+ * É a mesma regra que fez criar e editar pensamento virarem rotas (ver
  * `router.tsx`): no Android, o botão voltar tem que fechar o que está aberto, e
  * só fecha se abrir tiver deixado uma entrada no histórico. Uma busca na URL
  * deixa essa entrada sem inventar rota nova, e a estante continua montada por

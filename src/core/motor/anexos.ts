@@ -21,7 +21,7 @@ function comparar(a: string, b: string): number {
 /**
  * Os conceitos que cada anexo escolhe — só num sentido.
  *
- * É o que faz um anexo ser satélite e não neurônio: ele escolhe conceitos pela
+ * É o que faz um anexo ser satélite e não pensamento: ele escolhe conceitos pela
  * mesma régua das conexões (cosseno centralizado no perfil congelado, na
  * escala do corpus, corte relativo ao melhor), mas nenhum conceito o escolhe
  * de volta. Não existe `marcasPerdidas` aqui, nem vaga disputada — o grafo de

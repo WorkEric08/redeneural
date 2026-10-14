@@ -6054,6 +6054,16 @@ fileira, o que cabe, os gestos) é **comum a todos os temas**; só a aparência 
   virar o livro não mexe mais na largura do campo de nome. No Padrão a caixa ganhou 8 px de respiro embaixo
   (a sombra não é cortada) e perdeu os tetos de altura que cortavam a lombada em tela baixa.
 
+## "Neurônio" vira "Pensamento" na interface (13/10/2026)
+
+Pedido do usuário, para o projeto inteiro: onde o app dizia neurônio(s), diz **pensamento(s)** — títulos,
+contagens, avisos, botões, `aria-label`, testes e comentários de `src`. **Isto revoga** "Termo na
+interface: continua neurônio" da Etapa 0 de 30/09/2026. O que **não** mudou: os nomes de código sem acento
+(`neuronio`, `neuronios`, `NeuronioNaTela`, a rota `/neuronio/:id`, a tabela `neuronios`), porque são
+identificadores e dado gravado. Este arquivo, fora esta seção, ainda usa "neurônio" nos registros antigos: leia
+como "pensamento". Na Padrão, a linha de baixo da estante não tem mais a busca (ela mora no cabeçalho) e a
+contagem pode ocupar duas linhas, terminando antes do botão de criar.
+
 ## Fases
 
 0. ✅ Esqueleto (Vite/React/TS/Tailwind/PWA/Capacitor)

@@ -10,7 +10,7 @@ import { usePalacio } from '@/store/palacio'
 interface Props {
   aberta: boolean
   neuronio: NeuronioNaTela | undefined
-  /** Só livros de conceitos: um neurônio não mora numa pasta. */
+  /** Só livros de conceitos: um pensamento não mora numa pasta. */
   livros: readonly Livro[]
   onEscolher: (livroId: Id) => void
   onCriarLivro: () => void
@@ -19,7 +19,7 @@ interface Props {
 
 /**
  * "Onde guardar?" — a pergunta do porto, e o "Mudar" depois de o Porto
- * escolher sozinho. Fechar sem escolher deixa o neurônio onde ele está: no
+ * escolher sozinho. Fechar sem escolher deixa o pensamento onde ele está: no
  * porto, ou no livro que já tinha.
  */
 export function FolhaGuardarEm({
@@ -34,13 +34,13 @@ export function FolhaGuardarEm({
   const neuronios = usePalacio((s) => s.neuronios)
 
   // O Padrão (docs/estilos-visuais-locus.md, "Onde guardar?"): título e frase de apoio, uma linha por
-  // livro — marca da cor, nome, quantos neurônios — e um círculo que se enche no escolhido.
+  // livro — marca da cor, nome, quantos pensamentos — e um círculo que se enche no escolhido.
   if (padrao) {
     return (
       <Folha aberta={aberta} rotulo="Onde guardar?" onFechar={onFechar}>
         <h2 className="pd-folha-titulo pd-folha-titulo--com-sub">Onde guardar?</h2>
         <p className="pd-folha-sub text-poeira">
-          {neuronio ? `“${neuronio.titulo}”` : 'Escolha o livro deste neurônio.'}
+          {neuronio ? `“${neuronio.titulo}”` : 'Escolha o livro deste pensamento.'}
         </p>
         <ul className="pd-linhas-de-livro">
           {livros.map((l) => {
@@ -61,8 +61,8 @@ export function FolhaGuardarEm({
                     <span className="pd-linha-conta">
                       {contar(
                         neuronios.filter((n) => n.livroId === l.id).length,
-                        'neurônio',
-                        'neurônios',
+                        'pensamento',
+                        'pensamentos',
                       )}
                     </span>
                   </span>

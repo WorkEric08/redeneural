@@ -22,12 +22,12 @@ import { usePalacio } from '@/store/palacio'
 /**
  * Criar um livro. Tela cheia, e não uma folha (pedido do usuário,
  * 14/09/2026) — sair é o "fechar" da barra de topo, como o formulário de
- * neurônio.
+ * pensamento.
  *
  * Também é o "Criar livro novo" da pergunta do porto (`?neuronio=<id>` — não
  * `?guardar=`, que abriria a própria pergunta por cima deste formulário):
  * aí o livro é sempre de conceitos, nasce no primeiro lugar livre da estante
- * (ninguém tocou num lugar), e o neurônio que esperava vai para dentro dele.
+ * (ninguém tocou num lugar), e o pensamento que esperava vai para dentro dele.
  */
 export default function NovoLivro() {
   const [busca] = useSearchParams()
@@ -47,7 +47,7 @@ export default function NovoLivro() {
     guardarNeuronio,
   } = usePalacio()
 
-  // O neurônio do porto que vai morar no livro novo, e se, depois, a Rede
+  // O pensamento do porto que vai morar no livro novo, e se, depois, a Rede
   // revela a chegada dele (quando a pergunta veio da tela de escrever).
   const guardarId = busca.get('neuronio')
   const revelar = busca.get('revelar') === '1'
@@ -63,7 +63,7 @@ export default function NovoLivro() {
   const lugar = lugarNaBusca === null ? livre?.lugar : Number(lugarNaBusca)
 
   // Livro de conceitos ou pasta de acervo — decidido aqui, e nunca mais. Para
-  // guardar um neurônio, só pode ser livro.
+  // guardar um pensamento, só pode ser livro.
   const [tipo, setTipo] = useState<TipoDeLivro>('conceitos')
   const ehPasta = tipo === 'acervo'
 

@@ -13,7 +13,7 @@ import { easeOutCubic } from './layout'
  *
  * Quem usa decide o resto pelos ganchos: o que um toque faz, e se um dedo que
  * desce em cima de alguma coisa **toma o gesto** para si (a Rede arrasta
- * neurônio; o Mapa não toma nada).
+ * pensamento; o Mapa não toma nada).
  */
 
 /** Abaixo disto de movimento, soltar é toque — acima, foi arrastar. */
@@ -220,7 +220,7 @@ export function useCamera(opcoes: OpcoesDaCamera): {
       ultimoQuadroDoArrasto.current = 0
 
       // O primeiro dedo a descer decide se o gesto é de quem usa (em cima de
-      // um neurônio, na Rede, vira arrastar o nó) ou da câmera. Com um segundo
+      // um pensamento, na Rede, vira arrastar o nó) ou da câmera. Com um segundo
       // dedo já no ar, é sempre câmera.
       esquecerOSegurar()
       seguro.current = false

@@ -23,7 +23,7 @@ export function dentroDoHexagono(ponto: Ponto, centro: Ponto, apotema: number): 
   return y <= apotema && x * (Math.sqrt(3) / 2) + y / 2 <= apotema
 }
 
-/** Onde cada neurônio está no mundo do Mapa: o centro da ilha mais o lugar dele nela. */
+/** Onde cada pensamento está no mundo do Mapa: o centro da ilha mais o lugar dele nela. */
 export function pontosAbsolutos(mapa: MapaDoPalacio): Map<Id, Ponto> {
   const absolutos = new Map<Id, Ponto>()
   for (const ilha of Object.values(mapa.ilhas)) {
@@ -34,7 +34,7 @@ export function pontosAbsolutos(mapa: MapaDoPalacio): Map<Id, Ponto> {
   return absolutos
 }
 
-/** O neurônio mais perto do toque, dentro do raio — `null` no mar ou na terra vazia. */
+/** O pensamento mais perto do toque, dentro do raio — `null` no mar ou na terra vazia. */
 export function neuronioNoMapaEm(
   ponto: Ponto,
   absolutos: ReadonlyMap<Id, Ponto>,
@@ -70,7 +70,7 @@ export function bordasDoMapa(mapa: MapaDoPalacio): Ponto[] {
 
 /**
  * A partir deste zoom a câmera está **perto de uma ilha**: aparecem os pontos,
- * as trilhas e os nomes dos neurônios, e todas as pontes. Abaixo, o mapa é
+ * as trilhas e os nomes dos pensamentos, e todas as pontes. Abaixo, o mapa é
  * visto **de longe** — só ilhas e as pontes mais fortes de cada uma.
  *
  * Um número só, e não relativo ao palácio: os pontos ficam a 22 do mundo um do

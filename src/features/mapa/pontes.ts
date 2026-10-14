@@ -36,7 +36,7 @@ const comparar = (a: string, b: string): number => (a < b ? -1 : a > b ? 1 : 0)
 /**
  * As pontes agrupadas, da mais forte para a mais fraca: mais conexões, depois
  * maior soma de scores, depois a chave — sempre a mesma ordem, em qualquer
- * ordem de entrada. Neurônio no porto não tem ilha, e não entra em ponte.
+ * ordem de entrada. Pensamento no porto não tem ilha, e não entra em ponte.
  */
 export function agruparPontes(
   conexoes: readonly Conexao[],

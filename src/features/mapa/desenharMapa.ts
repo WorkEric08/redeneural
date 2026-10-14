@@ -10,7 +10,7 @@ import { controleDoArco, espessuraDaPonte, pontesVisiveis, type PonteAgrupada } 
 /**
  * O desenho do Mapa, em canvas: o palácio como arquipélago — a sala é o mar,
  * liso como o fundo da Rede, e cada livro é uma ilha: um hexágono com a borda na cor
- * dele, com os neurônios à mostra como pontos, do mesmo jeito que na Rede. As
+ * dele, com os pensamentos à mostra como pontos, do mesmo jeito que na Rede. As
  * pontes são rotas em arco.
  *
  * Três distâncias, para o mapa nunca virar novelo:
@@ -22,7 +22,7 @@ import { controleDoArco, espessuraDaPonte, pontesVisiveis, type PonteAgrupada } 
  * 2. **Perto de uma ilha** — aparecem as trilhas (as conexões de dentro do
  *    livro, finas e tracejadas) e os nomes que cabem sem se encostar. Os pontos
  *    estão sempre lá.
- * 3. **Com um neurônio tocado** — o resto do mapa esmaece debaixo de um véu, e
+ * 3. **Com um pensamento tocado** — o resto do mapa esmaece debaixo de um véu, e
  *    por cima ficam as conexões dele, uma por uma, até nos outros livros.
  *
  * Nos livros executáveis, as ideias adormecidas ficam debaixo de uma névoa na
@@ -43,7 +43,7 @@ export interface CoresDoMapa {
   ouro: string
   /** A névoa das adormecidas. */
   nevoa: string
-  /** A fonte dos nomes (ilha e neurônio escolhido) e se o nome da ilha é em versalete. */
+  /** A fonte dos nomes (ilha e pensamento escolhido) e se o nome da ilha é em versalete. */
   fonteTitulo: string
   versalete: boolean
   /** O tema Padrão: ilhas de borda neutra, o alvo no escolhido e a etiqueta de destaque. */
@@ -56,7 +56,7 @@ export interface CoresDoMapa {
 
 export interface CenaDoMapa {
   mapa: MapaDoPalacio
-  /** Onde cada neurônio está no mundo — o centro da ilha mais o lugar nela. */
+  /** Onde cada pensamento está no mundo — o centro da ilha mais o lugar nela. */
   absolutos: ReadonlyMap<Id, Ponto>
   livros: readonly Livro[]
   neuronios: readonly NeuronioNaTela[]
@@ -82,17 +82,17 @@ export interface CenaDoMapa {
   cores: CoresDoMapa
 }
 
-/** O ponto do neurônio, em pixels de tela — continua ponto em qualquer zoom. */
+/** O ponto do pensamento, em pixels de tela — continua ponto em qualquer zoom. */
 const RAIO_DO_PONTO_PX = 2.2
 /** No Padrão o ponto é o das pranchas, um pouco maior. */
 const RAIO_DO_PONTO_PADRAO_PX = 3.4
-/** O quanto o véu do neurônio tocado apaga o resto do mapa. */
+/** O quanto o véu do pensamento tocado apaga o resto do mapa. */
 const VEU = 0.62
 /** O quanto uma ideia adormecida, e as trilhas dela, perdem de luz — sem sumir. */
 const DORMENTE = 0.35
 /** O raio de névoa em volta de cada adormecida, no mundo: vira uma área na ilha. */
 const RAIO_DA_NEVOA = 24
-/** Nomes de neurônio de perto: o bastante para orientar sem cobrir a ilha. */
+/** Nomes de pensamento de perto: o bastante para orientar sem cobrir a ilha. */
 const MAX_NOMES_DE_NEURONIO = 40
 
 /** O nome da ilha em versalete, espaçado, como os nomes de terra nas cartas (no clássico). */
@@ -157,7 +157,7 @@ export function desenharMapa(
     x: largura / 2 + camera.x + p.x * camera.escala,
     y: altura / 2 + camera.y + p.y * camera.escala,
   })
-  // Um neurônio no porto não tem lugar no mapa: tocado, ele não acende nada aqui.
+  // Um pensamento no porto não tem lugar no mapa: tocado, ele não acende nada aqui.
   const selecionado =
     cena.selecionado !== null && cena.absolutos.has(cena.selecionado) ? cena.selecionado : null
   const vizinhanca = vizinhancaDe(selecionado, cena.conexoes)
@@ -201,7 +201,7 @@ export function desenharMapa(
   }
   ctx.restore()
 
-  // Em pixels de tela, fora da câmera: nome de ilha e de neurônio não encolhem.
+  // Em pixels de tela, fora da câmera: nome de ilha e de pensamento não encolhem.
   const ocupadas = areasProibidas(cena.cobertas, largura, altura)
   desenharNomesDasIlhas(ctx, cena, ilhas, naTela, camera.escala, largura, altura, ocupadas)
   if (camera.escala >= ESCALA_DE_PERTO) {
@@ -262,7 +262,7 @@ function desenharPontesAgrupadas(
 
 /**
  * A ilha: um hexágono de borda na cor do livro, com o interior um tom mais
- * claro que o mar — só para os neurônios se destacarem. Erguida (a pessoa está
+ * claro que o mar — só para os pensamentos se destacarem. Erguida (a pessoa está
  * segurando), cresce um pouco e a borda engrossa.
  */
 function desenharIlha(
@@ -390,7 +390,7 @@ function escreverComHalo(
 }
 
 /**
- * O nome do livro e quantos neurônios moram nela, acima de cada ilha. Os de
+ * O nome do livro e quantos pensamentos moram nela, acima de cada ilha. Os de
  * ilha maior escolhem lugar primeiro; um nome que encostaria noutro já posto
  * fica de fora — de longe, num palácio grande, não cabem todos.
  */
@@ -424,7 +424,7 @@ function desenharNomesDasIlhas(
       centro.x >= 0 && centro.x <= largura && centro.y + raio > 0 && centro.y - raio < altura
     if (!aparece) continue
 
-    const quantos = contar(Object.keys(ilha.pontos).length, 'neurônio', 'neurônios')
+    const quantos = contar(Object.keys(ilha.pontos).length, 'pensamento', 'pensamentos')
     ctx.font = fonteDaIlha(cena.cores)
     ctx.letterSpacing = cena.cores.padrao ? '0px' : ESPACO_DO_NOME
     const largo = Math.max(ctx.measureText(livro.titulo).width, 60)
@@ -452,7 +452,7 @@ function desenharNomesDasIlhas(
 }
 
 /**
- * De perto, os nomes dos neurônios, embaixo de cada ponto. Os mais conectados
+ * De perto, os nomes dos pensamentos, embaixo de cada ponto. Os mais conectados
  * escolhem lugar primeiro; quem encostaria num nome já posto fica sem — o
  * ponto continua lá, e tocá-lo diz o nome.
  */
@@ -507,7 +507,7 @@ function escreverNomesDePontos(
 }
 
 /**
- * O neurônio tocado por cima do véu: as conexões dele, uma por uma — trilha
+ * O pensamento tocado por cima do véu: as conexões dele, uma por uma — trilha
  * tracejada dentro do livro, ponte cheia para os outros —, os vizinhos acesos
  * e com nome, e a etiqueta dele.
  */
@@ -593,7 +593,7 @@ function desenharVizinhanca(
   escreverNomesDePontos(ctx, cena, candidatos, ocupadas, 1)
 }
 
-/** O nome do neurônio tocado, como na Rede: acima do ponto, sobre um fundo da sala. */
+/** O nome do pensamento tocado, como na Rede: acima do ponto, sobre um fundo da sala. */
 function desenharEtiqueta(
   ctx: CanvasRenderingContext2D,
   titulo: string,

@@ -23,14 +23,14 @@ export interface CriarNeuronioInput {
    * Gerado por quem chama, não pelo motor.
    *
    * É o que torna o otimismo possível sem inventar correlação: a tela insere o
-   * neurônio com este id antes de a inferência começar, e depois só substitui.
+   * pensamento com este id antes de a inferência começar, e depois só substitui.
    */
   id: Id
   /**
    * Ao criar, `null` é "Automático": o motor lê o texto, calcula as conexões e
    * guarda no livro que os mais parecidos apontam (ver `livroAutomatico`) — sempre
    * num livro. Só sem nenhum livro que possa recebê-lo (de conceitos e não
-   * executável) o neurônio fica no porto, sem livro, esperando a pessoa.
+   * executável) o pensamento fica no porto, sem livro, esperando a pessoa.
    *
    * Ao editar, `null` só mantém no porto quem já estava lá: editar nunca
    * escolhe livro sozinho.
@@ -42,7 +42,7 @@ export interface CriarNeuronioInput {
 
 export type EditarNeuronioInput = CriarNeuronioInput
 
-/** O que muda quando um neurônio troca de livro: ele, e a cor das conexões dele. */
+/** O que muda quando um pensamento troca de livro: ele, e a cor das conexões dele. */
 export interface NeuronioGuardado {
   neuronios: NeuronioNaTela[]
   conexoes: Conexao[]
@@ -51,7 +51,7 @@ export interface NeuronioGuardado {
 }
 
 export interface CriarLivroInput {
-  /** Gerado por quem chama, pelo mesmo motivo do neurônio: é o que deixa a tela ser otimista. */
+  /** Gerado por quem chama, pelo mesmo motivo do pensamento: é o que deixa a tela ser otimista. */
   id: Id
   titulo: string
   cor: string
@@ -82,7 +82,7 @@ export interface CriarLivroInput {
  * galeria; quem reduz, e decide o formato gravado, é o motor.
  */
 export interface CriarAnexoInput {
-  /** Gerado por quem chama, pelo mesmo motivo do neurônio. */
+  /** Gerado por quem chama, pelo mesmo motivo do pensamento. */
   id: Id
   livroId: Id
   legenda: string
@@ -166,7 +166,7 @@ export interface EstadoDoPalacio {
   /** O Mapa: ilhas por livro, gravadas (ver `core/motor/mapa.ts`). */
   mapa: MapaDoPalacio
   /**
-   * Onde a Rede organizou cada neurônio da última vez — por significado, não
+   * Onde a Rede organizou cada pensamento da última vez — por significado, não
    * por livro (Fase 23-2). `{}` num palácio que nunca foi organizado.
    */
   posicoesDaRede: Readonly<Record<Id, Ponto>>
@@ -177,20 +177,20 @@ export interface EstadoDoPalacio {
 }
 
 export interface ResultadoDeEscrita {
-  /** O neurônio escrito, para quem quiser destacá-lo. */
+  /** O pensamento escrito, para quem quiser destacá-lo. */
   neuronio: NeuronioNaTela
   /**
    * O palácio inteiro depois da escrita — a tela troca o que tem pelo que veio.
    *
    * Inclui `neuronios` porque uma escrita pode disparar um reprocessamento, e aí
-   * os *outros* neurônios também mudam (deixam de estar processando). Devolver só
+   * os *outros* pensamentos também mudam (deixam de estar processando). Devolver só
    * o que foi escrito deixaria o resto da tela mentindo.
    */
   neuronios: NeuronioNaTela[]
   conexoes: Conexao[]
-  /** A Rede se reacomoda junto — o novo neurônio nasce perto de quem ele conversa. */
+  /** A Rede se reacomoda junto — o novo pensamento nasce perto de quem ele conversa. */
   posicoesDaRede: Readonly<Record<Id, Ponto>>
-  /** E o Mapa encaixa o neurônio na ilha do livro dele, sem mover ninguém. */
+  /** E o Mapa encaixa o pensamento na ilha do livro dele, sem mover ninguém. */
   mapa: MapaDoPalacio
   /** Um conceito novo ou mudado pode virar a melhor âncora de algum anexo. */
   vinculos: Vinculo[]
@@ -213,7 +213,7 @@ export type ProgressoDoMotor =
  * uma thread nativa. A UI não muda — e nunca chama `worker.postMessage`.
  *
  * Nenhum método devolve `embedding`: o vetor não atravessa a fronteira, porque a
- * tela não tem o que fazer com ele e são ~1,5 KB por neurônio.
+ * tela não tem o que fazer com ele e são ~1,5 KB por pensamento.
  */
 export interface ConnectionEngine {
   /** Semeia na primeira vez e devolve o palácio inteiro. */
@@ -222,7 +222,7 @@ export interface ConnectionEngine {
   editarNeuronio(input: EditarNeuronioInput): Promise<ResultadoDeEscrita>
   apagarNeuronio(id: Id): Promise<EstadoDoPalacio>
   /**
-   * Põe o neurônio num livro de conceitos — é a resposta à pergunta do porto,
+   * Põe o pensamento num livro de conceitos — é a resposta à pergunta do porto,
    * e o "Mudar" depois de o Porto escolher. Não relê o texto: o vetor e as
    * conexões continuam os mesmos, só a ponte é refeita, porque ela depende do
    * livro dos dois lados.
@@ -258,8 +258,8 @@ export interface ConnectionEngine {
   /** Trocar nome ou pano não muda nenhuma conexão — `cross` depende do id, não da cor. */
   editarLivro(input: EditarLivroInput): Promise<EstanteGravada>
   /**
-   * Apaga o livro, os neurônios dele e os fios que os tocavam, e reprocessa:
-   * pelo mesmo motivo de apagar um neurônio, alguém pode ter perdido o único
+   * Apaga o livro, os pensamentos dele e os fios que os tocavam, e reprocessa:
+   * pelo mesmo motivo de apagar um pensamento, alguém pode ter perdido o único
    * vizinho que tinha.
    */
   apagarLivro(id: Id): Promise<EstadoDoPalacio>
@@ -305,25 +305,25 @@ export interface ConnectionEngine {
   reorganizarMapa(): Promise<MapaDoPalacio>
   /**
    * A pessoa arrastou uma ilha do Mapa: ela fica onde foi solta, com os
-   * neurônios dela, e só ela anda — se caiu em cima de outra, o mínimo até o mar
+   * pensamentos dela, e só ela anda — se caiu em cima de outra, o mínimo até o mar
    * inteiro em volta (`moverIlha`).
    */
   moverIlhaNoMapa(livroId: Id, centro: Ponto): Promise<MapaDoPalacio>
-  /** A pessoa arrastou um neurônio no Mapa: dentro da ilha dele, sempre (`moverPontoNoMapa`). */
+  /** A pessoa arrastou um pensamento no Mapa: dentro da ilha dele, sempre (`moverPontoNoMapa`). */
   moverNeuronioNoMapa(id: Id, ponto: Ponto): Promise<MapaDoPalacio>
   /**
-   * Arrastar um neurônio: onde o dedo soltou vira a âncora dele, e a mesma
+   * Arrastar um pensamento: onde o dedo soltou vira a âncora dele, e a mesma
    * física de sempre (partida quente, poucas iterações) deixa a vizinhança
    * reagir a partir daí — sem tocar em conexões, só no layout.
    */
   moverNeuronioNaRede(id: Id, ponto: Ponto): Promise<Readonly<Record<Id, Ponto>>>
   /**
-   * Grava o anexo antes da inferência (como o neurônio) e devolve o palácio
+   * Grava o anexo antes da inferência (como o pensamento) e devolve o palácio
    * inteiro, já com os conceitos que ele escolheu. Só aceita livro do tipo
    * `acervo`.
    *
    * O palácio inteiro, e não só o acervo: num palácio que nunca foi lido, o
-   * primeiro anexo com legenda dispara o reprocessamento — e aí os neurônios,
+   * primeiro anexo com legenda dispara o reprocessamento — e aí os pensamentos,
    * as conexões e a Rede também mudam.
    */
   criarAnexo(input: CriarAnexoInput): Promise<EstadoDoPalacio>
@@ -338,11 +338,11 @@ export interface ConnectionEngine {
   /** O mesmo para a imagem do resultado de uma ideia — `null` se ela não tem. */
   lerImagemDoResultado(neuronioId: Id, tamanho: 'miniatura' | 'inteira'): Promise<Uint8Array | null>
   /**
-   * Os neurônios mais parecidos com a consulta, do mais para o menos parecido
+   * Os pensamentos mais parecidos com a consulta, do mais para o menos parecido
    * (ver `buscarPorSentido`). Só ids: a tela já tem o resto.
    *
    * Num palácio que nunca foi lido devolve vazio sem carregar o modelo — sem
-   * perfil não há régua, e uma busca não pode baixar 129 MB. Neurônio ainda
+   * perfil não há régua, e uma busca não pode baixar 129 MB. Pensamento ainda
    * sem vetor fica de fora.
    */
   buscarPorSentido(consulta: string): Promise<Id[]>

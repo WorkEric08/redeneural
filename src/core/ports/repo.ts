@@ -32,7 +32,7 @@ export interface PalacioRepo {
   /** Grava o livro e fecha a vaga que houvesse no lugar dele — livro e buraco não dividem lugar. */
   upsertLivro(l: Livro): Promise<void>
   /**
-   * Apaga o livro e tudo o que mora nele — neurônios e as arestas que os
+   * Apaga o livro e tudo o que mora nele — pensamentos e as arestas que os
    * tocavam; numa pasta, os anexos, as imagens e os vínculos. O lugar dele
    * vira vaga: nada anda sozinho na estante.
    */
@@ -94,17 +94,17 @@ export interface PalacioRepo {
   listNeuronios(livroId?: Id): Promise<Neuronio[]>
   getNeuronio(id: Id): Promise<Neuronio | undefined>
   /**
-   * Grava o neurônio — e, se vier, a imagem do resultado dele, na mesma transação. Sem
-   * `resultado`, a imagem que já estava gravada fica; um neurônio com
+   * Grava o pensamento — e, se vier, a imagem do resultado dele, na mesma transação. Sem
+   * `resultado`, a imagem que já estava gravada fica; um pensamento com
    * `resultadoImagem: null` não guarda imagem nenhuma (a de antes é apagada).
    */
   upsertNeuronio(n: Neuronio, resultado?: ArquivoDoAnexo): Promise<void>
   /** Os bytes da imagem do resultado de uma ideia, ou `undefined` se ela não tem. */
   getResultado(neuronioId: Id): Promise<ArquivoDoAnexo | undefined>
-  /** Apaga o neurônio, toda aresta que o tocava e todo vínculo de anexo preso a ele. */
+  /** Apaga o pensamento, toda aresta que o tocava e todo vínculo de anexo preso a ele. */
   deleteNeuronio(id: Id): Promise<void>
 
-  /** O mais recente primeiro, como os neurônios. */
+  /** O mais recente primeiro, como os pensamentos. */
   listAnexos(livroId?: Id): Promise<Anexo[]>
   getAnexo(id: Id): Promise<Anexo | undefined>
   /**
@@ -123,10 +123,10 @@ export interface PalacioRepo {
   replaceTodosVinculos(novos: readonly Vinculo[]): Promise<void>
 
   listConexoes(): Promise<Conexao[]>
-  /** Arestas que tocam o neurônio, de qualquer um dos dois lados. */
+  /** Arestas que tocam o pensamento, de qualquer um dos dois lados. */
   listConexoesDe(neuronioId: Id): Promise<Conexao[]>
   /**
-   * Troca, numa transação só, todas as arestas que tocam este neurônio pelas
+   * Troca, numa transação só, todas as arestas que tocam este pensamento pelas
    * novas. É assim que o recálculo incremental grava seu resultado.
    */
   replaceConexoesDe(neuronioId: Id, novas: Conexao[]): Promise<void>

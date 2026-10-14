@@ -87,7 +87,7 @@ const embedding = criarTransformersEmbedding({
 
 /**
  * v1 roda só com embedding — decisão do "Ajuste de escopo" (11/09/2026): com
- * neurônios de texto longo o embedding já carrega sinal suficiente, e o
+ * pensamentos de texto longo o embedding já carrega sinal suficiente, e o
  * reranker (`RerankProvider`, `rerankDesligado.ts`) fica reservado para
  * reativar depois se aparecer falso positivo real no uso. `construirGrafo` e
  * `recalcularVizinhanca` continuam aceitando `PontuarPar` de propósito — é o
@@ -99,8 +99,8 @@ const pontuar: PontuarPar = SEM_RERANK
  * Quando vale a pena refazer o palácio inteiro em vez de só a vizinhança.
  *
  * O perfil (centroide, limiares, escala) fica congelado entre reprocessamentos —
- * é o que garante que um neurônio novo não reembaralhe os outros. Mas um perfil
- * tirado de 2 neurônios não descreve um palácio de 40, e ficaria congelado para
+ * é o que garante que um pensamento novo não reembaralhe os outros. Mas um perfil
+ * tirado de 2 pensamentos não descreve um palácio de 40, e ficaria congelado para
  * sempre se ninguém mandasse refazer.
  *
  * Reprocessar é barato porque **não recalcula embedding**: os vetores já estão
@@ -110,7 +110,7 @@ const pontuar: PontuarPar = SEM_RERANK
 const CRESCIMENTO_ATE_REPROCESSAR = 1.5
 
 async function estadoAtual(
-  /** Quem já leu os livros e os neurônios (abrir o palácio) não os manda ler de novo. */
+  /** Quem já leu os livros e os pensamentos (abrir o palácio) não os manda ler de novo. */
   lidos?: { livros: Livro[]; neuronios: Neuronio[] },
 ): Promise<EstadoDoPalacio> {
   const [
@@ -228,7 +228,7 @@ async function embutirAnexo(a: Anexo): Promise<Anexo> {
 async function recalcularPosicoesDaRede(
   conexoes: readonly { aId: Id; bId: Id; score: number }[],
 ): Promise<void> {
-  // Todo neurônio que existe, com vetor ou sem: o layout só precisa do id e das
+  // Todo pensamento que existe, com vetor ou sem: o layout só precisa do id e das
   // arestas. Pelos nós do grafo (só quem já tem embedding), quem ainda não
   // passou pelo modelo ficava sem lugar — e invisível na Rede.
   const [neuronios, anteriores] = await Promise.all([
@@ -251,7 +251,7 @@ async function recalcularPosicoesDaRede(
   await repo.setPosicoesDaRede(gravado)
 }
 
-/** O que o Mapa precisa: os livros de conceitos e os neurônios que moram neles. */
+/** O que o Mapa precisa: os livros de conceitos e os pensamentos que moram neles. */
 async function entradaDoMapa(): Promise<{
   nos: NoDoMapa[]
   livros: Set<Id>
@@ -276,7 +276,7 @@ async function entradaDoMapa(): Promise<{
 
 /**
  * Encaixa no Mapa o que mudou, sem remexer o resto (`atualizarMapa`). Roda
- * nas mesmas escritas que reacomodam a Rede, depois de o livro do neurônio já
+ * nas mesmas escritas que reacomodam a Rede, depois de o livro do pensamento já
  * estar decidido — o Porto inclusive. Sem mapa gravado, desenha o inteiro: é
  * a migração de quem já tinha um palácio antes do Mapa.
  */
@@ -296,7 +296,7 @@ async function reorganizarMapa(): Promise<MapaDoPalacio> {
   return mapa
 }
 
-/** A mão da pessoa no Mapa: só a ilha (ou o neurônio) que ela soltou anda. */
+/** A mão da pessoa no Mapa: só a ilha (ou o pensamento) que ela soltou anda. */
 async function moverIlhaNoMapa(livroId: Id, centro: Ponto): Promise<MapaDoPalacio> {
   const mapa = moverIlha(await repo.getMapa(), livroId, centro)
   await repo.setMapa(mapa)
@@ -312,7 +312,7 @@ async function moverNeuronioNoMapa(id: Id, ponto: Ponto): Promise<MapaDoPalacio>
 /**
  * Abre o palácio: o caminho de toda abertura do app, e por isso o mais enxuto possível.
  *
- * Lê livros e neurônios (o que mais pesa: cada neurônio traz o vetor de 384 floats) **uma vez
+ * Lê livros e pensamentos (o que mais pesa: cada pensamento traz o vetor de 384 floats) **uma vez
  * só** e os entrega a quem precisa — antes eram quatro leituras, uma de cada passo. E só grava o
  * que está faltando: as posições da Rede de quem ainda não tem lugar (as posições só eram
  * calculadas numa escrita, e um palácio de antes delas — 15/09/2026 — abria a Rede com a contagem
@@ -347,7 +347,7 @@ async function abrirPalacio(): Promise<EstadoDoPalacio> {
   return estadoAtual({ livros, neuronios })
 }
 
-/** Calcula e grava o embedding que faltava. Devolve o neurônio já com vetor. */
+/** Calcula e grava o embedding que faltava. Devolve o pensamento já com vetor. */
 async function embutir(n: Neuronio): Promise<Neuronio> {
   const vetor = await embedding.embed(textoDoNeuronio(n))
   const completo: Neuronio = { ...n, embedding: vetor, updatedAt: new Date() }
@@ -373,7 +373,7 @@ async function reprocessarTudo(): Promise<EstadoDoPalacio> {
   const total = semVetor.length + anexosSemVetor.length
 
   // Só quem nunca foi processado passa pelo modelo. O vetor é salvo junto do
-  // neurônio e nunca recalculado ao recarregar.
+  // pensamento e nunca recalculado ao recarregar.
   if (total > 0) {
     await embedding.ready()
     avisar({ tipo: 'modeloPronto' })
@@ -410,7 +410,7 @@ async function escrever(
 ): Promise<ResultadoDeEscrita> {
   const livro = input.livroId === null ? undefined : await repo.getLivro(input.livroId)
   if (livro?.tipo === 'acervo') {
-    throw new Error('um neurônio não mora numa pasta — escolha um livro de conceitos')
+    throw new Error('um pensamento não mora numa pasta — escolha um livro de conceitos')
   }
 
   const agora = new Date()
@@ -435,7 +435,7 @@ async function escrever(
   }
 
   // Persiste o texto antes de a inferência começar: se o Worker morrer agora,
-  // o que se perde é o cálculo, nunca o que a pessoa escreveu. Um neurônio em
+  // o que se perde é o cálculo, nunca o que a pessoa escreveu. Um pensamento em
   // "Automático" é gravado sem livro até o motor ler o texto, pelo mesmo motivo.
   await repo.upsertNeuronio(base)
 
@@ -466,7 +466,7 @@ async function escrever(
     )
 
     // A Rede reage ao grafo já assentado, com o que sobrou de antes como
-    // partida quente — só este neurônio (e quem estava perto dele) se acomoda,
+    // partida quente — só este pensamento (e quem estava perto dele) se acomoda,
     // ninguém mais reembaralha.
     await recalcularPosicoesDaRede(await repo.listConexoes())
     await reancorarTodos()
@@ -481,7 +481,7 @@ async function escrever(
 
   const depois = await estadoAtual()
   const naTela = depois.neuronios.find((n) => n.id === completo.id)
-  if (!naTela) throw new Error(`neurônio ${completo.id} sumiu no recálculo`)
+  if (!naTela) throw new Error(`pensamento ${completo.id} sumiu no recálculo`)
   return {
     neuronio: naTela,
     neuronios: depois.neuronios,
@@ -525,9 +525,9 @@ async function despertar(novoId: Id): Promise<{ id: Id; titulo: string }[]> {
 }
 
 /**
- * Leva o neurônio de "Automático" a um livro, pelo que está escrito: o que os mais
+ * Leva o pensamento de "Automático" a um livro, pelo que está escrito: o que os mais
  * parecidos apontam (`livroAutomatico`). **Sempre um livro** (decisão do usuário,
- * 07/10/2026): o porto só recebe o neurônio quando não existe livro nenhum que possa
+ * 07/10/2026): o porto só recebe o pensamento quando não existe livro nenhum que possa
  * recebê-lo — e aí a tela pergunta. Roda depois das conexões, com o perfil já
  * assentado — a mesma régua delas.
  */
@@ -558,16 +558,16 @@ async function guardarAutomaticamente(id: Id): Promise<Id | null> {
 }
 
 /**
- * Põe o neurônio num livro de conceitos sem reler o texto: o vetor e as
+ * Põe o pensamento num livro de conceitos sem reler o texto: o vetor e as
  * conexões continuam os mesmos, e só a ponte é refeita — ela depende do livro
  * dos dois lados.
  */
 async function guardar(id: Id, livroId: Id): Promise<void> {
   const [neuronio, livro] = await Promise.all([repo.getNeuronio(id), repo.getLivro(livroId)])
-  if (!neuronio) throw new Error(`neurônio ${id} não existe`)
+  if (!neuronio) throw new Error(`pensamento ${id} não existe`)
   if (!livro) throw new Error(`livro ${livroId} não existe`)
   if (livro.tipo === 'acervo') {
-    throw new Error('um neurônio não mora numa pasta — escolha um livro de conceitos')
+    throw new Error('um pensamento não mora numa pasta — escolha um livro de conceitos')
   }
 
   // Guardar num livro executável é o "Tornar executável": "para fazer", e um toque.
@@ -619,7 +619,7 @@ async function definirEstado(
   resultadoImagem: ImagemParaGuardar | null | undefined,
 ): Promise<NeuronioNaTela[]> {
   const neuronio = await repo.getNeuronio(id)
-  if (!neuronio) throw new Error(`neurônio ${id} não existe`)
+  if (!neuronio) throw new Error(`pensamento ${id} não existe`)
   const livro = neuronio.livroId === null ? undefined : await repo.getLivro(neuronio.livroId)
   if (!livro?.executavel) throw new Error('o andamento só existe num livro executável')
 
@@ -729,9 +729,9 @@ async function editarLivro(input: EditarLivroInput): Promise<EstanteGravada> {
 }
 
 /**
- * Livro vazio sai sem reprocessar: ninguém perdeu vizinho. Com neurônios dentro
- * é o mesmo caso de apagar um neurônio — e reprocessar à toa, num palácio que
- * ainda tem neurônio sem vetor, baixaria o modelo por nada.
+ * Livro vazio sai sem reprocessar: ninguém perdeu vizinho. Com pensamentos dentro
+ * é o mesmo caso de apagar um pensamento — e reprocessar à toa, num palácio que
+ * ainda tem pensamento sem vetor, baixaria o modelo por nada.
  */
 async function apagarLivro(id: Id): Promise<EstadoDoPalacio> {
   const tinhaNeuronios = (await repo.listNeuronios(id)).length > 0
@@ -745,7 +745,7 @@ async function moverLivro(id: Id, prateleira: number, lugar: number): Promise<Es
 }
 
 /**
- * Arrastar um neurônio: onde o dedo soltou vira a âncora dele mesmo, e a
+ * Arrastar um pensamento: onde o dedo soltou vira a âncora dele mesmo, e a
  * mesma física de sempre (partida quente, poucas iterações) deixa a
  * vizinhança reagir a partir daí. Só o layout — nenhuma conexão muda, e não
  * há por que reprocessar o grafo por causa de um arrasto.
@@ -818,7 +818,7 @@ async function criarAnexo(input: CriarAnexoInput): Promise<EstadoDoPalacio> {
     updatedAt: agora,
   }
 
-  // Como o neurônio: o que a pessoa entregou é gravado antes da inferência —
+  // Como o pensamento: o que a pessoa entregou é gravado antes da inferência —
   // se o Worker morrer agora, perde-se o cálculo, nunca a foto.
   await repo.upsertAnexo(base, arquivo)
   await processarAnexo(base)
@@ -905,7 +905,7 @@ async function responder(msg: ParaMotor): Promise<DoMotor> {
 
       case 'editarNeuronio': {
         const existente = await repo.getNeuronio(msg.input.id)
-        if (!existente) throw new Error(`neurônio ${msg.input.id} não existe`)
+        if (!existente) throw new Error(`pensamento ${msg.input.id} não existe`)
         return { req: msg.req, ok: true, dados: await escrever(msg.input, existente) }
       }
 

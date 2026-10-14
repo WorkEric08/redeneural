@@ -1,10 +1,10 @@
 import type { Anexo, EstadoDaIdeia, Id, ImagemDoResultado, MidiaDoAnexo, Neuronio } from './types'
 
 /**
- * Um neurônio como a tela o vê.
+ * Um pensamento como a tela o vê.
  *
  * Sem o `embedding`: o vetor não serve para renderizar nada e são ~1,5 KB por
- * neurônio atravessando a fronteira do Worker a cada carga. O que a tela precisa
+ * pensamento atravessando a fronteira do Worker a cada carga. O que a tela precisa
  * saber sobre ele cabe num booleano.
  */
 export interface NeuronioNaTela {

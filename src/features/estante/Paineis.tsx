@@ -39,7 +39,7 @@ interface Props {
   onPorEnfeite: (prateleira: number, lugar: number) => Promise<void>
 }
 
-/** Quantos neurônios o espiar lista antes de mandar abrir o livro. */
+/** Quantos pensamentos o espiar lista antes de mandar abrir o livro. */
 const NEURONIOS_NO_ESPIAR = 3
 
 /**
@@ -91,16 +91,16 @@ function Conteudo(props: Props & { painel: Painel }) {
   return <Acoes {...props} livro={livro} />
 }
 
-/** O que o livro guarda, contado como se fala: neurônios num livro, itens numa pasta. */
+/** O que o livro guarda, contado como se fala: pensamentos num livro, itens numa pasta. */
 function conteudoDe(livro: Livro, quantos: number): string {
   return livro.tipo === 'acervo'
     ? contar(quantos, 'item', 'itens')
-    : contar(quantos, 'neurônio', 'neurônios')
+    : contar(quantos, 'pensamento', 'pensamentos')
 }
 
 /**
  * A pasta puxada para fora: os itens dela, pela legenda. Sem pontes — uma
- * pasta não tem neurônio, e um anexo nunca é ponte.
+ * pasta não tem pensamento, e um anexo nunca é ponte.
  */
 function EspiarPasta({ livro, anexos, onAbrirLivro }: Props & { livro: Livro }) {
   const dela = anexos.filter((a) => a.livroId === livro.id)
@@ -199,7 +199,7 @@ function Espiar({ livro, livros, neuronios, pontes, onAbrirLivro }: Props & { li
   return (
     <div className="flex flex-col gap-3">
       <Cabecalho livro={livro}>
-        {contar(dele.length, 'neurônio', 'neurônios')}
+        {contar(dele.length, 'pensamento', 'pensamentos')}
         {totalDePontes > 0 && (
           <>
             {' · '}
@@ -219,7 +219,7 @@ function Espiar({ livro, livros, neuronios, pontes, onAbrirLivro }: Props & { li
             className={botao({ tipo: 'secundario', tamanho: 'pequeno' })}
           >
             <Plus size={16} aria-hidden />
-            Escrever o primeiro neurônio
+            Escrever o primeiro pensamento
           </Link>
         </div>
       ) : (
@@ -239,7 +239,7 @@ function Espiar({ livro, livros, neuronios, pontes, onAbrirLivro }: Props & { li
           ))}
           {aMais > 0 && (
             <li className="linha-de-lista text-poeira min-h-9 py-1.5 text-xs">
-              e mais {contar(aMais, 'neurônio', 'neurônios')} dentro do livro
+              e mais {contar(aMais, 'pensamento', 'pensamentos')} dentro do livro
             </li>
           )}
         </ul>
@@ -314,12 +314,12 @@ function Acoes({ livro, neuronios, anexos, ocupado, onTrocarPainel }: Props & { 
             className="flex min-h-14 w-full items-center gap-3.5 px-4"
           >
             <Plus size={19} aria-hidden className="text-poeira" />
-            {ehPasta ? 'Guardar um item aqui' : 'Novo neurônio neste livro'}
+            {ehPasta ? 'Guardar um item aqui' : 'Novo pensamento neste livro'}
           </Link>
         </li>
         <li className="linha-de-lista p-0">
           {/* Apagar durante um processamento deixaria o motor gravando o vetor de
-              um neurônio cujo livro já não existe. */}
+              um pensamento cujo livro já não existe. */}
           <button
             type="button"
             className="text-destructive flex min-h-14 w-full items-center gap-3.5 px-4 text-left disabled:opacity-50"

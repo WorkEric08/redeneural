@@ -99,7 +99,7 @@ function conexao(aId: string, bId: string, cross: boolean, score = 0.5): Conexao
 }
 
 describe('montarEstante', () => {
-  it('conta neurônios, fios internos e fios que saem', () => {
+  it('conta pensamentos, fios internos e fios que saem', () => {
     const estante = montarEstante(LIVROS, NEURONIOS, [
       conexao('p1', 'p2', false),
       conexao('p1', 'g1', true),
@@ -126,7 +126,7 @@ describe('montarEstante', () => {
     expect(estante.find((e) => e.livro.id === 'vazio')!.altura).toBe(0)
   })
 
-  it('a pasta mede os itens que guarda, na mesma régua dos neurônios', () => {
+  it('a pasta mede os itens que guarda, na mesma régua dos pensamentos', () => {
     const itens = Array.from({ length: 6 }, () => ({ livroId: 'vazio' }))
     const estante = montarEstante(LIVROS, NEURONIOS, [], itens)
     const pasta = estante.find((e) => e.livro.id === 'vazio')!
@@ -148,7 +148,7 @@ describe('montarEstante', () => {
     expect(montarEstante([], [], [])).toEqual([])
   })
 
-  it('ignora conexão que aponta para neurônio que não está na tela', () => {
+  it('ignora conexão que aponta para pensamento que não está na tela', () => {
     const estante = montarEstante(LIVROS, NEURONIOS, [conexao('p1', 'fantasma', false)])
     expect(estante.find((e) => e.livro.id === 'psi')!.internas).toBe(0)
   })
@@ -173,7 +173,7 @@ describe('vizinhosPorNeuronio', () => {
     expect(mapa.get('p1')!.map((v) => v.outroId)).toEqual(['p3', 'g1', 'p2'])
   })
 
-  it('neurônio sem conexão simplesmente não entra no mapa', () => {
+  it('pensamento sem conexão simplesmente não entra no mapa', () => {
     const mapa = vizinhosPorNeuronio(NEURONIOS, LIVROS, [])
     expect(mapa.get('p1')).toBeUndefined()
   })
@@ -199,7 +199,7 @@ describe('pontesEntreLivros', () => {
     expect(mapa.get('psi')).toBeUndefined()
   })
 
-  it('ignora fio para neurônio que não está na tela', () => {
+  it('ignora fio para pensamento que não está na tela', () => {
     const mapa = pontesEntreLivros(NEURONIOS, [conexao('p1', 'fantasma', true)])
     expect(mapa.size).toBe(0)
   })

@@ -24,7 +24,7 @@ import {
 /**
  * O dial: o botão de criar que também é a navegação.
  *
- * Toque curto cria um neurônio, como sempre. Segurar abre o anel com os
+ * Toque curto cria um pensamento, como sempre. Segurar abre o anel com os
  * destinos em volta do polegar — arrastar até a cunha e soltar já navega, num
  * movimento só; soltar no centro deixa o anel aberto para escolher com um
  * segundo toque, que é o que perdoa o dedo que erra.
@@ -93,7 +93,7 @@ export function Dial() {
 
   const relogio = useRef<number | null>(null)
   const centro = useRef({ x: 0, y: 0 })
-  /** O clique chega depois de o dedo levantar; sem isto, abrir o anel também criaria um neurônio. */
+  /** O clique chega depois de o dedo levantar; sem isto, abrir o anel também criaria um pensamento. */
   const engoleOClique = useRef(false)
 
   const pararORelogio = useCallback(() => {
@@ -248,7 +248,7 @@ export function Dial() {
 
         <Link
           to="/novo"
-          aria-label={visivel ? 'Fechar o dial' : 'Novo neurônio'}
+          aria-label={visivel ? 'Fechar o dial' : 'Novo pensamento'}
           aria-expanded={noDesktop ? undefined : visivel}
           className="dial-botao"
           data-aberto={visivel}

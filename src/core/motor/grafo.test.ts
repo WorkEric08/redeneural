@@ -31,7 +31,7 @@ describe('construirGrafo', () => {
     expect(await construirGrafo([PALACIO[0]!])).toEqual([])
   })
 
-  it('não deixa nenhum neurônio órfão', async () => {
+  it('não deixa nenhum pensamento órfão', async () => {
     const grau = grausDe(await construirGrafo(PALACIO))
 
     for (const n of PALACIO) {
@@ -84,7 +84,7 @@ describe('construirGrafo', () => {
     expect(arestas.some((a) => a.cross)).toBe(true)
   })
 
-  it('conexão com um neurônio no porto (sem livro) nunca é ponte', async () => {
+  it('conexão com um pensamento no porto (sem livro) nunca é ponte', async () => {
     // O mesmo palácio, com a dupla de programação ainda esperando livro.
     const comPorto = PALACIO.map((n) => (n.livroId === 'prog' ? { ...n, livroId: null } : n))
     const arestas = await construirGrafo(comPorto)
@@ -137,9 +137,9 @@ describe('construirGrafo', () => {
     }
   })
 
-  it('adicionar um neurônio não muda o score de nenhum par existente', async () => {
+  it('adicionar um pensamento não muda o score de nenhum par existente', async () => {
     // Cenário real: o centroide foi calculado no último reprocessamento e fica
-    // congelado enquanto neurônios entram.
+    // congelado enquanto pensamentos entram.
     const perfil = perfilDoPalacio(PALACIO)
     const novo = no('mus-novo', 'mus', { 14: 1, 15: 0.4 })
 
@@ -159,7 +159,7 @@ describe('construirGrafo', () => {
     expect(comparados).toBeGreaterThan(0)
   })
 
-  it('quem está longe do neurônio novo não sente nada', async () => {
+  it('quem está longe do pensamento novo não sente nada', async () => {
     const perfil = perfilDoPalacio(PALACIO)
     const novo = no('mus-novo', 'mus', { 14: 1, 15: 0.4 })
     const soPsi = ([chave]: [string, ArestaCalculada]): boolean =>
@@ -175,7 +175,7 @@ describe('construirGrafo', () => {
   })
 
   it('mas quem estava sozinho pode trocar de vizinho quando aparece um parente', async () => {
-    // O contrário disso seria pior: um neurônio ficaria preso para sempre à
+    // O contrário disso seria pior: um pensamento ficaria preso para sempre à
     // primeira aproximação ruim que fez.
     const perfil = perfilDoPalacio(PALACIO)
     const primo = no('mus-primo', 'mus', { 13: 1, 15: 0.2 })

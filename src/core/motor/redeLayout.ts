@@ -3,9 +3,9 @@ import { semente } from '@/lib/semente'
 import type { Id } from '../domain/types'
 
 /**
- * Onde cada neurônio fica na Rede — por significado, não por livro.
+ * Onde cada pensamento fica na Rede — por significado, não por livro.
  *
- * Até a Fase 23-1 os livros ficavam num círculo e os neurônios em volta da
+ * Até a Fase 23-1 os livros ficavam num círculo e os pensamentos em volta da
  * âncora do próprio livro; a partir daqui os aglomerados nascem só das
  * conexões, de qualquer livro. É por isso que este algoritmo mora no núcleo, e
  * não em `features/rede`: ele roda dentro do Worker (cálculo pesado fora da
@@ -13,10 +13,10 @@ import type { Id } from '../domain/types'
  *
  * **Determinístico com memória, não sem estado.** O grafo antigo já garantia
  * "mesmo grafo, mesmo desenho" recomeçando do zero toda vez. Aqui isso não
- * bastaria: um grafo de significado reorganizado do zero a cada neurônio novo
+ * bastaria: um grafo de significado reorganizado do zero a cada pensamento novo
  * reembaralharia todo mundo, não só quem chegou. Por isso `calcularLayoutDaRede`
  * recebe as posições de antes como ponto de partida (`posicoesAnteriores`) — um
- * neurônio já colocado começa exatamente onde estava, e só se move o quanto a
+ * pensamento já colocado começa exatamente onde estava, e só se move o quanto a
  * física do passo mandar. Sem histórico nenhum (primeira vez), cai de volta no
  * espalhamento por semente do id, como o layout antigo.
  *
@@ -48,7 +48,7 @@ export interface OpcoesLayoutDaRede {
   iteracoes: number
   /** O quanto uma conexão puxa, por unidade de distância e de score. */
   forcaDaAresta: number
-  /** O quanto dois neurônios quaisquer se empurram, por unidade de distância². */
+  /** O quanto dois pensamentos quaisquer se empurram, por unidade de distância². */
   repulsao: number
   /**
    * Além desta distância a repulsão é tratada como zero — é o que faz o custo
@@ -134,7 +134,7 @@ function posicoesDePartida(
   posicoesAnteriores: ReadonlyMap<Id, Ponto>,
 ): Map<Id, Ponto> {
   // Só a posição de quem ainda existe: copiar `posicoesAnteriores` inteiro
-  // deixaria a posição de um neurônio apagado presa no mapa para sempre — ele
+  // deixaria a posição de um pensamento apagado presa no mapa para sempre — ele
   // não recebe força nenhuma (as passadas do laço principal só olham `nos`),
   // então ficaria congelado ali e vazando para o que for gravado depois.
   //
@@ -152,7 +152,7 @@ function posicoesDePartida(
   const centro = centroideDe(posicoesAnteriores)
 
   // Propaga a partir de quem já tem lugar: um punhado de passadas alcança
-  // qualquer neurônio a poucos saltos de alguém conhecido. O que sobrar depois
+  // qualquer pensamento a poucos saltos de alguém conhecido. O que sobrar depois
   // disso é ilha nova de verdade, e cai no espalhamento por semente.
   const MAX_PASSADAS = 6
   for (let passada = 0; passada < MAX_PASSADAS && semLugar.size > 0; passada++) {

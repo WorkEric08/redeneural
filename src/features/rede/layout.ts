@@ -4,7 +4,7 @@ import { semente } from '@/lib/semente'
 /**
  * O que a UI da Rede ainda precisa calcular do próprio lado.
  *
- * Onde cada neurônio fica não mora mais aqui — isso é `calcularLayoutDaRede`,
+ * Onde cada pensamento fica não mora mais aqui — isso é `calcularLayoutDaRede`,
  * em `@/core/motor/redeLayout`, porque agora roda dentro do Worker e o
  * resultado é gravado (posições organizadas por significado, cálculo pesado
  * fora da thread da interface). O que sobra é leve o bastante para rodar
@@ -12,7 +12,7 @@ import { semente } from '@/lib/semente'
  * debaixo do dedo.
  */
 
-/** O grau de cada neurônio — é o que faz o hub ser desenhado maior. */
+/** O grau de cada pensamento — é o que faz o hub ser desenhado maior. */
 export function grausDoMapa(conexoes: readonly Conexao[]): Map<Id, number> {
   const grau = new Map<Id, number>()
   for (const c of conexoes) {
@@ -42,7 +42,7 @@ export function vizinhancaDe(
 }
 
 /**
- * O neurônio sob o dedo, se houver.
+ * O pensamento sob o dedo, se houver.
  *
  * Percorre do fim para o começo para que o de cima ganhe, e usa um raio de toque
  * maior que o desenhado — 44 px de alvo continuam valendo aqui.
@@ -123,7 +123,7 @@ export function easeOutCubic(t: number): number {
 
 /**
  * A câmera que enquadra um conjunto de pontos — todo o grafo (`enquadrar`,
- * em Tela.tsx) ou só um neurônio e seus vizinhos (a revelação de quem acabou
+ * em Tela.tsx) ou só um pensamento e seus vizinhos (a revelação de quem acabou
  * de nascer, ver `revelar`). Pura: só matemática sobre pontos, sem canvas.
  *
  * Sem nenhum ponto válido, devolve a câmera neutra (centro do mundo, escala
@@ -169,7 +169,7 @@ export function camaraParaEnquadrar(
 
 /**
  * O balanço da Rede: um teste do usuário, 17/09/2026, puramente visual — a
- * posição gravada de cada neurônio **nunca** muda por causa disto (ver
+ * posição gravada de cada pensamento **nunca** muda por causa disto (ver
  * `lib/semente.ts`: "o palácio não pode se remexer"). Quem chama soma este
  * vetor, já na amplitude de tela que quiser, em cima da posição de verdade
  * a cada quadro; fechar e abrir a Rede de novo volta exatamente ao lugar
@@ -197,7 +197,7 @@ export function balanco(id: Id, tempoMs: number): Ponto {
 // --- satélites: os itens das pastas de acervo -------------------------------
 
 /**
- * O zoom que revela o que de longe seria ruído: os nomes dos neurônios e os
+ * O zoom que revela o que de longe seria ruído: os nomes dos pensamentos e os
  * satélites dos anexos aparecem juntos, na mesma linha (decisão do usuário,
  * 24/09/2026).
  */
@@ -205,7 +205,7 @@ export const ESCALA_QUE_REVELA = 2.2
 
 /**
  * Um item de pasta na Rede: um satélite do conceito que ele escolheu primeiro.
- * Não é neurônio — não tem posição gravada, não entra no grafo, e o fio dele
+ * Não é pensamento — não tem posição gravada, não entra no grafo, e o fio dele
  * nunca é ponte (ver CLAUDE.md, "Pastas de acervo").
  */
 export interface SateliteDaCena {
@@ -256,7 +256,7 @@ export function satelitesDaCena(
 /**
  * Os dois anéis da órbita, **em pixels de tela**: o satélite fica sempre à
  * mesma distância visível do conceito, em qualquer zoom — como o próprio ponto
- * do neurônio, que não cresce com a câmera.
+ * do pensamento, que não cresce com a câmera.
  */
 export const ORBITAS_DO_SATELITE_PX = [11, 16] as const
 
@@ -294,7 +294,7 @@ export function satelitesVisiveis(
 }
 
 /** O satélite mais perto do toque, dentro do raio — com a distância, para o
- *  toque decidir entre ele e um neurônio colado nele. */
+ *  toque decidir entre ele e um pensamento colado nele. */
 export function sateliteEm(
   ponto: Ponto,
   visiveis: readonly SateliteDaCena[],

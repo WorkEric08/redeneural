@@ -20,7 +20,7 @@ import {
  * É o que a estante acende quando se segura um livro, e o que o "espiar" lista.
  * Sai inteiro de uma vez para os dois lerem dele sem recontar a cada toque.
  *
- * A ponte é decidida pelo livro de cada neurônio agora, e não pelo `cross`
+ * A ponte é decidida pelo livro de cada pensamento agora, e não pelo `cross`
  * gravado na aresta: é a mesma regra de `montarEstante`, e as duas contas não
  * podem discordar na mesma tela.
  */
@@ -66,7 +66,7 @@ export interface LivroNaEstante {
 }
 
 /**
- * A altura sai do que o livro guarda: neurônios num livro de conceitos, itens
+ * A altura sai do que o livro guarda: pensamentos num livro de conceitos, itens
  * numa pasta de acervo. As duas contas entram na mesma régua — uma pasta cheia
  * é tão alta quanto um livro cheio.
  */
@@ -130,7 +130,7 @@ export interface VizinhoDoNeuronio {
   outroLivro: string
 }
 
-/** Os vizinhos de cada neurônio, do mais forte para o mais fraco. */
+/** Os vizinhos de cada pensamento, do mais forte para o mais fraco. */
 export function vizinhosPorNeuronio(
   neuronios: readonly NeuronioNaTela[],
   livros: readonly Livro[],

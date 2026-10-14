@@ -79,13 +79,13 @@ export function Formulario({
   onEnviar,
 }: Props) {
   const padrao = useTemaPadrao()
-  // `null`: "Automático" ao criar; ao editar, um neurônio que está no porto.
+  // `null`: "Automático" ao criar; ao editar, um pensamento que está no porto.
   const [livroId, setLivroId] = useState<string | null>(inicial?.livroId ?? null)
   const [titulo, setTitulo] = useState(inicial?.titulo ?? '')
   const [conteudo, setConteudo] = useState(inicial?.conteudo ?? '')
 
   // A folha de escolher livro mora na URL, como qualquer outro painel do app
-  // (filtros da Rede, apagar do neurônio): o voltar do Android fecha a folha
+  // (filtros da Rede, apagar do pensamento): o voltar do Android fecha a folha
   // antes de sair do formulário.
   const [busca] = useSearchParams()
   const navegar = useNavigate()

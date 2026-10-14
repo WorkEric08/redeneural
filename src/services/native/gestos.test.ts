@@ -27,7 +27,7 @@ afterEach(() => {
 describe('gestos de navegador', () => {
   it('no toque, segurar um link não abre o menu do navegador', () => {
     quemAponta('coarse')
-    expect(segurarODedoEm('<a href="/novo">Novo neurônio</a>')).toBe(true)
+    expect(segurarODedoEm('<a href="/novo">Novo pensamento</a>')).toBe(true)
   })
 
   it('no toque, o texto escrito pela pessoa continua copiável', () => {
@@ -42,6 +42,6 @@ describe('gestos de navegador', () => {
 
   it('no mouse, o botão direito continua inteiro', () => {
     quemAponta('fine')
-    expect(segurarODedoEm('<a href="/novo">Novo neurônio</a>')).toBe(false)
+    expect(segurarODedoEm('<a href="/novo">Novo pensamento</a>')).toBe(false)
   })
 })

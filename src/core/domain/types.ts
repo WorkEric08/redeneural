@@ -13,7 +13,7 @@ import type { EstiloDaLombada } from './paletaNoite'
 export type Id = string
 
 /**
- * `conceitos` guarda neurônios; `acervo` é uma pasta de links e imagens (ver
+ * `conceitos` guarda pensamentos; `acervo` é uma pasta de links e imagens (ver
  * `Anexo`). Escolhido ao criar e nunca trocado: um livro que mudasse de tipo
  * com coisa dentro deixaria tudo o que tem no lugar errado.
  */
@@ -83,7 +83,7 @@ export interface Livro {
   larguraLombada: number | null
   /**
    * Altura da lombada em % da fileira, escolhida na mão. `null` é
-   * "automática": a quantidade de neurônios do livro, como sempre (ver
+   * "automática": a quantidade de pensamentos do livro, como sempre (ver
    * `features/estante/resumo.ts` e `Lombada.tsx`).
    *
    * Pedido explícito do usuário (14/09/2026), sabendo do custo: por padrão a
@@ -129,7 +129,7 @@ export interface Vaga {
  * Um enfeite que a pessoa definiu ou moveu (07/10/2026). Antes dele o enfeite
  * não existia no banco: todo lugar sem livro e sem vaga mostrava um, sorteado
  * pelo lugar. Um registro aqui vence o sorteio daquele lugar — o enfeite
- * continua sendo só visual (sem título, sem neurônio, fora do grafo), mas tem
+ * continua sendo só visual (sem título, sem pensamento, fora do grafo), mas tem
  * cor, forma e medidas como um livro.
  *
  * Nunca embaixo de um livro, como a vaga: nasce quando a pessoa edita ou move
@@ -162,7 +162,7 @@ export type DadosDoEnfeite = Omit<EnfeiteGravado, 'prateleira' | 'ordem'>
 
 /**
  * O nome de uma prateleira — puramente visual. Não é um livro: não tem
- * neurônio, não entra no grafo, não participa da ordem dos livros. Uma
+ * pensamento, não entra no grafo, não participa da ordem dos livros. Uma
  * prateleira sem etiqueta simplesmente não tem registro aqui.
  */
 export interface EtiquetaDePrateleira {
@@ -174,15 +174,15 @@ export interface EtiquetaDePrateleira {
 export interface Neuronio {
   id: Id
   /**
-   * `null` é o porto: um neurônio novo que o motor não soube onde guardar e
+   * `null` é o porto: um pensamento novo que o motor não soube onde guardar e
    * que espera a pessoa escolher. Nunca se perde — só não tem livro ainda.
    */
   livroId: Id | null
   titulo: string
   conteudo: string
   /**
-   * Vetor normalizado do texto, salvo junto do neurônio e nunca recalculado ao
-   * recarregar. `null` enquanto a inferência não terminou — o neurônio é
+   * Vetor normalizado do texto, salvo junto do pensamento e nunca recalculado ao
+   * recarregar. `null` enquanto a inferência não terminou — o pensamento é
    * persistido antes do Worker responder para que nada se perca num crash.
    */
   embedding: Float32Array | null
@@ -216,7 +216,7 @@ export interface ImagemDoResultado {
 }
 
 /**
- * Uma aresta entre dois neurônios, sempre com `aId < bId` para que o mesmo par
+ * Uma aresta entre dois pensamentos, sempre com `aId < bId` para que o mesmo par
  * nunca gere duas linhas.
  */
 export interface Conexao {
@@ -235,7 +235,7 @@ export interface Conexao {
    * Qual dos dois lados mantém esta aresta na própria vizinhança.
    *
    * A aresta existe enquanto **qualquer** um dos dois a mantiver, então saber de
-   * quem é a intenção é o que permite recalcular um neurônio sozinho sem
+   * quem é a intenção é o que permite recalcular um pensamento sozinho sem
    * derrubar o que o vizinho ainda quer.
    */
   mantidaPorA: boolean
@@ -251,7 +251,7 @@ export type MidiaDoAnexo =
  * Um item de uma pasta de acervo: um link ou uma imagem, com a legenda que diz
  * do que se trata.
  *
- * Não é um neurônio, de propósito: cada conceito mantém no máximo seis
+ * Não é um pensamento, de propósito: cada conceito mantém no máximo seis
  * vizinhos, e dez vídeos sobre um conceito tomariam todas as vagas dele — os
  * fios entre conceitos, que são o produto, sumiriam. O anexo escolhe conceitos
  * (ver `Vinculo`), e nenhum conceito fica sabendo.
@@ -333,7 +333,7 @@ export interface AnexoSnapshot {
   livroId: Id
   legenda: string
   midia: MidiaDoAnexo
-  /** Float32Array em base64, como o do neurônio. */
+  /** Float32Array em base64, como o do pensamento. */
   embedding: string | null
   /** Os bytes da imagem, em base64 — ausentes num anexo de link. */
   arquivo?: { imagem: string; miniatura: string } | undefined
