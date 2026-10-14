@@ -1098,7 +1098,7 @@ html:root[data-tema^='padrao'] .segmentado--miudo .segmento {
   background: var(--parede);
 }
 
-.pd-nome > span {
+.pd-nome-rotulo {
   display: block;
   color: var(--poeira);
   font-size: 0.78125rem;
@@ -1356,7 +1356,7 @@ html:root[data-tema^='padrao'] .segmentado--miudo .segmento {
 /* Tela muito baixa (320 × 568): o rótulo "Nome" cede o lugar — o placeholder e o `aria-label` já dizem
    o que o campo é — e a prévia, a linha dos dias e o cartão de opções encolhem mais um pouco. */
 @media (max-height: 600px) {
-  .pd-nome > span {
+  .pd-nome-rotulo {
     display: none;
   }
 

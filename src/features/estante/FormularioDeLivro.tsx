@@ -404,7 +404,7 @@ export function FormularioDeLivro({
         <div className="pd-form-nome-linha">
           {!enfeite && (
             <label className="pd-nome">
-              <span>Nome</span>
+              <span className="pd-nome-rotulo">Nome</span>
               <CampoDoNome
                 valor={titulo}
                 aoMudar={setTitulo}

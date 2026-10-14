@@ -6127,6 +6127,18 @@ centralizados juntos, levando em conta os detalhes de cada Forma. Isto **revoga*
   Normal em tela pequena 11 → 9–10; Curto 8 → 7 —, porque o ícone agora tem lugar próprio no grupo. No Bloco o
   grupo fica inteiro dentro do bloco, então ali cabem menos letras que antes.
 
+## O teclado sumia ao tocar no campo de nome, no Padrão (13/10/2026)
+
+Bug relatado: no celular o teclado abria e fechava logo em seguida. **Causa:** com o teclado aberto a janela encolhe
+(`interactive-widget=resizes-content`) e passa a valer `max-height: 600px`, onde o Padrão esconde o rótulo "Nome"
+com `.pd-nome > span { display: none }`. O invólucro do campo (`.campo-do-nome`, `CampoDoNome.tsx`) também é um
+`<span>` filho direto do mesmo `label` — então o próprio campo ficava `display: none` e o navegador tirava o foco
+dele, sem evento de blur. **Correção:** o rótulo ganhou a classe `pd-nome-rotulo`, e as regras do Padrão miram nela.
+**Regra para o futuro:** estilo de tela baixa que esconde algo por seletor de tag (`span`, `div`) pode pegar um campo;
+confira no navegador com a janela encolhida (`Emulation.setDeviceMetricsOverride` para ~460 px de altura) que o
+`document.activeElement` continua o campo. Conferido assim, nos dois temas: nome e dias do livro (criar e editar),
+título e texto do pensamento, busca e os campos do item da pasta.
+
 ## Fases
 
 0. ✅ Esqueleto (Vite/React/TS/Tailwind/PWA/Capacitor)
