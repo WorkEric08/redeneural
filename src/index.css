@@ -552,7 +552,11 @@ img {
      sólida. O que passa dela é cortado aqui — só enfeite, porque os livros
      cabem (ver `ajustarALargura` em prateleiras.ts). */
   margin-inline: var(--mv-lateral);
-  overflow: hidden;
+  /* Só nas laterais: o topo dos livros passa da fileira e **sobrepõe** a prateleira de cima (14/10/2026) —
+     é por onde aparecem o livro erguido na mão, o ponto do Fazendo e a lua do adormecido. O vão de baixo
+     pinta depois do de cima, então o que sobe fica por cima. */
+  overflow-x: clip;
+  overflow-y: visible;
   /* A fileira em si não recebe toque; quem recebe são os lugares — o livro
      (.lombada--livro) e o lugar sem livro (.lugar). */
   pointer-events: none;

@@ -34,12 +34,10 @@ function Lua({ dentro = false }: { dentro?: boolean }) {
   )
 }
 
-/** A maior lua que cabe acima do topo, e a menor que ainda se lê; menos que isso, ela entra na lombada. */
-const LUA_MAXIMA_PX = 13
-const LUA_MINIMA_FORA_PX = 7
+/** A lua acima do topo cresce com a lombada (10,5% da altura), de 8 a 14 px; dentro dela, no deitado, tem 7. */
+const LUA_MINIMA_PX = 8
+const LUA_MAXIMA_PX = 14
 const LUA_DENTRO_PX = 7
-/** O vão entre o topo da lombada e a lua (2 px) mais o que a prateleira de cima toma (1 px). */
-const FOLGA_DA_LUA_PX = 3
 
 /**
  * - `repouso`: na prateleira, sob a luz de Ajustes.
@@ -113,12 +111,17 @@ export function Lombada({
   const ehPasta = item.livro.tipo === 'acervo'
   // O pé da feita é do disco: o ícone não cabe junto, e a lombada feita fica sem ele.
   const icone = iconesNosLivros && item.andamento !== 'feita'
-  // A folga em cima do livro de pé: o que sobra da fileira acima da lombada. Deitado, o "topo" é a ponta
-  // esquerda, junto do vizinho, e a lua sempre entra na lombada.
-  const folgaEmCima = deitada ? 0 : alturaDaFileira * (1 - altura / 100)
-  const luaForaPx = Math.min(LUA_MAXIMA_PX, Math.floor(folgaEmCima - FOLGA_DA_LUA_PX))
-  const luaFora = luaForaPx >= LUA_MINIMA_FORA_PX
-  const luaPx = luaFora ? luaForaPx : LUA_DENTRO_PX
+  // O topo do livro de pé passa da fileira e sobrepõe a prateleira de cima, então a lua cabe sempre acima
+  // dele. Deitado, o "topo" é a ponta esquerda, junto do vizinho: a lua entra na lombada.
+  const luaFora = !deitada
+  const luaPx = luaFora
+    ? Math.round(
+        Math.min(
+          LUA_MAXIMA_PX,
+          Math.max(LUA_MINIMA_PX, 0.105 * ((altura * alturaDaFileira) / 100)),
+        ),
+      )
+    : LUA_DENTRO_PX
   const geo = geometriaDaLombada({
     estilo: item.livro.estilo,
     cor: item.livro.cor,
@@ -175,8 +178,8 @@ export function Lombada({
       {ponte && <span className="lombada-ponto" aria-hidden />}
       {item.andamento === 'fazendo' && <span className="lombada-fazendo-faixa" aria-hidden />}
       {/* Os sinais logo acima do topo: o ponto do Fazendo e a lua da ideia adormecida, lado a lado
-          quando há os dois. A lua só cabe fora se o livro deixar folga em cima (o mais alto deixa 6,5%
-          da fileira, o "Enorme" quase nada): sem folga, ela vai para dentro do topo da lombada. */}
+          quando há os dois. Passam da fileira e sobrepõem a prateleira de cima. No livro deitado a lua
+          entra na lombada. */}
       {(item.andamento === 'fazendo' || (item.comIdeiaAdormecida && luaFora)) && (
         <span className="lombada-sinais" aria-hidden>
           {item.andamento === 'fazendo' && <span className="lombada-fazendo-ponto" />}

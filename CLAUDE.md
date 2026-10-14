@@ -4998,11 +4998,11 @@ degradê escuros no alto liam como sombra), e ficam só `solido`, `faixa` e `fio
   `core/domain/executavel.ts`) mostra só a **lua**, mesmo que o livro continue "fazendo" ou sem marca; **todas as
   pendentes dormindo** (`andamento: 'adormecido'`, como antes) mostram a lua **e uma neblina leve** subindo do
   pé (de transparente a 35% do lilás `#A9BAF0`, a partir de 55% da altura). O leitor de tela diz "com ideia adormecida".
-  - **Onde fica a lua:** acima do topo, com o ponto dourado do Fazendo ao lado (os dois moram em `.lombada-sinais`),
-    **se couber**: a maior que a folga em cima deixa (até 13 px, no mínimo 7). Os livros mais altos quase não têm
-    folga (o de 93,5% deixa ~8 px, o "Enorme" ~2 px), e uma lua maior era cortada pela prateleira de cima —
-    visto no navegador. Sem folga, e **sempre no livro deitado**, ela entra **dentro da lombada**, no alto (7 px,
-    a 2 px do topo). No deitado ela gira de volta, para ler em pé.
+  - **Onde fica a lua:** **acima do topo**, com o ponto dourado do Fazendo ao lado (os dois moram em `.lombada-sinais`), no
+    tamanho de 10,5% da altura da lombada (de 8 a 14 px). Só no livro **deitado** ela entra **dentro da lombada**, no alto
+    (7 px), porque o "topo" dele é a ponta esquerda, junto do vizinho; lá ela gira de volta, para ler em pé. (Antes de
+    14/10/2026, mais tarde no mesmo dia, a lua só ia acima quando o livro deixava folga e entrava na lombada nos livros altos,
+    porque a prateleira cortava o topo; ver "O topo do livro sobrepõe a prateleira de cima".)
   - **Cor:** lilás frio `#A9BAF0` (o da névoa), nunca o dourado do andamento nem o azul da ponte. No **Padrão claro**,
     onde a prateleira é um cartão branco, a lua e a neblina usam `#5D70BD` (o mesmo lilás, mais escuro) para aparecer.
   - **Custo:** quando a lua entra na lombada ela divide o alto com a margem do título; com título que enche a zona
@@ -6260,6 +6260,25 @@ andamento. **Para fazer**: um círculo **cinza**. **Fazendo**: o círculo cinza 
   em cada andamento, uma adormecida e pensamentos comuns. 801 testes (3 novos, de `marcasDoAndamento`), tipos e lint
   limpos. **Não verificado em toque real**, nem no Clássico (o desenho é o mesmo; só a tinta do ponto comum muda de tema).
 
+## O topo do livro sobrepõe a prateleira de cima (14/10/2026)
+
+Pedido do usuário: a parte de cima dos livros deve **sobrepor a parte de cima das prateleiras**, para aparecerem o detalhe
+do livro executável (o ponto do Fazendo, a lua) e o livro erguido quando se segura para mover. Antes, a fileira
+(`.movel-fila`) e, no Padrão, o cartão (`.movel-vao`) tinham `overflow: hidden` e cortavam tudo que passava do topo.
+
+- **Clássico:** `.movel-fila` passou a `overflow-x: clip; overflow-y: visible`. Só as laterais cortam (como antes: o que passa
+  da lateral é enfeite); o topo é livre. O vão de baixo pinta depois do de cima (cada `.movel-vao` é uma pilha própria, em
+  ordem do documento), então o que sobe cobre a tábua e o pé dos livros de cima.
+- **Padrão:** o cartão cortava para arredondar os cantos de baixo; agora é `clip-path: inset(-48px 0 0 0 round 0 0 18px 18px)`:
+  continua cortando embaixo, nos cantos redondos, e deixa 48 px livres em cima (cobre o livro erguido, que sobe uns 9 px, e o
+  sinal do andamento, que sobe uns 16 px).
+- **A lua** deixou de entrar na lombada nos livros altos (ver o item "O livro adormecido não apaga mais; ganha uma lua", em "A estante no estilo Noite"): cabe sempre acima.
+- **O que não mudou:** o livro na mão, em arrasto, é o fantasma (portal no `body`) e nunca foi cortado; o corte das laterais e o
+  `overflow: hidden` do móvel inteiro (`.movel`) ficam. O primeiro andar não tem prateleira acima: o que sobe ali vai para o
+  tampo (10 px de cornija no Clássico, 12 px de ar no Padrão), e uma lombada muito alta com lua e ponto pode encostar no alto.
+- **Verificado** no Chrome (build de produção, 412×892): livro erguido na mão (sem arrastar) e sinais do andamento por cima da
+  prateleira de cima, no Clássico e no Padrão escuro e claro. Tipos, lint e testes limpos. **Não verificado em toque real.**
+
 ## Fases
 
 0. ✅ Esqueleto (Vite/React/TS/Tailwind/PWA/Capacitor)
@@ -6315,3 +6334,4 @@ andamento. **Para fazer**: um círculo **cinza**. **Fazendo**: o círculo cinza 
     (14/10/2026)
 31. ✅ O tema Clássico vira easter egg: liga com um livro chamado "Clássico"/"Tema clássico" (14/10/2026)
 32. ✅ O círculo da ideia executável diz o andamento na Rede e no Mapa: cinza, cinza com brilho, amarelo (14/10/2026)
+33. ✅ O topo do livro sobrepõe a prateleira de cima: sinais do andamento e livro erguido aparecem inteiros (14/10/2026)

@@ -309,7 +309,9 @@ html:root[data-tema^='padrao'] .movel-corpo {
    50) escurece o cartão, como escurecia o fundo da madeira. A fileira ganha 12 px de ar em cima e
    perde os 8 px da tábua, então a conta da altura (`.movel-fila`) desconta 22 px por prateleira. */
 html:root[data-tema^='padrao'] .movel-vao {
-  overflow: hidden;
+  /* O cartão corta embaixo, nos cantos redondos, mas não em cima: o topo dos livros sobrepõe o cartão de
+     cima (a margem de 48 px cobre o livro erguido e o sinal do andamento). */
+  clip-path: inset(-48px 0 0 0 round 0 0 18px 18px);
   margin-bottom: var(--pd-vao-vao);
   padding-top: var(--pd-vao-ar);
   border-radius: 18px;
