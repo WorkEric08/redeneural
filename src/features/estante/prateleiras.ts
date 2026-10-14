@@ -179,7 +179,7 @@ function degrauAte(px: number): number | null {
 }
 
 /** O espaço entre dois lugares da fileira — o `gap` de `.movel-fila`. */
-const FOLGA_ENTRE_LUGARES = 1
+export const FOLGA_ENTRE_LUGARES = 1
 
 /** A menor lombada que um livro pode ter (a "Fina" do formulário). */
 export const LARGURA_MINIMA_DO_LIVRO = 24

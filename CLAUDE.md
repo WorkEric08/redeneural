@@ -6519,6 +6519,46 @@ Pedido do usuário: onde houver "Palácio Mental", fica só **"Locus"**. **Isto 
 - **O termo "palácio"** (a casa da pessoa, a "biblioteca") continua nos registros antigos deste arquivo; nos textos de tela já virou "rede".
 - **Verificado:** tipos, lint e testes limpos. Texto apenas, **não visto no navegador**.
 
+## A barra de soltura: sempre à mostra, do tamanho do livro (15/10/2026)
+
+Pedido do usuário: a barra branca que mostra onde o livro na mão fica **deve sempre ser exibida**, e ter o
+**tamanho do comprimento do livro** que está sendo movido. **Isto substitui** as barras do lado e da pilha das
+etapas 1 e 2 da mobilidade (a `box-shadow` na borda do livro de destino e a `.pilha-insercao`), que só apareciam
+sobre um livro ou uma pilha, tinham o tamanho do livro **de destino**, e sumiam quando a prévia ao vivo abria o lugar.
+
+- **Uma barra só por prateleira** (`.barra-de-soltura`, filha de `.movel-fila`), em px calculados, sem receber toque.
+  `barraDeSoltura` (`features/estante/barraDeSoltura.ts`, pura, 5 testes) mede no **desenho que a soltura gravaria**
+  — o mesmo `moverLivroNaEstante` + `montarPrateleiras` da prévia, sem a espera de 90 ms —, então a barra aparece desde
+  o primeiro instante e continua depois que a prévia abre o lugar. Escolha do usuário: **na borda esquerda do lugar**
+  onde o livro cai.
+- **Livro de pé:** barra **vertical**, com a **altura do livro na mão**, encostada no pé da fileira. Soltar na metade
+  direita de um livro, ou num enfeite encostado nele, dá a borda direita do livro; a barra anda de lugar em lugar
+  com o dedo (transição de 120 ms).
+- **Livro deitado:** barra **horizontal**, com o **comprimento** dele, centrada no lugar e na altura do **topo** do livro na
+  pilha (a soma das espessuras, já na escala da pilha). Num lugar que ainda não é pilha, fica no pé.
+- **Recusado** (sem lugar livre, ou os livros deixariam de caber): a barra **continua à mostra**, em vermelho, marcando o
+  lugar do dedo, junto da prateleira vermelha de sempre. Soltar volta o livro e mostra o aviso de sempre.
+- **O anel de "vai cair aqui"** (`data-alvo`) ficou só para o **enfeite na mão** (que não tem prévia): para o livro, é a
+  barra. Saíram `lado` da `Lombada`, `insercaoDaPilha`, `ladoDaPilha` e o CSS de `data-lado` e `.pilha-insercao`.
+
+### O que investiguei sobre "deixar o livro entre um livro e um enfeite"
+
+O usuário disse que isso era recusado. Não achei falha de lugar: soltar na divisa entre um livro e um enfeite cai
+sempre logo depois do livro, em qualquer ponto da divisa (testado de −14 a +30 px), e um fuzz da regra
+(`moverLivroNaEstante`, 113 mil combinações de livros de pé e deitados, os dois lados) **nunca devolveu recusa quando
+havia lugar livre**. A recusa que ele vê é a de **largura**: a fileira útil mede 358 px num celular de 412 px (306 em
+360, 266 em 320) e a regra só deixa o livro ir se os livros da prateleira continuam cabendo entre as laterais.
+Livros deitados passam de 80 a 130 px, então 3 deles lotam a prateleira. Num caso assim **os enfeites entre os livros
+somem do desenho** (só aparência), e o dedo só alcança os livros; o enfeite que sobra ainda aceita soltar, mas o aviso
+"A prateleira N não tem espaço para mais um livro." sai se o livro novo não cabe. Mudar isso é decidir que livro pode
+passar das laterais, o que a regra "as laterais são sólidas" proíbe — fica como está, e a barra vermelha agora mostra
+a recusa antes de soltar.
+
+- **Verificado** no Chrome (build de produção, mouse por CDP): livro de pé com a barra de **altura igual** à do livro
+  (diferença de 0 px), encostada no pé, antes e depois da prévia, anda com o dedo e some ao soltar; livro deitado com a
+  barra horizontal de **largura igual** ao comprimento; recusa em 320 px com a barra vermelha e o aviso. 818 testes (5
+  novos), tipos e lint limpos. **Não verificado em toque real.**
+
 ## Fases
 
 0. ✅ Esqueleto (Vite/React/TS/Tailwind/PWA/Capacitor)
@@ -6582,3 +6622,4 @@ Pedido do usuário: onde houver "Palácio Mental", fica só **"Locus"**. **Isto 
 38. ✅ Busca global (estante e Rede) e Buscar local (dentro do livro, só os pensamentos dele) (15/10/2026)
 39. ✅ "Palácio" vira "rede" nos textos da interface; o nome do produto fica (15/10/2026)
 40. ✅ O produto se chama Locus: "Palácio Mental" sai de toda parte; identificadores e id do app ficam (15/10/2026)
+41. ✅ A barra de soltura: sempre à mostra, do tamanho do livro na mão, vermelha quando recusa (15/10/2026)

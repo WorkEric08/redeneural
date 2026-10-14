@@ -1,12 +1,10 @@
-import { Fragment, useEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
+import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
 
 import {
   enfeitesSemLivroEmCima,
-  entraNaPilha,
   moverEnfeiteNaEstante,
   moverLivroNaEstante,
   type DadosDoEnfeite,
-  type LadoDoLivro,
   type PontoDeSoltura,
   type EnfeiteGravado,
   type Id,
@@ -14,11 +12,13 @@ import {
   vagasDepoisDeMover,
 } from '@/core'
 
+import { barraDeSoltura, type BarraDeSoltura } from './barraDeSoltura'
 import { Enfeite, FantasmaDoEnfeite } from './Enfeite'
 import { Fantasma, Lombada, type EstadoDaLombada } from './Lombada'
 import { sombraDoFundoEmPercentual } from './lombadaNoite'
 import { lembrarMedidasDaEstante } from './medidasDaEstante'
 import {
+  alturaDaLombadaEmPercentual,
   cabeNaPrateleira,
   dadosDoEnfeite,
   extensaoDoLivro,
@@ -33,7 +33,6 @@ import type { LivroNaEstante } from './resumo'
 import { useAnimarMovimento } from './useAnimarMovimento'
 import { useMedidasDaFileira } from './useMedidasDaFileira'
 import {
-  mesmoAlvo,
   pontoDoAlvo,
   useManipularLivros,
   type LugarDaEstante,
@@ -339,45 +338,66 @@ export function Movel({
   )
   useAnimarMovimento(movel, prateleirasVistas, gesto.fase === 'arrastando')
 
-  // Com a prévia no ar o livro já está onde vai cair: o anel, a barra do lado e a linha de inserção
-  // (que dizem "vai cair aqui" antes da prévia chegar) saem.
-  const previaNoAr = previa !== null && alvo !== null && mesmoAlvo(alvoDaPrevia, alvo)
-  const destaque = previaNoAr ? null : alvo
+  // O anel de "vai cair aqui" é só do enfeite na mão. O livro na mão tem a barra de soltura
+  // (`barra`), que diz onde ele fica, com a prévia no ar ou sem ela.
+  const destaque = gesto.livroId === null ? alvo : null
 
-  // Onde, numa pilha, o livro na mão entraria — para a linha de inserção. `antesDe` é o livro logo
-  // acima do ponto (ou `null`, o topo). Só quando soltar ali entra na pilha de fato (uma pilha
-  // cheia, ou um livro de pé, tomam o lugar e empurram) e muda algo (soltar no andar em que o livro
-  // já está é desistir).
-  function insercaoDaPilha(
-    prateleira: number,
-    lugar: Extract<Lugar, { tipo: 'pilha' }>,
-  ): { antesDe: string | null } | null {
-    if (gesto.fase !== 'arrastando' || gesto.livroId === null || destaque === null) return null
-    if (!mesmoLugar(destaque, prateleira, lugar.indice) || destaque.posicao === undefined)
-      return null
+  // A barra branca: onde o livro na mão fica se soltar agora, no tamanho dele — a altura (vertical)
+  // do livro de pé, ou o comprimento (horizontal) do deitado. Sempre à mostra enquanto o dedo está
+  // numa prateleira; vermelha quando a soltura seria recusada (aí marca o lugar do dedo). Mede-se no
+  // desenho que a soltura gravaria, sem esperar a prévia (`barraDeSoltura`).
+  const barra = useMemo((): BarraDeSoltura | null => {
+    if (gesto.fase !== 'arrastando' || gesto.livroId === null || alvo === null) return null
+    const item = porId.get(gesto.livroId)
+    if (!item) return null
+    const deitado = item.livro.orientacao === 'deitado'
+    const comprimento = deitado
+      ? extensaoDoLivro(item, alturaDaFileira)
+      : Math.round(
+          (alturaDaLombadaEmPercentual(item.livro.comprimentoLombada, item.altura) *
+            alturaDaFileira) /
+            100,
+        )
     const livros = estante.map((e) => e.livro)
-    if (!entraNaPilha(livros, gesto.livroId, prateleira, lugar.indice, destaque.posicao))
-      return null
-    const meu = lugar.itens.findIndex((i) => i.livro.id === gesto.livroId)
-    if (meu >= 0 && destaque.posicao === meu) return null
-    const outros = lugar.itens.filter((i) => i.livro.id !== gesto.livroId)
-    return { antesDe: outros[destaque.posicao]?.livro.id ?? null }
-  }
-
-  // O lado em que o dedo está sobre uma pilha que **não** recebe o livro na mão (cheia, ou o livro é
-  // de pé): aí soltar é cair na fresta ao lado dela, e a barra mostra de que lado. Quando ela recebe,
-  // quem mostra é a linha de inserção.
-  function ladoDaPilha(
-    prateleira: number,
-    lugar: Extract<Lugar, { tipo: 'pilha' }>,
-  ): LadoDoLivro | undefined {
-    if (gesto.fase !== 'arrastando' || gesto.livroId === null || destaque === null) return undefined
-    if (!mesmoLugar(destaque, prateleira, lugar.indice)) return undefined
-    const livros = estante.map((e) => e.livro)
-    if (entraNaPilha(livros, gesto.livroId, prateleira, lugar.indice, destaque.posicao))
-      return undefined
-    return destaque.lado
-  }
+    const depois = recusado
+      ? null
+      : moverLivroNaEstante(livros, gesto.livroId, alvo.prateleira, alvo.lugar, pontoDoAlvo(alvo))
+    const cai = depois?.find((l) => l.id === gesto.livroId)
+    let montadas = prateleiras
+    if (depois) {
+      const novos = new Map(depois.map((l) => [l.id, l]))
+      montadas = montarPrateleiras(
+        estante.map((e) => ({ ...e, livro: novos.get(e.livro.id) ?? e.livro })),
+        vagasDepoisDeMover(vagas, depois),
+        quantidadeDePrateleiras,
+        larguraUtil ?? undefined,
+        enfeitesSemLivroEmCima(enfeites, depois),
+        alturaDaFileira,
+      )
+    }
+    return barraDeSoltura({
+      prateleiras: montadas,
+      prateleira: cai?.prateleira ?? alvo.prateleira,
+      indice: cai?.ordem ?? alvo.lugar,
+      livroId: gesto.livroId,
+      deitado,
+      comprimento,
+      alturaDaFileira,
+    })
+  }, [
+    gesto.fase,
+    gesto.livroId,
+    alvo,
+    recusado,
+    porId,
+    estante,
+    prateleiras,
+    vagas,
+    enfeites,
+    quantidadeDePrateleiras,
+    larguraUtil,
+    alturaDaFileira,
+  ])
 
   function estadoDe(livroId: string): EstadoDaLombada {
     if (abrindoId === livroId) return 'vazio'
@@ -426,41 +446,33 @@ export function Movel({
                         !lugar.itens.some((i) => i.livro.id === gesto.livroId)) ||
                       undefined
                     }
-                    data-lado={ladoDaPilha(prateleira, lugar)}
                     style={{ width: `${String(lugar.largura)}px` }}
                   >
                     {lugar.itens.map((item, _, itens) => (
-                      <Fragment key={item.livro.id}>
-                        {insercaoDaPilha(prateleira, lugar)?.antesDe === item.livro.id && (
-                          <span className="pilha-insercao" aria-hidden />
-                        )}
-                        <Lombada
-                          item={item}
-                          lugar={lugar.indice}
-                          largura={
-                            Math.round(
-                              larguraDoLivroGravado(item.livro) *
-                                escalaDaPilha(
-                                  itens.map((i) => larguraDoLivroGravado(i.livro)),
-                                  alturaDaFileira,
-                                ) *
-                                10,
-                            ) / 10
-                          }
-                          estado={estadoDe(item.livro.id)}
-                          alvo={false}
-                          ponte={(pontesDoFoco?.get(item.livro.id) ?? 0) > 0}
-                          chegando={chegandoId === item.livro.id}
-                          intensidadeDaLuz={intensidadeDaLuz}
-                          iconesNosLivros={iconesNosLivros}
-                          alturaDaFileira={alturaDaFileira}
-                          manipular={manipular(item.livro.id)}
-                        />
-                      </Fragment>
+                      <Lombada
+                        key={item.livro.id}
+                        item={item}
+                        lugar={lugar.indice}
+                        largura={
+                          Math.round(
+                            larguraDoLivroGravado(item.livro) *
+                              escalaDaPilha(
+                                itens.map((i) => larguraDoLivroGravado(i.livro)),
+                                alturaDaFileira,
+                              ) *
+                              10,
+                          ) / 10
+                        }
+                        estado={estadoDe(item.livro.id)}
+                        alvo={false}
+                        ponte={(pontesDoFoco?.get(item.livro.id) ?? 0) > 0}
+                        chegando={chegandoId === item.livro.id}
+                        intensidadeDaLuz={intensidadeDaLuz}
+                        iconesNosLivros={iconesNosLivros}
+                        alturaDaFileira={alturaDaFileira}
+                        manipular={manipular(item.livro.id)}
+                      />
                     ))}
-                    {insercaoDaPilha(prateleira, lugar)?.antesDe === null && (
-                      <span className="pilha-insercao" aria-hidden />
-                    )}
                   </div>
                 ) : lugar.tipo === 'livro' ? (
                   <Lombada
@@ -472,9 +484,6 @@ export function Movel({
                     alvo={
                       mesmoLugar(destaque, prateleira, lugar.indice) &&
                       gesto.livroId !== lugar.item.livro.id
-                    }
-                    lado={
-                      mesmoLugar(destaque, prateleira, lugar.indice) ? destaque?.lado : undefined
                     }
                     ponte={(pontesDoFoco?.get(lugar.item.livro.id) ?? 0) > 0}
                     chegando={chegandoId === lugar.item.livro.id}
@@ -506,6 +515,20 @@ export function Movel({
                     )}
                   />
                 ),
+              )}
+              {barra?.prateleira === prateleira && (
+                <span
+                  className="barra-de-soltura"
+                  data-eixo={barra.eixo}
+                  style={
+                    {
+                      left: `${String(barra.esquerda)}px`,
+                      '--barra-px': `${String(barra.comprimento)}px`,
+                      '--barra-base': `${String(barra.base)}px`,
+                    } as CSSProperties
+                  }
+                  aria-hidden
+                />
               )}
             </div>
             <span className="movel-tabua" aria-hidden />

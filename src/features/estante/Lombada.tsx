@@ -1,7 +1,7 @@
 import type { CSSProperties } from 'react'
 import { createPortal } from 'react-dom'
 
-import { especieDoLivro, INTENSIDADE_DA_LUZ_PADRAO, type LadoDoLivro } from '@/core'
+import { especieDoLivro, INTENSIDADE_DA_LUZ_PADRAO } from '@/core'
 import { contar } from '@/lib/plural'
 
 import { EmblemaDaLombada } from './EmblemaDaLombada'
@@ -57,10 +57,8 @@ interface Props {
    */
   largura: number
   estado: EstadoDaLombada
-  /** O livro embaixo do dedo de quem arrasta outro: soltar ali o empurra para o lado. */
+  /** O livro embaixo de um enfeite na mão: soltar ali o empurra para o lado. */
   alvo: boolean
-  /** Com `alvo`: a metade do livro em que o dedo está — a fresta onde o livro na mão cai. */
-  lado?: LadoDoLivro | undefined
   /** Tem fio de ponte com o livro que está na mão ou no painel. */
   ponte: boolean
   /** Acabou de nascer: chega à prateleira em vez de só aparecer nela. */
@@ -100,7 +98,6 @@ export function Lombada({
   largura,
   estado,
   alvo,
-  lado,
   ponte,
   chegando,
   intensidadeDaLuz,
@@ -144,7 +141,6 @@ export function Lombada({
       data-lugar={deitada ? undefined : lugar}
       data-estado={estado}
       data-alvo={alvo || undefined}
-      data-lado={alvo ? lado : undefined}
       data-ponte={ponte || undefined}
       data-chegando={chegando || undefined}
       data-orientacao={item.livro.orientacao}
