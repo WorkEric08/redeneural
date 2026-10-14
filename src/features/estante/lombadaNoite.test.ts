@@ -11,6 +11,7 @@ import {
   luminancia,
   reservaDoIcone,
   sombraDoFundoEmPercentual,
+  pisoDoTitulo,
   tamanhoDoTitulo,
   TEXTO_CLARO,
   TEXTO_ESCURO,
@@ -146,6 +147,54 @@ describe('geometriaDaLombada', () => {
     // 75 ÷ (4 × 0,72) = 26 px no sólido; a zona do fio (72,5) é um pouco menor.
     expect(fonte('solido')).toBe('26px')
     expect(fonte('fio')).toBe('25.2px')
+  })
+
+  describe('o piso do título acompanha a fileira', () => {
+    it('é 11 px na fileira de referência e proporcional abaixo, nunca menos que 7', () => {
+      expect(pisoDoTitulo(undefined)).toBe(11)
+      expect(pisoDoTitulo(132)).toBe(11)
+      expect(pisoDoTitulo(200)).toBe(11)
+      expect(pisoDoTitulo(92)).toBe(7.7)
+      expect(pisoDoTitulo(56)).toBe(7)
+    })
+
+    it('a mesma quantidade de letras cabe na fileira pequena e na grande', () => {
+      // "Curto" (55%): 73 px de lombada em 132 e 51 px em 92. Sem ícone a zona é 75% de H.
+      const cabem = (fileira: number, h: number): number => {
+        const geo = geometriaDaLombada({
+          ...base,
+          estilo: 'solido',
+          largura: 38,
+          altura: h,
+          icone: true,
+          alturaDaFileira: fileira,
+          titulo: 'ABCDEF',
+        })
+        const st = geo.style as Record<string, string>
+        const zona = (parseFloat(st['--zt-altura']!) / 100) * h
+        return Math.floor(zona / (parseFloat(st['--fs']!) * 0.72))
+      }
+      expect(cabem(92, 51)).toBeGreaterThanOrEqual(cabem(132, 73) - 1)
+    })
+
+    it('na fileira pequena o ícone cede o lugar ao título que não cabe; na grande nunca', () => {
+      const entrada = {
+        ...base,
+        estilo: 'solido' as const,
+        largura: 38,
+        icone: true,
+        titulo: 'ABCDEFGH',
+      }
+      expect(geometriaDaLombada({ ...entrada, altura: 66, alturaDaFileira: 92 }).semIcone).toBe(
+        true,
+      )
+      expect(geometriaDaLombada({ ...entrada, altura: 95, alturaDaFileira: 132 }).semIcone).toBe(
+        false,
+      )
+      expect(
+        geometriaDaLombada({ ...entrada, titulo: 'AB', altura: 66, alturaDaFileira: 92 }).semIcone,
+      ).toBe(false)
+    })
   })
 
   it('o título se centra na lombada em toda forma', () => {

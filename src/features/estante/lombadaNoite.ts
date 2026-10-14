@@ -46,6 +46,13 @@ const FOLGA_DO_ICONE_PX = 2
  */
 const MINIMO_DO_TITULO = 11
 /**
+ * A fileira de referência (a mais alta, 132 px): nela o piso do título é o de 11 px. Numa fileira
+ * menor o piso **encolhe junto**, em proporção — assim a mesma quantidade de letras cabe em tela
+ * pequena e em tela grande (pedido do usuário, 13/10/2026) —, até `PISO_ABSOLUTO_DO_TITULO`.
+ */
+const FILEIRA_DE_REFERENCIA_PX = 132
+const PISO_ABSOLUTO_DO_TITULO = 7
+/**
  * Quanto cada caractere ocupa na vertical, em fração do corpo, na fonte do título (Source Sans 3
  * em peso 600, caixa alta, 0,06em de espaçamento). Medido com a fonte carregada, sobre títulos
  * de verdade: a média dá 0,60, as palavras de letras largas (CONTORNO, PROGRAMAÇÃO) 0,67–0,68 e o
@@ -135,10 +142,24 @@ const ZONAS: Record<EstiloDaLombada, Zona> = {
  * fixo, "FAIXA" não caberia na zona da faixa e viraria reticências. Abaixo do
  * piso o título fica em 9 px e o que não cabe vira reticências.
  */
-export function tamanhoDoTitulo(largura: number, espaco: number, caracteres: number): number {
+export function tamanhoDoTitulo(
+  largura: number,
+  espaco: number,
+  caracteres: number,
+  piso: number = MINIMO_DO_TITULO,
+): number {
   const n = Math.max(1, caracteres)
   const livre = Math.min(0.46 * largura, espaco / (n * AVANCO_DO_CARACTERE))
-  return Math.round(Math.max(MINIMO_DO_TITULO, livre) * 10) / 10
+  return Math.round(Math.max(piso, livre) * 10) / 10
+}
+
+/** O piso do título para uma fileira: 11 px na de 132 px, proporcional abaixo, nunca menos que 7 px. */
+export function pisoDoTitulo(fileira: number | undefined): number {
+  if (fileira === undefined || fileira >= FILEIRA_DE_REFERENCIA_PX) return MINIMO_DO_TITULO
+  return Math.max(
+    PISO_ABSOLUTO_DO_TITULO,
+    Math.round(MINIMO_DO_TITULO * (fileira / FILEIRA_DE_REFERENCIA_PX) * 10) / 10,
+  )
 }
 
 /** Quantos px do pé a lombada reserva para o ícone, de baixo para cima. */
@@ -161,12 +182,16 @@ interface Entrada {
   peca?: Peca
   /** A lombada mostra o ícone da espécie no pé: o título cede o espaço dele. */
   icone?: boolean
+  /** A altura da fileira onde a lombada mora, em px: numa fileira baixa o piso do título encolhe. */
+  alturaDaFileira?: number
 }
 
 export interface GeometriaDaLombada {
   estilo: EstiloDaLombada
   /** As variáveis CSS que `.lombada` lê. */
   style: CSSProperties
+  /** Numa fileira baixa o ícone do pé cedeu o lugar ao título: quem o desenha não o desenha. */
+  semIcone: boolean
 }
 
 function arredondar(valor: number): number {
@@ -186,11 +211,25 @@ export function geometriaDaLombada(e: Entrada): GeometriaDaLombada {
   const zona = ZONAS[e.estilo]
   // Com ícone, o fim da zona do título sobe para ficar acima dele — sem passar do começo dela:
   // abaixo do piso de 9 px o título fica minúsculo e o que não cabe vira reticências.
-  const fundoLivre = e.icone
+  const piso = pisoDoTitulo(e.alturaDaFileira)
+  const fundoComIcone = e.icone
     ? Math.min(zona.fundo, ((e.altura - reservaDoIcone(e.estilo)) / e.altura) * 100)
     : zona.fundo
-  const alturaDaZona = Math.max(fundoLivre - zona.topo, (MINIMO_DO_TITULO / e.altura) * 100)
-  const fonte = tamanhoDoTitulo(e.largura, (alturaDaZona / 100) * e.altura, caracteres)
+  const zonaDe = (fundo: number): number => Math.max(fundo - zona.topo, (piso / e.altura) * 100)
+  let alturaDaZona = zonaDe(fundoComIcone)
+  let fonte = tamanhoDoTitulo(e.largura, (alturaDaZona / 100) * e.altura, caracteres, piso)
+  let semIcone = false
+  // Numa fileira baixa (piso menor que o de referência), o título que não cabe tira o ícone do pé:
+  // são 20 px a mais de zona, e é o que deixa a mesma quantidade de letras da tela grande. Na
+  // fileira de referência nada muda.
+  if (e.icone && piso < MINIMO_DO_TITULO) {
+    const livre = (alturaDaZona / 100) * e.altura
+    if (livre / (Math.max(1, caracteres) * AVANCO_DO_CARACTERE) < piso) {
+      alturaDaZona = zonaDe(zona.fundo)
+      fonte = tamanhoDoTitulo(e.largura, (alturaDaZona / 100) * e.altura, caracteres, piso)
+      semIcone = true
+    }
+  }
 
   const style = {
     '--cor': cor,
@@ -210,5 +249,5 @@ export function geometriaDaLombada(e: Entrada): GeometriaDaLombada {
     '--disco-feita': `${String(arredondar(2 * Math.max(3.4, 0.034 * e.altura)))}px`,
   } as CSSProperties
 
-  return { estilo: e.estilo, style }
+  return { estilo: e.estilo, style, semIcone }
 }

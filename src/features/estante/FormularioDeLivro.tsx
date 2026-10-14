@@ -239,6 +239,7 @@ export function FormularioDeLivro({
     intensidadeDaLuz,
     peca: enfeite ? 'enfeite' : 'livro',
     icone,
+    alturaDaFileira,
   })
 
   const amostra = (
@@ -264,7 +265,9 @@ export function FormularioDeLivro({
           {contagem}
         </span>
       )}
-      {icone && <EmblemaDaLombada chave={ehPasta ? 'pasta' : (emblema ?? especie)} />}
+      {icone && !geo.semIcone && (
+        <EmblemaDaLombada chave={ehPasta ? 'pasta' : (emblema ?? especie)} />
+      )}
     </span>
   )
 

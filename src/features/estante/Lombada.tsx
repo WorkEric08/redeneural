@@ -97,6 +97,7 @@ export function Lombada({
     altura: deitada ? extensao : (altura * alturaDaFileira) / 100,
     intensidadeDaLuz,
     icone,
+    alturaDaFileira,
   })
 
   const botao = (
@@ -149,7 +150,7 @@ export function Lombada({
       )}
       {/* Um emblema que a pessoa escolheu (antes de 14/09/2026) vale mais que o ícone da espécie;
           a pasta mostra sempre o clipe. O espaço do pé é reservado em `geometriaDaLombada`. */}
-      {icone && (
+      {icone && !geo.semIcone && (
         <EmblemaDaLombada
           chave={ehPasta ? 'pasta' : (item.livro.emblema ?? especieDoLivro(item.livro))}
         />

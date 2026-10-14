@@ -6045,12 +6045,14 @@ fileira, o que cabe, os gestos) é **comum a todos os temas**; só a aparência 
 - **A linha de baixo (busca, contagem, "+") fica centralizada com o "+"** e a estante cede espaço: no Padrão a
   fileira encolhe até caber (conta em `tema-padrao.css`), sempre com 20 px ou mais até a linha. Piso de
   85 px; em telas de até 700 px de altura o piso cai para 56 e **caber vale mais que o título inteiro**.
-- **Título: sem regra especial (revisto no mesmo dia).** A regra de "10 letras sempre inteiras no Enorme"
-  foi feita e **desfeita** a pedido do usuário, que preferiu a tabela de quantas letras cabem **com o corpo
-  de pelo menos 11 px** (o piso de sempre; o que não cabe vira reticências). Medido no Chrome, com 4
-  prateleiras e largura Normal, em letras (espaço conta): Enorme 13–14 em tela grande (390×844) e 8 em
-  320×568; Alto 11–12 e 7; Normal 8–10 e 4–5; Curto 6–7 e 3. Letras largas (M, O, D, C) ficam no número menor.
-  Com 5 e 6 prateleiras a fileira encolhe e cabe menos. O piso da fileira do Padrão voltou a 56 px.
+- **Título: o piso acompanha a fileira** (`pisoDoTitulo`, `lombadaNoite.ts`). A regra de "10 letras sempre
+  inteiras no Enorme" foi feita e desfeita; ficou a de que **a mesma quantidade de letras cabe em tela
+  pequena e em tela grande**. Na fileira de 132 px o piso do título é 11 px, como sempre; abaixo disso ele
+  encolhe em proporção (7,7 px na de 92 px), nunca menos que 7 px, e o título que ainda não cabe tira o
+  ícone do pé (`semIcone`; só em fileira abaixo da de referência). Medido no Chrome, com 4 prateleiras e
+  largura Normal, em letras (espaço conta), tela grande e 320×568: Enorme 13–14 e 13–14; Alto 11–12 e 12–13;
+  Normal 8–10 e 11; Curto 6–7 e 7–8. **Custo:** em tela pequena o corpo é de ~7,7 px, menor que 11 px. Com 5 e
+  6 prateleiras a fileira encolhe mais e o corpo desce até 7 px. O piso da fileira do Padrão é 56 px.
 - **A prévia do formulário de livro tem caixa de largura fixa**, feita para o "Enorme" deitado, em pé ou deitado:
   virar o livro não mexe mais na largura do campo de nome. No Padrão a caixa ganhou 8 px de respiro embaixo
   (a sombra não é cortada) e perdeu os tetos de altura que cortavam a lombada em tela baixa.
