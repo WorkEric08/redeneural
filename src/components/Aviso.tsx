@@ -33,6 +33,7 @@ export function Aviso() {
   const erro = usePalacio((s) => s.erro)
   const aviso = usePalacio((s) => s.aviso)
   const acao = usePalacio((s) => s.acaoDoAviso)
+  const duracaoPedida = usePalacio((s) => s.duracaoDoAviso)
   const dispensar = usePalacio((s) => s.dispensarAvisos)
   const caixa = useRef<HTMLDivElement>(null)
   const padrao = useTemaPadrao()
@@ -49,13 +50,16 @@ export function Aviso() {
     if (mensagem === null) return
 
     el.showPopover()
+    // Um erro manda no tempo; fora dele, a duração que quem avisou pediu vale mais que a de sempre.
     const duracao =
-      erro !== null ? DURACAO_ERRO_MS : botao !== null ? DURACAO_COM_ACAO_MS : DURACAO_AVISO_MS
+      erro !== null
+        ? DURACAO_ERRO_MS
+        : (duracaoPedida ?? (botao !== null ? DURACAO_COM_ACAO_MS : DURACAO_AVISO_MS))
     const relogio = window.setTimeout(dispensar, duracao)
     return () => {
       window.clearTimeout(relogio)
     }
-  }, [mensagem, erro, botao, dispensar])
+  }, [mensagem, erro, botao, duracaoPedida, dispensar])
 
   return (
     <div

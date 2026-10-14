@@ -88,6 +88,10 @@ export interface NovoAnexo {
 export type AcaoDoAviso =
   { rotulo: string; busca: string } | { rotulo: string; aoTocar: () => void }
 
+/** Quanto tempo o "Desfazer" fica à mão, e quanto dura o "Movimento desfeito." — curtos de propósito. */
+const DURACAO_PARA_DESFAZER_MS = 3000
+const DURACAO_DO_DESFEITO_MS = 2000
+
 /** A estante antes e depois do último movimento: o que o "Desfazer" precisa. */
 interface UltimoMovimento {
   antes: FotoDaEstante
@@ -131,6 +135,8 @@ interface PalacioStore {
   aviso: string | null
   /** O botão do aviso, quando ele tem um (o "Mudar" depois de o Porto escolher). */
   acaoDoAviso: AcaoDoAviso | null
+  /** Quanto o aviso fica na tela, em ms; `null` é o tempo de sempre (ver `Aviso`). */
+  duracaoDoAviso: number | null
   /** Guardado para o "Desfazer" do aviso que o movimento acabou de mostrar; `null` depois de desfazer. */
   ultimoMovimento: UltimoMovimento | null
 
@@ -284,6 +290,7 @@ export const usePalacio = create<PalacioStore>()((set, get) => {
     set({
       ultimoMovimento: { antes, depois },
       aviso: texto,
+      duracaoDoAviso: DURACAO_PARA_DESFAZER_MS,
       acaoDoAviso: {
         rotulo: 'Desfazer',
         aoTocar: () => {
@@ -317,6 +324,7 @@ export const usePalacio = create<PalacioStore>()((set, get) => {
     erro: null,
     aviso: null,
     acaoDoAviso: null,
+    duracaoDoAviso: null,
     ultimoMovimento: null,
 
     async carregar() {
@@ -433,11 +441,11 @@ export const usePalacio = create<PalacioStore>()((set, get) => {
     },
 
     avisar(texto, acao) {
-      set({ aviso: texto, acaoDoAviso: acao ?? null })
+      set({ aviso: texto, acaoDoAviso: acao ?? null, duracaoDoAviso: null })
     },
 
     dispensarAvisos() {
-      set({ erro: null, aviso: null, acaoDoAviso: null })
+      set({ erro: null, aviso: null, acaoDoAviso: null, duracaoDoAviso: null })
     },
 
     async guardarNeuronio(id, livroId): Promise<boolean> {
@@ -527,6 +535,7 @@ export const usePalacio = create<PalacioStore>()((set, get) => {
       if (ordem === null) {
         set({
           acaoDoAviso: null,
+          duracaoDoAviso: null,
           aviso: `A prateleira ${String(prateleira + 1)} não tem lugar sem livro.`,
         })
         return null
@@ -560,6 +569,7 @@ export const usePalacio = create<PalacioStore>()((set, get) => {
         const prateleira = antes.find((l) => l.id === id)?.prateleira ?? 0
         set({
           acaoDoAviso: null,
+          duracaoDoAviso: null,
           aviso: `A prateleira ${String(prateleira + 1)} não tem lugar sem livro.`,
         })
         return false
@@ -617,6 +627,7 @@ export const usePalacio = create<PalacioStore>()((set, get) => {
       if (!depois) {
         set({
           acaoDoAviso: null,
+          duracaoDoAviso: null,
           aviso: `A prateleira ${String(prateleira + 1)} não tem lugar sem livro.`,
         })
         return
@@ -652,6 +663,7 @@ export const usePalacio = create<PalacioStore>()((set, get) => {
         set({
           ultimoMovimento: null,
           acaoDoAviso: null,
+          duracaoDoAviso: null,
           aviso: 'A estante mudou depois disso: não dá mais para desfazer.',
         })
         return
@@ -667,6 +679,7 @@ export const usePalacio = create<PalacioStore>()((set, get) => {
         vagas: movimento.antes.vagas,
         enfeites: movimento.antes.enfeites,
         acaoDoAviso: null,
+        duracaoDoAviso: DURACAO_DO_DESFEITO_MS,
         aviso: 'Movimento desfeito.',
         erro: null,
       })
@@ -742,6 +755,7 @@ export const usePalacio = create<PalacioStore>()((set, get) => {
       if (!depois) {
         set({
           acaoDoAviso: null,
+          duracaoDoAviso: null,
           aviso: `A prateleira ${String(destino.prateleira + 1)} não tem lugar sem livro.`,
         })
         return
