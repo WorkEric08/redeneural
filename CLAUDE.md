@@ -6053,6 +6053,8 @@ fileira, o que cabe, os gestos) é **comum a todos os temas**; só a aparência 
   largura Normal, em letras (espaço conta), tela grande e 320×568: Enorme 13–14 e 13–14; Alto 11–12 e 12–13;
   Normal 8–10 e 11; Curto 6–7 e 7–8. **Custo:** em tela pequena o corpo é de ~7,7 px, menor que 11 px. Com 5 e
   6 prateleiras a fileira encolhe mais e o corpo desce até 7 px. O piso da fileira do Padrão é 56 px.
+  O título da lombada é **sempre Source Sans 3**, também no Padrão (a Figtree é mais larga e cortava palavras que o
+  Clássico mostrava inteiras): a conta de letras foi medida nessa fonte.
 - **A prévia do formulário de livro tem caixa de largura fixa**, feita para o "Enorme" deitado, em pé ou deitado:
   virar o livro não mexe mais na largura do campo de nome. No Padrão a caixa ganhou 8 px de respiro embaixo
   (a sombra não é cortada) e perdeu os tetos de altura que cortavam a lombada em tela baixa.

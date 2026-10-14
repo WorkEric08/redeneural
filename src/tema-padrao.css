@@ -2305,3 +2305,10 @@ html:root[data-tema^='padrao'] .visor-seta--dir {
     font-size: 1.25rem;
   }
 }
+
+/* O título da lombada é gravado em Source Sans 3 nos dois temas: a lombada é um objeto igual em todos, e
+   a conta de quantas letras cabem (\`AVANCO_DO_CARACTERE\`, lombadaNoite.ts) foi medida nessa fonte — a
+   Figtree é mais larga e cortava "Programação" onde o Clássico mostrava inteira. */
+html:root[data-tema^='padrao'] .lombada-titulo {
+  font-family: 'Source Sans 3', ui-sans-serif, system-ui, 'Segoe UI', Roboto, sans-serif;
+}
