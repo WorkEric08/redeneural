@@ -443,6 +443,9 @@ export default function Livro() {
               : Promise.resolve(false)
           }
           onFechar={fecharEstado}
+          onManter={() => {
+            if (escolhidoParaEstado) void tocar(escolhidoParaEstado.id)
+          }}
         />
       )}
     </div>

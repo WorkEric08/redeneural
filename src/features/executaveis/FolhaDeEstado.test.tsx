@@ -51,6 +51,7 @@ function montar(estadoAtual: 'para_fazer' | 'fazendo' | 'feita' = 'para_fazer', 
     ) => Promise<boolean>
   >(() => Promise.resolve(true))
   const onFechar = vi.fn()
+  const onManter = vi.fn()
   render(
     <FolhaDeEstado
       aberta
@@ -58,9 +59,10 @@ function montar(estadoAtual: 'para_fazer' | 'fazendo' | 'feita' = 'para_fazer', 
       estadoAtual={estadoAtual}
       onDefinir={onDefinir}
       onFechar={onFechar}
+      onManter={onManter}
     />,
   )
-  return { onDefinir, onFechar }
+  return { onDefinir, onFechar, onManter }
 }
 
 describe('FolhaDeEstado', () => {
@@ -88,10 +90,11 @@ describe('FolhaDeEstado', () => {
     })
   })
 
-  it('tocar o andamento que já é o atual só fecha', async () => {
-    const { onDefinir, onFechar } = montar('para_fazer')
+  it('tocar o andamento que já é o atual não muda nada, mas conta como toque e fecha', async () => {
+    const { onDefinir, onFechar, onManter } = montar('para_fazer')
     await userEvent.setup().click(screen.getByRole('button', { name: 'Para fazer' }))
     expect(onDefinir).not.toHaveBeenCalled()
+    expect(onManter).toHaveBeenCalledTimes(1)
     expect(onFechar).toHaveBeenCalled()
   })
 

@@ -526,6 +526,7 @@ export default function Neuronio() {
         estadoAtual={estado}
         onDefinir={(novo, link, imagem) => definirEstado(neuronio.id, novo, link, imagem)}
         onFechar={fecharPainel}
+        onManter={() => void tocar(neuronio.id)}
       />
 
       <FolhaDeExecutaveis

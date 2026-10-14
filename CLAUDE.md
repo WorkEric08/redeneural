@@ -6279,6 +6279,45 @@ do livro executável (o ponto do Fazendo, a lua) e o livro erguido quando se seg
 - **Verificado** no Chrome (build de produção, 412×892): livro erguido na mão (sem arrastar) e sinais do andamento por cima da
   prateleira de cima, no Clássico e no Padrão escuro e claro. Tipos, lint e testes limpos. **Não verificado em toque real.**
 
+## Livros adormecidos: bateria de testes de uso e duas correções (14/10/2026)
+
+Pedido do usuário: testar de ponta a ponta tudo o que envolve ideia adormecida, simulando a
+passagem de dias, e corrigir só o que os testes mostrassem necessário. Método: Chrome (build de
+produção, 412×892), IndexedDB semeado com um livro executável de 3 ideias (fazendo, para fazer,
+feita) e o relógio "avançado" tirando dias do `ultimoToque`. ~45 conferências em estante, tela do
+livro, tela da ideia, folha do andamento e formulário do livro.
+
+**Passou sem mudar nada:** limites de 0, 1, 7 e 365 dias (acorda em ≤ limite, dorme em >); lombada
+com lua + névoa só quando _todas_ as pendentes dormem, só a lua quando sobra uma acordada, sem
+marca em livro comum ou só com ideias feitas (mesmo paradas 400 dias); seções "Adormecidas" no
+alto e "Feitas" recolhida; "Acordar" toca só aquela ideia; abrir a ideia a acorda; mudar o andamento
+a acorda; "Tornar executável" e "Deixar de ser executável" (a ideia entra tocada, "para fazer").
+
+**Defeito 1 — tocar o andamento que a ideia já tem não a acordava.** Na folha do andamento, tocar
+"Para fazer" numa ideia que já era "para fazer" só fechava a folha: a ideia seguia adormecida, mesmo
+com a pessoa dizendo "ainda vale". Agora conta como toque (`onManter` → `tocar`), na tela do livro e
+na da ideia. Não muda o estado nem grava mais nada além do `ultimoToque`.
+
+**Defeito 2 — ligar "Executável" num livro de pensamentos antigos o adormecia inteiro na hora.** O
+relógio das ideias era o da última edição, então um livro de 100 dias virava executável e todas as
+ideias nasciam adormecidas (lombada em névoa, "Adormecidas · 3"). Agora `editarLivro` (motor e
+otimismo da store) marca como tocados os pensamentos do livro no instante em que ele passa a ser
+executável (só de comum para executável; editar um que já era não mexe em nada).
+
+**Visto e deixado como está (decisão de projeto, não defeito):**
+- "999" e "-5" no campo de dias não gravam: o `<input type="number" min=0 max=365>` faz o navegador
+  barrar o envio com o aviso dele. `clampDiasParaAdormecer` (365 / 0) segue valendo como rede de
+  segurança para quem chega sem o formulário (backup, motor).
+- O painel "espiar" da estante não diz quantas ideias dormem; quem quer ver abre o livro. Sugestão,
+  não feita: "N adormecidas" no resumo do espiar.
+- Uma tela deixada aberta por dias mantém o relógio de quando abriu (`agora` fixo por montagem —
+  decisão da Atualização 6): a ideia só passa a dormir na próxima abertura.
+
+**Não coberto:** Rede e Mapa depois de passar dias (a conta é a mesma `marcasDoAndamento`, testada em
+unidade), o aviso "Isso acordou…" (precisa do modelo de embedding) e toque real em aparelho.
+
+801 testes (o de "tocar o andamento atual" agora confere o `onManter`), tipos e lint limpos.
+
 ## Fases
 
 0. ✅ Esqueleto (Vite/React/TS/Tailwind/PWA/Capacitor)
@@ -6335,3 +6374,4 @@ do livro executável (o ponto do Fazendo, a lua) e o livro erguido quando se seg
 31. ✅ O tema Clássico vira easter egg: liga com um livro chamado "Clássico"/"Tema clássico" (14/10/2026)
 32. ✅ O círculo da ideia executável diz o andamento na Rede e no Mapa: cinza, cinza com brilho, amarelo (14/10/2026)
 33. ✅ O topo do livro sobrepõe a prateleira de cima: sinais do andamento e livro erguido aparecem inteiros (14/10/2026)
+34. ✅ Livros adormecidos testados com passagem de dias; tocar o andamento atual acorda e virar executável não adormece tudo (14/10/2026)

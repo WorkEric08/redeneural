@@ -31,6 +31,12 @@ interface Props {
     resultadoImagem: ImagemDoResultadoEscolhida,
   ) => Promise<boolean>
   onFechar: () => void
+  /**
+   * Tocar o andamento que a ideia já tem não muda nada, mas é um toque: ela acorda se dormia
+   * (`ultimoToque`). Sem isso, "confirmar que ainda vale" fecharia a folha e deixaria a ideia
+   * adormecida.
+   */
+  onManter: () => void
 }
 
 /** Um link do resultado vale se é http ou https — a mesma regra do motor. */
@@ -49,7 +55,14 @@ function linkValido(texto: string): boolean {
  * fecha. "Feita" abre o link e a imagem do resultado — opcionais — antes de
  * confirmar, que é o momento de dizer onde (e como) o que saiu da ideia está.
  */
-export function FolhaDeEstado({ aberta, neuronio, estadoAtual, onDefinir, onFechar }: Props) {
+export function FolhaDeEstado({
+  aberta,
+  neuronio,
+  estadoAtual,
+  onDefinir,
+  onFechar,
+  onManter,
+}: Props) {
   return (
     <Folha aberta={aberta && neuronio !== undefined} rotulo="Andamento" onFechar={onFechar}>
       {/* Montado só aberto, e por ideia: a escolha, o link e a imagem recomeçam do que
@@ -61,6 +74,7 @@ export function FolhaDeEstado({ aberta, neuronio, estadoAtual, onDefinir, onFech
           estadoAtual={estadoAtual}
           onDefinir={onDefinir}
           onFechar={onFechar}
+          onManter={onManter}
         />
       )}
     </Folha>
@@ -74,11 +88,13 @@ function Conteudo({
   estadoAtual,
   onDefinir,
   onFechar,
+  onManter,
 }: {
   neuronio: NeuronioNaTela
   estadoAtual: EstadoDaIdeia
   onDefinir: Props['onDefinir']
   onFechar: () => void
+  onManter: () => void
 }) {
   const padrao = useTemaPadrao()
   const [escolhido, setEscolhido] = useState<EstadoDaIdeia>(estadoAtual)
@@ -151,8 +167,10 @@ function Conteudo({
             aria-pressed={escolhido === estado}
             onClick={() => {
               if (estado === 'feita') setEscolhido('feita')
-              else if (estado === estadoAtual) onFechar()
-              else definir(estado, null, undefined)
+              else if (estado === estadoAtual) {
+                onManter()
+                onFechar()
+              } else definir(estado, null, undefined)
             }}
             className="segmento h-12"
           >

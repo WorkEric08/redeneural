@@ -579,7 +579,14 @@ export const usePalacio = create<PalacioStore>()((set, get) => {
         })
         return false
       }
+      const neuroniosAntes = get().neuronios
+      const virouExecutavel = mudancas.executavel && !antes.find((l) => l.id === id)?.executavel
+      const agora = new Date()
       set({
+        // O mesmo que o motor faz: os pensamentos que já estavam no livro contam como tocados.
+        neuronios: virouExecutavel
+          ? neuroniosAntes.map((n) => (n.livroId === id ? { ...n, ultimoToque: agora } : n))
+          : neuroniosAntes,
         vagas: vagasDepoisDeMover(vagasAntes, antes, virado, id),
         enfeites: enfeitesSemLivroEmCima(enfeitesAntes, virado),
         livros: virado.map((l) =>
@@ -604,7 +611,13 @@ export const usePalacio = create<PalacioStore>()((set, get) => {
         set(await engine.editarLivro({ id, ...mudancas }))
         return true
       } catch (e) {
-        set({ livros: antes, vagas: vagasAntes, enfeites: enfeitesAntes, erro: mensagem(e) })
+        set({
+          livros: antes,
+          neuronios: neuroniosAntes,
+          vagas: vagasAntes,
+          enfeites: enfeitesAntes,
+          erro: mensagem(e),
+        })
         return false
       }
     },

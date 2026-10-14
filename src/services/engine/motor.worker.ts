@@ -710,6 +710,17 @@ async function editarLivro(input: EditarLivroInput): Promise<EstanteGravada> {
   }
   const lugar = virado.find((l) => l.id === input.id) ?? existente
 
+  const executavel = existente.tipo === 'conceitos' && input.executavel
+  // Virar executável é a hora em que os pensamentos que já estavam no livro entram nele: contam
+  // como tocados agora. Sem isso o relógio deles seria o da última edição, e um livro com
+  // pensamentos antigos adormeceria inteiro no mesmo instante em que foi ligado.
+  if (executavel && !existente.executavel) {
+    const agora = new Date()
+    for (const n of await repo.listNeuronios(input.id)) {
+      await repo.upsertNeuronio({ ...n, ultimoToque: agora })
+    }
+  }
+
   await repo.upsertLivro({
     ...existente,
     titulo: input.titulo.trim(),
@@ -722,7 +733,7 @@ async function editarLivro(input: EditarLivroInput): Promise<EstanteGravada> {
     larguraLombada: input.larguraLombada,
     comprimentoLombada: input.comprimentoLombada,
     // Uma pasta de acervo nunca é executável.
-    executavel: existente.tipo === 'conceitos' && input.executavel,
+    executavel,
     diasParaAdormecer: clampDiasParaAdormecer(input.diasParaAdormecer),
   })
   return estante()
