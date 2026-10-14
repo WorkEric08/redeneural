@@ -162,26 +162,40 @@ describe('geometriaDaLombada', () => {
       expect(cabem(92, 51)).toBeGreaterThanOrEqual(cabem(132, 73) - 1)
     })
 
-    it('o ícone do pé nunca some: na fileira pequena, com o título comprido, ele encolhe', () => {
-      const entrada = {
-        ...base,
-        largura: 38,
-        icone: true,
-        titulo: 'ABCDEFGHIJKL',
-      }
+    it('o ícone tem sempre 11 px, em qualquer fileira, forma e título', () => {
       for (const estilo of ESTILOS_DA_LOMBADA) {
-        for (const [altura, fileira] of [
-          [90, 92],
-          [66, 92],
-          [50, 92],
-          [30, 56],
-          [129, 132],
-        ] as const) {
-          const st = geometriaDaLombada({ ...entrada, estilo, altura, alturaDaFileira: fileira })
+        for (const titulo of ['Arte', 'ABCDEFGHIJKL']) {
+          for (const [altura, fileira] of [
+            [90, 92],
+            [66, 92],
+            [50, 92],
+            [30, 56],
+            [129, 132],
+          ] as const) {
+            const st = geometriaDaLombada({
+              ...base,
+              largura: 38,
+              icone: true,
+              estilo,
+              titulo,
+              altura,
+              alturaDaFileira: fileira,
+            }).style as Record<string, string>
+            expect(st['--icone-px']).toBe('11px')
+          }
+        }
+      }
+    })
+
+    it('o grupo título + ícone fica centrado no meio da lombada, em toda forma', () => {
+      for (const estilo of ESTILOS_DA_LOMBADA) {
+        for (const altura of [66, 90, 129]) {
+          const st = geometriaDaLombada({ ...base, estilo, altura, icone: true, titulo: 'Arte' })
             .style as Record<string, string>
-          const px = parseFloat(st['--icone-px']!)
-          expect(px).toBeGreaterThanOrEqual(6)
-          expect(px).toBeLessThanOrEqual(11)
+          const topo = parseFloat(st['--zt-topo']!)
+          const regiao = parseFloat(st['--zt-altura']!)
+          // a margem de cima e a de baixo são iguais: o meio da região é o meio da lombada (50%)
+          expect(topo + regiao / 2).toBeCloseTo(50, 0)
         }
       }
     })

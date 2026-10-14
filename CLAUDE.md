@@ -6115,17 +6115,19 @@ centralizados juntos, levando em conta os detalhes de cada Forma. Isto **revoga*
 - **Um grupo só** (`.lombada-conteudo`, uma coluna flex centrada): o título e, logo abaixo (3 px), o ícone — a
   espécie do livro, o emblema antigo ou o clipe da pasta. Título curto: o grupo todo fica no centro da faixa
   livre; título longo: o título cede o espaço do ícone e vira reticências, e o ícone fica sempre visível.
-- **A faixa livre é a de cada Forma** (`ZONAS` e `baixoDoGrupo`, `lombadaNoite.ts`): começa onde a zona do título
-  já começava (abaixo da faixa, do ponto, da linha do fio) e termina **acima** do que mora embaixo — a linha de
-  baixo do fio (92,5%), a moldura do contorno (96,25%) —, **dentro do bloco** (até 84,4%) ou 7 px antes do pé. Antes
-  o ícone ficava no pé e cruzava a linha do fio.
-- **Fileira baixa:** o grupo aperta (ícone de 11 para até 6 px, intervalo de 2 px, 2 px de folga do pé) só quando o
-  título não cabe; o ícone nunca some (só em Ajustes, ou na lombada "Feita", onde o pé é do disco).
-- **Variáveis CSS novas:** `--titulo-px` (o espaço do título, que o campo de nome usa para o corte) e
-  `--icone-intervalo`; saíram `--icone-base` e `reservaDoIcone`.
-- **Custo, medido:** a quantidade de letras mudou em até 1–2 em alguns casos — Enorme em tela grande 14 → 13;
-  Normal em tela pequena 11 → 9–10; Curto 8 → 7 —, porque o ícone agora tem lugar próprio no grupo. No Bloco o
-  grupo fica inteiro dentro do bloco, então ali cabem menos letras que antes.
+- **Centrado no meio da lombada, nos dois eixos** (revisto em 14/10/2026: antes o grupo ficava na faixa livre
+  assimétrica e saía ~4 px para o pé — num livro deitado, para a direita). Com ícone, a faixa do grupo é
+  **simétrica**: a mesma margem em cima e embaixo (`margemDoGrupo`, `lombadaNoite.ts`) — no mínimo 5 px e 9% de H, e o
+  que a Forma desenha por perto: a faixa e o ponto de cima, a linha de baixo do fio, a moldura do contorno, e o bloco
+  inteiro (o grupo mora dentro dele). Sem ícone vale a zona do título de sempre.
+- **O ícone tem sempre 11 px**, em qualquer fileira, forma e título (só some em Ajustes, ou na lombada "Feita"). A versão
+  de 13/10 o encolhia até 6 px nas fileiras baixas para o título ganhar espaço: saiu, porque o ícone ficava menor nos
+  livros que estão no limite de letras. O título é que cede o espaço dele.
+- **Variáveis CSS:** `--titulo-px` (o espaço do título, que o campo de nome usa para o corte), `--icone-px` (sempre 11)
+  e `--icone-intervalo` (3 px).
+- **Custo, medido (letras que cabem, 4 prateleiras, largura Normal; tela grande e 320×568):** Enorme 13 e 12–13; Alto
+  11–12 e 11; Normal 8–10 e 8; Curto 6–7 e 4–5. Em tela pequena cabem 1 a 3 letras menos que na versão de 13/10, que
+  encolhia o ícone.
 
 ## O teclado sumia ao tocar no campo de nome, no Padrão (13/10/2026)
 
