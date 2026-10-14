@@ -5979,9 +5979,10 @@ segunda entrega; o que segue é o registro dela.
   tampo, as tábuas, a base e as laterais. Ganha o cabeçalho "Estante" com a busca. **A lombada é igual**, e os
   enfeites continuam azuis com filetes dourados (a prancha da estante os desenha em cinza só como
   esquema; a prancha "Estados da lombada" os mostra azuis).
-- **Botão de criar:** liso, círculo cheio com sombra. **O anel vira três ícones em arco, na ordem da
-  prancha: Ajustes em cima, Rede no meio, Estante junto da borda**; o nome aparece à esquerda do ícone sob o
-  dedo. O gesto é o mesmo (`lib/dial.ts`); só a ordem das cunhas muda.
+- **Botão de criar:** liso, círculo cheio com sombra. **O anel vira três ícones em arco, de baixo
+  para cima: Ajustes, Rede e Estante** (a ordem do Clássico; **revisto em 13/10/2026**, a prancha do PDF tinha
+  a inversa); o nome aparece à esquerda do ícone sob o dedo — e **acima** dele no de cima (Estante), onde à
+  esquerda cobriria o ícone da Rede. O gesto é o mesmo (`lib/dial.ts`).
 - **Rede e Mapa:** pontos de tinta sem o toque da cor do livro; o escolhido é um alvo (miolo, volta, anel); nomes em
   etiquetas de canto 12 (clara, com sombra curta no tema claro); ponte de 2 px no azul do acento; ilha com
   borda neutra, sem a linha de contagem; etiqueta do escolhido escura. O canvas lê `--canvas-padrao`,

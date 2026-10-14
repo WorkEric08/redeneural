@@ -299,6 +299,6 @@ Padrão escuro). O registro técnico completo está no `CLAUDE.md`, seção "Tem
   auto-hospedada, os cantos da versão e a estante em cartões. A lombada é a mesma.
 - **Acento:** o das pranchas (`#2f6bff` no claro, `#3f6fd8` no escuro), com o contraste que elas mesmas registram (§ "Cores · contraste").
 - **Telas:** foram feitas contra as pranchas (as medidas dos HTML dos mockups). O que o app mostra de outro jeito, e por quê, está em "Onde o Padrão difere da prancha" no `CLAUDE.md`.
-- **Botão de criar:** no Padrão, segurar mostra só os ícones em arco — Ajustes em cima, Rede no meio, Estante junto
-  da borda — e o nome aparece à esquerda do ícone sob o dedo; o Clássico mantém o anel de cunhas.
+- **Botão de criar:** no Padrão, segurar mostra só os ícones em arco — de baixo para cima, Ajustes, Rede e Estante (13/10/2026;
+  a prancha tinha a ordem inversa) — e o nome aparece à esquerda do ícone sob o dedo, e acima dele no de cima; o Clássico mantém o anel de cunhas.
 - As versões **A e D** continuam não implementadas.

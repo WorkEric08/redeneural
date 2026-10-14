@@ -65,17 +65,6 @@ const OPCOES = DESTINOS.map((destino, i) => ({
   rotuloY: PRIMEIRO_ROTULO + i * PASSO_ROTULO,
 }))
 
-/**
- * No tema Padrão a ordem do arco é a da documentação (docs/estilos-visuais-locus.md, "Botão de
- * criar"): Ajustes em cima, Rede no meio e Estante junto da borda — o inverso do anel do Clássico.
- * As cunhas (a geometria do gesto) são as mesmas; só quem ocupa cada uma muda.
- */
-const OPCOES_PADRAO = [...DESTINOS].reverse().map((destino, i) => ({
-  ...destino,
-  setor: CUNHAS[i]!,
-  rotuloY: 0,
-}))
-
 type Fase = 'fechado' | 'segurando' | 'aberto'
 
 const px = (valor: number): string => `${String(Math.round(valor))}px`
@@ -85,8 +74,6 @@ export function Dial() {
   const { pathname } = useLocation()
   const noDesktop = useMediaQuery('(min-width: 1024px)')
   const padrao = useTemaPadrao()
-
-  const opcoes = padrao ? OPCOES_PADRAO : OPCOES
 
   const [fase, setFase] = useState<Fase>('fechado')
   const [ativo, setAtivo] = useState<number | null>(null)
@@ -141,7 +128,7 @@ export function Dial() {
   function aoArrastar(evento: EventoDePonteiro<HTMLAnchorElement>): void {
     if (fase !== 'segurando') return
     setAtivo(
-      setorEm(evento.clientX - centro.current.x, evento.clientY - centro.current.y, opcoes.length),
+      setorEm(evento.clientX - centro.current.x, evento.clientY - centro.current.y, OPCOES.length),
     )
   }
 
@@ -149,7 +136,7 @@ export function Dial() {
     pararORelogio()
     if (fase !== 'segurando') return
 
-    const escolhido = ativo === null ? undefined : opcoes[ativo]
+    const escolhido = ativo === null ? undefined : OPCOES[ativo]
     if (escolhido) {
       fechar()
       void navegar(escolhido.para)
@@ -161,7 +148,7 @@ export function Dial() {
   }
 
   const visivel = !noDesktop && fase !== 'fechado'
-  const opcaoAtiva = ativo === null ? undefined : opcoes[ativo]
+  const opcaoAtiva = ativo === null ? undefined : OPCOES[ativo]
 
   return (
     <>
@@ -172,7 +159,7 @@ export function Dial() {
           <div className="dial-anel">
             {padrao ? (
               <DestinosEmArco
-                opcoes={opcoes}
+                opcoes={OPCOES}
                 ativo={ativo}
                 aoEscolher={(para) => {
                   fechar()
@@ -292,15 +279,16 @@ export function Dial() {
 
 /**
  * O tema Padrão: só os ícones, soltos em arco em volta do botão, sem anel. O nome aparece
- * apenas no destino que está sob o dedo, à esquerda do ícone — o gesto é o mesmo (a mesma
- * geometria de `lib/dial.ts`), só o desenho muda.
+ * apenas no destino que está sob o dedo — à esquerda do ícone, e **acima** dele no de cima: ali o nome
+ * à esquerda passaria por cima do ícone do meio. A ordem é a do anel do Clássico: de baixo para cima,
+ * Ajustes, Rede e Estante. O gesto é o mesmo (a mesma geometria de `lib/dial.ts`), só o desenho muda.
  */
 function DestinosEmArco({
   opcoes,
   ativo,
   aoEscolher,
 }: {
-  opcoes: typeof OPCOES_PADRAO
+  opcoes: typeof OPCOES
   ativo: number | null
   aoEscolher: (para: string) => void
 }) {
@@ -326,8 +314,12 @@ function DestinosEmArco({
 
             {sobODedo && (
               <span
-                className="dial-nome"
-                style={{ right: px(40 - ponto.x), top: px(ponto.y) }}
+                className={i === 0 ? 'dial-nome dial-nome--acima' : 'dial-nome'}
+                style={
+                  i === 0
+                    ? { right: px(-ponto.x), top: px(ponto.y - 53) }
+                    : { right: px(40 - ponto.x), top: px(ponto.y) }
+                }
                 aria-hidden
               >
                 {opcao.rotulo}

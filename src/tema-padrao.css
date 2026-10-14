@@ -434,6 +434,11 @@ html:root[data-tema^='padrao'] .dial-botao[data-aberto='true'] {
   animation: dial-surgir 120ms ease-out both;
 }
 
+/* O nome do ícone de cima fica acima dele, centralizado: à esquerda cobriria o ícone do meio. */
+.dial-nome--acima {
+  transform: translate(50%, -50%);
+}
+
 /* --- o livro: pensamentos em cartões, e ideias em linhas ---------------------- */
 
 /* A lista: 10 px entre os cartões. */
