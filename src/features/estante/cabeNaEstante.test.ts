@@ -6,6 +6,7 @@ import {
   cabeDepoisDeMudar,
   extensaoDoLivroGravado,
   larguraDaPrateleira,
+  recusaDaEdicao,
   type MedidasDaEstante,
 } from './cabeNaEstante'
 
@@ -122,5 +123,72 @@ describe('cabeDepoisDeMudar', () => {
     const depois = [livro('a', 0, { orientacao: 'deitado', comprimentoLombada: 88 })]
     expect(cabeDepoisDeMudar(antes, depois, 0, SEM_ALTURAS, medidas(60))).toBe(false)
     expect(cabeDepoisDeMudar(antes, depois, 0, SEM_ALTURAS, medidas(88))).toBe(true)
+  })
+})
+
+describe('recusaDaEdicao (editar, e deitar ou levantar pelo menu)', () => {
+  const base = {
+    alturasAutomaticas: SEM_ALTURAS,
+    larguraLombada: 38,
+    comprimentoLombada: 72,
+  }
+
+  it('deitar um livro sozinho, com folga na prateleira, pode', () => {
+    const recusa = recusaDaEdicao({
+      ...base,
+      livros: [livro('a', 0)],
+      livroId: 'a',
+      orientacao: 'deitado',
+      medidas: medidas(300),
+    })
+    expect(recusa).toBeNull()
+  })
+
+  it('deitar o livro que deixaria os livros da prateleira fora das laterais, recusa', () => {
+    const recusa = recusaDaEdicao({
+      ...base,
+      livros: [livro('a', 0)],
+      livroId: 'a',
+      orientacao: 'deitado',
+      medidas: medidas(40),
+    })
+    expect(recusa).toBe('A prateleira 1 não tem espaço para essa mudança.')
+  })
+
+  it('sem medida da estante só a altura da pilha vale', () => {
+    const recusa = recusaDaEdicao({
+      ...base,
+      livros: [livro('a', 0)],
+      livroId: 'a',
+      orientacao: 'deitado',
+      medidas: null,
+    })
+    expect(recusa).toBeNull()
+  })
+
+  it('engrossar um livro de uma pilha além do teto de altura, recusa', () => {
+    const deitado = (id: string, nivel: number): Livro =>
+      livro(id, 0, { orientacao: 'deitado', nivel, larguraLombada: 52 })
+    const recusa = recusaDaEdicao({
+      ...base,
+      livros: [deitado('a', 0), deitado('b', 1)],
+      livroId: 'a',
+      orientacao: 'deitado',
+      larguraLombada: 68,
+      medidas: null,
+    })
+    expect(recusa).toBe('A pilha não tem altura para essa mudança.')
+  })
+
+  it('um livro que não existe não é recusado', () => {
+    expect(
+      recusaDaEdicao({
+        ...base,
+        livros: [],
+        livroId: 'x',
+        orientacao: 'deitado',
+        medidas: medidas(10),
+      }),
+    ).toBeNull()
   })
 })

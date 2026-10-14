@@ -1,4 +1,11 @@
-import { ChevronRight, PencilLine, Plus, RectangleVertical, Trash2 } from 'lucide-react'
+import {
+  ChevronRight,
+  PencilLine,
+  Plus,
+  RectangleHorizontal,
+  RectangleVertical,
+  Trash2,
+} from 'lucide-react'
 import { useState, type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 
@@ -35,6 +42,8 @@ interface Props {
   onApagar: (livroId: string) => Promise<boolean>
   /** "Abrir o livro": quem chama anima o livro saindo da estante e só então troca de tela. */
   onAbrirLivro: (livroId: string) => void
+  /** Deita o livro de pé, ou levanta o deitado, sem passar pela tela de editar. */
+  onVirarLivro: (livroId: string) => void
   onTirarEnfeite: (prateleira: number, lugar: number) => Promise<void>
   onPorEnfeite: (prateleira: number, lugar: number) => Promise<void>
 }
@@ -284,7 +293,15 @@ function Espiar({ livro, livros, neuronios, pontes, onAbrirLivro }: Props & { li
   )
 }
 
-function Acoes({ livro, neuronios, anexos, ocupado, onTrocarPainel }: Props & { livro: Livro }) {
+function Acoes({
+  livro,
+  neuronios,
+  anexos,
+  ocupado,
+  onTrocarPainel,
+  onVirarLivro,
+}: Props & { livro: Livro }) {
+  const deitado = livro.orientacao === 'deitado'
   const ehPasta = livro.tipo === 'acervo'
   const quantos = (ehPasta ? anexos : neuronios).filter((x) => x.livroId === livro.id).length
 
@@ -306,6 +323,24 @@ function Acoes({ livro, neuronios, anexos, ocupado, onTrocarPainel }: Props & { 
             <PencilLine size={19} aria-hidden className="text-poeira" />
             {ehPasta ? 'Editar pasta' : 'Editar livro'}
           </Link>
+        </li>
+        <li className="linha-de-lista p-0">
+          {/* Só a posição muda; o resto do livro fica. Para forma, cor e medidas, "Editar". */}
+          <button
+            type="button"
+            className="flex min-h-14 w-full items-center gap-3.5 px-4 text-left disabled:opacity-50"
+            disabled={ocupado}
+            onClick={() => {
+              onVirarLivro(livro.id)
+            }}
+          >
+            {deitado ? (
+              <RectangleVertical size={19} aria-hidden className="text-poeira" />
+            ) : (
+              <RectangleHorizontal size={19} aria-hidden className="text-poeira" />
+            )}
+            {deitado ? 'Levantar o livro' : 'Deitar o livro'}
+          </button>
         </li>
         <li className="linha-de-lista p-0">
           <Link

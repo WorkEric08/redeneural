@@ -250,6 +250,34 @@ export function createDexieRepo(db: PalacioDB = defaultDb): PalacioRepo {
       })
     },
 
+    async restaurarEstante(foto) {
+      const vagas = foto.vagas.map((v) => vagaSchema.parse(v))
+      const enfeites = foto.enfeites.map((e) => enfeiteSchema.parse(e))
+      await db.transaction('rw', db.livros, db.vagas, db.enfeites, async () => {
+        const existentes = new Map((await db.livros.toArray()).map((l) => [l.id, l]))
+        for (const p of foto.livros) {
+          const atual = existentes.get(p.id)
+          if (!atual) continue
+          if (
+            atual.prateleira !== p.prateleira ||
+            atual.ordem !== p.ordem ||
+            atual.nivel !== p.nivel
+          ) {
+            await db.livros.update(p.id, {
+              prateleira: p.prateleira,
+              ordem: p.ordem,
+              nivel: p.nivel,
+            })
+          }
+        }
+        // Vagas e enfeites são poucos: regravar a tabela inteira é mais simples que um diff.
+        await db.vagas.clear()
+        await db.vagas.bulkPut(vagas)
+        await db.enfeites.clear()
+        await db.enfeites.bulkPut(enfeites)
+      })
+    },
+
     async listVagas() {
       return db.vagas.toArray()
     },

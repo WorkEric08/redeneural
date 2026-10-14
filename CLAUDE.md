@@ -6141,6 +6141,43 @@ confira no navegador com a janela encolhida (`Emulation.setDeviceMetricsOverride
 `document.activeElement` continua o campo. Conferido assim, nos dois temas: nome e dias do livro (criar e editar),
 título e texto do pensamento, busca e os campos do item da pasta.
 
+## Mover livros fica mais claro: Desfazer, destino recusado, Deitar e dica (14/10/2026)
+
+Pedido do usuário, a partir de seis sugestões minhas sobre a mobilidade dos livros: implementar as quatro
+primeiras, nesta ordem. Vale nos três temas (a estante é a mesma estrutura nos três).
+
+- **Desfazer.** Depois de mover um livro ou um enfeite que mudou algo, o aviso diz "Livro movido." ou
+  "Enfeite movido." com o botão **Desfazer**. A conta é uma foto da estante antes do movimento
+  (`fotoDaEstante`: posição de todo livro, vagas e enfeites, `core/domain/ordem.ts`) devolvida ao banco por
+  `restaurarEstante` (porta, protocolo, Worker e `DexieRepo`, numa transação só) — então os livros
+  empurrados, a vaga aberta e o enfeite que saiu do lugar voltam juntos. **Só vale se a estante ainda é a que
+  o movimento deixou** (`assinaturaDaEstante`): se a pessoa mexeu em mais alguma coisa, desfazer apagaria isso,
+  e o aviso diz "A estante mudou depois disso: não dá mais para desfazer." Só o último movimento é lembrado,
+  e mover sem efeito não oferece nada. **O aviso ganhou uma segunda forma de ação**: além do link
+  (`{ rotulo, busca }`), uma função (`{ rotulo, aoTocar }`) — a ação é da store, não de uma tela; o toque no
+  botão não dispensa o aviso, para "Movimento desfeito." aparecer.
+- **Destino recusado, antes de soltar.** Arrastando, o `Movel` faz a mesma conta que o solto faria (sem lugar
+  livre, ou os livros da prateleira deixando de caber) e, se for recusar, a prateleira de destino ganha um
+  vermelho (`.movel-vao[data-recusa]`, e o anel de "vai cair aqui" também fica vermelho) enquanto o dedo
+  está ali. O vermelho é fixo e claro, porque a estante é sempre escura. O aviso depois de soltar continua o mesmo.
+- **Deitar / Levantar o livro**, no menu de segurar o livro (também para pasta): só a posição muda, o resto do
+  livro fica. As recusas da tela de editar (altura da pilha, laterais da prateleira) viraram uma função
+  só, `recusaDaEdicao` (`features/estante/cabeNaEstante.ts`), usada pelos dois; a frase da pilha passou a ser
+  "A pilha não tem altura para essa mudança." nos dois lugares.
+- **Dica de segurar e arrastar.** No lugar da contagem, na linha de baixo da estante, até a pessoa mover um livro
+  ou um enfeite pela primeira vez, ou tocar nela ("Entendi"). **Fica em `localStorage`**
+  (`services/native/dicas.ts`, chave `locus-dica-mover`), como o espelho do tema: não é dado do palácio, não vai
+  no backup, e perder o registro só faz a dica voltar. Não passou pelas preferências do banco de propósito:
+  seriam seis arquivos (porta, protocolo, Worker, repositório, store) por um aviso que se mostra uma vez.
+- **Não feito (sugestões que ficaram):** Desfazer de mais de um passo, e um indicador de qual prateleira vai
+  receber o livro quando o destino é válido.
+- **Verificado** no Chrome (build de produção, mouse por CDP) nos três temas, em 412×892 e 320×568: mover,
+  Desfazer devolvendo a posição exata, prateleira cheia ficando vermelha enquanto o dedo está sobre ela (e
+  não ficando com lugar livre), o menu com Deitar e Levantar (a lombada vira e volta), a dica sumindo depois de
+  um movimento; sem rolagem vertical. 762 testes (testes novos de `fotoDaEstante`/`assinaturaDaEstante`,
+  `restaurarEstante` e `recusaDaEdicao`), tipos e lint limpos. **Não verificado em toque real**, e a tela da
+  store (Desfazer, estante mudada) não tem teste automatizado — só o navegador.
+
 ## Fases
 
 0. ✅ Esqueleto (Vite/React/TS/Tailwind/PWA/Capacitor)
@@ -6192,3 +6229,5 @@ título e texto do pensamento, busca e os campos do item da pasta.
     fases (08–09/10/2026)
 29. ✅ Temas: Clássico e Padrão (claro e escuro) — a versão E da documentação de design,
     escolhida em Ajustes (13/10/2026)
+30. ✅ Mover livros: Desfazer, destino recusado visível, Deitar/Levantar pelo menu e a dica de arrastar
+    (14/10/2026)

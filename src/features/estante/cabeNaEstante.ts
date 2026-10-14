@@ -1,4 +1,10 @@
-import type { Id, Livro } from '@/core'
+import {
+  cabeNaPilhaDepoisDeMudar,
+  mudarOrientacaoNaEstante,
+  type Id,
+  type Livro,
+  type OrientacaoDoLivro,
+} from '@/core'
 
 import {
   alturaDaLombadaEmPercentual,
@@ -68,4 +74,41 @@ export function cabeDepoisDeMudar(
     larguraDaPrateleira(depois, prateleira, alturasAutomaticas, medidas.alturaDaFileira),
     medidas.larguraUtil,
   )
+}
+
+/**
+ * O que impede uma edição de forma ou de tamanho de um livro, em frase para o aviso — ou `null`
+ * quando pode. Vale para a tela de editar e para o "Deitar/Levantar" do menu do livro: virar o
+ * livro ou mudar a largura dele pode estourar a altura da pilha ou as laterais da prateleira.
+ * `medidas` nulas (a estante nunca foi medida) é "não sei": só a pilha, cujo teto é fixo, vale.
+ */
+export function recusaDaEdicao(args: {
+  livros: readonly Livro[]
+  livroId: Id
+  orientacao: OrientacaoDoLivro
+  larguraLombada: number | null
+  comprimentoLombada: number | null
+  alturasAutomaticas: ReadonlyMap<Id, number>
+  medidas: MedidasDaEstante | null
+}): string | null {
+  const { livros, livroId, orientacao, larguraLombada, comprimentoLombada } = args
+  const livro = livros.find((l) => l.id === livroId)
+  if (!livro) return null
+  const virado = mudarOrientacaoNaEstante(livros, livroId, orientacao) ?? livros
+  const depois = virado.map((l) =>
+    l.id === livroId ? { ...l, larguraLombada, comprimentoLombada } : l,
+  )
+  // Num livro deitado a largura é a espessura que ele pesa na pilha: uma maior pode passar do teto
+  // de altura, e a pilha seria cortada pela prateleira de cima.
+  const lugar = depois.find((l) => l.id === livroId)
+  if (lugar && !cabeNaPilhaDepoisDeMudar(livros, depois, lugar.prateleira, lugar.ordem)) {
+    return 'A pilha não tem altura para essa mudança.'
+  }
+  if (args.medidas !== null) {
+    const prateleira = lugar?.prateleira ?? livro.prateleira
+    if (!cabeDepoisDeMudar(livros, depois, prateleira, args.alturasAutomaticas, args.medidas)) {
+      return `A prateleira ${String(prateleira + 1)} não tem espaço para essa mudança.`
+    }
+  }
+  return null
 }

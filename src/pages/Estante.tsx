@@ -1,4 +1,4 @@
-import { Anchor, Search } from 'lucide-react'
+import { Anchor, Hand, Search } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 
@@ -6,6 +6,8 @@ import { botao } from '@/components/botao'
 import type { Livro } from '@/core'
 import { AberturaDoLivro } from '@/features/estante/AberturaDoLivro'
 import { geometriaDaAbertura, type Abertura } from '@/features/estante/abertura'
+import { recusaDaEdicao } from '@/features/estante/cabeNaEstante'
+import { medidasDaEstante } from '@/features/estante/medidasDaEstante'
 import { Movel } from '@/features/estante/Movel'
 import { PaineisDaEstante } from '@/features/estante/Paineis'
 import { montarEstante, pontesEntreLivros } from '@/features/estante/resumo'
@@ -14,6 +16,7 @@ import { noPorto } from '@/features/porto/porto'
 import { useTemaPadrao } from '@/hooks/useTemaPadrao'
 import { useTravarRolagem } from '@/hooks/useTravarRolagem'
 import { contar } from '@/lib/plural'
+import { dicaDeMoverJaVista, marcarDicaDeMoverVista } from '@/services/native/dicas'
 import { usePalacio } from '@/store/palacio'
 
 /** O tempo que o livro recém-criado leva chegando à prateleira (ver `lombada-chegar`). */
@@ -45,6 +48,7 @@ export default function Estante() {
     intensidadeDaLuzDoEnfeite,
     iconesNosLivros,
     moverLivro,
+    editarLivro,
     moverEnfeite,
     apagarLivro,
     tirarEnfeite,
@@ -59,6 +63,13 @@ export default function Estante() {
   const pronto = carregado || erro !== null
   const [abriuCarregada] = useState(pronto)
   const { painel, abrir, trocar, fechar } = usePainel()
+  // A dica de "segurar e arrastar" some para sempre na primeira vez que a pessoa move um livro ou
+  // um enfeite, ou toca nela.
+  const [dicaVista, setDicaVista] = useState(dicaDeMoverJaVista)
+  function dispensarDica(): void {
+    marcarDicaDeMoverVista()
+    setDicaVista(true)
+  }
   const navegar = useNavigate()
   const [busca, setBusca] = useSearchParams()
   // O livro nasce em `/novo-livro` (tela cheia) e volta para cá com
@@ -103,6 +114,39 @@ export default function Estante() {
   const [abrindo, setAbrindo] = useState<{ livro: Livro; geometria: Abertura } | null>(null)
   const abrindoAgora =
     abrindo && painel?.tipo === 'espiar' && painel.livroId === abrindo.livro.id ? abrindo : null
+
+  // Deitar ou levantar direto do menu: só a posição muda, o resto do livro fica como está. As mesmas
+  // recusas da tela de editar (altura da pilha, laterais da prateleira) valem aqui.
+  function virarLivro(livroId: string): void {
+    const livro = livros.find((l) => l.id === livroId)
+    if (!livro) return
+    const orientacao = livro.orientacao === 'deitado' ? 'em-pe' : 'deitado'
+    const recusa = recusaDaEdicao({
+      livros,
+      livroId,
+      orientacao,
+      larguraLombada: livro.larguraLombada,
+      comprimentoLombada: livro.comprimentoLombada,
+      alturasAutomaticas: new Map(estante.map((e) => [e.livro.id, e.altura])),
+      medidas: medidasDaEstante(),
+    })
+    if (recusa !== null) {
+      avisar(recusa)
+      return
+    }
+    fechar()
+    void editarLivro(livroId, {
+      titulo: livro.titulo,
+      cor: livro.cor,
+      estilo: livro.estilo,
+      orientacao,
+      emblema: livro.emblema,
+      larguraLombada: livro.larguraLombada,
+      comprimentoLombada: livro.comprimentoLombada,
+      executavel: livro.executavel,
+      diasParaAdormecer: livro.diasParaAdormecer,
+    })
+  }
 
   function abrirLivro(livroId: string): void {
     const livro = livros.find((l) => l.id === livroId)
@@ -174,6 +218,7 @@ export default function Estante() {
               abrir({ tipo: 'acoes', livroId })
             }}
             onMover={(livroId, prateleira, lugar) => {
+              dispensarDica()
               void moverLivro(livroId, prateleira, lugar)
             }}
             onNovo={(prateleira, lugar) => {
@@ -186,6 +231,7 @@ export default function Estante() {
               abrir({ tipo: 'lugar', prateleira, lugar })
             }}
             onMoverEnfeite={(origem, destino, dados) => {
+              dispensarDica()
               void moverEnfeite(origem, destino, dados)
             }}
           />
@@ -214,11 +260,26 @@ export default function Estante() {
               {String(esperandoNoPorto)} no porto
             </Link>
           )}
-          <p className="text-poeira pd-contagem min-w-0 flex-1 truncate text-xs">
-            {carregado
-              ? `${contar(livros.length, 'livro', 'livros')} · ${contar(neuronios.length, 'pensamento', 'pensamentos')} · ${contar(conexoes.length, 'conexão', 'conexões')}`
-              : 'Abrindo o palácio…'}
-          </p>
+          {carregado && !dicaVista && livros.length > 0 ? (
+            // A dica ocupa o lugar da contagem até a pessoa aprender o gesto: segurar o livro
+            // erguido e arrastar. Tocar nela a dispensa.
+            <button
+              type="button"
+              onClick={dispensarDica}
+              className="text-poeira pd-contagem flex min-w-0 flex-1 items-center gap-2 pr-16 text-left text-xs leading-snug"
+            >
+              <Hand size={16} aria-hidden className="shrink-0" />
+              <span>
+                Segure um livro e arraste para mudá-lo de lugar. <u>Entendi</u>
+              </span>
+            </button>
+          ) : (
+            <p className="text-poeira pd-contagem min-w-0 flex-1 truncate text-xs">
+              {carregado
+                ? `${contar(livros.length, 'livro', 'livros')} · ${contar(neuronios.length, 'pensamento', 'pensamentos')} · ${contar(conexoes.length, 'conexão', 'conexões')}`
+                : 'Abrindo o palácio…'}
+            </p>
+          )}
         </div>
       </div>
 
@@ -238,6 +299,7 @@ export default function Estante() {
         onTrocarPainel={trocar}
         onApagar={apagarLivro}
         onAbrirLivro={abrirLivro}
+        onVirarLivro={virarLivro}
         onTirarEnfeite={tirarEnfeite}
         onPorEnfeite={porEnfeite}
       />

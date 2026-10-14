@@ -1,3 +1,4 @@
+import type { FotoDaEstante } from '../domain/ordem'
 import type { ModoDaBusca } from '../domain/modoDaBusca'
 import type { ModoDaRede } from '../domain/modoDaRede'
 import type { Tema } from '../domain/tema'
@@ -281,6 +282,11 @@ export interface ConnectionEngine {
    * de onde saiu fica aberto. `dados` é a cara que a tela mostrava nele.
    */
   moverEnfeite(origem: Vaga, destino: Vaga, dados: DadosDoEnfeite): Promise<EstanteGravada>
+  /**
+   * Devolve a estante a uma foto tirada antes de um movimento — o "Desfazer". Cada livro volta ao
+   * lugar dele, e as vagas e os enfeites gravados viram os da foto.
+   */
+  restaurarEstante(foto: FotoDaEstante): Promise<EstanteGravada>
   /**
    * Quantas prateleiras a estante tem. Recusa diminuir se sobrar livro numa
    * prateleira que deixaria de existir — mova os livros antes.

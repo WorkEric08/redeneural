@@ -2170,7 +2170,8 @@ html:root[data-tema^='padrao'] .pd-aviso-icone {
   color: var(--perigo-no-alerta);
 }
 
-html:root[data-tema^='padrao'] .aviso a {
+html:root[data-tema^='padrao'] .aviso a,
+html:root[data-tema^='padrao'] .aviso button {
   min-height: 40px;
   margin: 0;
   padding: 0 16px;

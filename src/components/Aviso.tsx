@@ -9,6 +9,8 @@ import { usePalacio } from '@/store/palacio'
 /** Erro fica mais tempo: é o que a pessoa precisa ler, não só perceber. */
 const DURACAO_AVISO_MS = 3500
 const DURACAO_ERRO_MS = 6000
+const CLASSE_DO_BOTAO =
+  '-my-3 -mr-2 inline-flex min-h-11 shrink-0 items-center rounded-lg px-3 font-semibold underline-offset-4 hover:underline'
 /** Com um botão, o mesmo tempo do erro: dá tempo de ler e de tocar. */
 const DURACAO_COM_ACAO_MS = 6000
 
@@ -76,12 +78,24 @@ export function Aviso() {
       ) : (
         <span className="flex items-center gap-3">
           <span className="min-w-0 flex-1">{mensagem}</span>
-          <Link
-            to={{ search: botao.busca }}
-            className="-my-3 -mr-2 inline-flex min-h-11 shrink-0 items-center rounded-lg px-3 font-semibold underline-offset-4 hover:underline"
-          >
-            {botao.rotulo}
-          </Link>
+          {'aoTocar' in botao ? (
+            <button
+              type="button"
+              onClick={(evento) => {
+                // O toque no aviso o dispensa; aqui a ação ainda pode trazer um aviso novo ("Movimento
+                // desfeito"), que o clique subindo apagaria.
+                evento.stopPropagation()
+                botao.aoTocar()
+              }}
+              className={CLASSE_DO_BOTAO}
+            >
+              {botao.rotulo}
+            </button>
+          ) : (
+            <Link to={{ search: botao.busca }} className={CLASSE_DO_BOTAO}>
+              {botao.rotulo}
+            </Link>
+          )}
         </span>
       )}
     </div>

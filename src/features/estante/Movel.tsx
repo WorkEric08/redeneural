@@ -232,6 +232,32 @@ export function Movel({
       ? enfeiteEm(gesto.enfeite.prateleira, gesto.enfeite.lugar)
       : undefined
 
+  // Antes de soltar, a pessoa já vê se o destino recusaria: a mesma conta que o solto faz (sem lugar
+  // livre, ou os livros da prateleira deixando de caber), só que enquanto o dedo ainda anda.
+  const recusado = (() => {
+    if (gesto.fase !== 'arrastando' || alvo === null) return false
+    if (gesto.livroId !== null) {
+      const livros = estante.map((e) => e.livro)
+      if (moverLivroNaEstante(livros, gesto.livroId, alvo.prateleira, alvo.lugar) === null)
+        return true
+      return !podeMover(gesto.livroId, alvo.prateleira, alvo.lugar)
+    }
+    if (enfeiteNaMao && gesto.enfeite) {
+      const dados = dadosDoEnfeite(enfeiteNaMao)
+      const origem = { prateleira: gesto.enfeite.prateleira, ordem: gesto.enfeite.lugar }
+      const livros = estante.map((e) => e.livro)
+      const depois = moverEnfeiteNaEstante(
+        { livros, vagas: [], enfeites: [] },
+        origem,
+        { prateleira: alvo.prateleira, ordem: alvo.lugar },
+        dados,
+      )
+      if (depois === null) return true
+      return !podeMoverEnfeite(gesto.enfeite, alvo, dados)
+    }
+    return false
+  })()
+
   function estadoDe(livroId: string): EstadoDaLombada {
     if (abrindoId === livroId) return 'vazio'
     if (gesto.livroId === livroId) return gesto.fase === 'arrastando' ? 'vazio' : 'erguido'
@@ -245,6 +271,7 @@ export function Movel({
       ref={movel}
       className="movel cores-de-antes"
       data-prateleiras={prateleiras.length}
+      data-recusado={recusado || undefined}
       style={{ '--mv-prateleiras': prateleiras.length } as CSSProperties}
     >
       <span className="movel-cornija" aria-hidden />
@@ -258,7 +285,12 @@ export function Movel({
         }
       >
         {prateleiras.map((p, prateleira) => (
-          <div className="movel-vao" key={p.chave} data-prateleira={prateleira}>
+          <div
+            className="movel-vao"
+            key={p.chave}
+            data-prateleira={prateleira}
+            data-recusa={(recusado && alvo?.prateleira === prateleira) || undefined}
+          >
             <div className="movel-fila">
               {p.lugares.map((lugar) =>
                 lugar.tipo === 'pilha' ? (

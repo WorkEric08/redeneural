@@ -953,6 +953,10 @@ async function responder(msg: ParaMotor): Promise<DoMotor> {
         await repo.salvarEnfeite(msg.enfeite)
         return { req: msg.req, ok: true, dados: await estante() }
 
+      case 'restaurarEstante':
+        await repo.restaurarEstante(msg.foto)
+        return { req: msg.req, ok: true, dados: await estante() }
+
       case 'moverEnfeite':
         await repo.moverEnfeite(msg.origem, msg.destino, msg.dados)
         return { req: msg.req, ok: true, dados: await estante() }

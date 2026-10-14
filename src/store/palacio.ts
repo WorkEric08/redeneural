@@ -1,10 +1,12 @@
 import { create } from 'zustand'
 
 import {
+  assinaturaDaEstante,
   chaveDoLugar,
   clampDiasParaAdormecer,
   enfeitesSemLivroEmCima,
   estadoAoGuardar,
+  fotoDaEstante,
   ICONES_NOS_LIVROS_PADRAO,
   INTENSIDADE_DA_LUZ_PADRAO,
   MINIMO_DE_PRATELEIRAS,
@@ -24,6 +26,7 @@ import {
   type EnfeiteGravado,
   type EstadoDaIdeia,
   type EstiloDaLombada,
+  type FotoDaEstante,
   type ImagemParaGuardar,
   type Livro,
   type MapaDoPalacio,
@@ -76,13 +79,19 @@ export interface NovoAnexo {
 }
 
 /**
- * Um botão dentro do aviso flutuante. É um destino, e não uma função: o aviso
- * mora no casco do app e sobrevive à tela que o pediu, então ele só leva a
- * algum lugar — hoje, sempre a uma busca na tela atual (`?guardar=`).
+ * Um botão dentro do aviso flutuante. Em geral é um destino, e não uma função: o
+ * aviso mora no casco do app e sobrevive à tela que o pediu, então ele leva a
+ * uma busca na tela atual (`?guardar=`). A exceção é o "Desfazer" de um movimento
+ * na estante (13/10/2026): ali o botão chama uma ação da própria store, que não
+ * depende de tela nenhuma.
  */
-export interface AcaoDoAviso {
-  rotulo: string
-  busca: string
+export type AcaoDoAviso =
+  { rotulo: string; busca: string } | { rotulo: string; aoTocar: () => void }
+
+/** A estante antes e depois do último movimento: o que o "Desfazer" precisa. */
+interface UltimoMovimento {
+  antes: FotoDaEstante
+  depois: FotoDaEstante
 }
 
 interface PalacioStore {
@@ -122,6 +131,8 @@ interface PalacioStore {
   aviso: string | null
   /** O botão do aviso, quando ele tem um (o "Mudar" depois de o Porto escolher). */
   acaoDoAviso: AcaoDoAviso | null
+  /** Guardado para o "Desfazer" do aviso que o movimento acabou de mostrar; `null` depois de desfazer. */
+  ultimoMovimento: UltimoMovimento | null
 
   carregar: () => Promise<void>
   /**
@@ -166,6 +177,12 @@ interface PalacioStore {
   apagarLivro: (id: string) => Promise<boolean>
   /** Põe o livro no lugar `(prateleira, lugar)`, empurrando se já houver livro ali. */
   moverLivro: (id: string, prateleira: number, lugar: number) => Promise<void>
+  /**
+   * Desfaz o último movimento de livro ou de enfeite, se a estante ainda é a que ele deixou: se a
+   * pessoa mexeu em mais alguma coisa desde então, desfazer apagaria isso também, e o aviso diz que
+   * não dá mais.
+   */
+  desfazerMovimento: () => Promise<void>
   /** Tira o enfeite de um lugar sem livro: fica a madeira à mostra. */
   tirarEnfeite: (prateleira: number, lugar: number) => Promise<void>
   /** Devolve um enfeite a um lugar aberto. */
@@ -253,6 +270,30 @@ export const usePalacio = create<PalacioStore>()((set, get) => {
     set({ progresso })
   })
 
+  /**
+   * Depois de um movimento gravado, guarda a foto de antes e mostra o aviso com o botão "Desfazer".
+   * Soltar no mesmo lugar não muda nada (a assinatura é a mesma), e então não há o que desfazer.
+   */
+  const oferecerDesfazer = (
+    antes: FotoDaEstante,
+    gravada: { livros: Livro[]; vagas: Vaga[]; enfeites: EnfeiteGravado[] },
+    texto: string,
+  ): void => {
+    const depois = fotoDaEstante(gravada)
+    if (assinaturaDaEstante(antes) === assinaturaDaEstante(depois)) return
+    set({
+      ultimoMovimento: { antes, depois },
+      aviso: texto,
+      acaoDoAviso: {
+        rotulo: 'Desfazer',
+        aoTocar: () => {
+          void get().desfazerMovimento()
+        },
+      },
+      erro: null,
+    })
+  }
+
   return {
     livros: [],
     neuronios: [],
@@ -276,6 +317,7 @@ export const usePalacio = create<PalacioStore>()((set, get) => {
     erro: null,
     aviso: null,
     acaoDoAviso: null,
+    ultimoMovimento: null,
 
     async carregar() {
       if (get().carregado) return
@@ -570,6 +612,7 @@ export const usePalacio = create<PalacioStore>()((set, get) => {
 
     async moverLivro(id, prateleira, lugar) {
       const { livros: antes, vagas: vagasAntes, enfeites: enfeitesAntes } = get()
+      const fotoAntes = fotoDaEstante({ livros: antes, vagas: vagasAntes, enfeites: enfeitesAntes })
       const depois = moverLivroNaEstante(antes, id, prateleira, lugar)
       if (!depois) {
         set({
@@ -589,9 +632,49 @@ export const usePalacio = create<PalacioStore>()((set, get) => {
       })
 
       try {
-        set(await engine.moverLivro(id, prateleira, lugar))
+        const gravada = await engine.moverLivro(id, prateleira, lugar)
+        set(gravada)
+        oferecerDesfazer(fotoAntes, gravada, 'Livro movido.')
       } catch (e) {
         set({ livros: antes, vagas: vagasAntes, enfeites: enfeitesAntes, erro: mensagem(e) })
+      }
+    },
+
+    async desfazerMovimento() {
+      const movimento = get().ultimoMovimento
+      if (movimento === null) return
+      const { livros, vagas, enfeites } = get()
+      const agora = fotoDaEstante({ livros, vagas, enfeites })
+
+      // A estante mudou depois do movimento (outro movimento, um livro apagado, uma edição): voltar
+      // a foto de antes desfaria isso também.
+      if (assinaturaDaEstante(agora) !== assinaturaDaEstante(movimento.depois)) {
+        set({
+          ultimoMovimento: null,
+          acaoDoAviso: null,
+          aviso: 'A estante mudou depois disso: não dá mais para desfazer.',
+        })
+        return
+      }
+
+      // Otimista, como o movimento: a estante já volta na tela e o banco confirma por trás.
+      set({
+        ultimoMovimento: null,
+        livros: livros.map((l) => {
+          const p = movimento.antes.livros.find((x) => x.id === l.id)
+          return p ? { ...l, prateleira: p.prateleira, ordem: p.ordem, nivel: p.nivel } : l
+        }),
+        vagas: movimento.antes.vagas,
+        enfeites: movimento.antes.enfeites,
+        acaoDoAviso: null,
+        aviso: 'Movimento desfeito.',
+        erro: null,
+      })
+
+      try {
+        set(await engine.restaurarEstante(movimento.antes))
+      } catch (e) {
+        set({ livros, vagas, enfeites, aviso: null, erro: mensagem(e) })
       }
     },
 
@@ -645,6 +728,11 @@ export const usePalacio = create<PalacioStore>()((set, get) => {
 
     async moverEnfeite(origem, destino, dados) {
       const { livros: livrosAntes, vagas: vagasAntes, enfeites: enfeitesAntes } = get()
+      const fotoAntes = fotoDaEstante({
+        livros: livrosAntes,
+        vagas: vagasAntes,
+        enfeites: enfeitesAntes,
+      })
       const depois = moverEnfeiteNaEstante(
         { livros: livrosAntes, vagas: vagasAntes, enfeites: enfeitesAntes },
         origem,
@@ -663,7 +751,9 @@ export const usePalacio = create<PalacioStore>()((set, get) => {
       set({ ...depois, erro: null })
 
       try {
-        set(await engine.moverEnfeite(origem, destino, dados))
+        const gravada = await engine.moverEnfeite(origem, destino, dados)
+        set(gravada)
+        oferecerDesfazer(fotoAntes, gravada, 'Enfeite movido.')
       } catch (e) {
         set({
           livros: livrosAntes,
