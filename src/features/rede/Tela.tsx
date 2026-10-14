@@ -135,6 +135,7 @@ function lerCores(el: HTMLElement): CoresDaRede {
     no: lerCor(el, '--rede-no'),
     ouro: lerCor(el, '--ouro-gravado'),
     cinza: lerCor(el, '--ideia-cinza'),
+    brilho: lerCor(el, '--papel'),
     nevoa: lerCor(el, '--nevoa'),
     mistura: ehMistura(mistura) ? mistura : 'source-over',
     fonteTitulo: lerFonteDoCanvas(el).fonteTitulo,

@@ -27,7 +27,7 @@ import { controleDoArco, espessuraDaPonte, pontesVisiveis, type PonteAgrupada } 
  *
  * Nos livros executáveis, as ideias adormecidas ficam debaixo de uma névoa na
  * ilha — de qualquer distância — e o círculo de cada ideia diz o andamento: cinza para fazer,
- * cinza com um leve brilho amarelo fazendo, dourado feita.
+ * cinza com um brilho claro fazendo, dourado feita.
  *
  * Aqui não há estado nem `useEffect` — é uma função que recebe a cena e pinta.
  */
@@ -44,6 +44,8 @@ export interface CoresDoMapa {
   ouro: string
   /** O círculo da ideia "para fazer", e a base do "fazendo". */
   cinza: string
+  /** O halo de quem está em andamento: o tom do texto, que clareia na sala escura e escurece na clara. */
+  brilho: string
   /** A névoa das adormecidas. */
   nevoa: string
   /** A fonte dos nomes (ilha e pensamento escolhido) e se o nome da ilha é em versalete. */
@@ -74,7 +76,7 @@ export interface CenaDoMapa {
   adormecidas: ReadonlySet<Id>
   /** Ideias feitas dos livros executáveis: pontos dourados. */
   feitas: ReadonlySet<Id>
-  /** Ideias em andamento (acordadas): pontos cinza com um leve brilho amarelo. */
+  /** Ideias em andamento (acordadas): pontos cinza com um brilho claro. */
   fazendo: ReadonlySet<Id>
   /** Ideias para fazer: pontos cinza. */
   paraFazer: ReadonlySet<Id>
@@ -207,7 +209,7 @@ export function desenharMapa(
       else (dorme ? dormentes : acordadas).push(ponto)
     }
     const raioPx = cores.padrao ? RAIO_DO_PONTO_PADRAO_PX : RAIO_DO_PONTO_PX
-    desenharBrilhos(ctx, emAndamento, cores.ouro, 1, px)
+    desenharBrilhos(ctx, emAndamento, cores.brilho, 1, px)
     desenharPontos(ctx, acordadas, cores.no, 1, px, raioPx)
     desenharPontos(ctx, dormentes, cores.no, DORMENTE, px, raioPx)
     desenharPontos(ctx, cinzas, cores.cinza, 1, px, raioPx)
@@ -368,9 +370,9 @@ function desenharTrilhas(
   ctx.globalAlpha = 1
 }
 
-/** O raio do leve brilho amarelo de uma ideia em andamento, em px de tela, e o quanto ele aparece. */
-const RAIO_DO_BRILHO_PX = 8
-const PRESENCA_DO_BRILHO = 0.5
+/** O raio do brilho claro de uma ideia em andamento, em px de tela, e o quanto ele aparece. */
+const RAIO_DO_BRILHO_PX = 11
+const PRESENCA_DO_BRILHO = 0.7
 
 /** O brilho de quem está em andamento: vem antes do ponto, que fica cinza por cima dele. */
 function desenharBrilhos(
@@ -595,7 +597,7 @@ function desenharVizinhanca(
   for (const id of vizinhanca) {
     const p = cena.absolutos.get(id)
     if (!finito(p)) continue
-    if (cena.fazendo.has(id)) desenharBrilhos(ctx, [p], cores.ouro, 1, px)
+    if (cena.fazendo.has(id)) desenharBrilhos(ctx, [p], cores.brilho, 1, px)
     desenharPontos(
       ctx,
       [p],

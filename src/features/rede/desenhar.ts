@@ -36,6 +36,8 @@ export interface CoresDaRede {
   ouro: string
   /** O círculo da ideia "para fazer", e a base do "fazendo". */
   cinza: string
+  /** O halo de quem está em andamento: o tom do texto, que clareia na sala escura e escurece na clara. */
+  brilho: string
   /** A névoa das adormecidas. */
   nevoa: string
   mistura: GlobalCompositeOperation
@@ -79,7 +81,7 @@ export interface Cena {
   adormecidas: ReadonlySet<Id>
   /** Ideias feitas dos livros executáveis: o próprio ponto fica dourado. */
   feitas: ReadonlySet<Id>
-  /** Ideias em andamento (acordadas): círculo cinza com um leve brilho amarelo. */
+  /** Ideias em andamento (acordadas): círculo cinza com um brilho claro. */
   fazendo: ReadonlySet<Id>
   /** Ideias para fazer: círculo cinza. */
   paraFazer: ReadonlySet<Id>
@@ -91,9 +93,9 @@ const APAGADO = 0.12
 const DORMENTE = 0.35
 /** O raio do chumaço de névoa em volta de uma adormecida, em px de tela. */
 const RAIO_DA_NEVOA_PX = 13
-/** O leve brilho amarelo em volta de uma ideia em andamento, em px de tela, e o quanto ele aparece. */
-const RAIO_DO_BRILHO_PX = 8
-const PRESENCA_DO_BRILHO = 0.5
+/** O brilho claro em volta de uma ideia em andamento, em px de tela, e o quanto ele aparece. */
+const RAIO_DO_BRILHO_PX = 11
+const PRESENCA_DO_BRILHO = 0.7
 /** O anel da ideia feita, a esta distância do ponto, em px de tela. */
 
 /**
@@ -406,7 +408,7 @@ function desenharNeuronios(
 
   // O brilho de quem está em andamento também vem antes do ponto, e some junto com o que apaga.
   if (cena.fazendo.size > 0) {
-    const brilho = spriteDeNevoa(cena.cores.ouro)
+    const brilho = spriteDeNevoa(cena.cores.brilho)
     const r = RAIO_DO_BRILHO_PX * px
     for (const n of cena.neuronios) {
       if (!cena.fazendo.has(n.id)) continue

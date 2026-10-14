@@ -109,6 +109,7 @@ function lerCoresDoMapa(el: HTMLElement): CoresDoMapa {
     fio: lerCor(el, '--rede-fio'),
     ouro: lerCor(el, '--ouro-gravado'),
     cinza: lerCor(el, '--ideia-cinza'),
+    brilho: lerCor(el, '--papel'),
     nevoa: lerCor(el, '--nevoa'),
     ...lerFonteDoCanvas(el),
     blk: lerCor(el, '--blk'),

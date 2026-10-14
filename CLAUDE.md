@@ -6260,6 +6260,14 @@ andamento. **Para fazer**: um círculo **cinza**. **Fazendo**: o círculo cinza 
   em cada andamento, uma adormecida e pensamentos comuns. 801 testes (3 novos, de `marcasDoAndamento`), tipos e lint
   limpos. **Não verificado em toque real**, nem no Clássico (o desenho é o mesmo; só a tinta do ponto comum muda de tema).
 
+**O brilho do "fazendo" é cinza/branco, não amarelo (14/10/2026, pedido do usuário).** **Substitui** o "leve brilho
+amarelo" acima: o halo em volta da ideia em andamento passou a ser o **tom do texto** (`--papel`: quase branco nos
+temas escuros, quase preto no Padrão claro, onde um halo branco sumiria), de **11 px** de raio (era 8) e 70% de
+presença (era 50%), para chamar mais atenção. O círculo continua cinza, e o **amarelo é só da ideia feita**. Vale na
+Rede e no Mapa (`CoresDaRede.brilho` e `CoresDoMapa.brilho`, lidas em `Tela.tsx` e `TelaDoMapa.tsx`). Verificado no
+Chrome (build de produção) no Padrão escuro e claro, na Rede: para fazer cinza, fazendo cinza com halo, feita
+amarela. O Mapa usa o mesmo desenho e não foi visto. Tipos e lint limpos.
+
 ## O topo do livro sobrepõe a prateleira de cima (14/10/2026)
 
 Pedido do usuário: a parte de cima dos livros deve **sobrepor a parte de cima das prateleiras**, para aparecerem o detalhe

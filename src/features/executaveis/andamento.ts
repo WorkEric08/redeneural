@@ -3,7 +3,7 @@ import { estaAdormecida, estadoVisivel, type Id, type Livro, type NeuronioNaTela
 /**
  * O que a Rede e o Mapa desenham diferente nas ideias executáveis: o círculo de cada uma diz o
  * andamento (14/10/2026) — **para fazer** é um círculo cinza, **fazendo** é um círculo cinza com um
- * leve brilho amarelo, **feita** é o amarelo cheio — e as adormecidas ficam na névoa. Calculado na
+ * brilho claro, **feita** é o amarelo cheio — e as adormecidas ficam na névoa. Calculado na
  * hora de mostrar, com o relógio de quem mostra. Uma ideia de livro que não é executável não entra
  * em nenhum grupo: continua o ponto de sempre.
  *
