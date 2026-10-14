@@ -40,14 +40,14 @@
       crossorigin
     />
     <script>
-      // O tema escolhido, antes do CSS pintar (ver services/native/tema.ts). Só as duas versões
-      // do Padrão ligam atributo; sem ele vale o clássico, como sempre foi.
+      // O tema em uso da última vez, antes do CSS pintar (ver services/native/tema.ts). Sem nada
+      // lembrado vale o padrão (Padrão escuro): o clássico só liga com um livro com o título dele.
+      var tema = 'padrao-escuro'
       try {
-        var tema = localStorage.getItem('locus-tema')
-        if (tema === 'padrao-claro' || tema === 'padrao-escuro') {
-          document.documentElement.dataset.tema = tema
-        }
+        var lembrado = localStorage.getItem('locus-tema')
+        if (lembrado === 'classico' || lembrado === 'padrao-claro') tema = lembrado
       } catch (e) {}
+      document.documentElement.dataset.tema = tema
     </script>
     <script>
       // CLAUDE.md §10: capturar o evento antes do bundle React carregar.

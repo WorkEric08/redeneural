@@ -67,7 +67,10 @@ export interface PreferenciasGravadas {
   modoDaBusca?: ModoDaBusca
   /** Ausente antes do Mapa (01/10/2026) — o repo trata como `MODO_DA_REDE_PADRAO`. */
   modoDaRede?: ModoDaRede
-  /** Ausente antes dos temas (13/10/2026) — o repo trata como `TEMA_PADRAO`, o clássico. */
+  /**
+   * A preferência de tema. Ausente antes dos temas (13/10/2026), ou `'classico'` de quando ele ainda
+   * era uma escolha — o repo trata os dois como `TEMA_PADRAO`.
+   */
   tema?: Tema
 }
 

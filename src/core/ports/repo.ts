@@ -14,7 +14,7 @@ import type {
 import type { FotoDaEstante } from '../domain/ordem'
 import type { ModoDaBusca } from '../domain/modoDaBusca'
 import type { ModoDaRede } from '../domain/modoDaRede'
-import type { Tema } from '../domain/tema'
+import type { TemaEscolhido } from '../domain/tema'
 import type { MapaDoPalacio } from '../motor/mapa'
 import type { PerfilDoPalacio } from '../motor/grafo'
 import type { MarcaPerdida } from '../motor/incremental'
@@ -95,8 +95,8 @@ export interface PalacioRepo {
   getModoDaRede(): Promise<ModoDaRede>
   definirModoDaRede(modo: ModoDaRede): Promise<void>
   /** O tema da interface. `TEMA_PADRAO` (o clássico) se nunca escolheu. */
-  getTema(): Promise<Tema>
-  definirTema(tema: Tema): Promise<void>
+  getTema(): Promise<TemaEscolhido>
+  definirTema(tema: TemaEscolhido): Promise<void>
 
   listNeuronios(livroId?: Id): Promise<Neuronio[]>
   getNeuronio(id: Id): Promise<Neuronio | undefined>

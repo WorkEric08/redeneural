@@ -33,7 +33,7 @@ import {
   MINIMO_DE_PRATELEIRAS,
   modoDaBuscaOuPadrao,
   modoDaRedeOuPadrao,
-  temaOuPadrao,
+  temaEscolhidoOuPadrao,
   fundirMapas,
   MAPA_VAZIO,
   neuronioFromSnapshot,
@@ -434,12 +434,12 @@ export function createDexieRepo(db: PalacioDB = defaultDb): PalacioRepo {
 
     async getTema() {
       const gravado = (await db.meta.get('preferencias')) as PreferenciasGravadas | undefined
-      return temaOuPadrao(gravado?.tema)
+      return temaEscolhidoOuPadrao(gravado?.tema)
     },
 
     async definirTema(tema) {
       await db.transaction('rw', db.meta, async () => {
-        await db.meta.put(await preferenciasCom({ tema: temaOuPadrao(tema) }))
+        await db.meta.put(await preferenciasCom({ tema: temaEscolhidoOuPadrao(tema) }))
       })
     },
 

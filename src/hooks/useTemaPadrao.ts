@@ -1,6 +1,6 @@
 import { useSyncExternalStore } from 'react'
 
-import { ehTemaPadrao, temaOuPadrao } from '@/core'
+import { ehTemaPadrao, TEMAS } from '@/core'
 
 /**
  * Se o tema em uso é uma das versões do "Padrão". Só para o que muda de **estrutura** (outra
@@ -21,7 +21,9 @@ function assinar(aoMudar: () => void): () => void {
 }
 
 function ler(): boolean {
-  return ehTemaPadrao(temaOuPadrao(document.documentElement.dataset.tema))
+  // Sem atributo (ou com um valor desconhecido) não é o Padrão: o CSS também só liga com o atributo.
+  const tema = TEMAS.find((t) => t === document.documentElement.dataset.tema)
+  return tema !== undefined && ehTemaPadrao(tema)
 }
 
 export function useTemaPadrao(): boolean {

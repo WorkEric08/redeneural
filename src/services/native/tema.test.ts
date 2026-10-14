@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it } from 'vitest'
 
-import { aplicarTema, temaLembrado } from './tema'
+import { aplicarTema } from './tema'
 
 afterEach(() => {
   localStorage.clear()
@@ -8,25 +8,16 @@ afterEach(() => {
 })
 
 describe('tema na tela', () => {
-  it('sem nada lembrado, o tema é o clássico', () => {
-    expect(temaLembrado()).toBe('classico')
-  })
-
-  it('aplicar liga o tema na página e o lembra', () => {
+  it('aplicar liga o tema na página e o espelha para a primeira pintura', () => {
     aplicarTema('padrao-escuro')
     expect(document.documentElement.dataset.tema).toBe('padrao-escuro')
-    expect(temaLembrado()).toBe('padrao-escuro')
+    expect(localStorage.getItem('locus-tema')).toBe('padrao-escuro')
   })
 
-  it('trocar de volta ao clássico também fica lembrado', () => {
+  it('o clássico também fica espelhado, para o app abrir nele quando ainda houver o livro', () => {
     aplicarTema('padrao-claro')
     aplicarTema('classico')
     expect(document.documentElement.dataset.tema).toBe('classico')
-    expect(temaLembrado()).toBe('classico')
-  })
-
-  it('um valor guardado que não é tema vale o clássico', () => {
-    localStorage.setItem('locus-tema', 'noite')
-    expect(temaLembrado()).toBe('classico')
+    expect(localStorage.getItem('locus-tema')).toBe('classico')
   })
 })

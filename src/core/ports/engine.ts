@@ -1,7 +1,7 @@
 import type { FotoDaEstante } from '../domain/ordem'
 import type { ModoDaBusca } from '../domain/modoDaBusca'
 import type { ModoDaRede } from '../domain/modoDaRede'
-import type { Tema } from '../domain/tema'
+import type { TemaEscolhido } from '../domain/tema'
 import type { EstiloDaLombada } from '../domain/paletaNoite'
 import type { MapaDoPalacio } from '../motor/mapa'
 import type { AnexoNaTela, NeuronioNaTela } from '../domain/tela'
@@ -163,7 +163,7 @@ export interface EstadoDoPalacio {
   /** O último modo da tela da Rede — constelação ou Mapa. */
   modoDaRede: ModoDaRede
   /** O tema da interface: o clássico ou uma das duas versões do Padrão. */
-  tema: Tema
+  tema: TemaEscolhido
   /** O Mapa: ilhas por livro, gravadas (ver `core/motor/mapa.ts`). */
   mapa: MapaDoPalacio
   /**
@@ -303,7 +303,7 @@ export interface ConnectionEngine {
   /** Grava o modo da tela da Rede que a pessoa acabou de escolher. */
   definirModoDaRede(modo: ModoDaRede): Promise<ModoDaRede>
   /** Grava o tema da interface que a pessoa acabou de escolher. */
-  definirTema(tema: Tema): Promise<Tema>
+  definirTema(tema: TemaEscolhido): Promise<TemaEscolhido>
   /**
    * Desenha o Mapa inteiro de novo, do zero. É a única coisa que reorganiza o
    * mapa todo — só quando a pessoa pede (Ajustes, com confirmação).

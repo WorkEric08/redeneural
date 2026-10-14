@@ -3,10 +3,10 @@
  *
  * Interface neutra e familiar: cinza-claro ou preto, cartões arredondados, botões pretos ou
  * brancos e a fonte Figtree. Em duas versões fixas, `padrao-claro` e `padrao-escuro` — elas NÃO
- * seguem o sistema; quem segue é o Clássico.
+ * seguem o sistema; quem segue é o Clássico (um easter egg: liga com um livro chamado "Clássico").
  *
- * Como funciona: `services/native/tema.ts` liga `<html data-tema="...">`. Sem o atributo (ou com
- * `classico`), nada daqui vale e o app é o estilo Noite de sempre. Este arquivo redefine os
+ * Como funciona: `services/native/tema.ts` liga `<html data-tema="...">`. Com `classico` (ou sem o
+ * atributo), nada daqui vale e o app é o estilo Noite de sempre. Este arquivo redefine os
  * mesmos tokens do design system (`--sala`, `--parede`, `--papel`…) e redesenha as peças que a
  * documentação desenha de outro jeito — as medidas vêm das pranchas (os HTML dos mockups), não de
  * adjetivos. O que muda de **estrutura** (outra ordem, outra peça) está nos componentes, atrás de

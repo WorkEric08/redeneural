@@ -4,6 +4,7 @@ import {
   assinaturaDaEstante,
   chaveDoLugar,
   clampDiasParaAdormecer,
+  ehTituloDoClassico,
   enfeitesSemLivroEmCima,
   estadoAoGuardar,
   fotoDaEstante,
@@ -18,6 +19,7 @@ import {
   mudarOrientacaoNaEstante,
   novoLivro,
   primeiroLugarLivre,
+  TEMA_PADRAO,
   vagasDepoisDeMover,
   type AnexoNaTela,
   type Conexao,
@@ -32,7 +34,7 @@ import {
   type MapaDoPalacio,
   type ModoDaBusca,
   type ModoDaRede,
-  type Tema,
+  type TemaEscolhido,
   type NeuronioNaTela,
   type OrientacaoDoLivro,
   type Ponto,
@@ -43,7 +45,6 @@ import {
 } from '@/core'
 import { newId } from '@/lib/id'
 import { engine } from '@/services/engine/workerEngine'
-import { temaLembrado } from '@/services/native/tema'
 
 export interface NovoNeuronio {
   /** `null`: "Automático" ao criar (o Porto decide); ao editar, continua no porto. */
@@ -88,8 +89,11 @@ export interface NovoAnexo {
 export type AcaoDoAviso =
   { rotulo: string; busca: string } | { rotulo: string; aoTocar: () => void }
 
-/** O aviso que nasce de tocar noutro aviso ("Movimento desfeito.") dura 2 s; os demais, o tempo de sempre. */
-const DURACAO_DO_AVISO_ENCADEADO_MS = 2000
+/**
+ * Os avisos curtos, de 2 s: o que nasce de tocar noutro aviso ("Movimento desfeito.") e o que fecha
+ * algo ("Modo clássico desativado"). Os demais duram o tempo de sempre (3 s, ver `Aviso`).
+ */
+const DURACAO_DO_AVISO_CURTO_MS = 2000
 
 /** A estante antes e depois do último movimento: o que o "Desfazer" precisa. */
 interface UltimoMovimento {
@@ -124,8 +128,11 @@ interface PalacioStore {
   modoDaBusca: ModoDaBusca
   /** O último modo da tela da Rede: a constelação ou o Mapa. */
   modoDaRede: ModoDaRede
-  /** O tema da interface. Começa no que o aparelho lembra (primeira pintura) e o banco confirma. */
-  tema: Tema
+  /**
+   * O tema **escolhido** em Ajustes: Padrão claro ou escuro. O tema em uso também depende dos livros — o
+   * Clássico liga com um livro chamado "Clássico" (`temaEmUso`, aplicado em `App`).
+   */
+  tema: TemaEscolhido
 
   carregado: boolean
   ocupado: boolean
@@ -216,7 +223,7 @@ interface PalacioStore {
   /** O mesmo, para a tela da Rede (constelação ou Mapa). */
   definirModoDaRede: (modo: ModoDaRede) => Promise<void>
   /** Otimista: a interface troca de tema na hora, e a escolha fica gravada para a próxima vez. */
-  definirTema: (tema: Tema) => Promise<void>
+  definirTema: (tema: TemaEscolhido) => Promise<void>
   /** Desenha o Mapa inteiro de novo — só a pedido, em Ajustes. `false` se o motor não conseguiu. */
   reorganizarMapa: () => Promise<boolean>
   /**
@@ -315,7 +322,7 @@ export const usePalacio = create<PalacioStore>()((set, get) => {
     iconesNosLivros: ICONES_NOS_LIVROS_PADRAO,
     modoDaBusca: MODO_DA_BUSCA_PADRAO,
     modoDaRede: MODO_DA_REDE_PADRAO,
-    tema: temaLembrado(),
+    tema: TEMA_PADRAO,
     carregado: false,
     ocupado: false,
     progresso: null,
@@ -661,7 +668,7 @@ export const usePalacio = create<PalacioStore>()((set, get) => {
         set({
           ultimoMovimento: null,
           acaoDoAviso: null,
-          duracaoDoAviso: DURACAO_DO_AVISO_ENCADEADO_MS,
+          duracaoDoAviso: DURACAO_DO_AVISO_CURTO_MS,
           aviso: 'A estante mudou depois disso: não dá mais para desfazer.',
         })
         return
@@ -677,7 +684,7 @@ export const usePalacio = create<PalacioStore>()((set, get) => {
         vagas: movimento.antes.vagas,
         enfeites: movimento.antes.enfeites,
         acaoDoAviso: null,
-        duracaoDoAviso: DURACAO_DO_AVISO_ENCADEADO_MS,
+        duracaoDoAviso: DURACAO_DO_AVISO_CURTO_MS,
         aviso: 'Movimento desfeito.',
         erro: null,
       })
@@ -966,4 +973,23 @@ export const usePalacio = create<PalacioStore>()((set, get) => {
       }
     },
   }
+})
+
+/**
+ * O Clássico é um easter egg: liga com um livro de título "Clássico" ou "Tema clássico" e desliga
+ * quando ele deixa de existir (`ehTituloDoClassico`). Quem avisa é aqui, na virada — criar, renomear,
+ * apagar, desfazer ou importar um backup: tudo o que muda a lista de livros passa por este ponto.
+ * Enquanto o palácio ainda não carregou não há virada, só o estado de partida.
+ */
+usePalacio.subscribe((atual, anterior) => {
+  if (!anterior.carregado || atual.livros === anterior.livros) return
+  const antes = anterior.livros.some((l) => ehTituloDoClassico(l.titulo))
+  const agora = atual.livros.some((l) => ehTituloDoClassico(l.titulo))
+  if (antes === agora) return
+  usePalacio.setState({
+    aviso: agora ? 'Modo clássico ativado' : 'Modo clássico desativado',
+    acaoDoAviso: null,
+    duracaoDoAviso: agora ? null : DURACAO_DO_AVISO_CURTO_MS,
+    erro: null,
+  })
 })

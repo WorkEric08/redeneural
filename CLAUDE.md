@@ -5931,6 +5931,9 @@ Medido no Chrome (build de produção): antes a tela rolava **446 px em 320×568
 
 ## Temas: Clássico e Padrão (13/10/2026)
 
+> **Revisto em 14/10/2026:** o Clássico virou um **easter egg** — não se escolhe mais em Ajustes. Ver
+> "O tema Clássico é um easter egg". O resto desta seção (o Padrão, as pranchas, as telas baixas) continua valendo.
+
 Pedido do usuário: o visual de sempre passa a se chamar **Clássico**, Ajustes ganha uma seção para trocar de
 tema, e entra a versão **E · Padrão** da documentação de design (`docs/estilos-visuais-locus.md`, e o PDF
 `Locus-Design-E-Padrao`) em claro e escuro. Três escolhas, e só: Clássico, Padrão claro, Padrão escuro.
@@ -6179,6 +6182,44 @@ primeiras, nesta ordem. Vale nos três temas (a estante é a mesma estrutura nos
   `restaurarEstante` e `recusaDaEdicao`), tipos e lint limpos. **Não verificado em toque real**, e a tela da
   store (Desfazer, estante mudada) não tem teste automatizado — só o navegador.
 
+## O tema Clássico é um easter egg (14/10/2026)
+
+Pedido do usuário: o Clássico só liga se existir **um livro com o título dele**; sem esse livro, fica
+desligado. Em Ajustes → Tema sobram só **Padrão claro** e **Padrão escuro**.
+
+- **O critério único é o título** (`ehTituloDoClassico`, `core/domain/tema.ts`): "Tema clássico" ou "Clássico",
+  **escritos de qualquer jeito**. A conta tira acento, caixa e tudo que não é letra ou número, e compara com
+  `classico` e `temaclassico`. Ligam: "Classico", "CLÁSSICO", "classíco" (acento no lugar errado), "tema-clássico",
+  "Tema_Classico", "temaclassico", "  Tema   clássico. ", "🎨 Clássico", e o "á" decomposto. **Não** ligam
+  "Clássico 2", "Tema clássico do trabalho", "O clássico", "Música clássica" (números e palavras a mais contam).
+  Qualquer livro serve (de conceitos, executável ou pasta). Um enfeite não é livro.
+- **Dois tipos, duas coisas:** `Tema` é o **em uso** (os três) e `TemaEscolhido` é a **preferência** (só os dois do
+  Padrão), a que se grava. `temaEmUso(escolhido, livros)` decide: Clássico enquanto houver o livro; senão, o
+  escolhido. `App` aplica o resultado em `<html data-tema>`.
+- **O padrão agora é o Padrão escuro** (`TEMA_PADRAO`, uma constante só): é o que vale para quem nunca escolheu e
+  para quem tinha **o Clássico gravado** de quando ele era uma escolha — essa preferência é lida como o padrão
+  (`temaEscolhidoOuPadrao`), sem migração. O Padrão escuro foi escolha minha (o app é uma biblioteca noturna e a
+  estante é escura nos dois temas); trocar para o claro é mudar a constante.
+- **Primeira pintura sem piscar:** o espelho (`locus-tema`, no aparelho) guarda o **tema em uso**, e o script do
+  `index.html` o liga antes do CSS, nos três valores; sem nada lembrado, Padrão escuro. `App` só aplica o tema
+  **depois de o palácio carregar** — antes, os livros ainda não chegaram e o tema em uso seria o Padrão mesmo para
+  quem tem o Clássico. Medido com um observador desde o primeiro quadro: ao reabrir, `data-tema` só assume
+  `classico`, nunca o Padrão no meio.
+- **Os avisos** vêm de uma assinatura da store (`usePalacio.subscribe`), na **virada** do Clássico, seja criar,
+  renomear, apagar, desfazer ou importar um backup: **"Modo clássico ativado"** (3 s, o tempo de sempre) e
+  **"Modo clássico desativado"** (2 s, o aviso curto). Abrir o app com o livro já lá **não** avisa: só há virada depois
+  de o palácio carregar. `DURACAO_DO_AVISO_CURTO_MS` (era `..._ENCADEADO_MS`) serve a este e ao "Movimento desfeito.".
+- **Ajustes com o Clássico ligado:** os dois botões continuam lá e gravam a preferência, mas nada muda na tela até o livro
+  sair — o Clássico vale enquanto o livro existir. Não pus aviso nem trava, para não entregar o segredo.
+- **`useTemaPadrao`** passou a só ligar com `padrao-claro`/`padrao-escuro` no atributo (antes, atributo ausente ou
+  desconhecido caía no padrão do tipo, que agora é um Padrão).
+- **Não feito (sugestão):** "Modo clássico" como título não liga — não estava entre os dois pedidos.
+- **Verificado** no Chrome (build de produção, 412×892): estado inicial no Padrão escuro; Ajustes mostra só os dois
+  Padrão; criar "tema CLÁSSICO" liga o Clássico, mostra "Modo clássico ativado" por ~3,0 s e espelha `classico`;
+  recarregar abre no Clássico sem piscar e sem aviso; apagar o livro volta ao Padrão com "Modo clássico desativado"
+  por ~2,0 s. 794 testes (novos: o critério do título com 20 grafias que ligam e 10 que não, `temaEmUso`, a preferência
+  gravada), tipos e lint limpos. **Não verificado em toque real.**
+
 ## Fases
 
 0. ✅ Esqueleto (Vite/React/TS/Tailwind/PWA/Capacitor)
@@ -6232,3 +6273,4 @@ primeiras, nesta ordem. Vale nos três temas (a estante é a mesma estrutura nos
     escolhida em Ajustes (13/10/2026)
 30. ✅ Mover livros: Desfazer, destino recusado visível, Deitar/Levantar pelo menu e a dica de arrastar
     (14/10/2026)
+31. ✅ O tema Clássico vira easter egg: liga com um livro chamado "Clássico"/"Tema clássico" (14/10/2026)

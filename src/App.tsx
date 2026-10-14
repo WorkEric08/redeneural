@@ -1,7 +1,7 @@
 import { useLayoutEffect } from 'react'
 import { Outlet, useLocation } from 'react-router-dom'
 
-import type { ProgressoDoMotor } from '@/core'
+import { temaEmUso, type ProgressoDoMotor } from '@/core'
 import { Aviso } from '@/components/Aviso'
 import { Dial } from '@/components/Dial'
 import { Navegacao } from '@/components/Navegacao'
@@ -19,12 +19,17 @@ const SEM_BOTAO_DE_CRIAR = ['/novo', '/novo-livro', '/novo-anexo']
 /** O casco: emoldura a página da vez. O palácio é carregado em `main.tsx`, antes do React. */
 export default function App() {
   const progresso = usePalacio((s) => s.progresso)
-  const tema = usePalacio((s) => s.tema)
+  const carregado = usePalacio((s) => s.carregado)
+  // O tema em uso: o Padrão escolhido em Ajustes, ou o Clássico enquanto houver um livro chamado
+  // "Clássico" (easter egg). A seleção devolve um texto, então só rende de novo quando o tema muda.
+  const tema = usePalacio((s) => temaEmUso(s.tema, s.livros))
   const { pathname } = useLocation()
-  // O tema vale na página inteira (`<html data-tema>`). Antes de pintar, para a troca não piscar.
+  // O tema vale na página inteira (`<html data-tema>`). Antes de pintar, para a troca não piscar. Só
+  // depois de o palácio carregar: antes disso os livros ainda não chegaram, e o tema em uso seria o
+  // Padrão mesmo para quem tem o Clássico ligado — vale o que o `index.html` lembrou.
   useLayoutEffect(() => {
-    aplicarTema(tema)
-  }, [tema])
+    if (carregado) aplicarTema(tema)
+  }, [carregado, tema])
   // Toda troca de tela começa do topo — nunca no meio ou no fim (pedido do
   // usuário, 17/09/2026, sem exceção até ele pedir uma). `useLayoutEffect`,
   // não `useEffect`: roda antes do navegador pintar, para não haver um

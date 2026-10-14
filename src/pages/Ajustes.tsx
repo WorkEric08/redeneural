@@ -11,7 +11,7 @@ import {
   INTENSIDADE_DA_LUZ_MINIMA,
   INTENSIDADE_DA_LUZ_PADRAO,
   MAXIMO_DE_PRATELEIRAS,
-  type Tema,
+  type TemaEscolhido,
 } from '@/core'
 import { usePalacio } from '@/store/palacio'
 
@@ -192,9 +192,8 @@ export default function Ajustes() {
   )
 }
 
-/** Os temas, na ordem em que aparecem em Ajustes. O clássico é o de sempre (segue o sistema). */
-const OPCOES_DE_TEMA: readonly { valor: Tema; rotulo: string }[] = [
-  { valor: 'classico', rotulo: 'Clássico' },
+/** Os temas que se escolhem, na ordem em que aparecem em Ajustes. O clássico é um easter egg: não está aqui. */
+const OPCOES_DE_TEMA: readonly { valor: TemaEscolhido; rotulo: string }[] = [
   { valor: 'padrao-claro', rotulo: 'Padrão claro' },
   { valor: 'padrao-escuro', rotulo: 'Padrão escuro' },
 ]

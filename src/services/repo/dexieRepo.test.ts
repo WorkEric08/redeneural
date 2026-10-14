@@ -687,8 +687,8 @@ describe('modo da Rede', () => {
 })
 
 describe('tema', () => {
-  it('"classico" por padrão, e devolve o último escolhido', async () => {
-    expect(await repo.getTema()).toBe('classico')
+  it('"padrao-escuro" por padrão, e devolve o último escolhido', async () => {
+    expect(await repo.getTema()).toBe('padrao-escuro')
     await repo.definirTema('padrao-escuro')
     expect(await repo.getTema()).toBe('padrao-escuro')
     await repo.definirTema('padrao-claro')
@@ -706,10 +706,21 @@ describe('tema', () => {
     expect(await repo.getIconesNosLivros()).toBe(false)
   })
 
-  it('um tema que não existe grava o clássico', async () => {
-    await repo.definirTema('padrao-escuro')
+  it('um tema que não existe grava o padrão', async () => {
+    await repo.definirTema('padrao-claro')
     await repo.definirTema('noite' as never)
-    expect(await repo.getTema()).toBe('classico')
+    expect(await repo.getTema()).toBe('padrao-escuro')
+  })
+
+  it('o clássico não é mais uma escolha: nem gravar nem o que já estava gravado vale', async () => {
+    await repo.definirTema('padrao-claro')
+    await repo.definirTema('classico' as never)
+    expect(await repo.getTema()).toBe('padrao-escuro')
+
+    // O que já estava gravado de quando o clássico ainda era uma escolha também vale o padrão.
+    const db = createDb(`palacio-test-tema-antigo-${String(nth)}`)
+    await db.meta.put({ chave: 'preferencias', tema: 'classico' } as never)
+    expect(await createDexieRepo(db).getTema()).toBe('padrao-escuro')
   })
 })
 
