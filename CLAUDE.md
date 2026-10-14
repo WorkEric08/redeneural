@@ -4992,6 +4992,23 @@ degradê escuros no alto liam como sombra), e ficam só `solido`, `faixa` e `fio
   opacidade com a névoa `#A9BAF0` de 12% a 40% (a névoa também fica a 42%: a opacidade é do
   botão inteiro). O vão do arrasto (20%) vence o adormecido.
 - O leitor de tela ganhou "em andamento", "tudo feito" ou "adormecido" no nome da lombada.
+- **O livro adormecido não apaga mais; ganha uma lua (14/10/2026).** **Isto substitui** "Adormecido: a lombada a
+  42% de opacidade com a névoa" logo acima. A cor, o brilho e o título ficam **inteiros**. Duas regras, a segunda
+  escolhida por mim ("pode fazer" sobre a proposta): **uma ideia dormindo** (`temIdeiaAdormecida`,
+  `core/domain/executavel.ts`) mostra só a **lua**, mesmo que o livro continue "fazendo" ou sem marca; **todas as
+  pendentes dormindo** (`andamento: 'adormecido'`, como antes) mostram a lua **e uma neblina leve** subindo do
+  pé (de transparente a 35% do lilás `#A9BAF0`, a partir de 55% da altura). O leitor de tela diz "com ideia adormecida".
+  - **Onde fica a lua:** acima do topo, com o ponto dourado do Fazendo ao lado (os dois moram em `.lombada-sinais`),
+    **se couber**: a maior que a folga em cima deixa (até 13 px, no mínimo 7). Os livros mais altos quase não têm
+    folga (o de 93,5% deixa ~8 px, o "Enorme" ~2 px), e uma lua maior era cortada pela prateleira de cima —
+    visto no navegador. Sem folga, e **sempre no livro deitado**, ela entra **dentro da lombada**, no alto (7 px,
+    a 2 px do topo). No deitado ela gira de volta, para ler em pé.
+  - **Cor:** lilás frio `#A9BAF0` (o da névoa), nunca o dourado do andamento nem o azul da ponte. No **Padrão claro**,
+    onde a prateleira é um cartão branco, a lua e a neblina usam `#5D70BD` (o mesmo lilás, mais escuro) para aparecer.
+  - **Custo:** quando a lua entra na lombada ela divide o alto com a margem do título; com título que enche a zona
+    numa lombada baixa, pode encostar na primeira letra (≤ ~1,5 px medido por conta, não visto).
+  - **Verificado** no Chrome (build de produção) nos três temas, 412×892: os três casos (só a lua, lua e ponto,
+    lua e neblina), livro alto, "Enorme" e deitado. 798 testes (4 novos), tipos e lint limpos.
 
 ### Os enfeites
 

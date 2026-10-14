@@ -661,6 +661,16 @@ html:root[data-tema^='padrao'] .rotulo-de-secao {
   font-size: 0.875rem;
 }
 
+/* No Padrão claro a estante é um cartão branco: a lua e a neblina do livro adormecido precisam de um
+   tom mais escuro do mesmo lilás para aparecer. */
+html:root[data-tema='padrao-claro'] .lombada-lua {
+  --lua-cor: #5d70bd;
+}
+
+html:root[data-tema='padrao-claro'] .lombada-nevoa {
+  background: linear-gradient(180deg, transparent 55%, rgb(93 112 189 / 0.4));
+}
+
 /* A seção recolhida ("Feitas · 3"): uma linha de 48 px sob um filete, com a seta à direita. */
 .pd-recolhida {
   display: flex;

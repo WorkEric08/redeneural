@@ -107,3 +107,16 @@ export function andamentoDoLivro(
   if (acordadas.length === 0) return 'adormecido'
   return acordadas.some((i) => estadoVisivel(i, livro) === 'fazendo') ? 'fazendo' : null
 }
+
+/**
+ * O livro tem **alguma** ideia adormecida (14/10/2026)? Diferente de `adormecido`, que pede que todas as
+ * que sobraram durmam: aqui basta uma. A lombada mostra a lua com uma só, e a lua com a neblina quando
+ * são todas. Só num livro executável; uma ideia feita nunca dorme.
+ */
+export function temIdeiaAdormecida(
+  livro: Pick<Livro, 'executavel' | 'diasParaAdormecer'>,
+  ideias: readonly { estado: EstadoDaIdeia | null; ultimoToque: Date }[],
+  agora: Date,
+): boolean {
+  return livro.executavel && ideias.some((i) => estaAdormecida(i, livro, agora))
+}

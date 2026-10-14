@@ -1,3 +1,4 @@
+import type { CSSProperties } from 'react'
 import { createPortal } from 'react-dom'
 
 import { especieDoLivro, INTENSIDADE_DA_LUZ_PADRAO } from '@/core'
@@ -16,6 +17,29 @@ const LEGENDA_DO_ANDAMENTO = {
   feita: ', tudo feito',
   adormecido: ', adormecido',
 } as const
+
+const LEGENDA_DA_IDEIA_ADORMECIDA = ', com ideia adormecida'
+
+/**
+ * A lua da ideia adormecida: uma meia-lua no lilás frio da névoa. Fora, acima do topo, ou `dentro`, no
+ * alto da lombada, para quem não tem folga em cima.
+ */
+function Lua({ dentro = false }: { dentro?: boolean }) {
+  return (
+    <span className={dentro ? 'lombada-lua lombada-lua--dentro' : 'lombada-lua'} aria-hidden>
+      <svg viewBox="0 0 24 24">
+        <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z" />
+      </svg>
+    </span>
+  )
+}
+
+/** A maior lua que cabe acima do topo, e a menor que ainda se lê; menos que isso, ela entra na lombada. */
+const LUA_MAXIMA_PX = 13
+const LUA_MINIMA_FORA_PX = 7
+const LUA_DENTRO_PX = 7
+/** O vão entre o topo da lombada e a lua (2 px) mais o que a prateleira de cima toma (1 px). */
+const FOLGA_DA_LUA_PX = 3
 
 /**
  * - `repouso`: na prateleira, sob a luz de Ajustes.
@@ -89,6 +113,12 @@ export function Lombada({
   const ehPasta = item.livro.tipo === 'acervo'
   // O pé da feita é do disco: o ícone não cabe junto, e a lombada feita fica sem ele.
   const icone = iconesNosLivros && item.andamento !== 'feita'
+  // A folga em cima do livro de pé: o que sobra da fileira acima da lombada. Deitado, o "topo" é a ponta
+  // esquerda, junto do vizinho, e a lua sempre entra na lombada.
+  const folgaEmCima = deitada ? 0 : alturaDaFileira * (1 - altura / 100)
+  const luaForaPx = Math.min(LUA_MAXIMA_PX, Math.floor(folgaEmCima - FOLGA_DA_LUA_PX))
+  const luaFora = luaForaPx >= LUA_MINIMA_FORA_PX
+  const luaPx = luaFora ? luaForaPx : LUA_DENTRO_PX
   const geo = geometriaDaLombada({
     estilo: item.livro.estilo,
     cor: item.livro.cor,
@@ -114,15 +144,18 @@ export function Lombada({
       className={deitada ? 'lombada lombada--livro lombada--deitada' : 'lombada lombada--livro'}
       data-estilo={geo.estilo}
       data-andamento={item.andamento ?? undefined}
-      style={{
-        ...geo.style,
-        height: deitada ? `${String(extensao)}px` : `${String(Math.round(altura * 10) / 10)}%`,
-        width: `${String(largura)}px`,
-      }}
+      style={
+        {
+          ...geo.style,
+          '--lua-px': `${String(luaPx)}px`,
+          height: deitada ? `${String(extensao)}px` : `${String(Math.round(altura * 10) / 10)}%`,
+          width: `${String(largura)}px`,
+        } as CSSProperties
+      }
       aria-label={
         ehPasta
           ? `${item.livro.titulo}, pasta com ${contar(item.anexos, 'item', 'itens')}`
-          : `${item.livro.titulo}, ${contar(item.neuronios, 'pensamento', 'pensamentos')}${LEGENDA_DO_ANDAMENTO[item.andamento ?? 'nenhum']}`
+          : `${item.livro.titulo}, ${contar(item.neuronios, 'pensamento', 'pensamentos')}${LEGENDA_DO_ANDAMENTO[item.andamento ?? 'nenhum']}${item.comIdeiaAdormecida && item.andamento !== 'adormecido' ? LEGENDA_DA_IDEIA_ADORMECIDA : ''}`
       }
       aria-haspopup="dialog"
       {...manipular}
@@ -140,12 +173,17 @@ export function Lombada({
       </span>
 
       {ponte && <span className="lombada-ponto" aria-hidden />}
-      {item.andamento === 'fazendo' && (
-        <>
-          <span className="lombada-fazendo-faixa" aria-hidden />
-          <span className="lombada-fazendo-ponto" aria-hidden />
-        </>
+      {item.andamento === 'fazendo' && <span className="lombada-fazendo-faixa" aria-hidden />}
+      {/* Os sinais logo acima do topo: o ponto do Fazendo e a lua da ideia adormecida, lado a lado
+          quando há os dois. A lua só cabe fora se o livro deixar folga em cima (o mais alto deixa 6,5%
+          da fileira, o "Enorme" quase nada): sem folga, ela vai para dentro do topo da lombada. */}
+      {(item.andamento === 'fazendo' || (item.comIdeiaAdormecida && luaFora)) && (
+        <span className="lombada-sinais" aria-hidden>
+          {item.andamento === 'fazendo' && <span className="lombada-fazendo-ponto" />}
+          {item.comIdeiaAdormecida && luaFora && <Lua />}
+        </span>
       )}
+      {item.comIdeiaAdormecida && !luaFora && <Lua dentro />}
       {item.andamento === 'feita' && (
         <span className="lombada-feita" aria-hidden>
           <svg viewBox="0 0 10 10" fill="none" stroke="currentColor" strokeWidth="1.8">

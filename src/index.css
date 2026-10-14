@@ -914,13 +914,7 @@ img {
   transform: translateY(-6px) scale(1.05);
 }
 
-/* O vão que o livro deixa enquanto viaja na mão. */
-/* Livro executável com tudo parado: a lombada apaga, e a névoa cai por cima. */
-.lombada--livro[data-andamento='adormecido'] {
-  opacity: 0.42;
-}
-
-/* Vem depois do adormecido de propósito: o vão do arrasto é mais apagado. */
+/* O vão que o livro deixa enquanto viaja na mão: apagado, a 20%. */
 .lombada--livro[data-estado='vazio'],
 .lombada--enfeite[data-estado='vazio'] {
   opacity: 0.2;
@@ -1333,16 +1327,58 @@ img {
   background: #e8c471;
 }
 
-/* Logo acima do topo: a fileira tem folga em cima (a lombada mais alta tem 93,5%). */
-.lombada-fazendo-ponto {
+/* Logo acima do topo: a fileira tem folga em cima (a lombada mais alta tem 93,5%). Os sinais do
+   andamento moram aqui, lado a lado: o ponto dourado do Fazendo e a lua da ideia adormecida. */
+.lombada-sinais {
   position: absolute;
   bottom: calc(100% + 2px);
   left: 50%;
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+
+.lombada-fazendo-ponto {
   width: var(--ponto-fazendo);
   aspect-ratio: 1;
-  transform: translateX(-50%);
+  flex: none;
   border-radius: 50%;
   background: #e8c471;
+}
+
+/* A lua: a ideia adormecida, no lilás frio da névoa — nunca o dourado do andamento nem o azul da
+   ponte. */
+.lombada-lua {
+  --lua-cor: #a9baf0;
+
+  display: block;
+  width: var(--lua-px);
+  height: var(--lua-px);
+  flex: none;
+  color: var(--lua-cor);
+}
+
+.lombada-lua svg {
+  width: 100%;
+  height: 100%;
+  fill: currentcolor;
+  stroke: none;
+}
+
+/* Sem folga acima do topo (o livro mais alto, o "Enorme", o deitado): a lua entra na lombada, no alto. */
+.lombada-lua--dentro {
+  position: absolute;
+  top: 2px;
+  left: 50%;
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+
+/* O livro deitado gira -90°: a lua gira de volta, para ler em pé. */
+.lombada--deitada .lombada-lua svg {
+  rotate: 90deg;
 }
 
 .lombada-feita {
@@ -1369,7 +1405,8 @@ img {
   inset: 0;
   border-radius: inherit;
   pointer-events: none;
-  background: linear-gradient(180deg, rgb(169 186 240 / 0.12), rgb(169 186 240 / 0.4));
+  /* Leve e só no pé: a cor e o título ficam inteiros. */
+  background: linear-gradient(180deg, transparent 55%, rgb(169 186 240 / 0.35));
 }
 
 /* Os filetes dourados do enfeite: dois finos no alto (9,4% e 11,9% de H, de 1,6 e

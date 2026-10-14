@@ -1,5 +1,6 @@
 import {
   andamentoDoLivro,
+  temIdeiaAdormecida,
   type AndamentoDoLivro,
   type Conexao,
   type Id,
@@ -63,6 +64,8 @@ export interface LivroNaEstante {
   altura: number
   /** Fazendo, feita ou adormecido — só num livro executável (ver `andamentoDoLivro`). */
   andamento: AndamentoDoLivro | null
+  /** Alguma ideia dorme (a lua na lombada), mesmo que o livro todo não durma — ver `temIdeiaAdormecida`. */
+  comIdeiaAdormecida: boolean
 }
 
 /**
@@ -119,6 +122,7 @@ export function montarEstante(
     saindo: saindo.get(livro.id) ?? 0,
     altura: guardado(livro.id) / maior,
     andamento: andamentoDoLivro(livro, ideias.get(livro.id) ?? [], agora),
+    comIdeiaAdormecida: temIdeiaAdormecida(livro, ideias.get(livro.id) ?? [], agora),
   }))
 }
 

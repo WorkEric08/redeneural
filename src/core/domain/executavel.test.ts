@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import {
   andamentoDoLivro,
+  temIdeiaAdormecida,
   clampDiasParaAdormecer,
   DIAS_PARA_ADORMECER_MAXIMO,
   DIAS_PARA_ADORMECER_PADRAO,
@@ -164,5 +165,33 @@ describe('andamentoDoLivro', () => {
   it('com 0 dias, adormece logo depois de qualquer toque', () => {
     const impaciente = { executavel: true, diasParaAdormecer: 0 }
     expect(andamentoDoLivro(impaciente, [ideia('fazendo', 1)], AGORA)).toBe('adormecido')
+  })
+})
+
+describe('temIdeiaAdormecida', () => {
+  const AGORA = new Date('2026-10-06T12:00:00.000Z')
+  const dias = (n: number): Date => new Date(AGORA.getTime() - n * MS_POR_DIA)
+  const LIVRO = { executavel: true, diasParaAdormecer: 30 }
+  const ideia = (estado: EstadoDaIdeia | null, paradaHa = 0) => ({
+    estado,
+    ultimoToque: dias(paradaHa),
+  })
+
+  it('uma ideia dormindo basta, mesmo com outras acordadas', () => {
+    expect(temIdeiaAdormecida(LIVRO, [ideia('fazendo'), ideia('para_fazer', 40)], AGORA)).toBe(true)
+  })
+
+  it('tudo acordado, ou sem ideia, não tem', () => {
+    expect(temIdeiaAdormecida(LIVRO, [ideia('fazendo'), ideia('para_fazer', 1)], AGORA)).toBe(false)
+    expect(temIdeiaAdormecida(LIVRO, [], AGORA)).toBe(false)
+  })
+
+  it('uma ideia feita nunca dorme, por mais antiga que seja', () => {
+    expect(temIdeiaAdormecida(LIVRO, [ideia('feita', 400)], AGORA)).toBe(false)
+  })
+
+  it('livro que não é executável não tem ideia adormecida', () => {
+    const comum = { ...LIVRO, executavel: false }
+    expect(temIdeiaAdormecida(comum, [ideia('para_fazer', 90)], AGORA)).toBe(false)
   })
 })

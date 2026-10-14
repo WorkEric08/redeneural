@@ -49,7 +49,16 @@ function livro(
     diasParaAdormecer: 30,
     createdAt: T0,
   }
-  return { livro: l, neuronios: 3, anexos: 0, internas: 0, saindo: 0, altura: 0.5, andamento: null }
+  return {
+    livro: l,
+    neuronios: 3,
+    anexos: 0,
+    internas: 0,
+    saindo: 0,
+    altura: 0.5,
+    andamento: null,
+    comIdeiaAdormecida: false,
+  }
 }
 
 /** `L:id` para livro, `E` para enfeite, `_` para vaga — a fileira num relance. */
