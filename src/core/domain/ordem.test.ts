@@ -2,9 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import type { DadosDoEnfeite, EnfeiteGravado, Vaga } from './types'
 import {
-  assinaturaDaEstante,
   enfeitesSemLivroEmCima,
-  fotoDaEstante,
   LUGARES_POR_PRATELEIRA,
   moverEnfeiteNaEstante,
   moverLivroNaEstante,
@@ -425,47 +423,5 @@ describe('enfeitesSemLivroEmCima', () => {
     expect(enfeitesSemLivroEmCima([e(1), e(2), e(3)], [l('a', 0, 2)]).map((x) => x.ordem)).toEqual([
       1, 3,
     ])
-  })
-})
-
-describe('fotoDaEstante e assinaturaDaEstante (a base do Desfazer)', () => {
-  const pos = (id: string, prateleira: number, ordem: number, nivel = 0) => ({
-    id,
-    prateleira,
-    ordem,
-    nivel,
-  })
-  const enf = (ordem: number): EnfeiteGravado => ({
-    prateleira: 0,
-    ordem,
-    cor: '#4A2540',
-    estilo: 'solido',
-    larguraLombada: 38,
-    comprimentoLombada: 80,
-    dourado: true,
-    detalheEscuro: false,
-  })
-
-  it('a foto guarda só as posições, e mexer na original não muda a foto', () => {
-    const livros = [{ ...pos('a', 0, 1), titulo: 'sobra' }]
-    const foto = fotoDaEstante({ livros, vagas: [{ prateleira: 0, ordem: 2 }], enfeites: [enf(3)] })
-    livros[0]!.ordem = 9
-    expect(foto.livros).toEqual([pos('a', 0, 1)])
-    expect(foto.vagas).toEqual([{ prateleira: 0, ordem: 2 }])
-  })
-
-  it('a assinatura não depende da ordem das listas', () => {
-    const a = { livros: [pos('a', 0, 1), pos('b', 0, 2)], vagas: [], enfeites: [enf(3), enf(4)] }
-    const b = { livros: [pos('b', 0, 2), pos('a', 0, 1)], vagas: [], enfeites: [enf(4), enf(3)] }
-    expect(assinaturaDaEstante(a)).toBe(assinaturaDaEstante(b))
-  })
-
-  it('a assinatura muda com o lugar, o nível, a vaga e o enfeite', () => {
-    const base = { livros: [pos('a', 0, 1)], vagas: [], enfeites: [enf(3)] }
-    const s = assinaturaDaEstante(base)
-    expect(assinaturaDaEstante({ ...base, livros: [pos('a', 0, 2)] })).not.toBe(s)
-    expect(assinaturaDaEstante({ ...base, livros: [pos('a', 0, 1, 1)] })).not.toBe(s)
-    expect(assinaturaDaEstante({ ...base, vagas: [{ prateleira: 0, ordem: 5 }] })).not.toBe(s)
-    expect(assinaturaDaEstante({ ...base, enfeites: [enf(4)] })).not.toBe(s)
   })
 })

@@ -11,14 +11,11 @@ import Dexie from 'dexie'
 import { beforeEach, describe, expect, it } from 'vitest'
 
 import {
-  assinaturaDaEstante,
   conexaoId,
   ehCorDaPaleta,
-  fotoDaEstante,
   LUGARES_POR_PRATELEIRA,
   type Conexao,
   type EnfeiteGravado,
-  type FotoDaEstante,
   type Livro,
   type Neuronio,
   type PalacioRepo,
@@ -1950,66 +1947,5 @@ describe('migração para a v17', () => {
       ['a', 'em-pe', 0, 0],
       ['b', 'em-pe', 0, 1],
     ])
-  })
-})
-
-describe('restaurarEstante (o Desfazer de um movimento)', () => {
-  const enfeite = (ordem: number): EnfeiteGravado => ({
-    prateleira: 0,
-    ordem,
-    cor: '#4A2540',
-    estilo: 'contorno',
-    larguraLombada: 52,
-    comprimentoLombada: 90,
-    dourado: true,
-    detalheEscuro: false,
-  })
-
-  const fotoAgora = async (): Promise<FotoDaEstante> =>
-    fotoDaEstante({
-      livros: await repo.listLivros(),
-      vagas: await repo.listVagas(),
-      enfeites: await repo.listEnfeites(),
-    })
-
-  it('devolve os livros empurrados, a vaga e o enfeite ao que eram antes do movimento', async () => {
-    await repo.upsertLivro(livro('a', 'a', 0, 0))
-    await repo.upsertLivro(livro('b', 'b', 1, 0))
-    await repo.upsertLivro(livro('c', 'c', 2, 0))
-    await repo.salvarEnfeite(enfeite(5))
-    const antes = await fotoAgora()
-
-    await repo.moverLivro('a', 0, 1) // empurra b, e abre o lugar 0
-    expect(await fotoAgora()).not.toEqual(antes)
-
-    await repo.restaurarEstante(antes)
-
-    expect(await fotoAgora()).toEqual(antes)
-    expect(assinaturaDaEstante(await fotoAgora())).toBe(assinaturaDaEstante(antes))
-  })
-
-  it('devolve o enfeite que o movimento de um livro tirou do lugar', async () => {
-    await repo.upsertLivro(livro('a', 'a', 0, 0))
-    await repo.salvarEnfeite(enfeite(5))
-    const antes = await fotoAgora()
-
-    await repo.moverLivro('a', 0, 5)
-    expect(await repo.listEnfeites()).toEqual([])
-
-    await repo.restaurarEstante(antes)
-    expect(await repo.listEnfeites()).toEqual([enfeite(5)])
-  })
-
-  it('ignora um livro que deixou de existir e não mexe no resto do livro', async () => {
-    await repo.upsertLivro(livro('a', 'a', 0, 0))
-    await repo.upsertLivro(livro('b', 'b', 1, 0))
-    const antes = await fotoAgora()
-    await repo.moverLivro('a', 0, 4)
-    await repo.deleteLivro('b')
-
-    await repo.restaurarEstante(antes)
-
-    expect(await repo.getLivro('b')).toBeUndefined()
-    expect(await repo.getLivro('a')).toMatchObject({ titulo: 'a', prateleira: 0, ordem: 0 })
   })
 })

@@ -11,7 +11,7 @@ import type {
   Vaga,
   Vinculo,
 } from '../domain/types'
-import type { FotoDaEstante, PontoDeSoltura } from '../domain/ordem'
+import type { PontoDeSoltura } from '../domain/ordem'
 import type { ModoDaBusca } from '../domain/modoDaBusca'
 import type { ModoDaRede } from '../domain/modoDaRede'
 import type { TemaEscolhido } from '../domain/tema'
@@ -45,12 +45,6 @@ export interface PalacioRepo {
    * inserção numa pilha de deitados (e reordena a pilha do próprio livro).
    */
   moverLivro(id: Id, prateleira: number, lugar: number, ponto?: PontoDeSoltura): Promise<void>
-  /**
-   * Devolve a estante a uma foto tirada antes de um movimento (o "Desfazer"): cada livro volta ao
-   * lugar dele, e as vagas e os enfeites gravados viram os da foto. Um livro que deixou de existir
-   * desde então é ignorado.
-   */
-  restaurarEstante(foto: FotoDaEstante): Promise<void>
   /** Os lugares deixados abertos, sem livro e sem enfeite. */
   listVagas(): Promise<Vaga[]>
   /** Tira o enfeite do lugar (e o gravado dele, se houver). Recusa um lugar que tem livro. */

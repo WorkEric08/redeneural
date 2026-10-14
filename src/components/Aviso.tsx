@@ -78,24 +78,9 @@ export function Aviso() {
       ) : (
         <span className="flex items-center gap-3">
           <span className="min-w-0 flex-1">{mensagem}</span>
-          {'aoTocar' in botao ? (
-            <button
-              type="button"
-              onClick={(evento) => {
-                // O toque no aviso o dispensa; aqui a ação ainda pode trazer um aviso novo ("Movimento
-                // desfeito"), que o clique subindo apagaria.
-                evento.stopPropagation()
-                botao.aoTocar()
-              }}
-              className={CLASSE_DO_BOTAO}
-            >
-              {botao.rotulo}
-            </button>
-          ) : (
-            <Link to={{ search: botao.busca }} className={CLASSE_DO_BOTAO}>
-              {botao.rotulo}
-            </Link>
-          )}
+          <Link to={{ search: botao.busca }} className={CLASSE_DO_BOTAO}>
+            {botao.rotulo}
+          </Link>
         </span>
       )}
     </div>

@@ -6167,7 +6167,7 @@ título e texto do pensamento, busca e os campos do item da pasta.
 Pedido do usuário, a partir de seis sugestões minhas sobre a mobilidade dos livros: implementar as quatro
 primeiras, nesta ordem. Vale nos três temas (a estante é a mesma estrutura nos três).
 
-- **Desfazer.** Depois de mover um livro ou um enfeite que mudou algo, o aviso diz "Livro movido." ou
+- ~~**Desfazer.**~~ **(Removido em 14/10/2026 — ver "O Desfazer de mover sai".)** Depois de mover um livro ou um enfeite que mudou algo, o aviso diz "Livro movido." ou
   "Enfeite movido." com o botão **Desfazer**. A conta é uma foto da estante antes do movimento
   (`fotoDaEstante`: posição de todo livro, vagas e enfeites, `core/domain/ordem.ts`) devolvida ao banco por
   `restaurarEstante` (porta, protocolo, Worker e `DexieRepo`, numa transação só) — então os livros
@@ -6432,6 +6432,26 @@ um enfeite.
   mostra o livro na base já na prévia; o toque seguinte num livro ainda espia. 836 testes (os de vaga na origem foram trocados),
   tipos e lint limpos. **Não verificado em aparelho de verdade.**
 
+## O Desfazer de mover sai (14/10/2026)
+
+Pedido do usuário: tirar os avisos "Livro movido." / "Enfeite movido." (com o botão **Desfazer**) e, por consequência, o
+"Movimento desfeito." e o "A estante mudou depois disso: não dá mais para desfazer.". **Isto revoga** o item "Desfazer" de "Mover
+livros fica mais claro" (13–14/10/2026) e o que dizia dos avisos de 2 s nascidos dele.
+
+- **Saiu de ponta a ponta**, e não só o aviso: sem ele o Desfazer não tinha mais por onde ser usado, e a regra 7 do mestre manda
+  não deixar código sem uso (o mesmo caminho das remoções de 14/09). Saíram `desfazerMovimento` e `ultimoMovimento` da store, a conta
+  de `oferecerDesfazer`, `restaurarEstante` (porta do motor, protocolo, Worker, repositório), `fotoDaEstante`,
+  `assinaturaDaEstante`, `FotoDaEstante` e `PosicaoDoLivro` do núcleo, e os testes deles.
+- **O aviso perdeu a variante de função**: `AcaoDoAviso` é só `{ rotulo, busca }` (o link do "Mudar" do Porto). O botão que chamava uma
+  ação da própria store só existia para o Desfazer.
+- **O que fica:** mover livro e enfeite continua otimista, e recusar continua avisando ("A prateleira N não tem lugar sem livro.",
+  "…não tem espaço para mais um livro"). `DURACAO_DO_AVISO_CURTO_MS` (2 s) fica para "Modo clássico desativado". A dica de
+  segurar e arrastar também fica.
+- **Custo assumido:** um livro movido por engano não tem mais volta de um toque — é arrastar de novo. Como a prévia ao vivo mostra o
+  resultado antes de soltar, o erro é menos provável, mas não impossível.
+- **Verificado** no Chrome (build de produção): mover um livro (arrastando, com a prévia) grava a ordem certa e **nenhum aviso**
+  aparece. 830 testes (os 6 do Desfazer saíram), tipos e lint limpos.
+
 ## Fases
 
 0. ✅ Esqueleto (Vite/React/TS/Tailwind/PWA/Capacitor)
@@ -6490,3 +6510,4 @@ um enfeite.
 33. ✅ O topo do livro sobrepõe a prateleira de cima: sinais do andamento e livro erguido aparecem inteiros (14/10/2026)
 34. ✅ Livros adormecidos testados com passagem de dias; tocar o andamento atual acorda e virar executável não adormece tudo (14/10/2026)
 35. ✅ Mobilidade da estante em três etapas: reordenar e inserir na pilha, soltar antes/depois de um livro e a prateleira que se reorganiza ao vivo (14/10/2026)
+36. ✅ O Desfazer de mover livros sai: os avisos "Livro movido"/"Movimento desfeito" e toda a infraestrutura dele (14/10/2026)

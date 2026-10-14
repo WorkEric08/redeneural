@@ -1,7 +1,6 @@
 import type {
   CriarAnexoInput,
   DadosDoEnfeite,
-  FotoDaEstante,
   EnfeiteGravado,
   CriarLivroInput,
   CriarNeuronioInput,
@@ -48,7 +47,6 @@ export interface RespostasDoMotor {
   porEnfeite: EstanteGravada
   salvarEnfeite: EstanteGravada
   moverEnfeite: EstanteGravada
-  restaurarEstante: EstanteGravada
   definirQuantidadeDePrateleiras: number
   definirIntensidadeDaLuz: number
   definirIntensidadeDaLuzDoEnfeite: number
@@ -101,7 +99,6 @@ export type ParaMotor =
   | { req: number; tipo: 'porEnfeite'; prateleira: number; lugar: number }
   | { req: number; tipo: 'salvarEnfeite'; enfeite: EnfeiteGravado }
   | { req: number; tipo: 'moverEnfeite'; origem: Vaga; destino: Vaga; dados: DadosDoEnfeite }
-  | { req: number; tipo: 'restaurarEstante'; foto: FotoDaEstante }
   | { req: number; tipo: 'definirQuantidadeDePrateleiras'; quantidade: number }
   | { req: number; tipo: 'definirIntensidadeDaLuz'; valor: number }
   | { req: number; tipo: 'definirIntensidadeDaLuzDoEnfeite'; valor: number }

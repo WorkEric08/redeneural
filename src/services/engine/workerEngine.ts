@@ -4,7 +4,6 @@ import type {
   CriarLivroInput,
   CriarNeuronioInput,
   DadosDoEnfeite,
-  FotoDaEstante,
   EditarAnexoInput,
   EditarLivroInput,
   EditarNeuronioInput,
@@ -144,9 +143,6 @@ export function criarWorkerEngine(): ConnectionEngine {
 
     moverEnfeite: (origem: Vaga, destino: Vaga, dados: DadosDoEnfeite): Promise<EstanteGravada> =>
       pedir<'moverEnfeite'>({ tipo: 'moverEnfeite', origem, destino, dados }),
-
-    restaurarEstante: (foto: FotoDaEstante): Promise<EstanteGravada> =>
-      pedir<'restaurarEstante'>({ tipo: 'restaurarEstante', foto }),
 
     definirQuantidadeDePrateleiras: (quantidade: number): Promise<number> =>
       pedir<'definirQuantidadeDePrateleiras'>({

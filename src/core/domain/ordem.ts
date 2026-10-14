@@ -126,59 +126,6 @@ export interface PontoDeSoltura {
   lado?: LadoDoLivro
 }
 
-/** Onde um livro está: a única parte do livro que mover muda. */
-export interface PosicaoDoLivro {
-  id: Id
-  prateleira: number
-  ordem: number
-  nivel: number
-}
-
-/**
- * A estante num instante, só com o que mover muda: onde cada livro está, os lugares abertos e os
- * enfeites gravados. É o que o "Desfazer" guarda antes de um movimento e devolve ao banco.
- */
-export interface FotoDaEstante {
-  livros: PosicaoDoLivro[]
-  vagas: Vaga[]
-  enfeites: EnfeiteGravado[]
-}
-
-export function fotoDaEstante(e: {
-  livros: readonly PosicaoDoLivro[]
-  vagas: readonly Vaga[]
-  enfeites: readonly EnfeiteGravado[]
-}): FotoDaEstante {
-  return {
-    livros: e.livros.map((l) => ({
-      id: l.id,
-      prateleira: l.prateleira,
-      ordem: l.ordem,
-      nivel: l.nivel,
-    })),
-    vagas: e.vagas.map((v) => ({ prateleira: v.prateleira, ordem: v.ordem })),
-    enfeites: [...e.enfeites],
-  }
-}
-
-/**
- * Um texto que é igual quando duas estantes são iguais, qualquer que seja a ordem das listas. O
- * "Desfazer" só vale se a estante ainda é a que o movimento deixou — senão desfazer apagaria o que a
- * pessoa fez depois.
- */
-export function assinaturaDaEstante(f: {
-  livros: readonly PosicaoDoLivro[]
-  vagas: readonly Vaga[]
-  enfeites: readonly EnfeiteGravado[]
-}): string {
-  const livros = f.livros
-    .map((l) => `${l.id}@${String(l.prateleira)}:${String(l.ordem)}:${String(l.nivel)}`)
-    .sort()
-  const vagas = f.vagas.map(chaveDoLugar).sort()
-  const enfeites = f.enfeites.map((e) => JSON.stringify(e)).sort()
-  return JSON.stringify([livros, vagas, enfeites])
-}
-
 /** Para comparar lugares num `Set` — um par de números não tem igualdade de valor. */
 export function chaveDoLugar(l: { prateleira: number; ordem: number }): string {
   return `${String(l.prateleira)}:${String(l.ordem)}`
