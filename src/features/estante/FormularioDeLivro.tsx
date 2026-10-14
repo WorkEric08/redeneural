@@ -28,7 +28,7 @@ import {
 import { espacoParaMeiaOpcao, haMaisADireita } from '@/lib/faixa'
 import type { NovoLivro } from '@/store/palacio'
 
-import { COMPRIMENTOS, PERCENTUAL_DO_ENORME } from './comprimentos'
+import { COMPRIMENTOS } from './comprimentos'
 import { EmblemaDaLombada } from './EmblemaDaLombada'
 import { FORMAS } from './formas'
 import { LARGURAS } from './larguras'
@@ -239,7 +239,6 @@ export function FormularioDeLivro({
     intensidadeDaLuz,
     peca: enfeite ? 'enfeite' : 'livro',
     icone,
-    tituloInteiro: !enfeite && comprimentoLombada === PERCENTUAL_DO_ENORME,
   })
 
   const amostra = (
@@ -265,9 +264,7 @@ export function FormularioDeLivro({
           {contagem}
         </span>
       )}
-      {icone && !geo.semIcone && (
-        <EmblemaDaLombada chave={ehPasta ? 'pasta' : (emblema ?? especie)} />
-      )}
+      {icone && <EmblemaDaLombada chave={ehPasta ? 'pasta' : (emblema ?? especie)} />}
     </span>
   )
 

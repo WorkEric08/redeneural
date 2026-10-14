@@ -6045,11 +6045,12 @@ fileira, o que cabe, os gestos) é **comum a todos os temas**; só a aparência 
 - **A linha de baixo (busca, contagem, "+") fica centralizada com o "+"** e a estante cede espaço: no Padrão a
   fileira encolhe até caber (conta em `tema-padrao.css`), sempre com 20 px ou mais até a linha. Piso de
   85 px; em telas de até 700 px de altura o piso cai para 56 e **caber vale mais que o título inteiro**.
-- **Título inteiro no "Enorme"** (`geometriaDaLombada`, `tituloInteiro`): com comprimento Enorme e até 10
-  caracteres, o título nunca vira reticências. A conta usa o avanço das letras largas (0,78) e o corpo pode
-  descer até 8 px; antes de encolher abaixo de 9 px o ícone do pé cede o lugar (`semIcone`). Vale nos dois
-  temas, em pé e deitado. **Limite físico:** abaixo de uns 85 px de fileira 10 letras não cabem legíveis —
-  é o caso do Padrão com 6 prateleiras em tela de 700 px ou menos.
+- **Título: sem regra especial (revisto no mesmo dia).** A regra de "10 letras sempre inteiras no Enorme"
+  foi feita e **desfeita** a pedido do usuário, que preferiu a tabela de quantas letras cabem **com o corpo
+  de pelo menos 11 px** (o piso de sempre; o que não cabe vira reticências). Medido no Chrome, com 4
+  prateleiras e largura Normal, em letras (espaço conta): Enorme 13–14 em tela grande (390×844) e 8 em
+  320×568; Alto 11–12 e 7; Normal 8–10 e 4–5; Curto 6–7 e 3. Letras largas (M, O, D, C) ficam no número menor.
+  Com 5 e 6 prateleiras a fileira encolhe e cabe menos. O piso da fileira do Padrão voltou a 56 px.
 - **A prévia do formulário de livro tem caixa de largura fixa**, feita para o "Enorme" deitado, em pé ou deitado:
   virar o livro não mexe mais na largura do campo de nome. No Padrão a caixa ganhou 8 px de respiro embaixo
   (a sombra não é cortada) e perdeu os tetos de altura que cortavam a lombada em tela baixa.
