@@ -6169,6 +6169,7 @@ primeiras, nesta ordem. Vale nos três temas (a estante é a mesma estrutura nos
   (`services/native/dicas.ts`, chave `locus-dica-mover`), como o espelho do tema: não é dado do palácio, não vai
   no backup, e perder o registro só faz a dica voltar. Não passou pelas preferências do banco de propósito:
   seriam seis arquivos (porta, protocolo, Worker, repositório, store) por um aviso que se mostra uma vez.
+- **Tempo dos avisos (14/10/2026).** Todo aviso dura **3 s**, com ou sem botão (o "Guardado em X. Mudar" também; antes eram 3,5 s e 6 s). O que nasce de tocar noutro aviso dura **2 s**: "Movimento desfeito." e "A estante mudou depois disso…", ambos resultado do Desfazer (`duracaoDoAviso` na store, `DURACAO_DO_AVISO_ENCADEADO_MS`). **Erro continua em 6 s**: é o que a pessoa precisa ler.
 - **Não feito (sugestões que ficaram):** Desfazer de mais de um passo, e um indicador de qual prateleira vai
   receber o livro quando o destino é válido.
 - **Verificado** no Chrome (build de produção, mouse por CDP) nos três temas, em 412×892 e 320×568: mover,

@@ -88,9 +88,8 @@ export interface NovoAnexo {
 export type AcaoDoAviso =
   { rotulo: string; busca: string } | { rotulo: string; aoTocar: () => void }
 
-/** Quanto tempo o "Desfazer" fica à mão, e quanto dura o "Movimento desfeito." — curtos de propósito. */
-const DURACAO_PARA_DESFAZER_MS = 3000
-const DURACAO_DO_DESFEITO_MS = 2000
+/** O aviso que nasce de tocar noutro aviso ("Movimento desfeito.") dura 2 s; os demais, o tempo de sempre. */
+const DURACAO_DO_AVISO_ENCADEADO_MS = 2000
 
 /** A estante antes e depois do último movimento: o que o "Desfazer" precisa. */
 interface UltimoMovimento {
@@ -290,7 +289,6 @@ export const usePalacio = create<PalacioStore>()((set, get) => {
     set({
       ultimoMovimento: { antes, depois },
       aviso: texto,
-      duracaoDoAviso: DURACAO_PARA_DESFAZER_MS,
       acaoDoAviso: {
         rotulo: 'Desfazer',
         aoTocar: () => {
@@ -663,7 +661,7 @@ export const usePalacio = create<PalacioStore>()((set, get) => {
         set({
           ultimoMovimento: null,
           acaoDoAviso: null,
-          duracaoDoAviso: null,
+          duracaoDoAviso: DURACAO_DO_AVISO_ENCADEADO_MS,
           aviso: 'A estante mudou depois disso: não dá mais para desfazer.',
         })
         return
@@ -679,7 +677,7 @@ export const usePalacio = create<PalacioStore>()((set, get) => {
         vagas: movimento.antes.vagas,
         enfeites: movimento.antes.enfeites,
         acaoDoAviso: null,
-        duracaoDoAviso: DURACAO_DO_DESFEITO_MS,
+        duracaoDoAviso: DURACAO_DO_AVISO_ENCADEADO_MS,
         aviso: 'Movimento desfeito.',
         erro: null,
       })

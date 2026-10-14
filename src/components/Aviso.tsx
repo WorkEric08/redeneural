@@ -6,13 +6,12 @@ import { useTemaPadrao } from '@/hooks/useTemaPadrao'
 
 import { usePalacio } from '@/store/palacio'
 
+/** Todo aviso dura 3 s, com ou sem botão; o que nasce de outro aviso pede menos (ver `duracaoDoAviso`). */
+const DURACAO_AVISO_MS = 3000
 /** Erro fica mais tempo: é o que a pessoa precisa ler, não só perceber. */
-const DURACAO_AVISO_MS = 3500
 const DURACAO_ERRO_MS = 6000
 const CLASSE_DO_BOTAO =
   '-my-3 -mr-2 inline-flex min-h-11 shrink-0 items-center rounded-lg px-3 font-semibold underline-offset-4 hover:underline'
-/** Com um botão, o mesmo tempo do erro: dá tempo de ler e de tocar. */
-const DURACAO_COM_ACAO_MS = 6000
 
 /**
  * O aviso flutuante: erros e confirmações sobem no pé da tela e somem sozinhos.
@@ -51,15 +50,12 @@ export function Aviso() {
 
     el.showPopover()
     // Um erro manda no tempo; fora dele, a duração que quem avisou pediu vale mais que a de sempre.
-    const duracao =
-      erro !== null
-        ? DURACAO_ERRO_MS
-        : (duracaoPedida ?? (botao !== null ? DURACAO_COM_ACAO_MS : DURACAO_AVISO_MS))
+    const duracao = erro !== null ? DURACAO_ERRO_MS : (duracaoPedida ?? DURACAO_AVISO_MS)
     const relogio = window.setTimeout(dispensar, duracao)
     return () => {
       window.clearTimeout(relogio)
     }
-  }, [mensagem, erro, botao, duracaoPedida, dispensar])
+  }, [mensagem, erro, duracaoPedida, dispensar])
 
   return (
     <div
