@@ -1115,7 +1115,7 @@ html:root[data-tema^='padrao'] .segmentado--miudo .segmento {
   background: transparent;
   color: var(--papel);
   font-family: inherit;
-  font-size: 1.5rem;
+  font-size: 1.25rem;
   font-weight: 600;
 }
 
@@ -2308,7 +2308,7 @@ html:root[data-tema^='padrao'] .visor-seta--dir {
    perde um pouco de corpo, para um nome de 10 letras aparecer inteiro enquanto se escreve. */
 @media (max-width: 359px) {
   html:root[data-tema^='padrao'] .pd-nome input {
-    font-size: 1.25rem;
+    font-size: 1.125rem;
   }
 }
 

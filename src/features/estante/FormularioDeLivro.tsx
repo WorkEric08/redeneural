@@ -696,7 +696,7 @@ export function FormularioDeLivro({
                 aoMudar={setTitulo}
                 visiveis={letrasNoCampo}
                 placeholder={placeholderDoNome}
-                className="campo font-titulo h-11 px-4 text-lg"
+                className="campo font-titulo h-11 px-4 text-base"
               />
             </label>
 
