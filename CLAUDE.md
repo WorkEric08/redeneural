@@ -314,15 +314,15 @@ _Versão: 2.0 — Revisado e consolidado a partir das lições aprendidas em pro
 
 ---
 
-# Parte II — Palácio Mental (decisões deste projeto)
+# Parte II — Locus (decisões deste projeto)
 
-> Esta parte é específica do Palácio Mental e **complementa** o prompt mestre acima.
+> Esta parte é específica do Locus e **complementa** o prompt mestre acima.
 > Onde houver conflito, o que está aqui vale, porque foi decidido para este projeto.
 
 ## O produto
 
 Conhecimento pessoal inspirado em neuroplasticidade. O usuário atravessa uma porta, entra
-na sua biblioteca — o "palácio mental". Cada **livro** é uma área de conhecimento, cada
+na sua biblioteca — o "Locus". Cada **livro** é uma área de conhecimento, cada
 **neurônio** é um conceito. As conexões entre neurônios nascem **sozinhas**, por
 significado, sem o usuário configurar nada. Conexões entre livros diferentes são douradas —
 o "achado".
@@ -6511,6 +6511,14 @@ Pedido do usuário: trocar "Palácio" por "Rede". Perguntei o escopo e ele escol
 - **Se quiser trocar também o nome do app** ("Rede Mental"), é decisão à parte: mexe em manifest, Capacitor e README.
 - **Verificado:** tipos, lint e os 813 testes limpos (nenhum teste dependia dessas frases). Texto apenas, **não visto no navegador**.
 
+## O produto se chama Locus (15/10/2026)
+
+Pedido do usuário: onde houver "Palácio Mental", fica só **"Locus"**. **Isto revoga** o "o nome do produto fica" de ""Palácio" vira "rede" nos textos da interface". Trocado: o título da barra lateral do desktop (`Navegacao.tsx`), o `appName` do Capacitor, o nome do app Android (`app_name` e `title_activity_main` em `android/.../strings.xml` — é o nome que aparece no ícone do celular; o Capacitor não o regera num `sync`, então editei à mão, uma exceção a "não editar `android/`"), a descrição do PWA e do `index.html` ("Locus: conceitos viram…"), o título do README e do `spike.html`, os comentários de `types.ts` e `index.css`, e os três pontos deste arquivo que chamavam o projeto de Palácio Mental. O manifest e o `<title>` já diziam Locus.
+
+- **Não mudou, de propósito:** os **identificadores**, porque trocá-los quebra instalação e dados — `appId` `com.palaciomental.app` (e o `namespace`/pasta Java do Android: mudar o id faz o Android tratar como outro app), `DB_NAME = 'palacio-mental'` (outro nome de banco abriria um IndexedDB vazio e **o palácio guardado sumiria de vista**), o `name` do `package.json` e a pasta do projeto. Se algum dia valer a troca, o do banco precisa de migração que copie os dados.
+- **O termo "palácio"** (a casa da pessoa, a "biblioteca") continua nos registros antigos deste arquivo; nos textos de tela já virou "rede".
+- **Verificado:** tipos, lint e testes limpos. Texto apenas, **não visto no navegador**.
+
 ## Fases
 
 0. ✅ Esqueleto (Vite/React/TS/Tailwind/PWA/Capacitor)
@@ -6573,3 +6581,4 @@ Pedido do usuário: trocar "Palácio" por "Rede". Perguntei o escopo e ele escol
 37. ✅ A busca é só por palavra exata: o seletor de modos e a busca por sentido saem (15/10/2026)
 38. ✅ Busca global (estante e Rede) e Buscar local (dentro do livro, só os pensamentos dele) (15/10/2026)
 39. ✅ "Palácio" vira "rede" nos textos da interface; o nome do produto fica (15/10/2026)
+40. ✅ O produto se chama Locus: "Palácio Mental" sai de toda parte; identificadores e id do app ficam (15/10/2026)

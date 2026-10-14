@@ -47,7 +47,7 @@ export default defineConfig({
         name: 'Locus',
         short_name: 'Locus',
         description:
-          'Seu palácio mental: conceitos viram neurônios dentro de livros e se conectam sozinhos por significado.',
+          'Locus: conceitos viram neurônios dentro de livros e se conectam sozinhos por significado.',
         lang: 'pt-BR',
         display: 'standalone',
         orientation: 'portrait',

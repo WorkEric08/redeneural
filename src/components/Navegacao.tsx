@@ -24,7 +24,7 @@ export function Navegacao() {
       className="border-linha bg-parede fixed inset-y-0 left-0 z-20 hidden w-52 flex-col border-r lg:flex"
     >
       <p className="font-titulo text-papel px-6 pt-7 pb-6 text-lg font-semibold tracking-tight">
-        Palácio Mental
+        Locus
       </p>
 
       <ul className="flex flex-col gap-1 px-3">

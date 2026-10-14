@@ -1,5 +1,5 @@
 /**
- * Tipos de domínio do Palácio Mental.
+ * Tipos de domínio do Locus.
  *
  * Este arquivo é o coração do núcleo puro: nada aqui pode depender de DOM,
  * Dexie, React ou transformers.js. Ele é o que sobrevive a uma reescrita da UI

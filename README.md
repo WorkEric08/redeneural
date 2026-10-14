@@ -1,4 +1,4 @@
-# Palácio Mental
+# Locus
 
 PWA offline-first de conhecimento pessoal. Cada **livro** é uma área de conhecimento, cada
 **neurônio** é um conceito, e as conexões entre eles nascem sozinhas por significado.
