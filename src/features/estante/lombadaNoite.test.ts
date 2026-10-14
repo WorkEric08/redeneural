@@ -170,23 +170,60 @@ describe('geometriaDaLombada', () => {
       expect(cabem(92, 51)).toBeGreaterThanOrEqual(cabem(132, 73) - 1)
     })
 
-    it('na fileira pequena o ícone cede o lugar ao título que não cabe; na grande nunca', () => {
+    it('o ícone do pé nunca some: na fileira pequena, com o título comprido, ele encolhe', () => {
       const entrada = {
         ...base,
-        estilo: 'solido' as const,
         largura: 38,
         icone: true,
-        titulo: 'ABCDEFGH',
+        titulo: 'ABCDEFGHIJKL',
       }
-      expect(geometriaDaLombada({ ...entrada, altura: 66, alturaDaFileira: 92 }).semIcone).toBe(
-        true,
-      )
-      expect(geometriaDaLombada({ ...entrada, altura: 95, alturaDaFileira: 132 }).semIcone).toBe(
-        false,
-      )
-      expect(
-        geometriaDaLombada({ ...entrada, titulo: 'AB', altura: 66, alturaDaFileira: 92 }).semIcone,
-      ).toBe(false)
+      for (const estilo of ESTILOS_DA_LOMBADA) {
+        for (const [altura, fileira] of [
+          [90, 92],
+          [66, 92],
+          [50, 92],
+          [30, 56],
+          [129, 132],
+        ] as const) {
+          const st = geometriaDaLombada({ ...entrada, estilo, altura, alturaDaFileira: fileira })
+            .style as Record<string, string>
+          const px = parseFloat(st['--icone-px']!)
+          expect(px).toBeGreaterThanOrEqual(6)
+          expect(px).toBeLessThanOrEqual(11)
+        }
+      }
+    })
+
+    it('na fileira de referência o ícone tem o tamanho e o lugar de sempre', () => {
+      const st = geometriaDaLombada({
+        ...base,
+        estilo: 'solido',
+        largura: 38,
+        icone: true,
+        titulo: 'ABCDEFGHIJKL',
+        altura: 129,
+        alturaDaFileira: 132,
+      }).style as Record<string, string>
+      expect(st['--icone-px']).toBe('11px')
+      expect(st['--icone-base']).toBe('7px')
+    })
+
+    it('o título não muda por causa do ícone: a zona é a que já era', () => {
+      const zona = (icone: boolean): string =>
+        (
+          geometriaDaLombada({
+            ...base,
+            estilo: 'solido',
+            largura: 38,
+            icone,
+            titulo: 'ABCDEFGH',
+            altura: 66,
+            alturaDaFileira: 92,
+          }).style as Record<string, string>
+        )['--zt-altura']!
+      // Com o título que não cabe junto do ícone, a zona é a sem a reserva — a mesma de antes do conserto.
+      expect(parseFloat(zona(true))).toBeGreaterThan(0)
+      expect(zona(true)).toBe(zona(false))
     })
   })
 

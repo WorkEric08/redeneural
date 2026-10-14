@@ -257,7 +257,7 @@ export function FormularioDeLivro({
     >
       <span className="lombada-titulo">{tituloDaAmostra}</span>
       {acabamentoDoEnfeite?.douradoEm === estilo && <span className="lombada-filetes" />}
-      {icone && !geo.semIcone && (
+      {icone && (
         <EmblemaDaLombada chave={ehPasta ? 'pasta' : (emblema ?? especie)} />
       )}
     </span>

@@ -6049,8 +6049,9 @@ fileira, o que cabe, os gestos) é **comum a todos os temas**; só a aparência 
 - **Título: o piso acompanha a fileira** (`pisoDoTitulo`, `lombadaNoite.ts`). A regra de "10 letras sempre
   inteiras no Enorme" foi feita e desfeita; ficou a de que **a mesma quantidade de letras cabe em tela
   pequena e em tela grande**. Na fileira de 132 px o piso do título é 11 px, como sempre; abaixo disso ele
-  encolhe em proporção (7,7 px na de 92 px), nunca menos que 7 px, e o título que ainda não cabe tira o
-  ícone do pé (`semIcone`; só em fileira abaixo da de referência). Medido no Chrome, com 4 prateleiras e
+  encolhe em proporção (7,7 px na de 92 px), nunca menos que 7 px, e o título que ainda não cabe ganha a zona sem a reserva do ícone. **O ícone do pé nunca some** (só
+  se Ajustes o desligar; corrigido em 13/10/2026): nesse caso ele encolhe, de 11 até 6 px, para caber na faixa
+  que sobra embaixo da zona (`--icone-px`, `--icone-base`), e o título não muda. Medido no Chrome, com 4 prateleiras e
   largura Normal, em letras (espaço conta), tela grande e 320×568: Enorme 13–14 e 13–14; Alto 11–12 e 12–13;
   Normal 8–10 e 11; Curto 6–7 e 7–8. **Custo:** em tela pequena o corpo é de ~7,7 px, menor que 11 px. Com 5 e
   6 prateleiras a fileira encolhe mais e o corpo desce até 7 px. O piso da fileira do Padrão é 56 px.

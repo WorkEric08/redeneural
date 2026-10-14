@@ -1343,11 +1343,17 @@ img {
   );
 }
 
+.lombada-emblema svg {
+  width: var(--icone-px, 11px);
+  height: var(--icone-px, 11px);
+}
+
 /* O emblema — um ícone extra opcional (Fase 16), no pé da lombada. Na cor do
    texto, para ler também no Creme; nunca azul-claro, que é só da ponte. */
 .lombada-emblema {
   position: absolute;
-  bottom: 7px;
+  /* O ícone é sempre desenhado; numa fileira baixa a lombada encolhe os dois valores (lombadaNoite.ts). */
+  bottom: var(--icone-base, 7px);
   left: 50%;
   transform: translateX(-50%);
   color: color-mix(in srgb, var(--fg) 80%, transparent);

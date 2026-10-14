@@ -145,7 +145,7 @@ export function Lombada({
       )}
       {/* Um emblema que a pessoa escolheu (antes de 14/09/2026) vale mais que o ícone da espécie;
           a pasta mostra sempre o clipe. O espaço do pé é reservado em `geometriaDaLombada`. */}
-      {icone && !geo.semIcone && (
+      {icone && (
         <EmblemaDaLombada
           chave={ehPasta ? 'pasta' : (item.livro.emblema ?? especieDoLivro(item.livro))}
         />

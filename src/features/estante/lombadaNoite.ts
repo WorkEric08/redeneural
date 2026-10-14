@@ -34,6 +34,8 @@ const SOMBRA_MAXIMA_DO_FUNDO = 70
  * lugar, e com um título de verdade quase nunca deixava).
  */
 const ICONE_PX = 11
+/** Numa fileira baixa o ícone encolhe até isto, e não some. */
+const MINIMO_DO_ICONE_PX = 6
 const BASE_DO_ICONE_PX = 7
 const FOLGA_DO_ICONE_PX = 2
 
@@ -186,8 +188,6 @@ export interface GeometriaDaLombada {
   estilo: EstiloDaLombada
   /** As variáveis CSS que `.lombada` lê. */
   style: CSSProperties
-  /** Numa fileira baixa o ícone do pé cedeu o lugar ao título: quem o desenha não o desenha. */
-  semIcone: boolean
 }
 
 function arredondar(valor: number): number {
@@ -211,16 +211,20 @@ export function geometriaDaLombada(e: Entrada): GeometriaDaLombada {
   const zonaDe = (fundo: number): number => Math.max(fundo - zona.topo, (piso / e.altura) * 100)
   let alturaDaZona = zonaDe(fundoComIcone)
   let fonte = tamanhoDoTitulo(e.largura, (alturaDaZona / 100) * e.altura, caracteres, piso)
-  let semIcone = false
-  // Numa fileira baixa (piso menor que o de referência), o título que não cabe tira o ícone do pé:
-  // são 20 px a mais de zona, e é o que deixa a mesma quantidade de letras da tela grande. Na
-  // fileira de referência nada muda.
+  // O ícone do pé aparece **sempre** (a não ser que Ajustes o desligue). Numa fileira baixa o título
+  // que não cabe com ele ganha a zona sem a reserva do ícone — é o que deixa a mesma quantidade de
+  // letras da tela grande — e o ícone encolhe para caber na faixa que sobra embaixo da zona, em vez de
+  // sumir. Na fileira de referência nada muda.
+  let iconePx = ICONE_PX
+  let iconeBase = BASE_DO_ICONE_PX
   if (e.icone && piso < MINIMO_DO_TITULO) {
     const livre = (alturaDaZona / 100) * e.altura
     if (livre / (Math.max(1, caracteres) * AVANCO_DO_CARACTERE) < piso) {
       alturaDaZona = zonaDe(zona.fundo)
       fonte = tamanhoDoTitulo(e.largura, (alturaDaZona / 100) * e.altura, caracteres, piso)
-      semIcone = true
+      const faixa = ((100 - zona.fundo) / 100) * e.altura
+      iconePx = Math.min(ICONE_PX, Math.max(MINIMO_DO_ICONE_PX, Math.floor(faixa - 2)))
+      iconeBase = Math.max(1, Math.floor((faixa - iconePx) / 2))
     }
   }
 
@@ -235,11 +239,13 @@ export function geometriaDaLombada(e: Entrada): GeometriaDaLombada {
     '--zt-topo': `${String(zona.topo)}%`,
     '--zt-altura': `${String(Math.round(alturaDaZona * 10) / 10)}%`,
     '--zt-x': `${String(zona.x)}%`,
+    '--icone-px': `${String(iconePx)}px`,
+    '--icone-base': `${String(iconeBase)}px`,
     // Os sinais de andamento (Fazendo, Feita) são proporcionais a H, com piso em px.
     '--faixa-fazendo': `${String(arredondar(Math.max(2, 0.0125 * e.altura)))}px`,
     '--ponto-fazendo': `${String(arredondar(2 * Math.max(2.2, 0.016 * e.altura)))}px`,
     '--disco-feita': `${String(arredondar(2 * Math.max(3.4, 0.034 * e.altura)))}px`,
   } as CSSProperties
 
-  return { estilo: e.estilo, style, semIcone }
+  return { estilo: e.estilo, style }
 }
