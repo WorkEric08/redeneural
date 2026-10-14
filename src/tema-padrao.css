@@ -327,13 +327,13 @@ html:root[data-tema^='padrao'] .movel-vao:last-child {
 }
 
 /* A fileira é a do Clássico (`.movel-fila` em index.css) enquanto cabe. Quando a tela é baixa demais
-   para as prateleiras caberem inteiras, ela encolhe até caber — abaixo dos 92 px do Clássico, que
-   deixaria a estante passar por cima da linha de baixo (busca, contagem e o "+", que ficam
-   centralizados). A conta de caber: a tela menos o cabeçalho e a margem (64), a linha de baixo (56 + 24),
-   12 px de respiro entre as duas coisas e o ar e o vão dos cartões. */
+   para as prateleiras caberem inteiras, ela encolhe até caber, e não desce de 85 px: com menos que
+   isso o título de 10 letras de um livro "Enorme" já não cabe inteiro. A conta de caber: a tela menos
+   o cabeçalho e a margem (64), a linha de baixo (56 + 24), 12 px de respiro entre as duas coisas e o ar
+   e o vão dos cartões. Em telas de até 700 px o piso cai para 56 (ver o fim do arquivo): ali caber vale mais. */
 html:root[data-tema^='padrao'] .movel-fila {
   height: clamp(
-    56px,
+    85px,
     min(
       calc(
         (100dvh - var(--mv-fora) - env(safe-area-inset-bottom) - var(--mv-bordas)) /
@@ -1118,6 +1118,8 @@ html:root[data-tema^='padrao'] .segmentado--miudo .segmento {
   align-items: flex-end;
   justify-content: center;
   overflow: hidden;
+  /* O livro não encosta no fundo do cartão: a sombra dele aparece inteira. */
+  padding-bottom: 8px;
   border-radius: 18px;
   background: var(--parede);
   box-sizing: border-box;
@@ -1301,10 +1303,6 @@ html:root[data-tema^='padrao'] .segmentado--miudo .segmento {
     height: 34px;
   }
 
-  .pd-previa {
-    max-height: 98px;
-  }
-
   .pd-formas {
     margin-top: 4px;
   }
@@ -1357,10 +1355,6 @@ html:root[data-tema^='padrao'] .segmentado--miudo .segmento {
     margin-top: 0;
   }
 
-  .pd-previa {
-    max-height: 84px;
-  }
-
   .pd-dias input {
     height: 36px;
   }
@@ -1373,10 +1367,6 @@ html:root[data-tema^='padrao'] .segmentado--miudo .segmento {
 @media (max-height: 600px) {
   .pd-form {
     gap: 4px;
-  }
-
-  .pd-previa {
-    max-height: 76px;
   }
 
   .pd-cor {
@@ -1406,10 +1396,6 @@ html:root[data-tema^='padrao'] .segmentado--miudo .segmento {
 @media (max-height: 600px) {
   .pd-opcoes {
     padding: 4px 14px 2px;
-  }
-
-  .pd-previa {
-    max-height: 80px;
   }
 }
 
@@ -2300,5 +2286,37 @@ html:root[data-tema^='padrao'] .visor-seta--dir {
 
   .pd-titulo-bloco {
     margin-bottom: 6px;
+  }
+}
+
+/* Celular estreito: o nome divide a linha com a prévia (que não muda de largura ao deitar o livro) e
+   perde um pouco de corpo, para um nome de 10 letras aparecer inteiro enquanto se escreve. */
+@media (max-width: 359px) {
+  html:root[data-tema^='padrao'] .pd-nome input {
+    font-size: 1.25rem;
+  }
+}
+
+/* Tela baixa (até 700 px): a estante cabe em vez de respeitar o piso de 85 px, e o título inteiro do
+   livro "Enorme" pode ser cortado nas 5 e 6 prateleiras. */
+@media (max-height: 700px) {
+  html:root[data-tema^='padrao'] .movel-fila {
+    height: clamp(
+      56px,
+      min(
+        calc(
+          (100dvh - var(--mv-fora) - env(safe-area-inset-bottom) - var(--mv-bordas)) /
+            var(--mv-prateleiras) - 8px
+        ),
+        calc(
+          (
+              100dvh - 156px - env(safe-area-inset-bottom) - var(--mv-prateleiras) *
+                (var(--pd-vao-ar) + var(--pd-vao-vao)) + var(--pd-vao-vao)
+            ) /
+            var(--mv-prateleiras)
+        )
+      ),
+      132px
+    );
   }
 }

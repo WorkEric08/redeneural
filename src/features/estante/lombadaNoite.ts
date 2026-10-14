@@ -55,6 +55,21 @@ const MINIMO_DO_TITULO = 11
  */
 const AVANCO_DO_CARACTERE = 0.72
 
+/**
+ * O título curto no livro de comprimento "Enorme" aparece **inteiro** (pedido do usuário,
+ * 13/10/2026): até `LIMITE_DO_TITULO_INTEIRO` caracteres, nenhum vira reticências, em qualquer
+ * quantidade de prateleiras ou largura. Para isso o título pode ficar menor que o piso de 11 px — até
+ * `MINIMO_DO_TITULO_INTEIRO` — e, antes de encolher, o ícone do pé cede o lugar dele. A conta usa o
+ * avanço das palavras de letras largas, 0,78 (COMUNIDADE, de C, O, M, U, D, mede 0,745 com o
+ * espaçamento da última letra; uma sequência inventada de W e M, 0,77): cabe qualquer título de 10
+ * letras, e é por isso que o corpo sai menor que o de um título curto.
+ */
+export const LIMITE_DO_TITULO_INTEIRO = 10
+const MINIMO_DO_TITULO_INTEIRO = 8
+const AVANCO_DAS_LETRAS_LARGAS = 0.78
+/** Abaixo disso o título inteiro prefere tirar o ícone a encolher mais. */
+const CORPO_QUE_MANTEM_O_ICONE = 9
+
 /** Luminância de 0 a 1 (0,299 R + 0,587 G + 0,114 B), a conta do desenho. */
 export function luminancia(hex: string): number {
   const r = parseInt(hex.slice(1, 3), 16)
@@ -161,12 +176,16 @@ interface Entrada {
   peca?: Peca
   /** A lombada mostra o ícone da espécie no pé: o título cede o espaço dele. */
   icone?: boolean
+  /** Comprimento "Enorme": o título de até 10 caracteres tem de aparecer inteiro. */
+  tituloInteiro?: boolean
 }
 
 export interface GeometriaDaLombada {
   estilo: EstiloDaLombada
   /** As variáveis CSS que `.lombada` lê. */
   style: CSSProperties
+  /** O ícone do pé cedeu o lugar ao título inteiro: quem o desenha não o desenha. */
+  semIcone: boolean
 }
 
 function arredondar(valor: number): number {
@@ -186,11 +205,32 @@ export function geometriaDaLombada(e: Entrada): GeometriaDaLombada {
   const zona = ZONAS[e.estilo]
   // Com ícone, o fim da zona do título sobe para ficar acima dele — sem passar do começo dela:
   // abaixo do piso de 9 px o título fica minúsculo e o que não cabe vira reticências.
-  const fundoLivre = e.icone
+  const fundoComIcone = e.icone
     ? Math.min(zona.fundo, ((e.altura - reservaDoIcone(e.estilo)) / e.altura) * 100)
     : zona.fundo
-  const alturaDaZona = Math.max(fundoLivre - zona.topo, (MINIMO_DO_TITULO / e.altura) * 100)
-  const fonte = tamanhoDoTitulo(e.largura, (alturaDaZona / 100) * e.altura, caracteres)
+  const zonaDe = (fundo: number): number =>
+    Math.max(fundo - zona.topo, (MINIMO_DO_TITULO / e.altura) * 100)
+  let alturaDaZona = zonaDe(fundoComIcone)
+  let fonte = tamanhoDoTitulo(e.largura, (alturaDaZona / 100) * e.altura, caracteres)
+  let semIcone = false
+  if (e.tituloInteiro === true && caracteres > 0 && caracteres <= LIMITE_DO_TITULO_INTEIRO) {
+    // O corpo de sempre mede por um avanço médio e deixaria uma palavra de letras largas perder a
+    // ponta: aqui a conta é a das letras largas e, se o corpo ainda ficar pequeno demais, o
+    // ícone do pé cede o lugar e o título ganha a zona inteira.
+    const seguro = (zonaEmPercentual: number): number =>
+      Math.min(
+        0.46 * e.largura,
+        ((zonaEmPercentual / 100) * e.altura) / (caracteres * AVANCO_DAS_LETRAS_LARGAS),
+      )
+    const comIcone = seguro(alturaDaZona)
+    if (comIcone >= CORPO_QUE_MANTEM_O_ICONE || !e.icone) {
+      fonte = Math.round(Math.max(MINIMO_DO_TITULO_INTEIRO, comIcone) * 10) / 10
+    } else {
+      alturaDaZona = zonaDe(zona.fundo)
+      semIcone = true
+      fonte = Math.round(Math.max(MINIMO_DO_TITULO_INTEIRO, seguro(alturaDaZona)) * 10) / 10
+    }
+  }
 
   const style = {
     '--cor': cor,
@@ -210,5 +250,5 @@ export function geometriaDaLombada(e: Entrada): GeometriaDaLombada {
     '--disco-feita': `${String(arredondar(2 * Math.max(3.4, 0.034 * e.altura)))}px`,
   } as CSSProperties
 
-  return { estilo: e.estilo, style }
+  return { estilo: e.estilo, style, semIcone }
 }

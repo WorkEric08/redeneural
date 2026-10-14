@@ -148,6 +148,47 @@ describe('geometriaDaLombada', () => {
     expect(fonte('fio')).toBe('25.2px')
   })
 
+  describe('título inteiro no comprimento Enorme', () => {
+    const enorme = { ...base, altura: 90, icone: true, tituloInteiro: true }
+    const caixa = (titulo: string, estilo: (typeof ESTILOS_DA_LOMBADA)[number], largura = 24) => {
+      const geo = geometriaDaLombada({ ...enorme, titulo, estilo, largura })
+      const s = geo.style as Record<string, string>
+      return {
+        semIcone: geo.semIcone,
+        fonte: parseFloat(s['--fs']!),
+        zona: (parseFloat(s['--zt-altura']!) / 100) * 90,
+      }
+    }
+
+    it('10 letras de palavras largas cabem inteiras em todas as formas e larguras', () => {
+      for (const estilo of ESTILOS_DA_LOMBADA) {
+        for (const largura of [24, 38, 52, 68]) {
+          const { fonte, zona } = caixa('COMUNIDADE', estilo, largura)
+          expect(fonte).toBeGreaterThanOrEqual(8)
+          expect(10 * 0.78 * fonte).toBeLessThanOrEqual(zona + 0.5)
+        }
+      }
+    })
+
+    it('na fileira mais baixa o ícone cede o lugar ao título de 10 letras', () => {
+      expect(caixa('ABCDEFGHIJ', 'solido').semIcone).toBe(true)
+    })
+
+    it('com altura de sobra o ícone fica e o corpo é o de sempre', () => {
+      const geo = geometriaDaLombada({ ...enorme, altura: 130, titulo: 'ABCDEFGHIJ' })
+      expect(geo.semIcone).toBe(false)
+    })
+
+    it('título curto não muda, nem sem a regra, nem com 11 letras', () => {
+      const sem = geometriaDaLombada({ ...enorme, tituloInteiro: false, titulo: 'ABCDEFGHIJ' })
+      expect(sem.semIcone).toBe(false)
+      expect((sem.style as Record<string, string>)['--fs']).toBe('11px')
+      expect(geometriaDaLombada({ ...enorme, titulo: 'ABCDEFGHIJK' }).semIcone).toBe(false)
+      const curto = geometriaDaLombada({ ...enorme, titulo: 'Arte', largura: 68 })
+      expect(curto.semIcone).toBe(false)
+    })
+  })
+
   it('o título se centra na lombada em toda forma', () => {
     for (const estilo of ESTILOS_DA_LOMBADA) {
       const { style } = geometriaDaLombada({ ...base, estilo })

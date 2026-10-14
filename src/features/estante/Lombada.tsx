@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom'
 import { especieDoLivro, INTENSIDADE_DA_LUZ_PADRAO } from '@/core'
 import { contar } from '@/lib/plural'
 
+import { PERCENTUAL_DO_ENORME } from './comprimentos'
 import { EmblemaDaLombada } from './EmblemaDaLombada'
 import { geometriaDaLombada } from './lombadaNoite'
 import { alturaDaLombadaEmPercentual, extensaoDoLivro } from './prateleiras'
@@ -97,6 +98,7 @@ export function Lombada({
     altura: deitada ? extensao : (altura * alturaDaFileira) / 100,
     intensidadeDaLuz,
     icone,
+    tituloInteiro: item.livro.comprimentoLombada === PERCENTUAL_DO_ENORME,
   })
 
   const botao = (
@@ -149,7 +151,7 @@ export function Lombada({
       )}
       {/* Um emblema que a pessoa escolheu (antes de 14/09/2026) vale mais que o ícone da espécie;
           a pasta mostra sempre o clipe. O espaço do pé é reservado em `geometriaDaLombada`. */}
-      {icone && (
+      {icone && !geo.semIcone && (
         <EmblemaDaLombada
           chave={ehPasta ? 'pasta' : (item.livro.emblema ?? especieDoLivro(item.livro))}
         />

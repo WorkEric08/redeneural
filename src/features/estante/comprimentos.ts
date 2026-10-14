@@ -22,3 +22,6 @@ export const COMPRIMENTOS: readonly OpcaoDeComprimento[] = [
 
 /** O padrão de um livro novo (pedido do usuário, 16/09/2026): comprimento normal, não automático. */
 export const COMPRIMENTO_PADRAO = COMPRIMENTOS.find((c) => c.chave === 'normal')!.percentual
+
+/** O comprimento "Enorme": o único em que o título curto é garantido inteiro (ver `lombadaNoite.ts`). */
+export const PERCENTUAL_DO_ENORME = 98

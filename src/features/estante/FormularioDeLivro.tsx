@@ -28,7 +28,7 @@ import {
 import { espacoParaMeiaOpcao, haMaisADireita } from '@/lib/faixa'
 import type { NovoLivro } from '@/store/palacio'
 
-import { COMPRIMENTOS } from './comprimentos'
+import { COMPRIMENTOS, PERCENTUAL_DO_ENORME } from './comprimentos'
 import { EmblemaDaLombada } from './EmblemaDaLombada'
 import { FORMAS } from './formas'
 import { LARGURAS } from './larguras'
@@ -196,11 +196,13 @@ export function FormularioDeLivro({
   const alturaDaAmostra =
     (alturaDaLombadaEmPercentual(comprimentoLombada, alturaAutomatica) * alturaDaFileira) / 100
   const alturaDaCaixa = Math.ceil((PERCENTUAL_MAXIMO_DA_AMOSTRA * alturaDaFileira) / 100)
-  // Deitado, o comprimento vira a largura: a caixa alarga para o "Enorme" caber, e a altura dela
-  // não muda — trocar de posição só mexe na largura do campo de nome, nunca na altura de nada.
-  const larguraDaCaixa = deitado
-    ? Math.max(LARGURA_DA_CAIXA_DA_AMOSTRA_PX, alturaDaCaixa)
-    : LARGURA_DA_CAIXA_DA_AMOSTRA_PX
+  // A caixa já nasce larga o bastante para o livro deitado "Enorme" (o comprimento vira a largura),
+  // em pé ou deitado: virar o livro não mexe na caixa, e então o campo de nome nunca muda de
+  // largura (13/10/2026; antes a caixa alargava ao deitar e o nome encolhia junto). O enfeite nunca
+  // deita, e a caixa dele continua só do tamanho da maior largura.
+  const larguraDaCaixa = enfeite
+    ? LARGURA_DA_CAIXA_DA_AMOSTRA_PX
+    : Math.max(LARGURA_DA_CAIXA_DA_AMOSTRA_PX, alturaDaCaixa)
   // A mesma conta da estante (`extensaoDoLivro`): arredondada, para título e reticências baterem.
   const extensaoDaAmostra = Math.round(alturaDaAmostra)
   const tituloDaAmostra = enfeite ? '' : titulo.trim() || '…'
@@ -237,6 +239,7 @@ export function FormularioDeLivro({
     intensidadeDaLuz,
     peca: enfeite ? 'enfeite' : 'livro',
     icone,
+    tituloInteiro: !enfeite && comprimentoLombada === PERCENTUAL_DO_ENORME,
   })
 
   const amostra = (
@@ -262,7 +265,9 @@ export function FormularioDeLivro({
           {contagem}
         </span>
       )}
-      {icone && <EmblemaDaLombada chave={ehPasta ? 'pasta' : (emblema ?? especie)} />}
+      {icone && !geo.semIcone && (
+        <EmblemaDaLombada chave={ehPasta ? 'pasta' : (emblema ?? especie)} />
+      )}
     </span>
   )
 
@@ -411,8 +416,8 @@ export function FormularioDeLivro({
           <div
             className="pd-previa"
             style={{
-              height: `${String(Math.max(122, alturaDaCaixa + 6))}px`,
-              width: `${String(Math.max(92, larguraDaCaixa + 28))}px`,
+              height: `${String(Math.max(0, alturaDaCaixa + 14))}px`,
+              width: `${String(Math.max(92, larguraDaCaixa + 24))}px`,
             }}
           >
             {deitado ? (
@@ -730,7 +735,7 @@ export function FormularioDeLivro({
           className="flex shrink-0 items-end justify-center"
           style={{
             height: `${String(alturaDaCaixa)}px`,
-            width: `${String(larguraDaCaixa)}px`,
+            width: `${String(larguraDaCaixa + (enfeite ? 0 : 16))}px`,
           }}
         >
           {/* Deitado, a lombada gira dentro de uma moldura do tamanho que ela ocupa na estante

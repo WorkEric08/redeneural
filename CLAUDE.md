@@ -6033,6 +6033,27 @@ coluna de navegação do desktop segue com o desenho de tokens (não há prancha
 registrada na documentação).
 
 
+## Estante igual nos temas, título inteiro no "Enorme" e a prévia fixa (13/10/2026)
+
+Três pedidos do usuário, depois dos temas. **Regra que fica:** o que é lógica e responsividade (tamanho da
+fileira, o que cabe, os gestos) é **comum a todos os temas**; só a aparência muda por tema.
+
+- **A fileira do Padrão é a do Clássico.** `.movel-fila` usa a mesma conta (`--mv-fora`, mínimo e máximo
+  de 92 e 132 px) e as mesmas margens laterais (16 + 11 px no Padrão = 5 + 4 + 18 no Clássico). O ar e o
+  vão dos cartões encolhem com a quantidade de prateleiras (12/10 px até 4, 6/7 com 5, 4/6 com 6) para o total
+  não passar do que a madeira ocupava.
+- **A linha de baixo (busca, contagem, "+") fica centralizada com o "+"** e a estante cede espaço: no Padrão a
+  fileira encolhe até caber (conta em `tema-padrao.css`), sempre com 20 px ou mais até a linha. Piso de
+  85 px; em telas de até 700 px de altura o piso cai para 56 e **caber vale mais que o título inteiro**.
+- **Título inteiro no "Enorme"** (`geometriaDaLombada`, `tituloInteiro`): com comprimento Enorme e até 10
+  caracteres, o título nunca vira reticências. A conta usa o avanço das letras largas (0,78) e o corpo pode
+  descer até 8 px; antes de encolher abaixo de 9 px o ícone do pé cede o lugar (`semIcone`). Vale nos dois
+  temas, em pé e deitado. **Limite físico:** abaixo de uns 85 px de fileira 10 letras não cabem legíveis —
+  é o caso do Padrão com 6 prateleiras em tela de 700 px ou menos.
+- **A prévia do formulário de livro tem caixa de largura fixa**, feita para o "Enorme" deitado, em pé ou deitado:
+  virar o livro não mexe mais na largura do campo de nome. No Padrão a caixa ganhou 8 px de respiro embaixo
+  (a sombra não é cortada) e perdeu os tetos de altura que cortavam a lombada em tela baixa.
+
 ## Fases
 
 0. ✅ Esqueleto (Vite/React/TS/Tailwind/PWA/Capacitor)
