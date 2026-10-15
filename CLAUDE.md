@@ -6808,7 +6808,7 @@ Dois pedidos do usuário sobre a tela de escrever um pensamento (`/novo`).
   mesmo destino do "Novo pensamento neste livro" do menu do livro. Nas subtelas (`/livro/<id>/editar`, onde o botão
   nem aparece) e nas outras telas continua `/novo`. Pasta de acervo: o `?livro=` dela é ignorado pela tela de escrever
   (um conceito não mora numa pasta), então o "+" dentro de uma pasta segue abrindo em "Automático". Livro executável:
-  o livro entra escolhido e o "Quero executar isso" já abre ligado.
+  o livro entra escolhido (e o "Quero executar isso" não aparece: ver "Sem 'Quero executar isso' num livro escolhido").
 - **Abrir `/novo?livro=` direto também.** Recarregar essa tela (ou abrir o PWA nela) mostrava "Automático": o livro
   inicial é lido uma vez, na montagem do formulário, e a rede ainda não tinha carregado. O formulário agora tem
   `key` no livro sugerido e se refaz quando ele passa a ser conhecido.
@@ -6853,6 +6853,24 @@ sobrevivia; a `key` expôs o que a navegação já fazia de errado.
   (`Check`), o título digitado continua lá, escolher outro livro troca o filtro sem apagar o título, e reabrir marca o novo;
   abrindo `/novo?livro=` direto e fechando pelo voltar o filtro segue no livro; sem livro sugerido, "Automático" vem marcado;
   livro executável abre marcado. 852 testes: o novo `Formulario.test.tsx` (3 casos) falha se a URL perder o `?livro=`.
+
+## Sem "Quero executar isso" num livro escolhido (15/10/2026)
+
+Pedido do usuário: ao escrever um pensamento **dentro de um livro específico** — pelo "+" de dentro dele, por "Novo pensamento
+neste livro" no menu do livro ou por "Escrever o primeiro pensamento" —, o "Quero executar isso" não aparece. A pessoa já disse
+onde o pensamento mora, e executável é outra categoria de livro. **Isto restringe** o "Quero executar isso, na captura" das
+Atualizações aprovadas: o botão só existe quando a escrita começa sem livro (o "+" da estante, da Rede e das outras telas).
+
+- **Onde:** `Novo.tsx` só passa `executar` ao formulário quando não há livro sugerido (`?livro=` válido); sem a prop o
+  `Formulario` não desenha o botão. Vale também para um livro executável escolhido de antemão (o pensamento já vai para
+  ele) e para quem, nessa tela, troca o filtro para "Automático": o botão não volta.
+- **O que não mudou:** pelo filtro de livros dá para escolher um livro executável à mão, e o "+" de fora de um livro segue
+  com o botão e com a pergunta "Em qual livro executável?". Editar um pensamento nunca teve o botão.
+- **Custo:** abrindo `/novo?livro=` direto (recarregar a tela), o botão aparece por um instante até a rede carregar e o
+  formulário se refazer com o livro; no uso normal, que vem de dentro do app, não aparece.
+- **Verificado** no Chrome (build de produção, 412×892): sem o botão no "+" de dentro de um livro comum e de um executável,
+  em "Escrever o primeiro pensamento", no menu do livro e depois de trocar o filtro para "Automático"; com o botão no "+" da
+  estante e da Rede. Tipos, lint e testes limpos. **Não verificado em toque real.**
 
 ## Fases
 
@@ -6930,3 +6948,4 @@ sobrevivia; a `key` expôs o que a navegação já fazia de errado.
 51. ✅ Escrever dentro de um livro começa nele, e o "Quero executar isso" fica sempre à direita do livro (15/10/2026)
 52. ✅ Ajustes: os números de livros, pensamentos e conexões com espaçamento por conteúdo (15/10/2026)
 53. ✅ A escolha de livro da tela de escrever não perde o livro sugerido nem o texto digitado (15/10/2026)
+54. ✅ Sem "Quero executar isso" na escrita dentro de um livro escolhido (15/10/2026)

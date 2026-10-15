@@ -72,7 +72,10 @@ export default function Novo() {
           ? { inicial: { livroId: livroSugerido, titulo: '', conteudo: '' } }
           : {})}
         automatico
-        executar={{ onCriarLivro: criarLivroExecutavel }}
+        // Com um livro escolhido de antemão (o "+" de dentro dele, "Novo pensamento neste livro") a
+        // pessoa já disse onde o pensamento mora: "Quero executar isso" levaria a outra categoria de
+        // livro, e não é oferecido. Para isso, o filtro de livro.
+        {...(livroSugerido ? {} : { executar: { onCriarLivro: criarLivroExecutavel } })}
         ocupado={ocupado}
         rotuloDeEnvio="Criar pensamento"
         voltarPara="/"
