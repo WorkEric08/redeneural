@@ -6798,6 +6798,32 @@ uma linha, sem seção nem tela.
   **Não verificado:** a folha de compartilhar num celular de verdade (o Chrome headless não tem `navigator.share`;
   só os ramos estão cobertos por teste) e o Capacitor.
 
+## Escrever dentro de um livro começa nesse livro, e o "Quero executar isso" fica sempre à direita (15/10/2026)
+
+Dois pedidos do usuário sobre a tela de escrever um pensamento (`/novo`).
+
+- **O "+" dentro de um livro leva ao livro.** O botão de criar do app (o Dial) apontava sempre para `/novo`, e a
+  escolha de livro abria em "Automático" mesmo com a pessoa dentro de um livro. Agora, em `/livro/<id>` — a tela
+  do livro e só ela —, o "+" leva a `/novo?livro=<id>` (`destinoDoBotaoDeCriar`, `lib/dial.ts`, pura e testada), o
+  mesmo destino do "Novo pensamento neste livro" do menu do livro. Nas subtelas (`/livro/<id>/editar`, onde o botão
+  nem aparece) e nas outras telas continua `/novo`. Pasta de acervo: o `?livro=` dela é ignorado pela tela de escrever
+  (um conceito não mora numa pasta), então o "+" dentro de uma pasta segue abrindo em "Automático". Livro executável:
+  o livro entra escolhido e o "Quero executar isso" já abre ligado.
+- **Abrir `/novo?livro=` direto também.** Recarregar essa tela (ou abrir o PWA nela) mostrava "Automático": o livro
+  inicial é lido uma vez, na montagem do formulário, e a rede ainda não tinha carregado. O formulário agora tem
+  `key` no livro sugerido e se refaz quando ele passa a ser conhecido.
+- **O "Quero executar isso" não desce mais.** A fileira do livro e do botão era `flex-wrap`, e um nome de livro mais
+  comprido que "Automático" empurrava o botão para a linha de baixo. Agora é uma fileira só: o livro à esquerda e o
+  botão à direita dele, sempre. Quem cede é o nome do livro, que termina em reticências — o botão não encolhe
+  (`shrink-0 whitespace-nowrap`). As reticências também não apareciam: o botão do livro é `inline-flex`, onde
+  `truncate` não age, então o nome ganhou um `<span class="truncate">`.
+- **Custo:** em 320 px o botão de 179 px deixa ~100 px para o livro, e um nome comprido sobra como "Exp…". Em 360 px cabe
+  "Experiências" inteiro; "Experiências e vivências de campo" corta em 360 e em 412 px.
+- **Verificado** no Chrome (build de produção), nos dois Padrões, em 320, 360, 412 e 768 px: com livros de nome curto,
+  comprido e executável, pelo "+" de dentro do livro e abrindo `/novo?livro=` direto, o filtro mostra o livro, o botão
+  fica na mesma linha e à direita dele, e não há rolagem lateral; fora do livro (`/`, `/rede`) segue "Automático".
+  849 testes (3 novos, de `destinoDoBotaoDeCriar`), tipos, lint e prettier limpos. **Não verificado em toque real.**
+
 ## Fases
 
 0. ✅ Esqueleto (Vite/React/TS/Tailwind/PWA/Capacitor)
@@ -6871,3 +6897,4 @@ uma linha, sem seção nem tela.
 48. ✅ Tocar um pensamento na Rede leva a câmera ao foco (ele e os vizinhos) e mostra todos os nomes da vizinhança (15/10/2026)
 49. ✅ Zoom out animado na Rede (Enquadrar) e foco que só centraliza, sem aproximar (15/10/2026)
 50. ✅ Backup volta: salvar e restaurar a cópia pela linha "Backup" de Ajustes, com "Salvo há N dias" (15/10/2026)
+51. ✅ Escrever dentro de um livro começa nele, e o "Quero executar isso" fica sempre à direita do livro (15/10/2026)

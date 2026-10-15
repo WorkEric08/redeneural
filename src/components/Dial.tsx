@@ -16,6 +16,7 @@ import {
   RAIO_MEIO,
   caminhoDoFio,
   caminhoDoSetor,
+  destinoDoBotaoDeCriar,
   pontoNoArco,
   setorEm,
   setores,
@@ -234,7 +235,7 @@ export function Dial() {
         )}
 
         <Link
-          to="/novo"
+          to={destinoDoBotaoDeCriar(pathname)}
           aria-label={visivel ? 'Fechar o dial' : 'Novo pensamento'}
           aria-expanded={noDesktop ? undefined : visivel}
           className="dial-botao"

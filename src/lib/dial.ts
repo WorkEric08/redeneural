@@ -103,6 +103,16 @@ export function caminhoDoFio(setor: Setor, alvoX: number, alvoY: number): string
   return `M ${n(saida.x)} ${n(saida.y)} C ${n(puxada.x)} ${n(puxada.y)} ${n(alvoX + 26)} ${n(alvoY)} ${n(alvoX)} ${n(alvoY)}`
 }
 
+/**
+ * Para onde o "+" leva. Dentro de um livro (`/livro/<id>`, a tela dele e só ela) o pensamento nasce
+ * nesse livro — a escolha de livro começa nele, e não em "Automático". Em qualquer outra tela é a
+ * escrita de sempre. O que o livro não puder receber (uma pasta de acervo) a tela de escrever ignora.
+ */
+export function destinoDoBotaoDeCriar(pathname: string): string {
+  const livro = /^\/livro\/([^/]+)\/?$/.exec(pathname)?.[1]
+  return livro ? `/novo?livro=${livro}` : '/novo'
+}
+
 function n(valor: number): string {
   return (Math.round(valor * 100) / 100).toString()
 }

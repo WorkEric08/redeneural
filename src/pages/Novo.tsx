@@ -63,6 +63,10 @@ export default function Novo() {
       {/* A tela inteira é a folha de escrever: barra de topo, livro e texto
           moram dentro do formulário (ver Formulario.tsx). */}
       <Formulario
+        // A chave refaz o formulário quando o livro sugerido só é conhecido depois de a rede
+        // carregar (abrir `/novo?livro=` direto, ou recarregar nela): o livro inicial é lido uma
+        // vez, na montagem, e sem isto a escolha ficaria em "Automático".
+        key={livroSugerido ?? 'automatico'}
         livros={deConceitos}
         {...(livroSugerido
           ? { inicial: { livroId: livroSugerido, titulo: '', conteudo: '' } }

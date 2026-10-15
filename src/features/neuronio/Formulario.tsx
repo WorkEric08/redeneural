@@ -153,7 +153,9 @@ export function Formulario({
         />
 
         <div className="animar-entrada pd-escrever flex flex-1 flex-col pt-4">
-          <div className="flex flex-wrap items-center gap-2">
+          {/* Numa fileira só, sempre: o livro à esquerda e "Quero executar isso" à direita dele. Um nome de
+              livro comprido encolhe (reticências), e o botão não desce para a linha de baixo. */}
+          <div className="flex items-center gap-2">
             {livros.length === 0 && !automatico ? (
               <span className="text-poeira text-xs leading-relaxed">
                 Nenhum livro na estante ainda. Toque numa lombada escura para criar o primeiro.
@@ -177,9 +179,10 @@ export function Formulario({
                   type="button"
                   onClick={abrirEscolhaDeLivro}
                   aria-label={`Livro: ${nomeDoLivro}`}
-                  className="chip pd-chip-livro-escolha text-papel min-w-0 truncate pr-8 pl-7"
+                  className="chip pd-chip-livro-escolha text-papel min-w-0 pr-8 pl-7"
                 >
-                  {nomeDoLivro}
+                  {/* O corte com reticências é do texto: o botão é `inline-flex`, onde `truncate` não age. */}
+                  <span className="truncate">{nomeDoLivro}</span>
                 </button>
                 <ChevronDown
                   size={14}
@@ -193,7 +196,7 @@ export function Formulario({
                 type="button"
                 aria-pressed={executando}
                 onClick={alternarExecutar}
-                className="chip"
+                className="chip shrink-0 whitespace-nowrap"
               >
                 <Hammer size={15} aria-hidden />
                 Quero executar isso

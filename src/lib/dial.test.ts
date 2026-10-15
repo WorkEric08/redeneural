@@ -5,6 +5,7 @@ import {
   ARCO_INICIO,
   RAIO_EXTERNO,
   caminhoDoSetor,
+  destinoDoBotaoDeCriar,
   grauDe,
   pontoNoArco,
   setorEm,
@@ -72,5 +73,23 @@ describe('pontoNoArco', () => {
 
     expect(p.x).toBeCloseTo(0)
     expect(p.y).toBeCloseTo(-100)
+  })
+})
+
+describe('destinoDoBotaoDeCriar', () => {
+  it('dentro de um livro o pensamento nasce nele', () => {
+    expect(destinoDoBotaoDeCriar('/livro/abc-123')).toBe('/novo?livro=abc-123')
+    expect(destinoDoBotaoDeCriar('/livro/abc-123/')).toBe('/novo?livro=abc-123')
+  })
+
+  it('nas outras telas é a escrita de sempre', () => {
+    expect(destinoDoBotaoDeCriar('/')).toBe('/novo')
+    expect(destinoDoBotaoDeCriar('/rede')).toBe('/novo')
+    expect(destinoDoBotaoDeCriar('/neuronio/abc')).toBe('/novo')
+    expect(destinoDoBotaoDeCriar('/livro')).toBe('/novo')
+  })
+
+  it('as subtelas do livro não levam o livro junto', () => {
+    expect(destinoDoBotaoDeCriar('/livro/abc/editar')).toBe('/novo')
   })
 })
