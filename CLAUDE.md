@@ -6824,6 +6824,20 @@ Dois pedidos do usuário sobre a tela de escrever um pensamento (`/novo`).
   fica na mesma linha e à direita dele, e não há rolagem lateral; fora do livro (`/`, `/rede`) segue "Automático".
   849 testes (3 novos, de `destinoDoBotaoDeCriar`), tipos, lint e prettier limpos. **Não verificado em toque real.**
 
+## Ajustes: os números do topo com espaçamento por conteúdo (15/10/2026)
+
+Pedido do usuário: organizar melhor o espaçamento do cartão que mostra livros, pensamentos e conexões.
+
+- **Colunas pelo que dizem.** Eram três partes iguais (`grid-cols-3`): em 320 px cada uma tinha 96 px, "9 pensamentos"
+  quase encostava nas divisórias e "3 livros" sobrava espaço. Agora o cartão é um `flex` e cada célula `flex-auto`
+  (o texto mais a mesma folga, `px-3`, sem quebra de linha): em 320 px ficam 73, 118 e 97 px, e a folga em volta de
+  cada número é igual. Em telas largas as células também acompanham o texto, e o conjunto continua ocupando o cartão todo.
+- **O selo "N sem processar" cobria o número da última coluna** (visto com os 9 pensamentos do seed sem vetor, em 320 px,
+  onde o cartão tem 36 px). Subiu de `-top-2.5` para `-top-3.5`: continua sobre a borda de cima do cartão e não ocupa
+  lugar, mas deixa de tapar o dígito.
+- **A altura do cartão não mudou** (36, 40 e 48 px, como antes), então Ajustes segue cabendo sem rolar em 320×568, 360×640,
+  390×844, 412×892, 768×1024, 1024×768 e 1440×900, nos dois Padrões e no Clássico. Só CSS, sem teste novo.
+
 ## Fases
 
 0. ✅ Esqueleto (Vite/React/TS/Tailwind/PWA/Capacitor)
@@ -6898,3 +6912,4 @@ Dois pedidos do usuário sobre a tela de escrever um pensamento (`/novo`).
 49. ✅ Zoom out animado na Rede (Enquadrar) e foco que só centraliza, sem aproximar (15/10/2026)
 50. ✅ Backup volta: salvar e restaurar a cópia pela linha "Backup" de Ajustes, com "Salvo há N dias" (15/10/2026)
 51. ✅ Escrever dentro de um livro começa nele, e o "Quero executar isso" fica sempre à direita do livro (15/10/2026)
+52. ✅ Ajustes: os números de livros, pensamentos e conexões com espaçamento por conteúdo (15/10/2026)

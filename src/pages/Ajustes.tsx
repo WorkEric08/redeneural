@@ -124,11 +124,14 @@ export default function Ajustes() {
           {/* O selo fica por cima da borda do cartão e não ocupa lugar: um aviso que só existe
               às vezes não pode empurrar a tela para fora do que cabe. */}
           {semVetor > 0 && (
-            <span className="bg-sala absolute -top-2.5 right-3 z-10 rounded-full">
+            <span className="bg-sala absolute -top-3.5 right-3 z-10 rounded-full">
               <EtiquetaProcessando texto={`${String(semVetor)} sem processar`} />
             </span>
           )}
-          <dl className="cartao grid grid-cols-3">
+          {/* Colunas pelo tamanho do que dizem (`flex-auto`): cada uma é o texto mais a mesma folga, então
+              "pensamentos" não aperta as divisórias enquanto "livros" sobra espaço — com três partes
+              iguais era o que acontecia em 320 px. */}
+          <dl className="cartao flex">
             <Numero valor={livros.length} rotulo={livros.length === 1 ? 'livro' : 'livros'} />
             <Numero
               valor={neuronios.length}
@@ -381,7 +384,7 @@ function ControleDeLuz({
 
 function Numero({ valor, rotulo }: { valor: number; rotulo: string }) {
   return (
-    <div className="border-linha flex flex-row-reverse items-baseline justify-center gap-1.5 px-2 py-2.5 not-first:border-l">
+    <div className="border-linha flex flex-auto flex-row-reverse items-baseline justify-center gap-1.5 px-3 py-2.5 whitespace-nowrap not-first:border-l">
       <dt className="text-poeira text-xs">{rotulo}</dt>
       <dd className="font-titulo text-xl font-semibold tabular-nums">{valor}</dd>
     </div>
