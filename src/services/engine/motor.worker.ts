@@ -57,6 +57,7 @@ import {
   type Neuronio,
   type NoDoGrafo,
   type PalacioRepo,
+  type PalacioSnapshot,
   type PerfilDoPalacio,
   type Ponto,
   type PontuarPar,
@@ -893,6 +894,23 @@ async function lerImagem(
   return tamanho === 'miniatura' ? arquivo.miniatura : arquivo.imagem
 }
 
+async function importar(json: string): Promise<EstadoDoPalacio> {
+  let bruto: unknown
+  try {
+    bruto = JSON.parse(json)
+  } catch {
+    throw new Error('O arquivo não é um backup do Locus.')
+  }
+
+  // `importAll` valida o formato e a integridade (nada de pensamento apontando para um livro que
+  // não veio) antes de encostar no banco.
+  await repo.importAll(bruto as PalacioSnapshot)
+
+  // Os scores do arquivo foram calculados com o perfil de outra rede, e depois da fusão o corpus
+  // é outro. Com os embeddings vindo no arquivo, isto não baixa modelo nenhum — é só a matemática.
+  return reprocessarTudo()
+}
+
 async function responder(msg: ParaMotor): Promise<DoMotor> {
   try {
     switch (msg.tipo) {
@@ -1010,6 +1028,12 @@ async function responder(msg: ParaMotor): Promise<DoMotor> {
 
       case 'lerImagem':
         return { req: msg.req, ok: true, dados: await lerImagem(msg.anexoId, msg.tamanho) }
+
+      case 'exportar':
+        return { req: msg.req, ok: true, dados: JSON.stringify(await repo.exportAll()) }
+
+      case 'importar':
+        return { req: msg.req, ok: true, dados: await importar(msg.json) }
     }
   } catch (e) {
     return { req: msg.req, ok: false, erro: e instanceof Error ? e.message : String(e) }

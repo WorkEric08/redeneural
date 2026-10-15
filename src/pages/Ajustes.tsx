@@ -1,10 +1,25 @@
-import { BookOpen, Lightbulb, Minus, Moon, Plus, Rows3, Search, Sparkles, Sun } from 'lucide-react'
-import type { CSSProperties, ReactNode } from 'react'
-import { Link } from 'react-router-dom'
+import {
+  BookOpen,
+  Download,
+  HardDriveDownload,
+  Lightbulb,
+  Minus,
+  Moon,
+  Plus,
+  Rows3,
+  Search,
+  Sparkles,
+  Sun,
+  Upload,
+} from 'lucide-react'
+import { useRef, useState, type CSSProperties, type ReactNode } from 'react'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 
 import { botao } from '@/components/botao'
 import { BarraDeTopo } from '@/components/BarraDeTopo'
+import { Confirmacao } from '@/components/Confirmacao'
 import { EtiquetaProcessando } from '@/components/EtiquetaProcessando'
+import { Folha } from '@/components/Folha'
 import { Interruptor } from '@/components/Interruptor'
 import {
   INTENSIDADE_DA_LUZ_MAXIMA,
@@ -13,6 +28,10 @@ import {
   MAXIMO_DE_PRATELEIRAS,
   type TemaEscolhido,
 } from '@/core'
+import { haQuantoTempo, resumoDaCopia, type ResumoDaCopia } from '@/lib/copia'
+import { contar } from '@/lib/plural'
+import { lerTexto } from '@/services/native/arquivos'
+import { lerUltimaCopia } from '@/services/native/ultimaCopia'
 import { usePalacio } from '@/store/palacio'
 
 /**
@@ -41,10 +60,48 @@ export default function Ajustes() {
     definirIconesNosLivros,
     tema,
     definirTema,
+    salvarCopia,
+    restaurarCopia,
+    avisar,
   } = usePalacio()
+
+  const navegar = useNavigate()
+  const [busca] = useSearchParams()
+  const seletor = useRef<HTMLInputElement>(null)
+  const [ultimaCopia, setUltimaCopia] = useState(lerUltimaCopia)
+  // O arquivo já lido, esperando a pessoa confirmar. Quem abre a folha é a URL (`?restaurar=1`):
+  // o voltar do Android fecha a pergunta antes de sair de Ajustes.
+  const [pendente, setPendente] = useState<{ texto: string; resumo: ResumoDaCopia } | null>(null)
+  const perguntando = pendente !== null && busca.get('restaurar') === '1'
 
   const semVetor = neuronios.filter((n) => n.processando).length
   const travado = ocupado || !carregado
+
+  async function salvar(): Promise<void> {
+    if (await salvarCopia()) setUltimaCopia(lerUltimaCopia())
+  }
+
+  async function escolhido(arquivo: File): Promise<void> {
+    const texto = await lerTexto(arquivo)
+    const resumo = resumoDaCopia(texto)
+    if (!resumo) {
+      avisar('Esse arquivo não é uma cópia do Locus.')
+      return
+    }
+    setPendente({ texto, resumo })
+    void navegar({ search: '?restaurar=1' })
+  }
+
+  function desistir(): void {
+    void navegar(-1)
+  }
+
+  async function confirmar(texto: string): Promise<void> {
+    // Com o arquivo restaurado ou recusado, a pergunta sai do histórico; o aviso ou o erro aparece.
+    await restaurarCopia(texto)
+    setPendente(null)
+    void navegar(-1)
+  }
 
   return (
     <div className="flex flex-col">
@@ -62,7 +119,7 @@ export default function Ajustes() {
         }
       />
 
-      <div className="animar-entrada ajustes-compacto flex flex-col gap-3 pt-5 md:gap-5 md:pt-6 [@media(max-height:640px)]:gap-2 [@media(max-height:640px)]:pt-2">
+      <div className="animar-entrada ajustes-compacto flex flex-col gap-3 pt-5 md:gap-5 md:pt-6 [@media(max-height:600px)]:gap-0.5 [@media(max-height:600px)]:pt-1 [@media(min-height:601px)_and_(max-height:640px)]:gap-2 [@media(min-height:601px)_and_(max-height:640px)]:pt-2">
         <section className="relative">
           {/* O selo fica por cima da borda do cartão e não ocupa lugar: um aviso que só existe
               às vezes não pode empurrar a tela para fora do que cabe. */}
@@ -85,7 +142,7 @@ export default function Ajustes() {
         </section>
 
         <section>
-          <h2 className="rotulo-de-secao">Tema</h2>
+          <h2 className="rotulo-de-secao ajustes-tema-rotulo">Tema</h2>
           <div role="group" aria-label="Tema da interface" className="segmentado">
             {OPCOES_DE_TEMA.map(({ valor, rotulo }) => (
               <button
@@ -187,7 +244,73 @@ export default function Ajustes() {
             </div>
           </div>
         </section>
+
+        <section>
+          <div className="cartao">
+            <div className="linha-de-lista">
+              <Icone>
+                <HardDriveDownload size={18} aria-hidden />
+              </Icone>
+              <Texto
+                titulo="Backup"
+                detalhe={ultimaCopia ? `Salvo ${haQuantoTempo(ultimaCopia)}` : 'Nunca salvo'}
+              />
+              <div className="flex shrink-0 items-center gap-2">
+                <button
+                  type="button"
+                  aria-label="Salvar cópia"
+                  className={botao({ tipo: 'secundario', tamanho: 'icone' })}
+                  disabled={travado}
+                  onClick={() => {
+                    void salvar()
+                  }}
+                >
+                  <Download size={16} aria-hidden />
+                </button>
+                <button
+                  type="button"
+                  aria-label="Restaurar cópia"
+                  className={botao({ tipo: 'secundario', tamanho: 'icone' })}
+                  disabled={travado}
+                  onClick={() => seletor.current?.click()}
+                >
+                  <Upload size={16} aria-hidden />
+                </button>
+                <input
+                  ref={seletor}
+                  type="file"
+                  accept="application/json,.json"
+                  tabIndex={-1}
+                  aria-hidden
+                  className="hidden"
+                  onChange={(e) => {
+                    const arquivo = e.target.files?.[0]
+                    // Zera o input: escolher o mesmo arquivo de novo tem que disparar.
+                    e.target.value = ''
+                    if (arquivo) void escolhido(arquivo)
+                  }}
+                />
+              </div>
+            </div>
+          </div>
+        </section>
       </div>
+
+      <Folha aberta={perguntando} rotulo="Restaurar cópia" onFechar={desistir}>
+        {pendente && (
+          <Confirmacao
+            titulo="Restaurar esta cópia?"
+            explicacao={`O arquivo traz ${contar(pendente.resumo.livros, 'livro', 'livros')} e ${contar(pendente.resumo.pensamentos, 'pensamento', 'pensamentos')}. Eles se juntam ao que já está aqui; o que existir nos dois lugares fica como está no arquivo, mesmo que você tenha mudado depois.`}
+            rotulo="Restaurar"
+            rotuloOcupado="Restaurando…"
+            ocupado={ocupado}
+            onCancelar={desistir}
+            onConfirmar={() => {
+              void confirmar(pendente.texto)
+            }}
+          />
+        )}
+      </Folha>
     </div>
   )
 }
@@ -226,7 +349,7 @@ function ControleDeLuz({
   } as CSSProperties
 
   return (
-    <div className="linha-de-lista py-2">
+    <div className="linha-de-lista py-1.5">
       <Icone>{icone}</Icone>
       <div className="flex min-w-0 flex-1 flex-col">
         <div className="flex items-baseline justify-between gap-2">

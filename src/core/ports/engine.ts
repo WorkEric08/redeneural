@@ -342,6 +342,22 @@ export interface ConnectionEngine {
   lerImagem(anexoId: Id, tamanho: 'miniatura' | 'inteira'): Promise<Uint8Array | null>
   /** O mesmo para a imagem do resultado de uma ideia — `null` se ela não tem. */
   lerImagemDoResultado(neuronioId: Id, tamanho: 'miniatura' | 'inteira'): Promise<Uint8Array | null>
+  /**
+   * A rede inteira como texto JSON, pronta para virar arquivo.
+   *
+   * Texto e não objeto de propósito: o snapshot de uma rede grande passa de alguns MB, e
+   * devolver o objeto faria a travessia do Worker copiar tudo para a thread da interface só
+   * para serializar de novo em seguida.
+   */
+  exportar(): Promise<string>
+  /**
+   * Funde o arquivo com o que já existe (por id, idempotente) e reprocessa.
+   *
+   * Reprocessar é obrigatório: os scores gravados no arquivo foram calculados com o perfil de
+   * *outra* rede, e depois da fusão o corpus é outro. Como os embeddings vêm no arquivo, isto
+   * não baixa modelo nenhum. Recusa um arquivo que não é um backup, sem tocar no banco.
+   */
+  importar(json: string): Promise<EstadoDoPalacio>
   /** Devolve a função que cancela a inscrição. */
   aoProgredir(ouvinte: (p: ProgressoDoMotor) => void): () => void
 }

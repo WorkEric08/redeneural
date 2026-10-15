@@ -2251,7 +2251,11 @@ html:root[data-tema^='padrao'] .aviso:popover-open {
   }
 
   html:root[data-tema^='padrao'] .ajustes-compacto {
-    gap: 6px;
+    gap: 4px;
+  }
+
+  html:root[data-tema^='padrao'] .ajustes-compacto .ajustes-tema-rotulo {
+    display: none;
   }
 }
 

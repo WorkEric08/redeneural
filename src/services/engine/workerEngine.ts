@@ -196,6 +196,11 @@ export function criarWorkerEngine(): ConnectionEngine {
     ): Promise<Uint8Array | null> =>
       pedir<'lerImagemDoResultado'>({ tipo: 'lerImagemDoResultado', neuronioId, tamanho }),
 
+    exportar: (): Promise<string> => pedir<'exportar'>({ tipo: 'exportar' }),
+
+    importar: (json: string): Promise<EstadoDoPalacio> =>
+      pedir<'importar'>({ tipo: 'importar', json }),
+
     aoProgredir(ouvinte) {
       ouvintes.add(ouvinte)
       return () => ouvintes.delete(ouvinte)

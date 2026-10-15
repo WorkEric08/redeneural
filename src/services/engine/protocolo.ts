@@ -62,6 +62,8 @@ export interface RespostasDoMotor {
   /** Os bytes vêm só aqui, a pedido — nunca junto do estado. */
   lerImagem: Uint8Array | null
   lerImagemDoResultado: Uint8Array | null
+  exportar: string
+  importar: EstadoDoPalacio
 }
 
 export type TipoDePedido = keyof RespostasDoMotor
@@ -111,6 +113,8 @@ export type ParaMotor =
   | { req: number; tipo: 'apagarAnexo'; anexoId: Id }
   | { req: number; tipo: 'lerImagem'; anexoId: Id; tamanho: 'miniatura' | 'inteira' }
   | { req: number; tipo: 'lerImagemDoResultado'; neuronioId: Id; tamanho: 'miniatura' | 'inteira' }
+  | { req: number; tipo: 'exportar' }
+  | { req: number; tipo: 'importar'; json: string }
 
 export type DoMotor =
   | { req: number; ok: true; dados: RespostasDoMotor[TipoDePedido] }

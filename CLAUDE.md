@@ -6748,6 +6748,56 @@ pensamento na Rede leva a câmera ao foco…"), que aproximava até 3,2×.
   nome, e o botão Enquadrar anima (o meio da animação fica entre o começo e o fim) terminando com a rede dentro da tela.
   Tipos, lint e 833 testes limpos. **Não verificado em toque real.**
 
+## Backup volta: salvar e restaurar a cópia (15/10/2026)
+
+Pedido do usuário, depois de uma análise crítica do projeto: a única cópia dos pensamentos morava no
+IndexedDB do aparelho, sem saída nenhuma (a UI de backup saiu em 14/09 e nem o motor expunha
+`exportar`/`importar`). **Isto reverte** a remoção de "Backup" de Ajustes de 14/09/2026, na forma mínima:
+uma linha, sem seção nem tela.
+
+- **A linha** "Backup" fica no pé de Ajustes, num cartão só: título, "Salvo hoje" / "Salvo há 12 dias" /
+  "Nunca salvo" e dois botões de ícone — **Salvar cópia** (baixar) e **Restaurar cópia** (enviar). O texto
+  é curto de propósito: com "Cópia de segurança" ele quebrava em três linhas e a tela passava de 568 px.
+- **Salvar** (`salvarCopia`, store): o motor devolve o texto JSON (`exportar`, que chama `exportAll`) e o
+  adapter `services/native/arquivos.ts` o entrega. **No toque** abre a folha de compartilhar do sistema
+  (`navigator.share` com arquivo — é por ali que ele chega ao Drive, ao e-mail ou ao WhatsApp); **no
+  desktop** é download normal; **sob o Capacitor** passa pelo Filesystem e pelo Share. Fechar a folha
+  sem escolher é desistir (`cancelado`): não baixa, não grava a data e não é erro. Se o navegador recusar
+  compartilhar (`NotAllowedError` — exportar uma rede grande pode passar da janela de toque), cai no
+  download. O arquivo se chama `locus-AAAA-MM-DD.json` e leva livros, pensamentos **com os vetores**,
+  conexões, estante (vagas e enfeites), mapa e os itens das pastas com as imagens.
+- **Restaurar** abre o seletor de arquivo, **recusa cedo** o que claramente não é uma cópia
+  (`resumoDaCopia`, `lib/copia.ts`: "Esse arquivo não é uma cópia do Locus.") e pergunta numa folha
+  (`?restaurar=1`, o voltar do Android a fecha): "O arquivo traz N livros e M pensamentos. Eles se juntam
+  ao que já está aqui; o que existir nos dois lugares fica como está no arquivo, mesmo que você tenha mudado
+  depois." — o "arquivo vence" é real (mesmo id, regravado), e é por isso que há a pergunta.
+  Confirmar manda o texto ao motor (`importar`): `importAll` valida o formato e a integridade antes de
+  encostar no banco, funde por id (reimportar o mesmo arquivo não duplica nada) e **reprocessa**
+  (`reprocessarTudo`) — os scores do arquivo saíram do perfil de outra rede. Como os vetores vêm no arquivo,
+  **não baixa o modelo**: verificado com o cache do transformers vazio.
+- **"Salvo há N dias" fica em `localStorage`** (`services/native/ultimaCopia.ts`), como as dicas: não é dado
+  da rede, não vai no backup, e perder o registro só faz a linha voltar a dizer "Nunca salvo". Serve só para a
+  pessoa lembrar; não há aviso nem notificação.
+- **Tela baixa:** em 320×568 a linha só cabe se o respiro de Ajustes encolher mais (`max-height: 600px`: linhas
+  de 48 px, menos espaço entre as seções) e se o rótulo "Tema" sumir — as duas opções já dizem o que são. Os
+  alvos de toque seguem de 44 px. Cabe sem rolar em 320×568, 360×640, 390×844, 412×892, 768×1024, 1024×768 e
+  1440×900, nos dois Padrões e no Clássico.
+- **Blob do download:** o `revokeObjectURL` espera 10 s (era 1): o Chrome cancelou o download de uma cópia de
+  25 KB quando o disco foi mais lento que 1 s, e uma cópia com imagens passa de vários MB.
+- **Limite conhecido, não tratado:** num aparelho novo o seed (3 livros de exemplo) é criado ao abrir, e a
+  cópia se junta a ele — os livros de exemplo ficam junto, e se apagam à mão. Impedir isso exigiria o motor
+  saber se a rede é só o seed intocado.
+- **O que a cópia não leva:** tema, as duas luzes, os ícones nos livros e o modo da Rede (preferências do
+  aparelho). A quantidade de prateleiras sobe sozinha se a cópia tiver livros em prateleiras que o aparelho
+  não tem (já era assim no `importAll`).
+- **Verificado** no Chrome (build de produção, 412×892 e 320×568): salvar baixa um arquivo com 3 livros, 9
+  pensamentos e 9 vetores e a linha passa a "Salvo hoje"; com um livro e seus pensamentos apagados do banco
+  (2 livros, 6 pensamentos), restaurar traz de volta 3 livros, 9 pensamentos e 7 conexões, a folha fecha e a URL
+  volta a `/ajustes`; um arquivo que não é cópia só avisa; repetir diz "nada de novo"; o voltar fecha a
+  pergunta sem restaurar. 846 testes (6 novos de `copia.ts`, 6 de `arquivos.ts`), tipos, lint e prettier limpos.
+  **Não verificado:** a folha de compartilhar num celular de verdade (o Chrome headless não tem `navigator.share`;
+  só os ramos estão cobertos por teste) e o Capacitor.
+
 ## Fases
 
 0. ✅ Esqueleto (Vite/React/TS/Tailwind/PWA/Capacitor)
@@ -6757,7 +6807,7 @@ pensamento na Rede leva a câmera ao foco…"), que aproximava até 3,2×.
 4. ✅ Adapters web + fluxo completo (`TransformersEmbedding`, Worker, store, tela crua)
 5. ✅ Export/import (arquivo JSON, fusão idempotente, reprocessamento no
    import) — **UI de Ajustes removida em 14/09/2026**, capacidade do
-   repositório intocada
+   repositório intocada; **voltou em 15/10/2026** como uma linha "Backup" em Ajustes
 6. ✅ Estante (lombadas, livro aberto, rotas) — acabamento visual fica para o fim
 7. ✅ Rede do palácio em `<canvas>` (layout determinístico, foco, só as pontes)
 8. 🟡 Criação, edição e navegação — **a porta ficou para a passada de
@@ -6820,3 +6870,4 @@ pensamento na Rede leva a câmera ao foco…"), que aproximava até 3,2×.
 47. ✅ Zoom que desliza na Rede e no Mapa, e todos os títulos dos pensamentos à mostra no Mapa de perto (15/10/2026)
 48. ✅ Tocar um pensamento na Rede leva a câmera ao foco (ele e os vizinhos) e mostra todos os nomes da vizinhança (15/10/2026)
 49. ✅ Zoom out animado na Rede (Enquadrar) e foco que só centraliza, sem aproximar (15/10/2026)
+50. ✅ Backup volta: salvar e restaurar a cópia pela linha "Backup" de Ajustes, com "Salvo há N dias" (15/10/2026)

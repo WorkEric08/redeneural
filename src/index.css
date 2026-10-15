@@ -2574,6 +2574,22 @@ img {
   }
 }
 
+/* Mais baixo ainda (320×568): a linha do backup só cabe se o respiro encolher mais um pouco e a seção
+   "Tema" perder o rótulo — as duas opções já dizem o que são. Os alvos de toque seguem de 44 px. */
+@media (max-height: 600px) {
+  .ajustes-compacto .linha-de-lista {
+    padding-block: 2px;
+  }
+
+  .ajustes-compacto .ajustes-tema-rotulo {
+    display: none;
+  }
+
+  .ajustes-compacto dl > div {
+    padding-block: 4px;
+  }
+}
+
 /* O campo de nome do livro mostra o que a lombada corta (CampoDoNome.tsx): o texto do input fica
    transparente e uma camada por cima desenha o que aparece e, apagado, o que ficaria de fora. */
 .campo-do-nome {

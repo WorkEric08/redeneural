@@ -42,6 +42,8 @@ import {
 } from '@/core'
 import { newId } from '@/lib/id'
 import { engine } from '@/services/engine/workerEngine'
+import { nomeDoBackup, salvarTexto } from '@/services/native/arquivos'
+import { marcarUltimaCopia } from '@/services/native/ultimaCopia'
 
 export interface NovoNeuronio {
   /** `null`: "Automático" ao criar (o Porto decide); ao editar, continua no porto. */
@@ -242,6 +244,16 @@ interface PalacioStore {
     neuronioId: string,
     tamanho: 'miniatura' | 'inteira',
   ) => Promise<Uint8Array | null>
+  /**
+   * Salva a rede inteira num arquivo (download no desktop, folha de compartilhar no celular).
+   * `false` se não deu — o erro fica em `erro`. Desistir na folha de compartilhar não é erro.
+   */
+  salvarCopia: () => Promise<boolean>
+  /**
+   * Funde o texto de um backup com a rede e reprocessa (sem baixar modelo: os vetores vêm no
+   * arquivo). `false` se o motor recusou o arquivo — nada foi gravado.
+   */
+  restaurarCopia: (texto: string) => Promise<boolean>
   /** Mostra um aviso flutuante, com ou sem botão. */
   avisar: (texto: string, acao?: AcaoDoAviso) => void
   /** O aviso flutuante some — pelo tempo ou pelo toque. */
@@ -851,6 +863,53 @@ export const usePalacio = create<PalacioStore>()((set, get) => {
 
     lerImagemDoResultado(neuronioId, tamanho) {
       return engine.lerImagemDoResultado(neuronioId, tamanho)
+    },
+
+    async salvarCopia() {
+      set({ ocupado: true, erro: null, aviso: null })
+
+      try {
+        const destino = await salvarTexto(nomeDoBackup(), await engine.exportar())
+        if (destino.tipo !== 'cancelado') {
+          marcarUltimaCopia()
+          set({
+            aviso: destino.tipo === 'download' ? 'Cópia baixada.' : 'Cópia pronta para guardar.',
+            acaoDoAviso: null,
+            duracaoDoAviso: null,
+          })
+        }
+        return true
+      } catch (e) {
+        set({ erro: mensagem(e) })
+        return false
+      } finally {
+        set({ ocupado: false })
+      }
+    },
+
+    async restaurarCopia(texto) {
+      const antes = get().neuronios.length
+      set({ ocupado: true, erro: null, aviso: null })
+
+      try {
+        const estado = await engine.importar(texto)
+        const novos = estado.neuronios.length - antes
+        set({
+          ...estado,
+          aviso:
+            novos > 0
+              ? `Cópia restaurada: +${String(novos)} ${novos === 1 ? 'pensamento' : 'pensamentos'}.`
+              : 'Cópia restaurada: nada de novo, o arquivo já estava aqui.',
+          acaoDoAviso: null,
+          duracaoDoAviso: null,
+        })
+        return true
+      } catch (e) {
+        set({ erro: mensagem(e) })
+        return false
+      } finally {
+        set({ ocupado: false, progresso: null })
+      }
     },
 
     async moverNeuronioNaRede(id, ponto) {
