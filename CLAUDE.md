@@ -6700,6 +6700,33 @@ Pedido do usuário: melhorar as animações básicas de zoom in e zoom out na Re
   perto), de longe nenhum título de pensamento, e um giro da roda anima. 833 testes (1 novo), tipos e lint limpos.
   **Não verificado em toque real, nem a pinça de trackpad.**
 
+## Tocar um pensamento na Rede leva a câmera ao foco, e a vizinhança mostra todos os nomes (15/10/2026)
+
+Pedido do usuário: na Rede (modo Rede), ao tocar num pensamento, uma leve animação posiciona a câmera para centralizar
+**ele e os pensamentos conectados**, e **todos** os títulos desses pensamentos aparecem — mesmo com o balanço mexendo nos
+pontos — para dar foco nele e nas conexões.
+
+- **A câmera** (`focarTocado`, `Tela.tsx`): tocar um pensamento desliza (520 ms, o `animarCamera` de sempre) até enquadrar
+  ele e os vizinhos de um salto, com o zoom que couber (de `ESCALA_MINIMA` a 3,2; **pode afastar** se os vizinhos
+  estão longe). Sem vizinho, só centraliza, sem mudar o zoom. **O enquadramento deixa o pé livre para o cartão** do tocado
+  (176 px no Clássico, 270 no Padrão, no máximo 40% da tela; antes um vizinho podia ficar escondido atrás dele). Tocar o
+  vazio não mexe na câmera, e tocar a tela no meio da animação a interrompe. Movimento reduzido vai direto ao quadro final.
+  Um satélite (item de pasta) não leva a câmera.
+- **O duplo toque** num pensamento continua aproximando só nele (`ESCALA_DE_FOCO`), agora deslizando e não saltando; a busca
+  (`focar`) e a revelação de um pensamento novo não mudaram.
+- **Os nomes** (`desenharRotulosDoFoco`, `desenhar.ts`; no Padrão o mesmo laço de `desenharRotulosDoPadrao`): com um pensamento
+  tocado, **todo vizinho** mostra o título, em qualquer zoom, sem o teto de 40 e **sem sumir por colisão**. O nome fica do lado
+  de fora do tocado (um vizinho abaixo leva o nome embaixo, e o nome não cai sobre o fio); se bater noutro, vai para o lado
+  oposto e depois mais afastado; sem vão, fica no primeiro lugar — nome sobreposto é melhor que vizinho sem nome. Em pixels de
+  tela, preso à largura da tela (nada cortado na borda). O desenho recalcula a cada quadro, então o nome acompanha o balanço.
+  Os pensamentos fora da vizinhança continuam apagados e sem nome. Sem tocado, os nomes ambiente são os de sempre.
+- **Custo:** com muitos vizinhos num espaço pequeno os nomes podem se sobrepor um pouco. Com um satélite
+  (item de pasta) tocado, a lógica de antes continua.
+- **Verificado** no Chrome (build de produção, Clássico e Padrão escuro, em 320×568, 412×892, 1024×768 e 1440×900), com um
+  pensamento de 5 vizinhos: depois do toque a câmera anda, os 5 nomes aparecem durante todo o balanço, os pensamentos fora
+  do foco não ganham nome, e tocar o vazio não move a câmera. Visto também num caso em que o pensamento tocado era um vizinho
+  com 1 conexão. Tipos e lint limpos. **Não verificado em toque real.**
+
 ## Fases
 
 0. ✅ Esqueleto (Vite/React/TS/Tailwind/PWA/Capacitor)
@@ -6770,3 +6797,4 @@ Pedido do usuário: melhorar as animações básicas de zoom in e zoom out na Re
 45. ✅ O Buscar local vale na pasta de acervo: procura só os itens dela (15/10/2026)
 46. ✅ Título e legenda nos itens da pasta: título sobre a imagem no cartão, legenda com o texto do pensamento (15/10/2026)
 47. ✅ Zoom que desliza na Rede e no Mapa, e todos os títulos dos pensamentos à mostra no Mapa de perto (15/10/2026)
+48. ✅ Tocar um pensamento na Rede leva a câmera ao foco (ele e os vizinhos) e mostra todos os nomes da vizinhança (15/10/2026)

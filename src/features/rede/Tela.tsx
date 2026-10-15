@@ -70,6 +70,11 @@ const DURACAO_DA_REVELACAO = 850
 /** Menor que `ESCALA_MAXIMA`: um par bem próximo não pode virar um zoom
  *  absurdo só porque a caixa que os enquadra é minúscula. */
 const ESCALA_MAXIMA_DA_REVELACAO = 3.2
+/** Tocar num pensamento leva a câmera até ele e às conexões dele: curto, para ser resposta ao toque. */
+const DURACAO_DO_FOCO = 520
+/** O que o cartão do pensamento tocado cobre do pé da tela (o do Padrão tem mais linhas), com o respiro. */
+const ALTURA_DO_CARTAO = 176
+const ALTURA_DO_CARTAO_PADRAO = 270
 
 /**
  * O quanto o balanço desloca cada pensamento, em pixels de **tela** — não de
@@ -396,10 +401,9 @@ export function Tela({
       const tocado = alvoDoToque(mundo)
       if (tocado?.tipo === 'anexo') onSelecionarAnexo(tocado.id)
       else onSelecionar(tocado?.id ?? null)
-      if (!duplo) return
-      // Duplo toque num satélite não aproxima: ele só existe de perto.
-      if (tocado?.tipo === 'neuronio') focar(tocado.id)
-      else if (!tocado) zoomSuave(ZOOM_DO_DUPLO_TOQUE, cliente.x, cliente.y)
+      // Um satélite não leva a câmera: ele só existe de perto, e o duplo toque nele não aproxima.
+      if (tocado?.tipo === 'neuronio') focarTocado(tocado.id, duplo)
+      else if (!tocado && duplo) zoomSuave(ZOOM_DO_DUPLO_TOQUE, cliente.x, cliente.y)
     },
   })
 
@@ -520,6 +524,55 @@ export function Tela({
       cancelAnimationFrame(quadroId)
     }
   }, [pintar])
+
+  /**
+   * Tocou num pensamento: a câmera desliza até enquadrar ele **e** os vizinhos de um salto, para o
+   * foco caber de uma vez com os fios e os nomes. Sem vizinho, só centraliza, sem mudar o zoom. No
+   * duplo toque o zoom é o de `focar` (perto, só nele). Nunca mexe no que já está selecionado.
+   */
+  function focarTocado(id: Id, duplo: boolean): void {
+    const canvas = canvasRef.current
+    const p = cenaRef.current.posicoes.get(id)
+    if (!canvas || !p || !Number.isFinite(p.x) || !Number.isFinite(p.y)) return
+
+    const vizinhanca = vizinhancaDe(id, cenaRef.current.conexoes) ?? new Set([id])
+    const pontos = [...vizinhanca]
+      .map((vid) => cenaRef.current.posicoes.get(vid))
+      .filter(
+        (pt): pt is Ponto => pt !== undefined && Number.isFinite(pt.x) && Number.isFinite(pt.y),
+      )
+
+    // O cartão do pensamento tocado sobe do pé da tela: o foco tem que caber acima dele.
+    const cartao = cores.current?.padrao ? ALTURA_DO_CARTAO_PADRAO : ALTURA_DO_CARTAO
+    const livres: Folgas = {
+      ...folgas,
+      base: Math.max(folgas.base, Math.min(cartao, canvas.clientHeight * 0.4)),
+    }
+    const centrado = (escala: number): Camera => ({
+      escala,
+      x: -p.x * escala,
+      y: -p.y * escala + (livres.topo - livres.base) / 2,
+    })
+    const alvo: Camera = duplo
+      ? centrado(Math.min(Math.max(camera.current.escala, ESCALA_DE_FOCO), ESCALA_MAXIMA))
+      : pontos.length > 1
+        ? camaraParaEnquadrar(
+            pontos,
+            canvas.clientWidth,
+            canvas.clientHeight,
+            livres,
+            ESCALA_MINIMA,
+            ESCALA_MAXIMA_DA_REVELACAO,
+          )
+        : centrado(camera.current.escala)
+
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      camera.current = alvo
+      pintar()
+      return
+    }
+    animarCamera(alvo, DURACAO_DO_FOCO, revelacaoEmAndamento)
+  }
 
   /**
    * O que está debaixo do dedo: um pensamento, um satélite, ou nada. O satélite

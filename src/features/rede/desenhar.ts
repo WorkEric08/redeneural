@@ -197,12 +197,17 @@ export function desenhar(
   desenharPontes(ctx, cena, livroDoNeuronio, ponteApagada, px)
   desenharNeuronios(ctx, cena, noApagado, px)
   desenharSatelites(ctx, cena, camera.escala, sateliteApagado, px)
-  if (!cores.padrao) desenharRotulosAmbiente(ctx, cena, camera.escala, noApagado)
+  const emFoco =
+    cena.anexoSelecionado === null && vizinhancaDe(cena.selecionado, cena.conexoes) !== null
+  if (!cores.padrao && !emFoco) desenharRotulosAmbiente(ctx, cena, camera.escala, noApagado)
 
   ctx.restore()
 
   if (cores.padrao) desenharRotulosDoPadrao(ctx, cena, camera, largura, altura, noApagado)
-  else if (cena.selecionado) desenharEtiqueta(ctx, cena, camera, largura, altura)
+  else if (cena.selecionado) {
+    const etiqueta = desenharEtiqueta(ctx, cena, camera, largura, altura)
+    if (emFoco) desenharRotulosDoFoco(ctx, cena, camera, largura, altura, etiqueta)
+  }
 }
 
 function finito(p: Ponto | undefined): p is Ponto {
@@ -670,10 +675,10 @@ function desenharEtiqueta(
   camera: Camera,
   largura: number,
   altura: number,
-): void {
+): CaixaDeTela | null {
   const n = cena.neuronios.find((x) => x.id === cena.selecionado)
   const p = cena.selecionado ? cena.posicoes.get(cena.selecionado) : undefined
-  if (!n || !finito(p)) return
+  if (!n || !finito(p)) return null
 
   const x = largura / 2 + camera.x + p.x * camera.escala
   const y = altura / 2 + camera.y + p.y * camera.escala
@@ -698,6 +703,92 @@ function desenharEtiqueta(
   ctx.globalAlpha = 1
   ctx.fillStyle = cena.cores.papel
   ctx.fillText(n.titulo, caixaX, caixaY)
+  ctx.restore()
+  return {
+    x0: caixaX - largo / 2 - 7,
+    y0: caixaY - 18,
+    x1: caixaX + largo / 2 + 7,
+    y1: caixaY + 4,
+  }
+}
+
+/**
+ * Os lugares onde o nome de um vizinho pode ficar, na ordem de preferência: do
+ * lado **de fora** do pensamento tocado (um vizinho abaixo dele leva o nome
+ * embaixo, e assim o nome nunca cai no meio do fio que o liga a ele), depois do
+ * outro lado, depois mais afastado. Só a posição na tela decide — o balanço de
+ * 2,5 px não troca de lado.
+ */
+function lugaresDoNome(raio: number, paraBaixo: boolean): number[] {
+  const lado = paraBaixo ? 1 : -1
+  return [lado * (raio + 12), -lado * (raio + 12), lado * (raio + 28), -lado * (raio + 28)]
+}
+
+/**
+ * Com um pensamento tocado, **todo** vizinho dele mostra o nome, em qualquer zoom
+ * e mesmo com o balanço mexendo nos pontos (o desenho recalcula a cada quadro, e
+ * o nome anda junto). Em pixels de tela, sem teto e sem sumir por colisão: o que
+ * não achar vão limpo fica no primeiro lugar — um nome sobreposto ainda é melhor
+ * que um vizinho sem nome. É o foco no pensamento e nas conexões dele.
+ */
+function desenharRotulosDoFoco(
+  ctx: CanvasRenderingContext2D,
+  cena: Cena,
+  camera: Camera,
+  largura: number,
+  altura: number,
+  etiquetaDoTocado: CaixaDeTela | null,
+): void {
+  const vizinhanca = vizinhancaDe(cena.selecionado, cena.conexoes)
+  const pTocado = cena.selecionado ? cena.posicoes.get(cena.selecionado) : undefined
+  if (vizinhanca === null || !finito(pTocado)) return
+
+  const naTela = (p: Ponto): Ponto => ({
+    x: largura / 2 + camera.x + p.x * camera.escala,
+    y: altura / 2 + camera.y + p.y * camera.escala,
+  })
+  const tocado = naTela(pTocado)
+  const ocupadas: CaixaDeTela[] = etiquetaDoTocado ? [etiquetaDoTocado] : []
+  const bate = (c: CaixaDeTela): boolean =>
+    ocupadas.some((o) => c.x0 < o.x1 && c.x1 > o.x0 && c.y0 < o.y1 && c.y1 > o.y0)
+
+  const candidatos: { n: NeuronioNaTela; p: Ponto; grau: number }[] = []
+  for (const n of cena.neuronios) {
+    if (n.id === cena.selecionado || !vizinhanca.has(n.id)) continue
+    const p = cena.posicoes.get(n.id)
+    if (!finito(p)) continue
+    candidatos.push({ n, p: naTela(p), grau: cena.graus.get(n.id) ?? 0 })
+  }
+  candidatos.sort((a, b) => b.grau - a.grau || (a.n.id < b.n.id ? -1 : 1))
+
+  ctx.save()
+  ctx.font = `500 12px ${cena.cores.fonteTitulo}`
+  ctx.textAlign = 'center'
+  ctx.textBaseline = 'middle'
+  ctx.lineJoin = 'round'
+  ctx.lineWidth = 3.5
+  for (const { n, p, grau } of candidatos) {
+    if (p.x < -40 || p.x > largura + 40 || p.y < -20 || p.y > altura + 20) continue
+    const meio = ctx.measureText(n.titulo).width / 2
+    const x = Math.min(Math.max(p.x, meio + 6), largura - meio - 6)
+    const r = raioNaTela(grau)
+    let escolhida: { y: number; caixa: CaixaDeTela } | null = null
+    for (const dy of lugaresDoNome(r, p.y >= tocado.y)) {
+      const y = p.y + dy
+      const caixa = { x0: x - meio - 4, y0: y - 8, x1: x + meio + 4, y1: y + 8 }
+      escolhida ??= { y, caixa }
+      if (!bate(caixa)) {
+        escolhida = { y, caixa }
+        break
+      }
+    }
+    if (!escolhida) continue
+    ocupadas.push(escolhida.caixa)
+    ctx.strokeStyle = cena.cores.sala
+    ctx.strokeText(n.titulo, x, escolhida.y)
+    ctx.fillStyle = cena.cores.papel
+    ctx.fillText(n.titulo, x, escolhida.y)
+  }
   ctx.restore()
 }
 
@@ -755,28 +846,36 @@ function desenharRotulosDoPadrao(
   const fonte = `500 12px ${cores.fonteTitulo}`
   let postos = 0
   for (const { n, p, grau } of candidatos) {
-    if (postos >= MAX_ROTULOS_AMBIENTE) break
+    // O teto só vale sem pensamento tocado: com um, todos os vizinhos têm nome.
+    if (vizinhanca === null && postos >= MAX_ROTULOS_AMBIENTE) break
     if (p.x < -40 || p.x > largura + 40 || p.y < -20 || p.y > altura + 20) continue
     const r = raioNaTela(grau, true)
     ctx.save()
     ctx.font = fonte
     const meio = ctx.measureText(n.titulo).width / 2 + 10
     ctx.restore()
-    // Embaixo do ponto; se bater noutro nome, em cima.
-    for (const dy of [r + 14, -(r + 14)]) {
-      const prova = { x0: p.x - meio, y0: p.y + dy - 10, x1: p.x + meio, y1: p.y + dy + 10 }
-      if (bate(prova)) continue
-      ocupadas.push(
-        etiquetaDoPadrao(ctx, n.titulo, p.x, p.y + dy, {
-          fonte,
-          cor: cores.poeira,
-          fundo: cores.parede,
-          sombra: cores.sombraDaEtiqueta,
-          centro: true,
-        }),
-      )
-      postos++
-      break
-    }
+    // A etiqueta não passa da borda da tela (um vizinho perto dela ainda tem nome inteiro).
+    const x = Math.min(Math.max(p.x, meio + 6), largura - meio - 6)
+    // Do lado de fora do tocado; se bater noutro nome, do outro e mais afastado — e, com um
+    // tocado, no primeiro lugar mesmo assim: vizinho sem nome é pior que nome encostado.
+    const lugares =
+      vizinhanca === null
+        ? [r + 14, -(r + 14)]
+        : [...lugaresDoNome(r + 2, pEscolhido ? p.y >= naTela(pEscolhido).y : true)]
+    let achado = lugares.find(
+      (dy) => !bate({ x0: x - meio, y0: p.y + dy - 10, x1: x + meio, y1: p.y + dy + 10 }),
+    )
+    if (achado === undefined && vizinhanca !== null) achado = lugares[0]
+    if (achado === undefined) continue
+    ocupadas.push(
+      etiquetaDoPadrao(ctx, n.titulo, x, p.y + achado, {
+        fonte,
+        cor: cores.poeira,
+        fundo: cores.parede,
+        sombra: cores.sombraDaEtiqueta,
+        centro: true,
+      }),
+    )
+    postos++
   }
 }
