@@ -6623,6 +6623,27 @@ que a caixa tinha a forma exata de cada foto: agora o cinza **volta a aparecer**
   panorâmica 3:1) com a moldura no **mesmo x, y e tamanho** e o "Combina com" no mesmo lugar; sem rolagem em 320×568, 360×640 e
   390×844. Tipos, lint e 818 testes limpos. **Não verificado em toque real.**
 
+## O Buscar local também vale na pasta de acervo (15/10/2026)
+
+Pedido do usuário: a busca do livro do tipo anexos mostrava tudo do global, e não só o que é da pasta. **Isto reverte** o "Pasta de
+acervo continua global" de "Busca global e Buscar local" e o "a lupa da pasta continua global" de "A pasta e o item seguem o
+layout…" — eu tinha deixado a lupa da pasta global porque a pasta não tem pensamentos; ele quer o escopo dela.
+
+- **A lupa da pasta** (`Pasta.tsx`) agora abre `/busca?livro=<id>`, com o rótulo "Buscar local", como a do livro comum.
+- **O que a local procura numa pasta:** os **itens dela**, pela **legenda** ou, nos links, pelo **endereço** (`buscarAnexos`,
+  `features/busca/buscar.ts`, pura, 5 testes: sem acento e sem caixa, legenda antes de endereço, imagem não tem endereço). Não
+  lista livros nem pensamentos de fora. É a mesma tela de Busca (`pages/Busca.tsx`), que decide pelo tipo do livro do `?livro=`.
+- **Com o campo vazio** mostra os últimos itens guardados (até 8), "Guardados por último"; pasta sem item diz "Esta pasta
+  ainda não tem itens.". O campo diz "Buscar nesta pasta…", e o `aria-label` é "Buscar nesta pasta". Cada linha mostra a
+  legenda ("Sem legenda" quando não há), "Imagem" ou o domínio do link, e a cor da pasta; **tocar abre o item** (`/anexo/<id>`).
+  O voltar leva à pasta.
+- **O que não mudou:** a Busca global continua achando tudo, e a local de um livro comum ou executável continua nos pensamentos dele.
+  A busca por **conteúdo da imagem** não existe (só há texto na legenda).
+- **Verificado** no Chrome (build de produção, 412×892, Padrão escuro e Clássico): sem digitar, só os 3 itens da pasta;
+  "refat" acha só o artigo; "youtu" acha o link sem legenda pelo endereço; "program" (um livro de fora) e "recurs" (um
+  pensamento de fora) não aparecem na local; a global continua achando livros de fora; tocar num resultado abre o item; sem
+  rolagem lateral em 320 px. Tipos, lint e 823 testes limpos. **Não verificado em toque real.**
+
 ## Fases
 
 0. ✅ Esqueleto (Vite/React/TS/Tailwind/PWA/Capacitor)
@@ -6690,3 +6711,4 @@ que a caixa tinha a forma exata de cada foto: agora o cinza **volta a aparecer**
 42. ✅ A pasta de acervo e o item seguem o layout do livro comum e do pensamento: título na barra, linha de contagem, título grande no item (15/10/2026)
 43. ✅ O item da pasta mostra só a legenda, em fonte menor, sem o nome do livro (15/10/2026)
 44. ✅ A imagem do item numa moldura quadrada de tamanho fixo (15/10/2026)
+45. ✅ O Buscar local vale na pasta de acervo: procura só os itens dela (15/10/2026)

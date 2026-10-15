@@ -65,8 +65,8 @@ export function Pasta({ livro }: { livro: Livro }) {
         }
         acoes={
           <Link
-            to="/busca"
-            aria-label="Busca global"
+            to={`/busca?livro=${livro.id}`}
+            aria-label="Buscar local"
             className={botao({ tipo: 'fantasma', tamanho: 'icone' })}
           >
             <Search size={20} aria-hidden />

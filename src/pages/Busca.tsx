@@ -2,10 +2,13 @@ import { Search } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 
+import type { AnexoNaTela } from '@/core'
+
 import { BarraDeTopo } from '@/components/BarraDeTopo'
 import { EstadoVazio } from '@/components/EstadoVazio'
 import { useTemaPadrao } from '@/hooks/useTemaPadrao'
-import { buscar } from '@/features/busca/buscar'
+import { dominioDe } from '@/features/acervo/links'
+import { buscar, buscarAnexos } from '@/features/busca/buscar'
 import { ROTULO_DO_PORTO } from '@/features/porto/porto'
 import { contar } from '@/lib/plural'
 import { usePalacio } from '@/store/palacio'
@@ -23,7 +26,9 @@ const RECENTES = 8
  *   pensamentos pelo título ou pelo conteúdo inteiro. Abre da estante, da Rede e
  *   das telas que não são de um livro.
  * - **Buscar local** (`/busca?livro=<id>`) — só os pensamentos daquele livro, que
- *   abre da lupa de dentro do livro (comum ou executável). Não lista livros.
+ *   abre da lupa de dentro do livro (comum ou executável). Não lista livros. Numa
+ *   **pasta de acervo** a local procura os itens dela (legenda ou endereço do link),
+ *   porque uma pasta não tem pensamentos.
  *
  * Com o campo vazio a tela não fica em branco: mostra os últimos pensamentos
  * escritos (17/09/2026). É a única tela do app que responde "o que eu escrevi
@@ -32,7 +37,7 @@ const RECENTES = 8
  * (ver `porMaisRecente` em dexieRepo.ts), então aqui é só recortar.
  */
 export default function Busca() {
-  const { livros, neuronios } = usePalacio()
+  const { livros, neuronios, anexos } = usePalacio()
   const [consulta, setConsulta] = useState('')
   const padrao = useTemaPadrao()
 
@@ -57,11 +62,29 @@ export default function Busca() {
   const recentes = useMemo(() => doEscopo.slice(0, RECENTES), [doEscopo])
   const livroPorId = useMemo(() => new Map(livros.map((l) => [l.id, l])), [livros])
 
+  // A pasta de acervo: a busca local dela é nos itens (a lista já chega do mais recente ao mais antigo).
+  const pasta = local ? livroPorId.get(livroLocal) : undefined
+  const naPasta = pasta?.tipo === 'acervo'
+  const itensDaPasta = useMemo(
+    () => (naPasta ? anexos.filter((a) => a.livroId === livroLocal) : []),
+    [naPasta, anexos, livroLocal],
+  )
+  const itensAchados = useMemo(() => buscarAnexos(consulta, itensDaPasta), [consulta, itensDaPasta])
+
   /** Quem veio da Rede volta para lá com a câmera no pensamento, não para a ficha. */
   const destinoDo = (id: string): string => (daRede ? `/rede?centralizar=${id}` : `/neuronio/${id}`)
 
   const termo = consulta.trim()
-  const rotuloDoCampo = local ? 'Buscar neste livro' : 'Buscar na rede'
+  const rotuloDoCampo = naPasta
+    ? 'Buscar nesta pasta'
+    : local
+      ? 'Buscar neste livro'
+      : 'Buscar na rede'
+  const dicaDoCampo = naPasta
+    ? 'Buscar nesta pasta…'
+    : local
+      ? 'Buscar neste livro…'
+      : 'Título ou conteúdo…'
 
   const campo = (
     <input
@@ -76,7 +99,7 @@ export default function Busca() {
       autoCapitalize="off"
       spellCheck={false}
       enterKeyHint="search"
-      placeholder={local ? 'Buscar neste livro…' : 'Título ou conteúdo…'}
+      placeholder={dicaDoCampo}
       aria-label={rotuloDoCampo}
     />
   )
@@ -116,14 +139,22 @@ export default function Busca() {
               autoCapitalize="off"
               spellCheck={false}
               enterKeyHint="search"
-              placeholder={local ? 'Buscar neste livro…' : 'Título ou conteúdo…'}
+              placeholder={dicaDoCampo}
               aria-label={rotuloDoCampo}
               className="campo h-13 px-4 text-lg"
             />
           )}
         </div>
 
-        {termo === '' ? (
+        {naPasta && pasta ? (
+          <ItensDaPasta
+            itens={termo === '' ? itensDaPasta.slice(0, RECENTES) : itensAchados}
+            semNada={itensDaPasta.length === 0}
+            termo={termo}
+            cor={pasta.cor}
+            padrao={padrao}
+          />
+        ) : termo === '' ? (
           recentes.length === 0 ? (
             <p className="text-poeira px-1 text-sm">
               {local
@@ -270,5 +301,70 @@ function LinhaDeNeuronio({
         )}
       </Link>
     </li>
+  )
+}
+
+/**
+ * Os itens de uma pasta na busca local dela: os guardados por último (com o campo vazio) ou os que
+ * batem com o que se digitou. A linha é a mesma dos pensamentos; tocar abre o item.
+ */
+function ItensDaPasta({
+  itens,
+  semNada,
+  termo,
+  cor,
+  padrao,
+}: {
+  itens: readonly AnexoNaTela[]
+  /** A pasta não tem item nenhum. */
+  semNada: boolean
+  termo: string
+  cor: string
+  padrao: boolean
+}) {
+  if (itens.length === 0) {
+    if (termo === '' && semNada)
+      return <p className="text-poeira px-1 text-sm">Esta pasta ainda não tem itens.</p>
+    return padrao ? (
+      <EstadoVazio
+        icone={<Search size={28} aria-hidden />}
+        titulo="Nada encontrado"
+        texto="Tente outras palavras."
+      />
+    ) : (
+      <p className="text-poeira px-1 text-sm">Nada encontrado para “{termo}”.</p>
+    )
+  }
+
+  const linhas = (
+    <ul className={padrao ? 'pd-resultados' : 'cartao flex flex-col'}>
+      {itens.map((a) => (
+        <LinhaDeNeuronio
+          key={a.id}
+          para={`/anexo/${a.id}`}
+          titulo={a.legenda.trim() || 'Sem legenda'}
+          abaixo={a.midia.tipo === 'imagem' ? 'Imagem' : dominioDe(a.midia.url)}
+          cor={cor}
+          padrao={padrao}
+        />
+      ))}
+    </ul>
+  )
+  if (termo !== '') return linhas
+
+  return (
+    <section>
+      <h2 className="rotulo-de-secao">
+        {padrao ? (
+          <>
+            <span>Guardados por último</span>
+            <span>{contar(itens.length, 'item', 'itens')}</span>
+          </>
+        ) : (
+          'Guardados por último'
+        )}
+      </h2>
+      {linhas}
+    </section>
   )
 }

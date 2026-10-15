@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest'
 
-import type { Livro, NeuronioNaTela } from '@/core'
+import type { AnexoNaTela, Livro, NeuronioNaTela } from '@/core'
 
-import { buscar } from './buscar'
+import { buscar, buscarAnexos } from './buscar'
 
 const T0 = new Date('2026-01-01T12:00:00.000Z')
 
@@ -136,5 +136,48 @@ describe('buscar — texto longo', () => {
 
     expect(achado).toMatchObject({ tipo: 'neuronio', neuronio: { id: 'n3' } })
     expect((achado as { trecho?: string }).trecho).toContain('serendipidade')
+  })
+})
+
+describe('buscarAnexos', () => {
+  function anexo(id: string, legenda: string, url?: string): AnexoNaTela {
+    return {
+      id,
+      livroId: 'pasta',
+      legenda,
+      midia:
+        url === undefined
+          ? { tipo: 'imagem', mime: 'image/webp', largura: 10, altura: 10 }
+          : { tipo: 'link', url },
+      processando: false,
+      createdAt: T0,
+      updatedAt: T0,
+    }
+  }
+  const ITENS = [
+    anexo('a', 'Diagrama de memória de trabalho'),
+    anexo('b', 'Artigo sobre refatoração', 'https://exemplo.com/refatoracao'),
+    anexo('c', '', 'https://youtu.be/recursao'),
+  ]
+
+  it('sem termo não devolve nada', () => {
+    expect(buscarAnexos('  ', ITENS)).toEqual([])
+  })
+
+  it('acha pela legenda, sem acento e sem caixa', () => {
+    expect(buscarAnexos('MEMORIA', ITENS).map((a) => a.id)).toEqual(['a'])
+  })
+
+  it('acha um link pelo endereço, mesmo sem legenda', () => {
+    expect(buscarAnexos('youtu', ITENS).map((a) => a.id)).toEqual(['c'])
+  })
+
+  it('legenda bate antes de endereço', () => {
+    const itens = [anexo('x', 'Outra coisa', 'https://site.com/recursao'), anexo('y', 'Recursão')]
+    expect(buscarAnexos('recurs', itens).map((a) => a.id)).toEqual(['y', 'x'])
+  })
+
+  it('não olha o endereço de uma imagem nem acha o que não bate', () => {
+    expect(buscarAnexos('zzz', ITENS)).toEqual([])
   })
 })
