@@ -1,4 +1,11 @@
-import { useCallback, useRef, type PointerEvent, type RefObject, type WheelEvent } from 'react'
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  type PointerEvent,
+  type RefObject,
+  type WheelEvent,
+} from 'react'
 
 import type { Ponto } from '@/core'
 
@@ -75,6 +82,8 @@ export interface Gestos {
 export function useCamera(opcoes: OpcoesDaCamera): {
   gestos: Gestos
   aplicarZoom: (fator: number, focoX: number, focoY: number) => void
+  /** Como `aplicarZoom`, mas a câmera desliza até a escala nova. */
+  zoomSuave: (fator: number, focoX: number, focoY: number) => void
   animarCamera: (
     alvo: Camera,
     duracaoMs: number,
@@ -105,6 +114,18 @@ export function useCamera(opcoes: OpcoesDaCamera): {
   const ultimoQuadroDoArrasto = useRef(0)
   const deslizeEmAndamento = useRef<{ cancelado: boolean } | null>(null)
 
+  /** O zoom que ainda falta andar: roda do mouse e duplo toque acumulam aqui e a câmera o alcança. */
+  const zoomPendente = useRef<{ escala: number; focoX: number; focoY: number } | null>(null)
+  const relogioDoZoom = useRef<number | null>(null)
+
+  const pararOZoom = useCallback(() => {
+    zoomPendente.current = null
+    if (relogioDoZoom.current !== null) cancelAnimationFrame(relogioDoZoom.current)
+    relogioDoZoom.current = null
+  }, [])
+
+  useEffect(() => pararOZoom, [pararOZoom])
+
   /**
    * Anima a câmera de onde ela está até um alvo, com `easeOutCubic` — o mesmo
    * "assenta e para" de tudo nestas telas. `execucaoRef` é de quem chama —
@@ -119,6 +140,7 @@ export function useCamera(opcoes: OpcoesDaCamera): {
       aoTerminar?: () => void,
     ) => {
       if (execucaoRef.current) execucaoRef.current.cancelado = true
+      pararOZoom()
       const execucao = { cancelado: false }
       execucaoRef.current = execucao
 
@@ -145,7 +167,7 @@ export function useCamera(opcoes: OpcoesDaCamera): {
 
       requestAnimationFrame(quadro)
     },
-    [cameraRef, pintar],
+    [cameraRef, pintar, pararOZoom],
   )
 
   /**
@@ -184,24 +206,70 @@ export function useCamera(opcoes: OpcoesDaCamera): {
     }
   }
 
-  function aplicarZoom(fator: number, focoX: number, focoY: number): void {
-    const canvas = canvasRef.current!
-    const caixa = canvas.getBoundingClientRect()
-    const c = cameraRef.current
+  const aplicarZoom = useCallback(
+    (fator: number, focoX: number, focoY: number): void => {
+      const canvas = canvasRef.current
+      if (!canvas) return
+      const caixa = canvas.getBoundingClientRect()
+      const c = cameraRef.current
 
-    const nova = Math.min(Math.max(c.escala * fator, escalaMinima), escalaMaxima)
-    const real = nova / c.escala
+      const nova = Math.min(Math.max(c.escala * fator, escalaMinima), escalaMaxima)
+      const real = nova / c.escala
 
-    // Mantém o ponto sob os dedos parado enquanto a escala muda.
-    const alvoX = focoX - caixa.left - caixa.width / 2
-    const alvoY = focoY - caixa.top - caixa.height / 2
-    cameraRef.current = {
-      escala: nova,
-      x: alvoX - (alvoX - c.x) * real,
-      y: alvoY - (alvoY - c.y) * real,
-    }
-    pintar()
-  }
+      // Mantém o ponto sob os dedos parado enquanto a escala muda.
+      const alvoX = focoX - caixa.left - caixa.width / 2
+      const alvoY = focoY - caixa.top - caixa.height / 2
+      cameraRef.current = {
+        escala: nova,
+        x: alvoX - (alvoX - c.x) * real,
+        y: alvoY - (alvoY - c.y) * real,
+      }
+      pintar()
+    },
+    [canvasRef, cameraRef, pintar, escalaMinima, escalaMaxima],
+  )
+
+  /**
+   * Zoom que desliza: em vez de saltar para a escala nova, a câmera a alcança em
+   * ~250 ms (aproximação exponencial, que desacelera sozinha) com o ponto sob o
+   * dedo parado. Vários giros da roda seguidos somam no mesmo alvo, em vez de
+   * cada um recomeçar. Quem pediu menos movimento recebe o salto de antes.
+   */
+  const zoomSuave = useCallback(
+    (fator: number, focoX: number, focoY: number) => {
+      if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+        aplicarZoom(fator, focoX, focoY)
+        return
+      }
+      const base = zoomPendente.current?.escala ?? cameraRef.current.escala
+      const escala = Math.min(Math.max(base * fator, escalaMinima), escalaMaxima)
+      zoomPendente.current = { escala, focoX, focoY }
+      if (relogioDoZoom.current !== null) return
+
+      let anterior = performance.now()
+      const quadro = (agora: number): void => {
+        const alvo = zoomPendente.current
+        if (!alvo) {
+          relogioDoZoom.current = null
+          return
+        }
+        const passo = 1 - Math.exp(-Math.min(agora - anterior, 50) / 70)
+        anterior = agora
+        const atual = cameraRef.current.escala
+        const chegou = Math.abs(Math.log(alvo.escala / atual)) < 0.003
+        const proxima = chegou ? alvo.escala : atual * Math.pow(alvo.escala / atual, passo)
+        aplicarZoom(proxima / atual, alvo.focoX, alvo.focoY)
+        if (chegou) {
+          zoomPendente.current = null
+          relogioDoZoom.current = null
+          return
+        }
+        relogioDoZoom.current = requestAnimationFrame(quadro)
+      }
+      relogioDoZoom.current = requestAnimationFrame(quadro)
+    },
+    [aplicarZoom, cameraRef, escalaMinima, escalaMaxima],
+  )
 
   function distanciaEntreDedos(): number {
     const [a, b] = [...ponteiros.current.values()]
@@ -215,6 +283,7 @@ export function useCamera(opcoes: OpcoesDaCamera): {
       // Um toque novo interrompe qualquer deslize ou animação ainda em curso —
       // segurar a tela é sempre "para agora", nunca "espera acabar".
       if (deslizeEmAndamento.current) deslizeEmAndamento.current.cancelado = true
+      pararOZoom()
       opcoes.aoInterromper?.()
       velocidadeDoArrasto.current = { vx: 0, vy: 0 }
       ultimoQuadroDoArrasto.current = 0
@@ -363,9 +432,16 @@ export function useCamera(opcoes: OpcoesDaCamera): {
     },
 
     onWheel(e) {
-      aplicarZoom(e.deltaY < 0 ? 1.12 : 1 / 1.12, e.clientX, e.clientY)
+      // O fator segue o quanto a roda andou: um giro do mouse dá ~16%, e o
+      // gesto de pinça do trackpad (ctrl + roda, deltas pequenos) fica macio.
+      const sensibilidade = e.deltaMode === 1 ? 0.05 : e.ctrlKey ? 0.01 : 0.0015
+      const fator = Math.min(1.5, Math.max(1 / 1.5, Math.exp(-e.deltaY * sensibilidade)))
+      // Girar a roda no meio de uma animação da tela (aproximar, revelar) a interrompe.
+      if (deslizeEmAndamento.current) deslizeEmAndamento.current.cancelado = true
+      opcoes.aoInterromper?.()
+      zoomSuave(fator, e.clientX, e.clientY)
     },
   }
 
-  return { gestos, aplicarZoom, animarCamera }
+  return { gestos, aplicarZoom, zoomSuave, animarCamera }
 }

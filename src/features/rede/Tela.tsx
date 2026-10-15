@@ -329,7 +329,7 @@ export function Tela({
    * pelos ganchos: tocar num pensamento pode virar arrastá-lo, e o toque escolhe
    * entre pensamento e satélite.
    */
-  const { gestos, aplicarZoom, animarCamera } = useCamera({
+  const { gestos, zoomSuave, animarCamera } = useCamera({
     canvasRef,
     cameraRef: camera,
     pintar,
@@ -399,7 +399,7 @@ export function Tela({
       if (!duplo) return
       // Duplo toque num satélite não aproxima: ele só existe de perto.
       if (tocado?.tipo === 'neuronio') focar(tocado.id)
-      else if (!tocado) aplicarZoom(ZOOM_DO_DUPLO_TOQUE, cliente.x, cliente.y)
+      else if (!tocado) zoomSuave(ZOOM_DO_DUPLO_TOQUE, cliente.x, cliente.y)
     },
   })
 

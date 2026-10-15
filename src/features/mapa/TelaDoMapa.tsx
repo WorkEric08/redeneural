@@ -258,7 +258,7 @@ export function TelaDoMapa({
     [cameraEm, pintar],
   )
 
-  const { gestos, aplicarZoom, animarCamera } = useCamera({
+  const { gestos, zoomSuave, animarCamera } = useCamera({
     canvasRef,
     cameraRef: camera,
     pintar,
@@ -360,7 +360,7 @@ export function TelaDoMapa({
       if (ilha) {
         onSelecionar(null)
         if (!dePerto) aproximarDaIlha(ilha)
-        else if (duplo) aplicarZoom(ZOOM_DO_DUPLO_TOQUE, cliente.x, cliente.y)
+        else if (duplo) zoomSuave(ZOOM_DO_DUPLO_TOQUE, cliente.x, cliente.y)
         return
       }
 
@@ -372,7 +372,7 @@ export function TelaDoMapa({
       }
 
       onSelecionar(null)
-      if (duplo) aplicarZoom(ZOOM_DO_DUPLO_TOQUE, cliente.x, cliente.y)
+      if (duplo) zoomSuave(ZOOM_DO_DUPLO_TOQUE, cliente.x, cliente.y)
     },
   })
 

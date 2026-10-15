@@ -6671,6 +6671,35 @@ pasta, e a **legenda** passa a ter o mesmo tamanho e a mesma fonte do texto dos 
   novo), então o título gravado foi coberto por testes do repositório, do backup e da migração, e a exibição foi vista com itens
   semeados. 832 testes (9 novos), tipos e lint limpos. **Não verificado em toque real.**
 
+## Zoom que desliza e todos os títulos no Mapa (15/10/2026)
+
+Pedido do usuário: melhorar as animações básicas de zoom in e zoom out na Rede e no Mapa e, no Mapa, quando o zoom
+é o bastante para os pensamentos aparecerem dentro dos hexágonos, **todos** devem mostrar o título.
+
+- **O zoom desliza** (`zoomSuave`, `features/rede/useCamera.ts`, comum à Rede e ao Mapa): a roda do mouse e o duplo
+  toque no vazio deixam de saltar para a escala nova. A câmera a alcança por aproximação exponencial (constante de
+  ~70 ms, uns 250 ms até assentar), com o ponto sob o cursor parado. Giros seguidos **somam no mesmo alvo** em vez de
+  cada um recomeçar. A roda segue o quanto andou (`exp(-deltaY × 0,0015)`, ~16% por giro de mouse; pinça de trackpad
+  com ctrl é mais fina; limitada a 1,5× por evento). Medido: um giro faz ~25 quadros de pintura, contra 1 antes.
+- **Interrompe e respeita:** tocar a tela, uma animação da câmera (aproximar, revelar, enquadrar) e girar a roda no meio
+  de uma animação da tela cancelam o zoom que faltava (`pararOZoom`, e `aoInterromper` também na roda).
+  `prefers-reduced-motion` mantém o salto de antes. **A pinça de dois dedos continua instantânea**, porque tem que
+  seguir os dedos. `aplicarZoom` virou `useCallback` e não quebra mais sem canvas.
+- **Mapa, todos os títulos** (`presencaDosTitulos`, `ilha.ts`, pura e testada): a partir do zoom 1,6 todo pensamento
+  mostra o nome; entre 1,2 e 1,6 os que faltavam surgem aos poucos (fade), e abaixo disso valem os nomes de sempre —
+  os que cabem sem se cobrir, mais conectados primeiro, no máximo 40. **O teto de 40 deixa de valer** com os títulos à
+  mostra. Quem não achou vão desce até 2 degraus de 13 px e, sem vão, é escrito mesmo assim; o título é encurtado com
+  reticências para `40 px × zoom` (de 56 a 150 px), então de menos perto os nomes são curtos em vez de se cobrirem e
+  crescem ao aproximar. Faixas cobertas pela página e laterais continuam sem texto.
+- **Rede:** os nomes da Rede não mudaram (limiar único de 2,2 e colisão, de 16/09/2026); o pedido de "todos os
+  títulos" foi lido como sendo dos hexágonos, ou seja, do Mapa.
+- **Custo:** com muitos pensamentos numa ilha e títulos longos, a 1,6–2× ainda sobra algum encostar de nome (fica
+  com reticências ou desce um degrau); só some de vez bem de perto.
+- **Verificado** no Chrome (build de produção, 412×892, Padrão escuro e Clássico) com uma ilha de 45 pensamentos de
+  título longo: com zoom médio e alto todo ponto da tela tem título (curto e com reticências no médio, inteiro mais
+  perto), de longe nenhum título de pensamento, e um giro da roda anima. 833 testes (1 novo), tipos e lint limpos.
+  **Não verificado em toque real, nem a pinça de trackpad.**
+
 ## Fases
 
 0. ✅ Esqueleto (Vite/React/TS/Tailwind/PWA/Capacitor)
@@ -6740,3 +6769,4 @@ pasta, e a **legenda** passa a ter o mesmo tamanho e a mesma fonte do texto dos 
 44. ✅ A imagem do item numa moldura quadrada de tamanho fixo (15/10/2026)
 45. ✅ O Buscar local vale na pasta de acervo: procura só os itens dela (15/10/2026)
 46. ✅ Título e legenda nos itens da pasta: título sobre a imagem no cartão, legenda com o texto do pensamento (15/10/2026)
+47. ✅ Zoom que desliza na Rede e no Mapa, e todos os títulos dos pensamentos à mostra no Mapa de perto (15/10/2026)

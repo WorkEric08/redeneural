@@ -81,6 +81,23 @@ export const ESCALA_DE_PERTO = 0.9
 /** Onde os pontos começam a aparecer, para não surgirem de uma vez no limiar. */
 const ESCALA_DE_APARECER = 0.65
 
+/**
+ * Perto o bastante para **todo** pensamento mostrar o título. Antes disso os nomes
+ * são os que cabem sem se atropelar (os mais conectados primeiro); daqui, a 37 px
+ * entre pontos vizinhos, nenhum fica sem nome. Os que faltavam surgem entre os dois
+ * números, em vez de aparecer de uma vez.
+ */
+const ESCALA_DOS_TITULOS_COMECA = 1.2
+const ESCALA_DOS_TITULOS_COMPLETOS = 1.6
+
+/** 0 enquanto só os nomes que cabem aparecem, 1 com todos os títulos à mostra. */
+export function presencaDosTitulos(escala: number): number {
+  const t =
+    (escala - ESCALA_DOS_TITULOS_COMECA) /
+    (ESCALA_DOS_TITULOS_COMPLETOS - ESCALA_DOS_TITULOS_COMECA)
+  return Math.min(1, Math.max(0, t))
+}
+
 /** 0 de longe, 1 de perto, e uma subida suave entre os dois. */
 export function presencaDePerto(escala: number): number {
   const t = (escala - ESCALA_DE_APARECER) / (ESCALA_DE_PERTO - ESCALA_DE_APARECER)

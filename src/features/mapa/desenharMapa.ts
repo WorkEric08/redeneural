@@ -4,7 +4,7 @@ import type { Camera } from '@/features/rede/desenhar'
 import { vizinhancaDe } from '@/features/rede/layout'
 import { contar } from '@/lib/plural'
 
-import { ESCALA_DE_PERTO, presencaDePerto, RAZAO_DO_VERTICE } from './ilha'
+import { ESCALA_DE_PERTO, presencaDePerto, presencaDosTitulos, RAZAO_DO_VERTICE } from './ilha'
 import { controleDoArco, espessuraDaPonte, pontesVisiveis, type PonteAgrupada } from './pontes'
 
 /**
@@ -223,7 +223,17 @@ export function desenharMapa(
   const ocupadas = areasProibidas(cena.cobertas, largura, altura)
   desenharNomesDasIlhas(ctx, cena, ilhas, naTela, camera.escala, largura, altura, ocupadas)
   if (camera.escala >= ESCALA_DE_PERTO) {
-    desenharNomesDeNeuronios(ctx, cena, naTela, largura, altura, ocupadas, vizinhanca)
+    desenharNomesDeNeuronios(
+      ctx,
+      cena,
+      naTela,
+      largura,
+      altura,
+      ocupadas,
+      vizinhanca,
+      presencaDosTitulos(camera.escala),
+      camera.escala,
+    )
   }
 
   if (selecionado !== null && vizinhanca !== null) {
@@ -492,7 +502,9 @@ function desenharNomesDasIlhas(
 /**
  * De perto, os nomes dos pensamentos, embaixo de cada ponto. Os mais conectados
  * escolhem lugar primeiro; quem encostaria num nome já posto fica sem — o
- * ponto continua lá, e tocá-lo diz o nome.
+ * ponto continua lá, e tocá-lo diz o nome. **Com o zoom a partir de
+ * `ESCALA_DOS_TITULOS_*`, ninguém fica sem:** `completos` (0 a 1) é o quanto os
+ * que sobraram já surgiram.
  */
 function desenharNomesDeNeuronios(
   ctx: CanvasRenderingContext2D,
@@ -502,7 +514,10 @@ function desenharNomesDeNeuronios(
   altura: number,
   ocupadas: Caixa[],
   vizinhanca: ReadonlySet<Id> | null,
+  completos: number,
+  escala: number,
 ): void {
+  const proibidas = [...ocupadas]
   const candidatos: { n: NeuronioNaTela; p: Ponto; grau: number }[] = []
   for (const n of cena.neuronios) {
     // A vizinhança do tocado tem os nomes dela por cima do véu.
@@ -514,15 +529,37 @@ function desenharNomesDeNeuronios(
     candidatos.push({ n, p, grau: cena.graus.get(n.id) ?? 0 })
   }
   candidatos.sort((a, b) => b.grau - a.grau || (a.n.id < b.n.id ? -1 : 1))
-  escreverNomesDePontos(ctx, cena, candidatos, ocupadas, 0.85)
+  escreverNomesDePontos(ctx, cena, candidatos, ocupadas, 0.85, { completos, escala, proibidas })
 }
 
+/** O título que cabe em `limite` px: o que passa vira reticências. */
+function ajustarAoLargo(ctx: CanvasRenderingContext2D, titulo: string, limite: number): string {
+  if (ctx.measureText(titulo).width <= limite) return titulo
+  let fim = titulo.length
+  while (fim > 1 && ctx.measureText(`${titulo.slice(0, fim)}…`).width > limite) fim--
+  return `${titulo.slice(0, fim).trimEnd()}…`
+}
+
+/** Quanto, em px, um título que não achou vão desce para não cobrir o vizinho. */
+const DEGRAU_DO_TITULO_PX = 13
+const LARGURA_MAXIMA_DO_TITULO_PX = 150
+const LARGURA_MINIMA_DO_TITULO_PX = 56
+/** Quanto de título cada unidade de zoom paga: perto os nomes crescem, de menos perto são curtos em vez de se cobrirem. */
+const LARGURA_DO_TITULO_POR_ESCALA_PX = 40
+
+/**
+ * `todos`: os que não coubram no primeiro passe (por colisão ou pelo teto) também
+ * ganham o título — com a presença `completos`, num degrau abaixo do ponto se o
+ * lugar de baixo do ponto estiver tomado, e com reticências se for largo demais.
+ * `proibidas` são as faixas que a página cobre: ali nome nenhum se lê.
+ */
 function escreverNomesDePontos(
   ctx: CanvasRenderingContext2D,
   cena: CenaDoMapa,
   candidatos: readonly { n: NeuronioNaTela; p: Ponto }[],
   ocupadas: Caixa[],
   alfa: number,
+  todos?: { completos: number; escala: number; proibidas: readonly Caixa[] },
 ): void {
   ctx.save()
   ctx.font = cena.cores.padrao ? `11px ${cena.cores.fonteTitulo}` : FONTE_DO_NEURONIO
@@ -530,16 +567,51 @@ function escreverNomesDePontos(
   ctx.textBaseline = 'top'
   ctx.fillStyle = cena.cores.papel
   ctx.globalAlpha = alfa
+  const raio = cena.cores.padrao ? RAIO_DO_PONTO_PADRAO_PX : RAIO_DO_PONTO_PX
+  const completo = todos !== undefined && todos.completos > 0
+  const sobraram: { n: NeuronioNaTela; p: Ponto }[] = []
   let postos = 0
   for (const { n, p } of candidatos) {
-    if (postos >= MAX_NOMES_DE_NEURONIO) break
+    // O teto só vale enquanto os títulos não estão todos à mostra.
+    if (!completo && postos >= MAX_NOMES_DE_NEURONIO) break
     const largo = ctx.measureText(n.titulo).width
-    const y = p.y + (cena.cores.padrao ? RAIO_DO_PONTO_PADRAO_PX : RAIO_DO_PONTO_PX) + 3
+    const y = p.y + raio + 3
     const caixa = { x0: p.x - largo / 2 - 3, y0: y - 2, x1: p.x + largo / 2 + 3, y1: y + 14 }
-    if (bate(caixa, ocupadas)) continue
+    if (bate(caixa, ocupadas)) {
+      sobraram.push({ n, p })
+      continue
+    }
     ocupadas.push(caixa)
     escreverComHalo(ctx, n.titulo, p.x, y, cena.cores)
     postos++
+  }
+
+  if (todos && completo) {
+    ctx.globalAlpha = alfa * todos.completos
+    for (const { n, p } of sobraram) {
+      const limite = Math.min(
+        LARGURA_MAXIMA_DO_TITULO_PX,
+        Math.max(LARGURA_MINIMA_DO_TITULO_PX, todos.escala * LARGURA_DO_TITULO_POR_ESCALA_PX),
+      )
+      const titulo = ajustarAoLargo(ctx, n.titulo, limite)
+      const largo = ctx.measureText(titulo).width
+      const base = p.y + raio + 3
+      let escolhido: { y: number; caixa: Caixa } | null = null
+      for (const degrau of [0, 1, 2]) {
+        const y = base + degrau * DEGRAU_DO_TITULO_PX
+        const caixa = { x0: p.x - largo / 2 - 3, y0: y - 2, x1: p.x + largo / 2 + 3, y1: y + 14 }
+        if (bate(caixa, todos.proibidas)) continue
+        escolhido ??= { y, caixa }
+        if (!bate(caixa, ocupadas)) {
+          escolhido = { y, caixa }
+          break
+        }
+      }
+      // Sem vão em nenhum degrau, ainda assim se escreve (no primeiro lugar fora das faixas cobertas).
+      if (!escolhido) continue
+      ocupadas.push(escolhido.caixa)
+      escreverComHalo(ctx, titulo, p.x, escolhido.y, cena.cores)
+    }
   }
   ctx.restore()
 }

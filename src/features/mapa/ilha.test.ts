@@ -10,6 +10,7 @@ import {
   neuronioNoMapaEm,
   pontosAbsolutos,
   presencaDePerto,
+  presencaDosTitulos,
 } from './ilha'
 
 const MAPA: MapaDoPalacio = {
@@ -97,5 +98,19 @@ describe('bordasDoMapa', () => {
     const lado = 80 * (2 / Math.sqrt(3))
     expect(bordasDoMapa(MAPA)).toContainEqual({ x: 100 + lado, y: 80 })
     expect(bordasDoMapa(MAPA)).toContainEqual({ x: -300 - 70 * (2 / Math.sqrt(3)), y: -20 })
+  })
+})
+
+describe('presencaDosTitulos', () => {
+  it('só os nomes que cabem de longe, todos os títulos de bem perto, e sobe sem pular', () => {
+    expect(presencaDosTitulos(ESCALA_DE_PERTO)).toBe(0)
+    expect(presencaDosTitulos(3)).toBe(1)
+    let anterior = 0
+    for (const e of [1.25, 1.35, 1.45, 1.55]) {
+      const p = presencaDosTitulos(e)
+      expect(p).toBeGreaterThan(anterior)
+      expect(p).toBeLessThan(1)
+      anterior = p
+    }
   })
 })
