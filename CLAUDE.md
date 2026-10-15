@@ -6603,6 +6603,26 @@ mantinha o nome da pasta na barra (Clássico) e como etiqueta sob a barra (Padr�
   em nenhum ponto do texto da tela, o título é a legenda em 20 e 22 px, sem rolagem lateral em 320 px. Tipos, lint e 818 testes
   limpos. **Não verificado em toque real.**
 
+## A imagem do item numa moldura de tamanho fixo (15/10/2026)
+
+Pedido do usuário: a borda cinza que fica atrás da imagem deve ter **um tamanho padrão**, que contemple todos os tipos de imagem
+sem ficar mudando de tamanho. **Isto reverte, na tela do item, "A imagem inteira não tem fundo nas laterais" (08/10/2026)**, em
+que a caixa tinha a forma exata de cada foto: agora o cinza **volta a aparecer** nas laterais (foto em pé) ou em cima e embaixo
+(deitada ou panorâmica), por escolha dele.
+
+- **Moldura quadrada** (`Miniatura`, prop `moldura`, só com `tamanho="inteira"`): `aspect-square` com largura
+  `min(100%, 46dvh)`, centrada, cantos redondos, fundo `bg-realce`. A imagem entra inteira (`object-contain`), centrada, sem recorte.
+  Quadrada é o meio-termo entre foto em pé e deitada: nenhuma das duas fica pequena demais.
+- **O `46dvh` é o que mantém a tela sem rolar** em celular baixo: a moldura é de 380 px em 412×892, 314 em 390×844, 284 em 360×640
+  e 244 em 320×568 — sempre a mesma para qualquer imagem **naquele aparelho**, e o resto da tela ("Combina com", título) não se mexe.
+- **Só a tela do item** (`pages/Anexo.tsx`). Não mudaram, porque cada uma tem um motivo: a **grade da pasta** (já era fixa, 4:3
+  recortada), os **formulários de novo item e de editar** (a prévia é pequena de propósito para o formulário caber sem rolar, e
+  ali a caixa ainda tem a forma da imagem) e a **imagem do resultado** de uma ideia feita (`ImagemDoResultado`). Se quiser a
+  moldura também em algum deles, é pedir; o formulário vai precisar de uma moldura menor.
+- **Verificado** no Chrome (build de produção, Padrão escuro e Clássico): quatro imagens (deitada 3:2, em pé 2:3, quadrada e
+  panorâmica 3:1) com a moldura no **mesmo x, y e tamanho** e o "Combina com" no mesmo lugar; sem rolagem em 320×568, 360×640 e
+  390×844. Tipos, lint e 818 testes limpos. **Não verificado em toque real.**
+
 ## Fases
 
 0. ✅ Esqueleto (Vite/React/TS/Tailwind/PWA/Capacitor)
@@ -6669,3 +6689,4 @@ mantinha o nome da pasta na barra (Clássico) e como etiqueta sob a barra (Padr�
 41. ✅ A barra de soltura: sempre à mostra, do tamanho do livro na mão, vermelha quando recusa (15/10/2026)
 42. ✅ A pasta de acervo e o item seguem o layout do livro comum e do pensamento: título na barra, linha de contagem, título grande no item (15/10/2026)
 43. ✅ O item da pasta mostra só a legenda, em fonte menor, sem o nome do livro (15/10/2026)
+44. ✅ A imagem do item numa moldura quadrada de tamanho fixo (15/10/2026)

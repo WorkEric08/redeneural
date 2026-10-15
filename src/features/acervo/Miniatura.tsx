@@ -19,6 +19,12 @@ interface Props {
    * `18rem`). A caixa encolhe na largura junto, para ser sempre só a imagem.
    */
   alturaMaxima?: string
+  /**
+   * Só com `tamanho="inteira"`: a imagem vai numa **moldura de tamanho fixo** (quadrada), e não numa
+   * caixa com a forma dela. A moldura é a mesma para foto em pé, deitada ou quadrada — a imagem
+   * aparece inteira, centrada, e o fundo cinza da moldura preenche o que sobra.
+   */
+  moldura?: boolean
 }
 
 /**
@@ -31,16 +37,18 @@ export function Miniatura({
   className = '',
   compacta = false,
   alturaMaxima = '70dvh',
+  moldura = false,
 }: Props) {
   // Inteira, a caixa já nasce com a forma da imagem: reserva o espaço antes de os bytes
   // chegarem, nada pula quando ela aparece, e o fundo da caixa nunca sobra nas laterais.
   const inteira = tamanho === 'inteira' && anexo.midia.tipo === 'imagem'
+  const naMoldura = inteira && moldura
 
   return (
     <span
-      className={`bg-realce text-poeira relative block overflow-hidden ${inteira ? 'mx-auto' : ''} ${className}`}
+      className={`bg-realce text-poeira relative block overflow-hidden ${inteira ? 'mx-auto' : ''} ${naMoldura ? 'aspect-square w-[min(100%,46dvh)]' : ''} ${className}`}
       style={
-        anexo.midia.tipo === 'imagem' && inteira
+        anexo.midia.tipo === 'imagem' && inteira && !naMoldura
           ? caixaDaImagem(anexo.midia.largura, anexo.midia.altura, alturaMaxima)
           : undefined
       }

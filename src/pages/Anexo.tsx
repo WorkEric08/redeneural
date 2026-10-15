@@ -185,12 +185,7 @@ export default function Anexo() {
               }}
               className="block w-full cursor-zoom-in"
             >
-              <Miniatura
-                anexo={anexo}
-                tamanho="inteira"
-                alturaMaxima="70dvh"
-                className="rounded-2xl"
-              />
+              <Miniatura anexo={anexo} tamanho="inteira" moldura className="rounded-2xl" />
             </button>
           ) : (
             <div className="cartao flex flex-col">
