@@ -101,19 +101,32 @@ export function Formulario({
   // escolhido é executável — escolher um pela etiqueta também o liga.
   const executando = livro?.executavel === true
 
+  /**
+   * A busca da URL com o painel de livros aberto (`valor`) ou fechado (`null`), sem perder o resto —
+   * em especial o `?livro=` de quem chegou aqui de dentro de um livro: a tela de escrever (Novo.tsx)
+   * lê o livro sugerido dele, e sem ele o formulário voltava a "Automático".
+   */
+  function buscaComPainel(valor: string | null): { search: string } {
+    const proxima = new URLSearchParams(busca)
+    if (valor === null) proxima.delete('livros')
+    else proxima.set('livros', valor)
+    const resto = proxima.toString()
+    return { search: resto ? `?${resto}` : '' }
+  }
+
   function abrirEscolhaDeLivro(): void {
-    void navegar({ search: '?livros=1' })
+    void navegar(buscaComPainel('1'))
   }
 
   function alternarExecutar(): void {
     if (executando) setLivroId(null)
     else if (executaveis.length === 1) setLivroId(executaveis[0]?.id ?? null)
-    else void navegar({ search: '?livros=executar' })
+    else void navegar(buscaComPainel('executar'))
   }
 
   function fecharEscolhaDeLivro(): void {
     // O React Router chama de 'default' a primeira entrada da sessão.
-    if (key === 'default') void navegar({ search: '' }, { replace: true })
+    if (key === 'default') void navegar(buscaComPainel(null), { replace: true })
     else void navegar(-1)
   }
 

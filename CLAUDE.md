@@ -6838,6 +6838,22 @@ Pedido do usuário: organizar melhor o espaçamento do cartão que mostra livros
 - **A altura do cartão não mudou** (36, 40 e 48 px, como antes), então Ajustes segue cabendo sem rolar em 320×568, 360×640,
   390×844, 412×892, 768×1024, 1024×768 e 1440×900, nos dois Padrões e no Clássico. Só CSS, sem teste novo.
 
+## A escolha de livro não perde o livro do `?livro=` (15/10/2026)
+
+Bug relatado pelo usuário: na tela de escrever, aberta de dentro de um livro, tocar no filtro com o nome do livro abria a
+folha sem ele marcado. **Era um defeito meu, da mudança de horas antes** ("Escrever dentro de um livro começa nesse livro"):
+abrir a folha navegava para `?livros=1` e **apagava o `?livro=<id>` da URL**; `Novo.tsx` lê o livro sugerido dele, a `key` do
+formulário (posta para refazê-lo quando a rede carrega) passava de `<id>` para `automatico`, e o formulário **se refazia em
+"Automático"** — o livro sumia do filtro e **o título e o texto já digitados eram apagados**. Antes da `key` o estado
+sobrevivia; a `key` expôs o que a navegação já fazia de errado.
+
+- **Correção na raiz** (`Formulario.tsx`): abrir e fechar a folha de livros (e a de executáveis) mexem só no parâmetro
+  `livros`, preservando o resto da busca (`buscaComPainel`). O `?livro=` fica, a `key` não muda e nada é refeito.
+- **Verificado** no Chrome (build de produção, 412×892): pelo "+" de dentro do livro, a folha abre com o livro marcado
+  (`Check`), o título digitado continua lá, escolher outro livro troca o filtro sem apagar o título, e reabrir marca o novo;
+  abrindo `/novo?livro=` direto e fechando pelo voltar o filtro segue no livro; sem livro sugerido, "Automático" vem marcado;
+  livro executável abre marcado. 852 testes: o novo `Formulario.test.tsx` (3 casos) falha se a URL perder o `?livro=`.
+
 ## Fases
 
 0. ✅ Esqueleto (Vite/React/TS/Tailwind/PWA/Capacitor)
@@ -6913,3 +6929,4 @@ Pedido do usuário: organizar melhor o espaçamento do cartão que mostra livros
 50. ✅ Backup volta: salvar e restaurar a cópia pela linha "Backup" de Ajustes, com "Salvo há N dias" (15/10/2026)
 51. ✅ Escrever dentro de um livro começa nele, e o "Quero executar isso" fica sempre à direita do livro (15/10/2026)
 52. ✅ Ajustes: os números de livros, pensamentos e conexões com espaçamento por conteúdo (15/10/2026)
+53. ✅ A escolha de livro da tela de escrever não perde o livro sugerido nem o texto digitado (15/10/2026)
