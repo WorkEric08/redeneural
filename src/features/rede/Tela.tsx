@@ -72,6 +72,8 @@ const DURACAO_DA_REVELACAO = 850
 const ESCALA_MAXIMA_DA_REVELACAO = 3.2
 /** Tocar num pensamento leva a câmera até ele e às conexões dele: curto, para ser resposta ao toque. */
 const DURACAO_DO_FOCO = 520
+/** O zoom out do botão Enquadrar: o mesmo tempo de aproximar e voltar no Mapa. */
+const DURACAO_DO_ZOOM_OUT = 450
 /** O que o cartão do pensamento tocado cobre do pé da tela (o do Padrão tem mais linhas), com o respiro. */
 const ALTURA_DO_CARTAO = 176
 const ALTURA_DO_CARTAO_PADRAO = 270
@@ -466,7 +468,34 @@ export function Tela({
     [pintar, folgas, animarCamera, onSelecionar],
   )
 
-  useImperativeHandle(controle, () => ({ enquadrar, focar, revelar }), [enquadrar, focar, revelar])
+  /**
+   * "Enquadrar": o zoom out. Volta à visão da rede inteira deslizando, como o Mapa (450 ms,
+   * o mesmo \`animarCamera\`). O \`enquadrar\` instantâneo é só da abertura, onde não há câmera de onde sair.
+   */
+  const voltarAoInicio = useCallback(() => {
+    const canvas = canvasRef.current
+    if (!canvas) return
+    const alvo = camaraParaEnquadrar(
+      [...cenaRef.current.posicoes.values()],
+      canvas.clientWidth,
+      canvas.clientHeight,
+      folgas,
+      ESCALA_MINIMA,
+      ESCALA_MAXIMA,
+    )
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      camera.current = alvo
+      pintar()
+      return
+    }
+    animarCamera(alvo, DURACAO_DO_ZOOM_OUT, revelacaoEmAndamento)
+  }, [pintar, folgas, animarCamera])
+
+  useImperativeHandle(controle, () => ({ enquadrar: voltarAoInicio, focar, revelar }), [
+    voltarAoInicio,
+    focar,
+    revelar,
+  ])
 
   /**
    * Um efeito só, e nesta ordem: a cena vai para o ref **antes** de enquadrar.
@@ -526,9 +555,9 @@ export function Tela({
   }, [pintar])
 
   /**
-   * Tocou num pensamento: a câmera desliza até enquadrar ele **e** os vizinhos de um salto, para o
-   * foco caber de uma vez com os fios e os nomes. Sem vizinho, só centraliza, sem mudar o zoom. No
-   * duplo toque o zoom é o de `focar` (perto, só nele). Nunca mexe no que já está selecionado.
+   * Tocou num pensamento: a câmera desliza até centralizar ele **e** os vizinhos de um salto (o meio do
+   * grupo, na área livre da tela). **Não aproxima**: o zoom fica como está, e só diminui se o grupo
+   * não coubesse nele. No duplo toque o zoom é o de `focar` (perto, só nele).
    */
   function focarTocado(id: Id, duplo: boolean): void {
     const canvas = canvasRef.current
@@ -548,23 +577,38 @@ export function Tela({
       ...folgas,
       base: Math.max(folgas.base, Math.min(cartao, canvas.clientHeight * 0.4)),
     }
-    const centrado = (escala: number): Camera => ({
+    const centradoEm = (ponto: Ponto, escala: number): Camera => ({
       escala,
-      x: -p.x * escala,
-      y: -p.y * escala + (livres.topo - livres.base) / 2,
+      x: -ponto.x * escala,
+      y: -ponto.y * escala + (livres.topo - livres.base) / 2,
     })
+    // O meio do grupo (a caixa que o contém), onde a câmera vai parar.
+    const xs = pontos.map((pt) => pt.x)
+    const ys = pontos.map((pt) => pt.y)
+    const meio: Ponto =
+      pontos.length > 1
+        ? {
+            x: (Math.min(...xs) + Math.max(...xs)) / 2,
+            y: (Math.min(...ys) + Math.max(...ys)) / 2,
+          }
+        : p
+    // Só centraliza: o zoom fica como está, e só diminui se o grupo não coubesse nele.
+    const escalaQueCabe = camaraParaEnquadrar(
+      pontos,
+      canvas.clientWidth,
+      canvas.clientHeight,
+      livres,
+      ESCALA_MINIMA,
+      ESCALA_MAXIMA,
+    ).escala
     const alvo: Camera = duplo
-      ? centrado(Math.min(Math.max(camera.current.escala, ESCALA_DE_FOCO), ESCALA_MAXIMA))
-      : pontos.length > 1
-        ? camaraParaEnquadrar(
-            pontos,
-            canvas.clientWidth,
-            canvas.clientHeight,
-            livres,
-            ESCALA_MINIMA,
-            ESCALA_MAXIMA_DA_REVELACAO,
-          )
-        : centrado(camera.current.escala)
+      ? centradoEm(p, Math.min(Math.max(camera.current.escala, ESCALA_DE_FOCO), ESCALA_MAXIMA))
+      : centradoEm(
+          meio,
+          pontos.length > 1
+            ? Math.min(camera.current.escala, escalaQueCabe)
+            : camera.current.escala,
+        )
 
     if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
       camera.current = alvo

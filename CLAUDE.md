@@ -6727,6 +6727,27 @@ pontos — para dar foco nele e nas conexões.
   do foco não ganham nome, e tocar o vazio não move a câmera. Visto também num caso em que o pensamento tocado era um vizinho
   com 1 conexão. Tipos e lint limpos. **Não verificado em toque real.**
 
+## Zoom out animado na Rede, e o foco só centraliza (15/10/2026)
+
+Pedido do usuário: um zoom out no modo Rede **como o do Mapa**, e, na animação de foco ao tocar um pensamento, **não
+aproximar tanto — só centralizar melhor** nos pensamentos. **Isto revisa** o enquadramento da seção anterior ("Tocar um
+pensamento na Rede leva a câmera ao foco…"), que aproximava até 3,2×.
+
+- **Zoom out** (`voltarAoInicio`, `Tela.tsx`): o botão **Enquadrar** da Rede deixou de saltar para a rede inteira e
+  **desliza** até ela (450 ms, o mesmo tempo e o mesmo `animarCamera` do Mapa; movimento reduzido vai direto). O
+  `enquadrar` instantâneo ficou só para a abertura e para quando a rede muda de forma, onde não há câmera de onde sair.
+  Li "zoom out como no Mapa" como esse botão animado, que é o jeito do Mapa de voltar à visão geral; a roda e a pinça já
+  afastavam nos dois modos (agora a roda também desliza, ver "Zoom que desliza…"). Se era outro gesto (por exemplo, tocar o
+  vazio para afastar), é pedir.
+- **O foco só centraliza** (`focarTocado`): ao tocar um pensamento a câmera vai ao **meio do grupo** (ele e os vizinhos), na
+  área livre da tela (descontados a barra e o cartão do tocado), **mantendo o zoom que a pessoa já tinha**. Só diminui, e só o
+  necessário, quando o grupo não coubesse nele. Nunca aproxima. Os nomes de todos os vizinhos seguem sempre à mostra.
+  O duplo toque continua aproximando só no pensamento.
+- **Verificado** no Chrome (build de produção, Clássico e Padrão escuro; 320×568, 412×892, 1024×768 e 1440×900): depois de
+  aproximar com a roda, tocar o hub não aumenta o zoom (o espalhamento dos pontos fica igual ou menor), os 5 vizinhos têm
+  nome, e o botão Enquadrar anima (o meio da animação fica entre o começo e o fim) terminando com a rede dentro da tela.
+  Tipos, lint e 833 testes limpos. **Não verificado em toque real.**
+
 ## Fases
 
 0. ✅ Esqueleto (Vite/React/TS/Tailwind/PWA/Capacitor)
@@ -6798,3 +6819,4 @@ pontos — para dar foco nele e nas conexões.
 46. ✅ Título e legenda nos itens da pasta: título sobre a imagem no cartão, legenda com o texto do pensamento (15/10/2026)
 47. ✅ Zoom que desliza na Rede e no Mapa, e todos os títulos dos pensamentos à mostra no Mapa de perto (15/10/2026)
 48. ✅ Tocar um pensamento na Rede leva a câmera ao foco (ele e os vizinhos) e mostra todos os nomes da vizinhança (15/10/2026)
+49. ✅ Zoom out animado na Rede (Enquadrar) e foco que só centraliza, sem aproximar (15/10/2026)
