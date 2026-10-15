@@ -5,7 +5,13 @@ import { Link } from 'react-router-dom'
 import { BarraDeTopo } from '@/components/BarraDeTopo'
 import { botao } from '@/components/botao'
 import { EtiquetaProcessando } from '@/components/EtiquetaProcessando'
-import { restantesNaPasta, type AnexoNaTela, type Livro, type TipoDeItem } from '@/core'
+import {
+  nomeDoAnexo,
+  restantesNaPasta,
+  type AnexoNaTela,
+  type Livro,
+  type TipoDeItem,
+} from '@/core'
 import { useSegurar } from '@/hooks/useSegurar'
 import { useTemaPadrao } from '@/hooks/useTemaPadrao'
 import { contar } from '@/lib/plural'
@@ -213,6 +219,7 @@ function CartaoDaImagem({
   const situacao = situacaoDoAnexo(anexo, conceitos)
   const [primeiro] = conceitos
   const segurar = useSegurar(aoSegurar)
+  const nome = nomeDoAnexo(anexo)
 
   return (
     <Link
@@ -221,14 +228,19 @@ function CartaoDaImagem({
       {...segurar}
       className="pd-pasta-imagem cartao active:bg-realce hover:bg-realce/60 flex h-full flex-col transition-colors"
     >
-      <Miniatura anexo={anexo} className="aspect-[4/3] w-full" />
-      <span className="pd-pasta-legenda flex flex-1 flex-col gap-1.5 px-3 pt-2.5 pb-3">
-        {anexo.legenda ? (
-          <span className="line-clamp-2 text-sm leading-snug">{anexo.legenda}</span>
-        ) : (
-          <span className="text-poeira text-sm italic">Sem legenda</span>
+      <span className="relative block">
+        <Miniatura anexo={anexo} className="aspect-[4/3] w-full" />
+        {/* O título vem na frente da imagem, numa faixa escura no pé dela. */}
+        {nome !== '' && (
+          <span
+            className="pd-pasta-titulo absolute inset-x-0 bottom-0 line-clamp-2 px-3 pt-8 pb-2 text-sm leading-snug font-semibold text-white"
+            style={{ background: 'linear-gradient(to top, rgb(0 0 0 / 0.78), rgb(0 0 0 / 0))' }}
+          >
+            {nome}
+          </span>
         )}
-
+      </span>
+      <span className="pd-pasta-legenda flex flex-1 flex-col gap-1.5 px-3 pt-2.5 pb-3">
         <span className="text-poeira mt-auto text-xs leading-snug">
           {situacao === 'processando' && <EtiquetaProcessando />}
           {situacao === 'preso' && primeiro && (
@@ -268,10 +280,10 @@ function LinhaDoLink({
     >
       <Miniatura anexo={anexo} compacta className="size-12 shrink-0 rounded-xl" />
       <span className="flex min-w-0 flex-1 flex-col gap-0.5">
-        {anexo.legenda ? (
-          <span className="line-clamp-1 text-sm leading-snug">{anexo.legenda}</span>
+        {nomeDoAnexo(anexo) ? (
+          <span className="line-clamp-1 text-sm leading-snug">{nomeDoAnexo(anexo)}</span>
         ) : (
-          <span className="text-poeira text-sm italic">Sem legenda</span>
+          <span className="text-poeira text-sm italic">Sem título</span>
         )}
         <span className="text-poeira truncate text-xs leading-snug">
           {dominio}

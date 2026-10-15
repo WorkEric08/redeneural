@@ -168,6 +168,7 @@ export function anexoToSnapshot(a: Anexo, arquivo: ArquivoDoAnexo | undefined): 
   return {
     id: a.id,
     livroId: a.livroId,
+    titulo: a.titulo,
     legenda: a.legenda,
     midia: a.midia,
     embedding: a.embedding ? embeddingToBase64(a.embedding) : null,
@@ -190,6 +191,7 @@ export function anexoFromSnapshot(s: AnexoSnapshot): {
     anexo: {
       id: s.id,
       livroId: s.livroId,
+      titulo: s.titulo,
       legenda: s.legenda,
       midia: s.midia,
       embedding: s.embedding === null ? null : base64ToEmbedding(s.embedding),

@@ -5,7 +5,7 @@ import { Link } from 'react-router-dom'
 import { botao } from '@/components/botao'
 import { Confirmacao } from '@/components/Confirmacao'
 import { Folha } from '@/components/Folha'
-import type { AnexoNaTela } from '@/core'
+import { nomeDoAnexo, type AnexoNaTela } from '@/core'
 
 import { dominioDe } from './links'
 import { Miniatura } from './Miniatura'
@@ -20,10 +20,11 @@ interface Props {
   onApagar: (anexoId: string) => Promise<boolean>
 }
 
-/** O nome do item como a pessoa o reconhece: a legenda, ou o que ele é. */
+/** O nome do item como a pessoa o reconhece: o título, a legenda, ou o que ele é. */
 function nomeDoItem(anexo: AnexoNaTela): string {
-  if (anexo.legenda.trim() !== '') return anexo.legenda.trim()
-  return anexo.midia.tipo === 'link' ? dominioDe(anexo.midia.url) : 'Imagem sem legenda'
+  const nome = nomeDoAnexo(anexo)
+  if (nome !== '') return nome
+  return anexo.midia.tipo === 'link' ? dominioDe(anexo.midia.url) : 'Imagem sem título'
 }
 
 /**

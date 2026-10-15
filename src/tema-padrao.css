@@ -2278,6 +2278,30 @@ html:root[data-tema^='padrao'] .pd-form-anexo textarea {
   flex: none;
 }
 
+/* Em tela baixa (a altura encolhe com o teclado também) o título e a legenda cedem espaço para o
+   formulário caber sem rolar: os rótulos somem — o campo tem `aria-label` e placeholder —, o título
+   fica de 44 px e a legenda de 64 px em telas de até 600 px. É o que o formulário de livro faz com "Nome". */
+@media (max-height: 700px) {
+  html:root[data-tema^='padrao'] .pd-form-anexo {
+    gap: 10px;
+  }
+
+  html:root[data-tema^='padrao'] .pd-form-anexo .rotulo-que-cede {
+    display: none;
+  }
+
+  html:root[data-tema^='padrao'] .pd-form-anexo input.campo {
+    height: 44px;
+  }
+}
+
+@media (max-height: 600px) {
+  html:root[data-tema^='padrao'] .pd-form-anexo textarea {
+    height: 64px;
+    min-height: 64px;
+  }
+}
+
 /* O nome da imagem e as setas: no pé, na altura de 96 px, como nas pranchas. */
 .visor-legenda {
   display: none;

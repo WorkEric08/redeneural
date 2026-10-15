@@ -42,13 +42,26 @@ describe('FormularioDeAnexo: o tipo vem do "+" da pasta', () => {
     expect(screen.getByRole('button', { name: 'Link' })).toBeEnabled()
   })
 
+  it('guarda um link com o título e a legenda', async () => {
+    const onCriar = montar({ tipoInicial: 'link' })
+    await userEvent.type(screen.getByPlaceholderText('https://…'), 'https://exemplo.com/a')
+    await userEvent.type(screen.getByRole('textbox', { name: 'Título' }), '  Refatoração ')
+    await userEvent.type(screen.getByRole('textbox', { name: 'Legenda' }), 'Um artigo')
+    await userEvent.click(screen.getByRole('button', { name: 'Guardar na pasta' }))
+
+    expect(onCriar).toHaveBeenCalledWith('Refatoração', 'Um artigo', {
+      tipo: 'link',
+      url: 'https://exemplo.com/a',
+    })
+  })
+
   it('guarda um link com a legenda', async () => {
     const onCriar = montar({ tipoInicial: 'link' })
     await userEvent.type(screen.getByPlaceholderText('https://…'), 'https://exemplo.com/a')
     await userEvent.type(screen.getByRole('textbox', { name: 'Legenda' }), 'Um artigo')
     await userEvent.click(screen.getByRole('button', { name: 'Guardar na pasta' }))
 
-    expect(onCriar).toHaveBeenCalledWith('Um artigo', {
+    expect(onCriar).toHaveBeenCalledWith('', 'Um artigo', {
       tipo: 'link',
       url: 'https://exemplo.com/a',
     })
@@ -60,6 +73,7 @@ describe('FormularioDeAnexo: trocar um item da pasta', () => {
   const imagem: AnexoNaTela = {
     id: 'a1',
     livroId: 'p',
+    titulo: '',
     legenda: 'Uma foto',
     midia: { tipo: 'imagem', mime: 'image/webp', largura: 40, altura: 20 },
     processando: false,
@@ -79,7 +93,7 @@ describe('FormularioDeAnexo: trocar um item da pasta', () => {
 
     expect(screen.getByRole('button', { name: 'Trocar imagem' })).toBeInTheDocument()
     await userEvent.click(screen.getByRole('button', { name: 'Salvar' }))
-    expect(onSalvar).toHaveBeenCalledWith('Uma foto', undefined, undefined)
+    expect(onSalvar).toHaveBeenCalledWith('', 'Uma foto', undefined, undefined)
   })
 
   it('um link se troca pelo endereço: vem preenchido e o tipo não muda', async () => {
@@ -93,6 +107,6 @@ describe('FormularioDeAnexo: trocar um item da pasta', () => {
     await userEvent.clear(campo)
     await userEvent.type(campo, 'https://exemplo.com/b')
     await userEvent.click(screen.getByRole('button', { name: 'Salvar' }))
-    expect(onSalvar).toHaveBeenCalledWith('Um artigo', 'https://exemplo.com/b', undefined)
+    expect(onSalvar).toHaveBeenCalledWith('', 'Um artigo', 'https://exemplo.com/b', undefined)
   })
 })

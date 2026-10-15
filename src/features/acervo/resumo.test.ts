@@ -30,6 +30,7 @@ function anexo(legenda: string, processando = false): AnexoNaTela {
   return {
     id: 'a1',
     livroId: 'p1',
+    titulo: '',
     legenda,
     midia: { tipo: 'link', url: 'https://exemplo.com' },
     processando,

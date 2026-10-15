@@ -15,6 +15,7 @@ import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-do
 import { BarraDeTopo } from '@/components/BarraDeTopo'
 import { botao } from '@/components/botao'
 import { Folha } from '@/components/Folha'
+import { nomeDoAnexo } from '@/core'
 import { Interruptor } from '@/components/Interruptor'
 import { OpcoesDoMapa } from '@/features/mapa/OpcoesDoMapa'
 import { marcasDoAndamento } from '@/features/executaveis/andamento'
@@ -358,7 +359,7 @@ export default function Rede() {
         <div className="pd-cartao-rede">
           <div className="pd-cartao-rede-topo">
             <div className="pd-cartao-rede-titulo texto-do-usuario">
-              {anexoEscolhido.legenda || 'Sem legenda'}
+              {nomeDoAnexo(anexoEscolhido) || 'Sem título'}
             </div>
             <div className="pd-pilula">
               <span
@@ -391,7 +392,7 @@ export default function Rede() {
             aria-hidden
           />
           <div className="min-w-0 flex-1">
-            <p className="font-titulo truncate font-semibold">{anexoEscolhido.legenda}</p>
+            <p className="font-titulo truncate font-semibold">{nomeDoAnexo(anexoEscolhido)}</p>
             <p className="text-poeira truncate text-xs">
               {pastaDoEscolhido?.titulo} ·{' '}
               {anexoEscolhido.midia.tipo === 'imagem' ? 'imagem' : 'link'}

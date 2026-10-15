@@ -8,10 +8,11 @@ import { botao } from '@/components/botao'
 import { Confirmacao } from '@/components/Confirmacao'
 import { EtiquetaProcessando } from '@/components/EtiquetaProcessando'
 import { Folha } from '@/components/Folha'
-import type { AnexoNaTela } from '@/core'
+import { nomeDoAnexo, type AnexoNaTela } from '@/core'
 import { dominioDe, miniaturaDoLink } from '@/features/acervo/links'
 import { VisorDeImagens } from '@/components/VisorDeImagens'
 import { Miniatura } from '@/features/acervo/Miniatura'
+import { TextoComLinks } from '@/features/neuronio/TextoComLinks'
 import { useVisorNaUrl } from '@/hooks/useVisorNaUrl'
 import { conceitosPorAnexo, situacaoDoAnexo } from '@/features/acervo/resumo'
 import { ROTULO_DO_PORTO } from '@/features/porto/porto'
@@ -23,9 +24,9 @@ interface EstadoDaConfirmacao {
 }
 
 const EXPLICACAO: Record<'sem-legenda' | 'solto', string> = {
-  'sem-legenda': 'Sem legenda, este item fica só na pasta — não aparece na Rede.',
+  'sem-legenda': 'Sem título nem legenda, este item fica só na pasta — não aparece na Rede.',
   solto:
-    'Nada na rede se parece com a legenda ainda. Fica só na pasta até aparecer um conceito parecido.',
+    'Nada na rede se parece com este item ainda. Fica só na pasta até aparecer um conceito parecido.',
 }
 
 /**
@@ -166,12 +167,12 @@ export default function Anexo() {
         }
       >
         {padrao ? (
-          <h1 className="pd-neuronio-h1 texto-do-usuario">{anexo.legenda || 'Sem legenda'}</h1>
+          <h1 className="pd-neuronio-h1 texto-do-usuario">{anexo.titulo.trim() || 'Sem título'}</h1>
         ) : (
           // O mesmo cabeçalho da tela do pensamento: o título grande no alto, antes do conteúdo.
           <header className="flex flex-col items-start gap-2.5 px-1">
             <h1 className="texto-do-usuario font-titulo text-[1.25rem] leading-snug font-semibold tracking-tight text-balance">
-              {anexo.legenda || 'Sem legenda'}
+              {anexo.titulo.trim() || 'Sem título'}
             </h1>
           </header>
         )}
@@ -209,6 +210,19 @@ export default function Anexo() {
                 </a>
               </div>
             </div>
+          )}
+
+          {/* A legenda é o texto do item: o mesmo tamanho, a mesma fonte e a mesma quebra de linha do
+              texto de um pensamento — e, como lá, os endereços viram link. */}
+          {anexo.legenda.trim() !== '' && (
+            <TextoComLinks
+              texto={anexo.legenda}
+              className={
+                padrao
+                  ? 'pd-neuronio-conteudo texto-do-usuario whitespace-pre-wrap'
+                  : 'texto-do-usuario px-1 text-[1.03rem] leading-[1.7] whitespace-pre-wrap'
+              }
+            />
           )}
 
           <section>
@@ -275,7 +289,7 @@ export default function Anexo() {
           aberto={visor.aberto}
           imagens={imagensDaPasta.flatMap((a) =>
             a.midia.tipo === 'imagem'
-              ? [{ id: a.id, mime: a.midia.mime, rotulo: a.legenda.trim() || 'Imagem sem legenda' }]
+              ? [{ id: a.id, mime: a.midia.mime, rotulo: nomeDoAnexo(a) || 'Imagem sem título' }]
               : [],
           )}
           indice={visor.indice}

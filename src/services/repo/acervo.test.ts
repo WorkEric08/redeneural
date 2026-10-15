@@ -88,6 +88,7 @@ function anexo(id: string, livroId: string, criadoEm = T0): Anexo {
   return {
     id,
     livroId,
+    titulo: '',
     legenda: `sobre ${id}`,
     midia: { tipo: 'link', url: `https://exemplo.com/${id}` },
     embedding: null,
@@ -275,6 +276,69 @@ describe('acervo no repositório', () => {
 
     const destino = createDexieRepo(createDb(`palacio-acervo-quebrado-${String(nth)}`))
     await expect(destino.importAll(quebrado)).rejects.toThrow(/anexo a1/)
+  })
+})
+
+describe('títulos dos itens', () => {
+  beforeEach(async () => {
+    await repo.upsertLivro(livro('p1', 5, 'acervo'))
+  })
+
+  it('o título é gravado e vai e volta no backup', async () => {
+    await repo.upsertAnexo({ ...anexo('t1', 'p1'), titulo: 'Memória de trabalho' })
+    expect((await repo.getAnexo('t1'))?.titulo).toBe('Memória de trabalho')
+
+    const snapshot = await repo.exportAll()
+    const destino = createDexieRepo(createDb(`palacio-titulo-destino-${String(nth)}`))
+    await destino.importAll(snapshot)
+    expect((await destino.getAnexo('t1'))?.titulo).toBe('Memória de trabalho')
+  })
+
+  it('backup de antes dos títulos entra com o item sem título', async () => {
+    await repo.upsertAnexo(anexo('t2', 'p1'))
+    const snapshot = await repo.exportAll()
+    const semTitulo = {
+      ...snapshot,
+      anexos: snapshot.anexos?.map((a) => ({ ...a, titulo: undefined })),
+    }
+
+    const destino = createDexieRepo(createDb(`palacio-titulo-antigo-${String(nth)}`))
+    await destino.importAll(semTitulo as typeof snapshot)
+    expect((await destino.getAnexo('t2'))?.titulo).toBe('')
+  })
+
+  it('migração para a v19: o item de antes fica sem título e o resto não muda', async () => {
+    const nome = `palacio-migracao-v19-${String(nth)}`
+    const antigo = new Dexie(nome)
+    antigo.version(1).stores({
+      livros: 'id, createdAt',
+      neuronios: 'id, livroId, updatedAt',
+      conexoes: 'id, aId, bId, updatedAt',
+    })
+    antigo.version(2).stores({ meta: 'chave' })
+    antigo.version(3).stores({ livros: 'id, createdAt, ordem' })
+    antigo.version(4).stores({ livros: 'id, createdAt, ordem, prateleira' })
+    antigo.version(5).stores({ etiquetas: 'prateleira' })
+    antigo.version(6).stores({})
+    antigo.version(7).stores({})
+    antigo.version(8).stores({})
+    antigo.version(9).stores({ vagas: '[prateleira+ordem], prateleira' })
+    antigo.version(10).stores({
+      anexos: 'id, livroId, updatedAt',
+      arquivos: 'anexoId',
+      vinculos: 'id, anexoId, conceitoId',
+    })
+    const semTitulo: Record<string, unknown> = { ...anexo('velho', 'p1') }
+    delete semTitulo['titulo']
+    await antigo.table('anexos').put(semTitulo)
+    antigo.close()
+
+    const migrado = createDexieRepo(createDb(nome))
+    expect(await migrado.getAnexo('velho')).toMatchObject({
+      titulo: '',
+      legenda: 'sobre velho',
+      livroId: 'p1',
+    })
   })
 })
 

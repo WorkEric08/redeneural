@@ -363,7 +363,7 @@ conexoes:   { id, aId, bId, score, emb, rr, cross, mantidaPorA, mantidaPorB, upd
 vagas:      { prateleira, ordem }
 enfeites:   { prateleira, ordem, cor, estilo, larguraLombada, comprimentoLombada, dourado, detalheEscuro }
 resultados: { neuronioId, imagem: Uint8Array, miniatura: Uint8Array }
-anexos:     { id, livroId, legenda, midia, embedding: Float32Array | null, createdAt, updatedAt }
+anexos:     { id, livroId, titulo, legenda, midia, embedding: Float32Array | null, createdAt, updatedAt }
 arquivos:   { anexoId, imagem: Uint8Array, miniatura: Uint8Array }
 vinculos:   { id: 'anexoId::conceitoId', anexoId, conceitoId, score, updatedAt }
 ```
@@ -6644,6 +6644,33 @@ layout…" — eu tinha deixado a lupa da pasta global porque a pasta não tem p
   pensamento de fora) não aparecem na local; a global continua achando livros de fora; tocar num resultado abre o item; sem
   rolagem lateral em 320 px. Tipos, lint e 823 testes limpos. **Não verificado em toque real.**
 
+## Título e legenda nos itens da pasta (15/10/2026)
+
+Pedido do usuário: na pasta (o livro do tipo anexos), o item ganha um **título**, que aparece **na frente** do item quando se abre a
+pasta, e a **legenda** passa a ter o mesmo tamanho e a mesma fonte do texto dos pensamentos. Respostas dele: o título aparece
+**sobre a imagem, no cartão**; a legenda vale **na tela do item** (não no cartão); o título vale para **imagens e links**.
+
+- **O dado:** `Anexo.titulo` (até 200 letras, pode ser vazio), ao lado de `legenda`. **Dexie v19** põe `titulo: ''` nos itens de
+  antes (sem índice novo); o backup leva o título e um backup de antes dos títulos importa o item sem título. `textoDoAnexo`
+  (`core/domain/anexo.ts`) é o que o motor lê — o título e a legenda juntos, "título. legenda", como o pensamento lê
+  "título. conteúdo" —, e `nomeDoAnexo` é o nome que a pessoa vê (o título, ou, num item de antes, a legenda). Sem título nem
+  legenda o item continua **só na pasta**, sem fio nenhum; mudar o título refaz o vetor e os vínculos.
+- **O formulário** (`FormularioDeAnexo`, novo e editar) ganhou o campo **Título**, acima da legenda, nos dois tipos. Cabe sem
+  rolar de 320×568 a 412×892, nos dois temas, imagem e link: em tela baixa o título é de 44 px e, no Padrão, os rótulos "Título" e
+  "Legenda" somem (os campos têm `aria-label`, como o "Nome" do formulário de livro), com a legenda de 64 px em telas de até 600 px.
+- **O cartão da imagem** na pasta mostra o título **sobre a foto**, numa faixa escura em degradê no pé dela (até 2 linhas). A
+  legenda **saiu do cartão**: embaixo fica só a situação ("com Recursão", "fica só na pasta", "processando"). A **linha do link**
+  mostra o título no lugar da legenda. Um item de antes, sem título, mostra a **legenda como nome** — nada fica sem nome.
+- **A tela do item:** o título é o título da tela (20 px no Clássico, 22 no Padrão, como já era); a **legenda vira o texto**, abaixo da
+  imagem ou do link, **igual ao texto de um pensamento** — medido: mesma fonte, mesmo tamanho (16,48 px no Clássico, 16 no
+  Padrão), mesma altura de linha e mesma quebra de linha, e os endereços viram link como lá. Sem título a tela diz "Sem título"
+  (um item de antes cai aqui, com a legenda no texto).
+- **O nome do item** (título, senão legenda) também vale na lista do espiar da pasta, no menu de segurar, no cartão da Rede, no visor e
+  na busca local da pasta, que agora **acha pelo título**, pela legenda e pelo endereço.
+- **Não verificado ponta a ponta:** criar ou editar um item **pela tela** passa pelo modelo de embedding (baixa 129 MB num perfil
+  novo), então o título gravado foi coberto por testes do repositório, do backup e da migração, e a exibição foi vista com itens
+  semeados. 832 testes (9 novos), tipos e lint limpos. **Não verificado em toque real.**
+
 ## Fases
 
 0. ✅ Esqueleto (Vite/React/TS/Tailwind/PWA/Capacitor)
@@ -6712,3 +6739,4 @@ layout…" — eu tinha deixado a lupa da pasta global porque a pasta não tem p
 43. ✅ O item da pasta mostra só a legenda, em fonte menor, sem o nome do livro (15/10/2026)
 44. ✅ A imagem do item numa moldura quadrada de tamanho fixo (15/10/2026)
 45. ✅ O Buscar local vale na pasta de acervo: procura só os itens dela (15/10/2026)
+46. ✅ Título e legenda nos itens da pasta: título sobre a imagem no cartão, legenda com o texto do pensamento (15/10/2026)

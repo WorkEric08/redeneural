@@ -140,10 +140,11 @@ describe('buscar — texto longo', () => {
 })
 
 describe('buscarAnexos', () => {
-  function anexo(id: string, legenda: string, url?: string): AnexoNaTela {
+  function anexo(id: string, legenda: string, url?: string, titulo = ''): AnexoNaTela {
     return {
       id,
       livroId: 'pasta',
+      titulo,
       legenda,
       midia:
         url === undefined
@@ -175,6 +176,14 @@ describe('buscarAnexos', () => {
   it('legenda bate antes de endereço', () => {
     const itens = [anexo('x', 'Outra coisa', 'https://site.com/recursao'), anexo('y', 'Recursão')]
     expect(buscarAnexos('recurs', itens).map((a) => a.id)).toEqual(['y', 'x'])
+  })
+
+  it('acha também pelo título, antes do endereço', () => {
+    const itens = [
+      anexo('x', 'Outra coisa', 'https://site.com/memoria'),
+      anexo('y', '', undefined, 'Memória'),
+    ]
+    expect(buscarAnexos('memoria', itens).map((a) => a.id)).toEqual(['y', 'x'])
   })
 
   it('não olha o endereço de uma imagem nem acha o que não bate', () => {

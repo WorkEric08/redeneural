@@ -152,6 +152,7 @@ const midiaSchema = z.discriminatedUnion('tipo', [
 export const anexoSchema = z.object({
   id,
   livroId: id,
+  titulo: z.string().max(200),
   legenda: z.string().max(2000),
   midia: midiaSchema,
   embedding: z.instanceof(Float32Array).nullable(),
@@ -273,6 +274,8 @@ export const snapshotSchema = z.object({
       z.object({
         id,
         livroId: id,
+        // Ausente em backup de antes dos títulos (15/10/2026): o item entra sem título.
+        titulo: z.string().optional().default(''),
         legenda: z.string(),
         midia: midiaSchema,
         embedding: base64.nullable(),

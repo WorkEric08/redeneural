@@ -24,13 +24,14 @@ type Props =
       /** Os tipos que já encheram a pasta (8 cada) — não dá para escolhê-los. */
       cheios?: readonly TipoDeItem[]
       ocupado: boolean
-      onCriar: (legenda: string, conteudo: NovoAnexo['conteudo']) => void
+      onCriar: (titulo: string, legenda: string, conteudo: NovoAnexo['conteudo']) => void
     }
   | {
       modo: 'editar'
       anexo: AnexoNaTela
       ocupado: boolean
       onSalvar: (
+        titulo: string,
         legenda: string,
         url: string | undefined,
         imagem: { bytes: Uint8Array; mime: string } | undefined,
@@ -40,7 +41,7 @@ type Props =
 type ImagemComPrevia = ImagemEscolhida & { previa: string }
 
 /**
- * Guardar um link ou uma imagem numa pasta, com a legenda que o motor lê.
+ * Guardar um link ou uma imagem numa pasta, com um título e uma legenda — o motor lê os dois.
  *
  * O mesmo formulário cria e edita, como o do livro. Editando, o tipo não muda; o
  * endereço de um link e a imagem (desde 07/10/2026, o "Trocar" do menu da pasta) sim.
@@ -60,6 +61,7 @@ export function FormularioDeAnexo(props: Props) {
   )
   const cheios = props.modo === 'novo' ? (props.cheios ?? []) : []
   const [url, setUrl] = useState(editando?.midia.tipo === 'link' ? editando.midia.url : '')
+  const [titulo, setTitulo] = useState(editando?.titulo ?? '')
   const [legenda, setLegenda] = useState(editando?.legenda ?? '')
   const [escolhida, setEscolhida] = useState<ImagemComPrevia | null>(null)
 
@@ -93,9 +95,11 @@ export function FormularioDeAnexo(props: Props) {
   function enviar(): void {
     if (!podeEnviar) return
     const texto = legenda.trim()
+    const nome = titulo.trim()
 
     if (props.modo === 'editar') {
       props.onSalvar(
+        nome,
         texto,
         tipo === 'link' ? url.trim() : undefined,
         tipo === 'imagem' && escolhida
@@ -103,9 +107,9 @@ export function FormularioDeAnexo(props: Props) {
           : undefined,
       )
     } else if (tipo === 'link') {
-      props.onCriar(texto, { tipo: 'link', url: url.trim() })
+      props.onCriar(nome, texto, { tipo: 'link', url: url.trim() })
     } else if (escolhida) {
-      props.onCriar(texto, { tipo: 'imagem', bytes: escolhida.bytes, mime: escolhida.mime })
+      props.onCriar(nome, texto, { tipo: 'imagem', bytes: escolhida.bytes, mime: escolhida.mime })
     }
   }
 
@@ -226,23 +230,41 @@ export function FormularioDeAnexo(props: Props) {
         </button>
       )}
 
+      <label className="flex flex-col">
+        <span className="rotulo-de-secao rotulo-que-cede">Título</span>
+        <input
+          aria-label="Título"
+          value={titulo}
+          onChange={(evento) => {
+            setTitulo(evento.target.value)
+          }}
+          maxLength={200}
+          autoComplete="off"
+          enterKeyHint="next"
+          placeholder="Como você chama este item?"
+          className="campo h-12 px-4 [@media(max-height:700px)]:h-11"
+        />
+      </label>
+
       <label className="flex min-h-0 flex-1 flex-col">
-        <span className="rotulo-de-secao">Legenda</span>
+        <span className="rotulo-de-secao rotulo-que-cede">Legenda</span>
         <textarea
+          aria-label="Legenda"
+          rows={1}
           value={legenda}
           onChange={(evento) => {
             setLegenda(evento.target.value)
           }}
           maxLength={2000}
           autoComplete="off"
-          placeholder="Sobre o que é isto? Sem legenda, fica só na pasta."
-          className="campo min-h-20 flex-1 resize-none p-4 leading-relaxed"
+          placeholder="Sobre o que é isto? Sem título nem legenda, fica só na pasta."
+          className="campo min-h-20 flex-1 resize-none p-4 leading-relaxed [@media(max-height:600px)]:min-h-14"
         />
         {padrao && (
           <span className="pd-dica">
             {editando
               ? 'Trocar a imagem não muda com o que o item combina.'
-              : 'Sem legenda, o item fica só na pasta.'}
+              : 'Sem título nem legenda, o item fica só na pasta.'}
           </span>
         )}
       </label>

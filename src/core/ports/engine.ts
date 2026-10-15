@@ -85,6 +85,7 @@ export interface CriarAnexoInput {
   /** Gerado por quem chama, pelo mesmo motivo do pensamento. */
   id: Id
   livroId: Id
+  titulo: string
   legenda: string
   conteudo: { tipo: 'link'; url: string } | { tipo: 'imagem'; bytes: Uint8Array; mime: string }
 }
@@ -96,6 +97,7 @@ export interface CriarAnexoInput {
  */
 export interface EditarAnexoInput {
   id: Id
+  titulo: string
   legenda: string
   /** Só vale para anexo de link. */
   url?: string | undefined

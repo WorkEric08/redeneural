@@ -16,6 +16,7 @@ import { Folha } from '@/components/Folha'
 import {
   chaveDoLugar,
   LUGARES_POR_PRATELEIRA,
+  nomeDoAnexo,
   type AnexoNaTela,
   type Id,
   type Livro,
@@ -141,9 +142,9 @@ function EspiarPasta({ livro, anexos, onAbrirLivro }: Props & { livro: Livro }) 
                 className="flex min-h-11 w-full items-center gap-3 px-4 py-2 text-sm"
               >
                 <span
-                  className={`min-w-0 flex-1 truncate ${a.legenda ? '' : 'text-poeira italic'}`}
+                  className={`min-w-0 flex-1 truncate ${nomeDoAnexo(a) ? '' : 'text-poeira italic'}`}
                 >
-                  {a.legenda || 'Sem legenda'}
+                  {nomeDoAnexo(a) || 'Sem título'}
                 </span>
                 {a.processando && <EtiquetaProcessando />}
                 <ChevronRight size={16} aria-hidden className="text-poeira shrink-0" />

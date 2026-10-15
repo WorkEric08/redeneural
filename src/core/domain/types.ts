@@ -259,10 +259,12 @@ export type MidiaDoAnexo =
 export interface Anexo {
   id: Id
   livroId: Id
-  /** O que o motor lê. Vazia, o anexo fica só na pasta, sem fio nenhum. */
+  /** O nome do item (15/10/2026): aparece no cartão da pasta e no alto da tela dele. Pode ser vazio. */
+  titulo: string
+  /** O texto do item. O motor lê o título e a legenda; sem nenhum dos dois, o anexo fica só na pasta. */
   legenda: string
   midia: MidiaDoAnexo
-  /** Vetor da legenda. `null` sem legenda ou enquanto a inferência não terminou. */
+  /** Vetor do título e da legenda. `null` sem texto ou enquanto a inferência não terminou. */
   embedding: Float32Array | null
   createdAt: Date
   updatedAt: Date
@@ -331,6 +333,7 @@ export interface PalacioSnapshot {
 export interface AnexoSnapshot {
   id: Id
   livroId: Id
+  titulo: string
   legenda: string
   midia: MidiaDoAnexo
   /** Float32Array em base64, como o do pensamento. */

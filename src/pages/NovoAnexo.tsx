@@ -60,7 +60,7 @@ export default function NovoAnexo() {
           <BlocoDeTitulo
             rotulo={`Pasta · ${pasta.titulo}`}
             titulo="Novo item"
-            sub="Imagem ou link, com uma legenda"
+            sub="Imagem ou link, com título e legenda"
           />
         )}
         <FormularioDeAnexo
@@ -70,8 +70,8 @@ export default function NovoAnexo() {
             (t) => restantesNaPasta(anexos, pasta.id)[t] === 0,
           )}
           ocupado={ocupado}
-          onCriar={(legenda, conteudo) => {
-            void criarAnexo({ livroId: pasta.id, legenda, conteudo }).then((id) => {
+          onCriar={(titulo, legenda, conteudo) => {
+            void criarAnexo({ livroId: pasta.id, titulo, legenda, conteudo }).then((id) => {
               // `replace`: voltar depois de guardar não pode trazer o
               // formulário de volta, já preenchido.
               if (id) void navegar(`/livro/${pasta.id}`, { replace: true })

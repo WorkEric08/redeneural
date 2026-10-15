@@ -1,4 +1,5 @@
 import type { Anexo, EstadoDaIdeia, Id, ImagemDoResultado, MidiaDoAnexo, Neuronio } from './types'
+import { textoDoAnexo } from './anexo'
 
 /**
  * Um pensamento como a tela o vê.
@@ -48,9 +49,10 @@ export function paraTela(n: Neuronio): NeuronioNaTela {
 export interface AnexoNaTela {
   id: Id
   livroId: Id
+  titulo: string
   legenda: string
   midia: MidiaDoAnexo
-  /** Tem legenda e a inferência ainda não terminou. Sem legenda nunca processa. */
+  /** Tem texto (título ou legenda) e a inferência ainda não terminou. Sem texto nunca processa. */
   processando: boolean
   createdAt: Date
   updatedAt: Date
@@ -60,9 +62,10 @@ export function anexoParaTela(a: Anexo): AnexoNaTela {
   return {
     id: a.id,
     livroId: a.livroId,
+    titulo: a.titulo,
     legenda: a.legenda,
     midia: a.midia,
-    processando: a.legenda.trim() !== '' && a.embedding === null,
+    processando: textoDoAnexo(a) !== '' && a.embedding === null,
     createdAt: a.createdAt,
     updatedAt: a.updatedAt,
   }

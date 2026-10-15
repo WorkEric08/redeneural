@@ -390,6 +390,19 @@ export function createDb(name: string = DB_NAME): PalacioDB {
         })
     })
 
+  // v19 (15/10/2026): os itens de pasta ganham um título, além da legenda. Os de antes ficam sem título
+  // (a tela mostra "Sem título" e a legenda continua sendo o texto deles).
+  db.version(19)
+    .stores({})
+    .upgrade(async (tx) => {
+      await tx
+        .table<Anexo, string>('anexos')
+        .toCollection()
+        .modify((a) => {
+          if (typeof a.titulo !== 'string') a.titulo = ''
+        })
+    })
+
   return db
 }
 

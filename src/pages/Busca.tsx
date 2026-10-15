@@ -2,7 +2,7 @@ import { Search } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 
-import type { AnexoNaTela } from '@/core'
+import { nomeDoAnexo, type AnexoNaTela } from '@/core'
 
 import { BarraDeTopo } from '@/components/BarraDeTopo'
 import { EstadoVazio } from '@/components/EstadoVazio'
@@ -342,7 +342,7 @@ function ItensDaPasta({
         <LinhaDeNeuronio
           key={a.id}
           para={`/anexo/${a.id}`}
-          titulo={a.legenda.trim() || 'Sem legenda'}
+          titulo={nomeDoAnexo(a) || 'Sem título'}
           abaixo={a.midia.tipo === 'imagem' ? 'Imagem' : dominioDe(a.midia.url)}
           cor={cor}
           padrao={padrao}

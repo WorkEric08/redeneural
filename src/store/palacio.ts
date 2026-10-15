@@ -22,6 +22,7 @@ import {
   type Conexao,
   type CriarAnexoInput,
   type DadosDoEnfeite,
+  type EditarAnexoInput,
   type EnfeiteGravado,
   type EstadoDaIdeia,
   type EstiloDaLombada,
@@ -71,6 +72,7 @@ export interface NeuronioCriado {
 
 export interface NovoAnexo {
   livroId: string
+  titulo: string
   legenda: string
   conteudo: CriarAnexoInput['conteudo']
 }
@@ -228,15 +230,10 @@ interface PalacioStore {
    */
   criarAnexo: (novo: NovoAnexo) => Promise<string | null>
   /**
-   * A legenda, o endereço de um link ou a imagem de um item. `false` se o motor
+   * O título, a legenda, o endereço de um link ou a imagem de um item. `false` se o motor
    * não conseguiu.
    */
-  editarAnexo: (
-    id: string,
-    legenda: string,
-    url?: string,
-    imagem?: { bytes: Uint8Array; mime: string },
-  ) => Promise<boolean>
+  editarAnexo: (id: string, campos: Omit<EditarAnexoInput, 'id'>) => Promise<boolean>
   apagarAnexo: (id: string) => Promise<boolean>
   /** Os bytes de uma imagem do acervo, para quem vai desenhá-la. Não é estado. */
   lerImagem: (anexoId: string, tamanho: 'miniatura' | 'inteira') => Promise<Uint8Array | null>
@@ -820,11 +817,11 @@ export const usePalacio = create<PalacioStore>()((set, get) => {
       }
     },
 
-    async editarAnexo(id, legenda, url, imagem): Promise<boolean> {
+    async editarAnexo(id, campos): Promise<boolean> {
       set({ ocupado: true, erro: null })
 
       try {
-        set(await engine.editarAnexo({ id, legenda, url, imagem }))
+        set(await engine.editarAnexo({ id, ...campos }))
         return true
       } catch (e) {
         set({ erro: mensagem(e) })

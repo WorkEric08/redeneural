@@ -32,6 +32,7 @@ import {
   restantesNaPasta,
   recalcularVizinhanca,
   SEM_RERANK,
+  textoDoAnexo,
   textoDoNeuronio,
   vinculoParaGravar,
   type AcervoGravado,
@@ -203,7 +204,7 @@ async function ancorar(anexo: Anexo): Promise<void> {
 }
 
 async function embutirAnexo(a: Anexo): Promise<Anexo> {
-  const vetor = await embedding.embed(a.legenda)
+  const vetor = await embedding.embed(textoDoAnexo(a))
   const completo: Anexo = { ...a, embedding: vetor, updatedAt: new Date() }
   await repo.upsertAnexo(completo)
   return completo
@@ -365,7 +366,7 @@ async function reprocessarTudo(): Promise<EstadoDoPalacio> {
   const semVetor = neuronios.filter((n) => n.embedding === null)
   // Anexo sem legenda não tem o que ler — nunca passa pelo modelo.
   const anexosSemVetor = (await repo.listAnexos()).filter(
-    (a) => a.embedding === null && a.legenda !== '',
+    (a) => a.embedding === null && textoDoAnexo(a) !== '',
   )
   const total = semVetor.length + anexosSemVetor.length
 
@@ -782,9 +783,9 @@ async function moverNeuronioNaRede(id: Id, ponto: Ponto): Promise<Readonly<Recor
   return gravado
 }
 
-/** Sem legenda, nada a ler: o anexo fica só na pasta, sem vínculo. */
+/** Sem título nem legenda, nada a ler: o anexo fica só na pasta, sem vínculo. */
 async function processarAnexo(a: Anexo): Promise<void> {
-  if (a.legenda === '') {
+  if (textoDoAnexo(a) === '') {
     await repo.replaceVinculosDe(a.id, [])
     return
   }
@@ -824,6 +825,7 @@ async function criarAnexo(input: CriarAnexoInput): Promise<EstadoDoPalacio> {
   const base: Anexo = {
     id: input.id,
     livroId: input.livroId,
+    titulo: input.titulo.trim(),
     legenda: input.legenda.trim(),
     midia,
     embedding: null,
@@ -842,6 +844,7 @@ async function editarAnexo(input: EditarAnexoInput): Promise<EstadoDoPalacio> {
   const existente = await repo.getAnexo(input.id)
   if (!existente) throw new Error(`anexo ${input.id} não existe`)
 
+  const titulo = input.titulo.trim()
   const legenda = input.legenda.trim()
   let midia: MidiaDoAnexo = existente.midia
   let arquivo: ArquivoDoAnexo | undefined
@@ -854,20 +857,21 @@ async function editarAnexo(input: EditarAnexoInput): Promise<EstadoDoPalacio> {
     midia = { tipo: 'imagem', mime: r.mime, largura: r.largura, altura: r.altura }
     arquivo = { imagem: r.imagem, miniatura: r.miniatura }
   }
-  const mudouALegenda = legenda !== existente.legenda
+  const mudouOTexto = textoDoAnexo({ titulo, legenda }) !== textoDoAnexo(existente)
 
   const base: Anexo = {
     ...existente,
+    titulo,
     legenda,
     midia,
-    embedding: mudouALegenda ? null : existente.embedding,
+    embedding: mudouOTexto ? null : existente.embedding,
     updatedAt: new Date(),
   }
   await repo.upsertAnexo(base, arquivo)
 
   // Trocar só o endereço não muda o que o anexo significa. Uma legenda sem
   // vetor (a inferência de antes falhou) é a chance de tentar de novo.
-  if (mudouALegenda || base.embedding === null) await processarAnexo(base)
+  if (mudouOTexto || base.embedding === null) await processarAnexo(base)
   return estadoAtual()
 }
 

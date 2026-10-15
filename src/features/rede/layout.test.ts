@@ -273,6 +273,7 @@ describe('satélites', () => {
     return {
       id,
       livroId: 'pasta',
+      titulo: '',
       legenda: id,
       midia:
         tipo === 'link'

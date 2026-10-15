@@ -1,4 +1,4 @@
-import type { AnexoNaTela, Id, Livro, NeuronioNaTela } from '@/core'
+import { textoDoAnexo, type AnexoNaTela, type Id, type Livro, type NeuronioNaTela } from '@/core'
 
 /**
  * Busca no palácio inteiro — em memória, sobre o que a store já tem.
@@ -82,7 +82,7 @@ export function buscar(
 }
 
 /**
- * A busca **local de uma pasta de acervo**: os itens dela pela legenda ou, nos links, pelo endereço.
+ * A busca **local de uma pasta de acervo**: os itens dela pelo título, pela legenda ou, nos links, pelo endereço.
  * Uma pasta não tem pensamentos — o que se guarda ali é imagem e link, e a legenda é o único texto
  * que a pessoa escreveu. Legenda bate antes de endereço, como o título bate antes do conteúdo.
  */
@@ -93,7 +93,7 @@ export function buscarAnexos(consulta: string, anexos: readonly AnexoNaTela[]): 
   return anexos
     .map((anexo) => ({
       anexo,
-      naLegenda: normalizar(anexo.legenda).includes(termo),
+      naLegenda: normalizar(textoDoAnexo(anexo)).includes(termo),
       noEndereco: anexo.midia.tipo === 'link' && normalizar(anexo.midia.url).includes(termo),
     }))
     .filter((r) => r.naLegenda || r.noEndereco)

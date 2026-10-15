@@ -1,4 +1,4 @@
-import type { AnexoNaTela, Id, NeuronioNaTela, Vinculo } from '@/core'
+import { textoDoAnexo, type AnexoNaTela, type Id, type NeuronioNaTela, type Vinculo } from '@/core'
 
 /** Um conceito que o anexo escolheu, já com o que a tela precisa mostrar. */
 export interface ConceitoDoAnexo {
@@ -56,6 +56,6 @@ export function situacaoDoAnexo(
   conceitos: readonly ConceitoDoAnexo[],
 ): SituacaoDoAnexo {
   if (anexo.processando) return 'processando'
-  if (anexo.legenda.trim() === '') return 'sem-legenda'
+  if (textoDoAnexo(anexo) === '') return 'sem-legenda'
   return conceitos.length > 0 ? 'preso' : 'solto'
 }

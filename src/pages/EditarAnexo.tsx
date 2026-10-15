@@ -39,15 +39,15 @@ export default function EditarAnexo() {
           <BlocoDeTitulo
             rotulo={`Pasta · ${livros.find((l) => l.id === anexo.livroId)?.titulo ?? ''}`}
             titulo="Editar item"
-            sub="Troque a imagem ou a legenda"
+            sub="Troque a imagem, o título ou a legenda"
           />
         )}
         <FormularioDeAnexo
           modo="editar"
           anexo={anexo}
           ocupado={ocupado}
-          onSalvar={(legenda, url, imagem) => {
-            void editarAnexo(anexo.id, legenda, url, imagem).then((deuCerto) => {
+          onSalvar={(titulo, legenda, url, imagem) => {
+            void editarAnexo(anexo.id, { titulo, legenda, url, imagem }).then((deuCerto) => {
               if (!deuCerto) return
               // A tela do item já está logo atrás: voltar para ela, e não
               // empilhar outra igual — o mesmo do editar pensamento.
